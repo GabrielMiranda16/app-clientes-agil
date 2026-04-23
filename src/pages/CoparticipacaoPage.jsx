@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Download, Edit2, Trash2, ArrowLeft, Loader2, Search } from 'lucide-react';
+import { Plus, Download, Edit2, Trash2, ArrowLeft, Loader2, Search, Upload, CheckCircle2, AlertCircle, X } from 'lucide-react';
 import { useCompany } from '@/contexts/CompanyContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,6 +58,13 @@ const CoparticipacaoPage = () => {
   const [logoBase64, setLogoBase64] = useState(null);
   const [selectedColaboradorId, setSelectedColaboradorId] = useState('__all__');
 
+  // Importação
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importStep, setImportStep] = useState('upload'); // 'upload' | 'preview'
+  const [importedRows, setImportedRows] = useState([]);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importTipo, setImportTipo] = useState('saude');
+
   const [searchTerm, setSearchTerm] = useState('');
   const [tipoTab, setTipoTab] = useState('saude');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -107,6 +114,140 @@ const CoparticipacaoPage = () => {
     );
     return ap?.seguradora || null;
   };
+
+  // ── Importação de planilha ──────────────────────────────────────────
+  const normalizeStr = (s) =>
+    String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+
+  const autoMatchBeneficiario = (nome) => {
+    if (!nome) return null;
+    const n = normalizeStr(nome);
+    let found = beneficiariosFiltrados.find(b => normalizeStr(b.nome_completo) === n);
+    if (!found) {
+      const words = n.split(/\s+/).filter(w => w.length > 3);
+      if (words.length > 0) {
+        found = beneficiariosFiltrados.find(b => {
+          const bw = normalizeStr(b.nome_completo);
+          return words.filter(w => bw.includes(w)).length >= Math.min(2, words.length);
+        });
+      }
+    }
+    return found || null;
+  };
+
+  const detectCols = (headers) => {
+    const cols = { beneficiario: -1, quemUtilizou: -1, cpf: -1, valor: -1, descricao: -1 };
+    headers.forEach((h, i) => {
+      const nh = normalizeStr(h);
+      if (cols.beneficiario === -1 && /titular|beneficiario|nome|segurado|empregado|colaborador/.test(nh)) cols.beneficiario = i;
+      if (cols.quemUtilizou === -1 && /utilizou|dependente|usuario|utilizador|paciente/.test(nh)) cols.quemUtilizou = i;
+      if (cols.cpf === -1 && /cpf/.test(nh)) cols.cpf = i;
+      if (cols.valor === -1 && /valor|custo|coparticip|total/.test(nh)) cols.valor = i;
+      if (cols.descricao === -1 && /descri|procedimento|servico|especialidade|tipo/.test(nh)) cols.descricao = i;
+    });
+    return cols;
+  };
+
+  const handleFileImport = async (file) => {
+    if (!file) return;
+    if (!selectedCompanyId) {
+      toast({ variant: 'destructive', title: 'Selecione uma empresa', description: 'Selecione uma empresa antes de importar.' });
+      return;
+    }
+    if (!file.name.match(/\.(xlsx|xls|csv)$/i)) {
+      toast({ variant: 'destructive', title: 'Formato não suportado', description: 'Use arquivos .xlsx, .xls ou .csv. Para PDF, converta para Excel primeiro.' });
+      return;
+    }
+    try {
+      const raw = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            resolve(XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }));
+          } catch (err) { reject(err); }
+        };
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(file);
+      });
+
+      // Encontra linha de cabeçalho
+      let headerIdx = 0;
+      for (let i = 0; i < Math.min(15, raw.length); i++) {
+        if (raw[i].filter(c => c !== '').length >= 3) { headerIdx = i; break; }
+      }
+      const headers = raw[headerIdx].map(String);
+      const cols = detectCols(headers);
+      const dataRows = raw.slice(headerIdx + 1).filter(r => r.some(c => c !== ''));
+
+      const rows = dataRows.map(r => {
+        const nomeDetectado = cols.beneficiario >= 0 ? String(r[cols.beneficiario] || '').trim() : '';
+        const matched = autoMatchBeneficiario(nomeDetectado);
+        const quemRaw = cols.quemUtilizou >= 0 ? String(r[cols.quemUtilizou] || '').trim() : '';
+        const cpfRaw = cols.cpf >= 0 ? String(r[cols.cpf] || '').replace(/\D/g, '') : '';
+        const valorRaw = cols.valor >= 0 ? r[cols.valor] : 0;
+        const valor = parseFloat(String(valorRaw).replace(/[^\d,.-]/g, '').replace(',', '.')) || 0;
+        const descricao = cols.descricao >= 0 ? String(r[cols.descricao] || '').trim() : '';
+        return {
+          nome_detectado: nomeDetectado,
+          beneficiario_id: matched ? String(matched.id) : '',
+          quem_utilizou: quemRaw || matched?.nome_completo || nomeDetectado,
+          cpf_quem_utilizou: cpfRaw || (matched?.cpf || '').replace(/\D/g, ''),
+          valor,
+          descricao,
+        };
+      }).filter(r => r.nome_detectado || r.valor > 0);
+
+      if (rows.length === 0) {
+        toast({ variant: 'destructive', title: 'Nenhum dado identificado', description: 'Verifique se a planilha está no formato correto.' });
+        return;
+      }
+      setImportedRows(rows);
+      setImportStep('preview');
+    } catch (err) {
+      console.error('Erro ao parsear arquivo:', err);
+      toast({ variant: 'destructive', title: 'Erro ao ler arquivo', description: 'Verifique se o arquivo não está corrompido.' });
+    }
+  };
+
+  const handleConfirmImport = async () => {
+    const validRows = importedRows.filter(r => r.beneficiario_id && r.valor > 0);
+    if (validRows.length === 0) {
+      toast({ variant: 'destructive', title: 'Nenhum registro válido', description: 'Atribua um beneficiário a pelo menos um registro.' });
+      return;
+    }
+    setIsImporting(true);
+    const monthPadded = String(selectedMonth).padStart(2, '0');
+    const competencia = `${selectedYear}-${monthPadded}`;
+    try {
+      const created = await Promise.all(validRows.map(r => {
+        const ben = beneficiarios.find(b => String(b.id) === String(r.beneficiario_id));
+        return coparticipacaoService.createCoparticipacao({
+          empresa_id: selectedCompanyId,
+          beneficiario_id: parseInt(r.beneficiario_id),
+          competencia,
+          valor: r.valor,
+          descricao: r.descricao || '',
+          nome_quem_utilizou: r.quem_utilizou || ben?.nome_completo || '',
+          cpf_quem_utilizou: r.cpf_quem_utilizou || '',
+          tipo: importTipo,
+          data_registro: new Date().toISOString()
+        });
+      }));
+      setCoparticipacoes(prev => [...prev, ...created]);
+      toast({ title: 'Importação concluída!', description: `${created.length} registro(s) importados com sucesso.` });
+      setIsImportModalOpen(false);
+      setImportStep('upload');
+      setImportedRows([]);
+    } catch (err) {
+      console.error('Erro na importação:', err);
+      toast({ variant: 'destructive', title: 'Erro na importação', description: 'Verifique os dados e tente novamente.' });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+  // ── Fim importação ─────────────────────────────────────────────────
 
   const fetchData = async () => {
     try {
@@ -490,6 +631,9 @@ const CoparticipacaoPage = () => {
               <Button variant="outline" size="sm" onClick={() => handleExportExcel(data, tipo)} disabled={data.length === 0}>
                 <Download className="mr-2 h-4 w-4" /> Excel
               </Button>
+              <Button variant="outline" size="sm" onClick={() => { setImportTipo(tipo); setImportStep('upload'); setImportedRows([]); setIsImportModalOpen(true); }} disabled={!selectedCompanyId}>
+                <Upload className="mr-2 h-4 w-4" /> Importar
+              </Button>
               <Button onClick={() => handleAddClick(tipo)} className="bg-blue-600 hover:bg-blue-700 text-white" disabled={!selectedCompanyId}>
                 <Plus className="mr-2 h-4 w-4" /> Registrar
               </Button>
@@ -708,6 +852,125 @@ const CoparticipacaoPage = () => {
                 Salvar
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Importação */}
+        <Dialog open={isImportModalOpen} onOpenChange={(open) => { if (!open) { setIsImportModalOpen(false); setImportStep('upload'); setImportedRows([]); } }}>
+          <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Upload className="h-5 w-5 text-blue-600" />
+                Importar Coparticipação — {importTipo === 'saude' ? 'Saúde' : 'Odonto'}
+              </DialogTitle>
+            </DialogHeader>
+
+            {importStep === 'upload' && (
+              <div className="py-6 space-y-6">
+                <div className="flex gap-4 items-end">
+                  <div className="space-y-1">
+                    <Label>Tipo</Label>
+                    <Select value={importTipo} onValueChange={setImportTipo}>
+                      <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="saude">Saúde</SelectItem>
+                        <SelectItem value="odonto">Odonto</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    Mês de competência: <strong>{getMonthName(selectedMonth)}/{selectedYear}</strong>
+                  </div>
+                </div>
+
+                <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors">
+                  <Upload className="h-8 w-8 text-blue-400 mb-2" />
+                  <p className="text-sm font-medium text-blue-600">Clique para selecionar a planilha</p>
+                  <p className="text-xs text-gray-500 mt-1">Formatos aceitos: .xlsx, .xls, .csv</p>
+                  <p className="text-xs text-gray-400 mt-1">PDF: converta para Excel antes de importar</p>
+                  <input type="file" className="hidden" accept=".xlsx,.xls,.csv" onChange={(e) => { if (e.target.files?.[0]) handleFileImport(e.target.files[0]); }} />
+                </label>
+
+                <div className="bg-gray-50 rounded-lg p-4 text-xs text-gray-600 space-y-1">
+                  <p className="font-medium text-gray-700">Como funciona:</p>
+                  <p>1. A planilha deve ter colunas com nomes de <strong>Beneficiário/Titular</strong>, <strong>Quem Utilizou</strong>, <strong>CPF</strong> e <strong>Valor</strong>.</p>
+                  <p>2. O app detecta as colunas automaticamente e tenta associar ao beneficiário cadastrado.</p>
+                  <p>3. Você revisa e confirma antes de salvar.</p>
+                </div>
+              </div>
+            )}
+
+            {importStep === 'preview' && (
+              <div className="flex flex-col flex-1 overflow-hidden">
+                <div className="flex items-center justify-between py-3 border-b">
+                  <div className="text-sm text-gray-600">
+                    <span className="font-medium text-green-700">{importedRows.filter(r => r.beneficiario_id).length}</span> de <span className="font-medium">{importedRows.length}</span> registros com beneficiário identificado
+                    {importedRows.filter(r => !r.beneficiario_id).length > 0 && (
+                      <span className="ml-2 text-yellow-700">· {importedRows.filter(r => !r.beneficiario_id).length} sem correspondência</span>
+                    )}
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => { setImportStep('upload'); setImportedRows([]); }}>
+                    <X className="h-4 w-4 mr-1" /> Trocar arquivo
+                  </Button>
+                </div>
+                <div className="overflow-auto flex-1 mt-2">
+                  <table className="w-full text-xs text-left min-w-[700px]">
+                    <thead className="bg-gray-100 text-gray-700 uppercase">
+                      <tr>
+                        <th className="px-3 py-2">Status</th>
+                        <th className="px-3 py-2">Nome Detectado</th>
+                        <th className="px-3 py-2">Beneficiário (Titular)</th>
+                        <th className="px-3 py-2">Quem Utilizou</th>
+                        <th className="px-3 py-2">Valor (R$)</th>
+                        <th className="px-3 py-2">Descrição</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {importedRows.map((row, i) => (
+                        <tr key={i} className={row.beneficiario_id ? 'bg-white' : 'bg-yellow-50'}>
+                          <td className="px-3 py-2">
+                            {row.beneficiario_id
+                              ? <CheckCircle2 className="h-4 w-4 text-green-600" />
+                              : <AlertCircle className="h-4 w-4 text-yellow-500" />}
+                          </td>
+                          <td className="px-3 py-2 text-gray-500">{row.nome_detectado || '-'}</td>
+                          <td className="px-3 py-2">
+                            <Select
+                              value={row.beneficiario_id || '__none__'}
+                              onValueChange={(val) => setImportedRows(prev => prev.map((r, j) => {
+                                if (j !== i) return r;
+                                const ben = beneficiariosFiltrados.find(b => String(b.id) === val);
+                                return { ...r, beneficiario_id: val === '__none__' ? '' : val, quem_utilizou: ben?.nome_completo || r.quem_utilizou, cpf_quem_utilizou: ben?.cpf?.replace(/\D/g,'') || r.cpf_quem_utilizou };
+                              }))}
+                            >
+                              <SelectTrigger className="h-7 text-xs w-44"><SelectValue placeholder="Selecionar..." /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__none__">— Não importar —</SelectItem>
+                                {beneficiariosFiltrados.map(b => (
+                                  <SelectItem key={b.id} value={String(b.id)}>{b.nome_completo}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-3 py-2 text-gray-600 max-w-[120px] truncate">{row.quem_utilizou || '-'}</td>
+                          <td className="px-3 py-2 font-medium text-green-700">
+                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(row.valor)}
+                          </td>
+                          <td className="px-3 py-2 text-gray-500 max-w-[120px] truncate">{row.descricao || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <DialogFooter className="pt-4 border-t mt-2">
+                  <Button variant="outline" onClick={() => { setIsImportModalOpen(false); setImportStep('upload'); setImportedRows([]); }}>Cancelar</Button>
+                  <Button onClick={handleConfirmImport} className="bg-[#003580] hover:bg-[#002060] text-white" disabled={isImporting || importedRows.filter(r => r.beneficiario_id && r.valor > 0).length === 0}>
+                    {isImporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Importar {importedRows.filter(r => r.beneficiario_id && r.valor > 0).length} registro(s)
+                  </Button>
+                </DialogFooter>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>
