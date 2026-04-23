@@ -20,6 +20,7 @@ import * as XLSX from 'xlsx';
 import { coparticipacaoService } from '@/services/coparticipacaoService';
 import { beneficiariosService } from '@/services/beneficiariosService';
 import { empresasService } from '@/services/empresasService';
+import { apolicesService } from '@/services/apolicesService';
 import { cleanCoparticipacaoData, validateCoparticipacao } from '@/lib/coparticipacaoValidator';
 import { formatCpfCnpj } from '@/lib/masks';
 
@@ -53,6 +54,10 @@ const CoparticipacaoPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
+  const [apolices, setApolices] = useState([]);
+  const [logoBase64, setLogoBase64] = useState(null);
+  const [selectedColaboradorId, setSelectedColaboradorId] = useState('');
+
   const [searchTerm, setSearchTerm] = useState('');
   const [tipoTab, setTipoTab] = useState('saude');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -80,17 +85,42 @@ const CoparticipacaoPage = () => {
     return arr;
   }, []);
 
+  useEffect(() => {
+    const loadLogo = async () => {
+      try {
+        const res = await fetch('https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/247eb5219c397bb2ed2bcac42f39a442.png', { mode: 'cors' });
+        if (!res.ok) return;
+        const blob = await res.blob();
+        const reader = new FileReader();
+        reader.onloadend = () => setLogoBase64(reader.result);
+        reader.readAsDataURL(blob);
+      } catch { /* logo é opcional */ }
+    };
+    loadLogo();
+  }, []);
+
+  const getSeguradora = (tipo) => {
+    if (!selectedCompanyId) return null;
+    const ap = apolices.find(a =>
+      String(a.empresa_id) === String(selectedCompanyId) &&
+      a.segmento === 'saude-vida-odonto'
+    );
+    return ap?.seguradora || null;
+  };
+
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const [copData, benData, empData] = await Promise.all([
+      const [copData, benData, empData, apolData] = await Promise.all([
         coparticipacaoService.getAllCoparticipacoes(),
         beneficiariosService.getAllBeneficiarios(),
-        empresasService.getEmpresas()
+        empresasService.getEmpresas(),
+        apolicesService.getAllApolices()
       ]);
       setCoparticipacoes(copData);
       setBeneficiarios(benData);
       setEmpresas(empData);
+      setApolices(apolData);
     } catch (error) {
       console.error("Error fetching data", error);
       toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao carregar dados.' });
@@ -125,6 +155,10 @@ const CoparticipacaoPage = () => {
       (c.tipo === tipo || (!c.tipo && tipo === 'saude'))
     );
 
+    if (selectedColaboradorId) {
+      filtered = filtered.filter(item => String(item.beneficiario_id) === String(selectedColaboradorId));
+    }
+
     if (searchTerm) {
       const lower = searchTerm.toLowerCase();
       filtered = filtered.filter(item =>
@@ -139,7 +173,7 @@ const CoparticipacaoPage = () => {
 
   const coparticipacoesFiltradas = useMemo(
     () => getCoparticipacoesByTipo(tipoTab),
-    [coparticipacoes, selectedCompanyId, tipoTab, selectedMonth, selectedYear, searchTerm, beneficiarios]
+    [coparticipacoes, selectedCompanyId, tipoTab, selectedMonth, selectedYear, searchTerm, beneficiarios, selectedColaboradorId]
   );
 
   const beneficiariosFiltrados = useMemo(() => {
@@ -310,27 +344,89 @@ const CoparticipacaoPage = () => {
       return;
     }
     const tipoExport = tipo || tipoTab;
-    const doc = new jsPDF();
     const tipoLabel = tipoExport === 'saude' ? 'Saúde' : 'Odonto';
-    doc.text(`Relatório de Coparticipação — ${tipoLabel}`, 14, 15);
-    doc.setFontSize(11);
-    doc.setTextColor(100);
-    doc.text(`Período: ${getMonthName(selectedMonth)} de ${selectedYear}`, 14, 22);
+    const monthPadded = String(selectedMonth).padStart(2, '0');
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    // Cabeçalho azul
+    doc.setFillColor(0, 53, 128);
+    doc.rect(0, 0, pageWidth, 36, 'F');
+
+    if (logoBase64) {
+      doc.addImage(logoBase64, 'PNG', 8, 6, 26, 20);
+    }
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('Ágil Seguros', logoBase64 ? 40 : 14, 15);
+
+    const empAtual = empresas.find(e => String(e.id) === String(selectedCompanyId));
+    doc.setFontSize(8);
+    doc.setFont(undefined, 'normal');
+    if (empAtual) {
+      doc.text(empAtual.nome_fantasia || empAtual.razao_social || '', logoBase64 ? 40 : 14, 22);
+      doc.text(`CNPJ: ${formatCpfCnpj(empAtual.cnpj || '')}`, logoBase64 ? 40 : 14, 28);
+    }
+
+    const seguradora = getSeguradora(tipoExport);
+    if (seguradora) {
+      doc.text(`Seguradora: ${seguradora}`, pageWidth - 8, 22, { align: 'right' });
+    }
+
+    // Título do relatório
+    doc.setTextColor(30, 30, 30);
+    doc.setFontSize(13);
+    doc.setFont(undefined, 'bold');
+    doc.text(`Relatório de Coparticipação — ${tipoLabel}`, 14, 48);
+
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Período: ${getMonthName(selectedMonth)} de ${selectedYear}`, 14, 55);
+
     const tableColumn = ["Mês", "Beneficiário", "CNPJ/CPF", "Quem Utilizou", "CPF Utilizador", "Valor (R$)", "Descrição"];
     const tableRows = data.map(item => {
       const emp = empresas.find(e => e.id === item.empresa_id);
       return [
         item.competencia,
         getBeneficiarioName(item.beneficiario_id),
-        emp?.cnpj || emp?.cpf || '-',
+        emp?.cnpj ? formatCpfCnpj(emp.cnpj) : (emp?.cpf || '-'),
         item.nome_quem_utilizou || '-',
-        item.cpf_quem_utilizou || '-',
+        item.cpf_quem_utilizou ? formatCpfCnpj(item.cpf_quem_utilizou) : '-',
         new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valor),
         item.descricao || '-'
       ];
     });
-    doc.autoTable({ head: [tableColumn], body: tableRows, startY: 28 });
-    doc.save(`coparticipacao_${tipoExport}_${selectedCompanyId}_${selectedYear}-${String(selectedMonth).padStart(2,'0')}.pdf`);
+
+    const total = data.reduce((acc, item) => acc + parseFloat(item.valor || 0), 0);
+    tableRows.push([
+      { content: 'TOTAL', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+      { content: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total), styles: { halign: 'right', fontStyle: 'bold' } },
+      ''
+    ]);
+
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 60,
+      headStyles: { fillColor: [0, 53, 128], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 248, 255] },
+      styles: { fontSize: 8, cellPadding: 3 },
+    });
+
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      const h = doc.internal.pageSize.height;
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text(`Página ${i} de ${pageCount}`, pageWidth - 14, h - 8, { align: 'right' });
+      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 14, h - 8);
+    }
+
+    doc.save(`coparticipacao_${tipoExport}_${selectedCompanyId}_${selectedYear}-${monthPadded}.pdf`);
     toast({ description: "Exportação PDF concluída!" });
   };
 
@@ -367,11 +463,22 @@ const CoparticipacaoPage = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <CardTitle>Histórico de Lançamentos</CardTitle>
             <div className="flex flex-wrap gap-2">
-              <div className="relative w-full md:w-56">
+              <Select value={selectedColaboradorId} onValueChange={setSelectedColaboradorId}>
+                <SelectTrigger className="w-full md:w-52">
+                  <SelectValue placeholder="Todos os colaboradores" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos os colaboradores</SelectItem>
+                  {beneficiariosFiltrados.map(b => (
+                    <SelectItem key={b.id} value={String(b.id)}>{b.nome_completo}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="relative w-full md:w-48">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                 <Input
                   type="search"
-                  placeholder="Buscar lançamentos..."
+                  placeholder="Buscar..."
                   className="pl-9"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}

@@ -26,7 +26,16 @@ export const AuthProvider = ({ children }) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user?.email) {
           const profile = await fetchProfile(session.user.email);
-          if (profile) setUser(profile);
+          if (profile) {
+            setUser(profile);
+            return;
+          }
+        }
+        // Fallback: usuários ainda não migrados para Supabase Auth não têm sessão JWT,
+        // então restauramos do sessionStorage para não deslogar no F5.
+        const stored = sessionStorage.getItem('agil_session_user');
+        if (stored) {
+          try { setUser(JSON.parse(stored)); } catch { sessionStorage.removeItem('agil_session_user'); }
         }
       } catch (e) {
         console.error('[Auth] Erro ao restaurar sessão:', e);
@@ -56,6 +65,7 @@ export const AuthProvider = ({ children }) => {
     if (!authError) {
       const profile = await fetchProfile(email);
       if (!profile) throw new Error('Usuário não encontrado.');
+      sessionStorage.setItem('agil_session_user', JSON.stringify(profile));
       setUser(profile);
       return profile;
     }
@@ -73,17 +83,21 @@ export const AuthProvider = ({ children }) => {
     }
 
     const { password: _, ...safeUser } = userData;
+    sessionStorage.setItem('agil_session_user', JSON.stringify(safeUser));
     setUser(safeUser);
     return safeUser;
   };
 
   const logout = async () => {
     try { await supabase.auth.signOut(); } catch { /* ignora */ }
+    sessionStorage.removeItem('agil_session_user');
     setUser(null);
   };
 
   const updateUser = (userData) => {
     setUser(userData);
+    if (userData) sessionStorage.setItem('agil_session_user', JSON.stringify(userData));
+    else sessionStorage.removeItem('agil_session_user');
   };
 
   return (

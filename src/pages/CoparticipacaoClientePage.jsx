@@ -1,12 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Download, FileText, ArrowLeft, Calendar, Loader2 } from 'lucide-react';
+import { Download, FileText, ArrowLeft, Calendar, Loader2, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useCompany } from '@/contexts/CompanyContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
@@ -18,6 +19,7 @@ import * as XLSX from 'xlsx';
 import { coparticipacaoService } from '@/services/coparticipacaoService';
 import { beneficiariosService } from '@/services/beneficiariosService';
 import { empresasService } from '@/services/empresasService';
+import { apolicesService } from '@/services/apolicesService';
 import { formatCpfCnpj } from '@/lib/masks';
 
 const CoparticipacaoClientePage = () => {
@@ -30,24 +32,29 @@ const CoparticipacaoClientePage = () => {
   const [coparticipacoes, setCoparticipacoes] = useState([]);
   const [beneficiarios, setBeneficiarios] = useState([]);
   const [empresas, setEmpresas] = useState([]);
+  const [apolices, setApolices] = useState([]);
+  const [logoBase64, setLogoBase64] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [tipoFiltro, setTipoFiltro] = useState('saude');
+  const [selectedColaboradorId, setSelectedColaboradorId] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [copData, benData, empData] = await Promise.all([
+        const [copData, benData, empData, apolData] = await Promise.all([
           coparticipacaoService.getAllCoparticipacoes(),
           beneficiariosService.getAllBeneficiarios(),
-          empresasService.getEmpresas()
+          empresasService.getEmpresas(),
+          apolicesService.getAllApolices()
         ]);
         setCoparticipacoes(copData);
         setBeneficiarios(benData);
         setEmpresas(empData);
+        setApolices(apolData);
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
         toast({
@@ -67,6 +74,33 @@ const CoparticipacaoClientePage = () => {
       setSelectedCompanyId(parseInt(empresaId));
     }
   }, [empresaId, setSelectedCompanyId]);
+
+  useEffect(() => {
+    const loadLogo = async () => {
+      try {
+        const res = await fetch('https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/247eb5219c397bb2ed2bcac42f39a442.png', { mode: 'cors' });
+        if (!res.ok) return;
+        const blob = await res.blob();
+        const reader = new FileReader();
+        reader.onloadend = () => setLogoBase64(reader.result);
+        reader.readAsDataURL(blob);
+      } catch { /* logo é opcional */ }
+    };
+    loadLogo();
+  }, []);
+
+  const getSeguradora = () => {
+    const ap = apolices.find(a =>
+      String(a.empresa_id) === String(empresaId) &&
+      a.segmento === 'saude-vida-odonto'
+    );
+    return ap?.seguradora || null;
+  };
+
+  const beneficiariosDaEmpresa = useMemo(() =>
+    beneficiarios.filter(b => String(b.empresa_id) === String(empresaId)),
+    [beneficiarios, empresaId]
+  );
 
   const months = [
     { value: 1, label: 'Janeiro' },
@@ -94,12 +128,16 @@ const CoparticipacaoClientePage = () => {
     if (!empresaId) return [];
     const monthPadded = String(selectedMonth).padStart(2, '0');
     const selectedPeriod = `${selectedYear}-${monthPadded}`;
-    return coparticipacoes.filter(c =>
+    let result = coparticipacoes.filter(c =>
       String(c.empresa_id) === String(empresaId) &&
       c.competencia === selectedPeriod &&
       (c.tipo === tipoFiltro || (!c.tipo && tipoFiltro === 'saude'))
     );
-  }, [coparticipacoes, empresaId, selectedMonth, selectedYear, tipoFiltro]);
+    if (selectedColaboradorId) {
+      result = result.filter(c => String(c.beneficiario_id) === String(selectedColaboradorId));
+    }
+    return result;
+  }, [coparticipacoes, empresaId, selectedMonth, selectedYear, tipoFiltro, selectedColaboradorId]);
 
   const totalMes = useMemo(() => {
     return filteredCoparticipacoes.reduce((acc, curr) => acc + (parseFloat(curr.valor) || 0), 0);
@@ -121,23 +159,53 @@ const CoparticipacaoClientePage = () => {
       return;
     }
     const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
     const empresaAtual = empresas.find(e => String(e.id) === String(empresaId));
     const mesLabel = getMonthName(selectedMonth);
     const tipoLabel = tipoFiltro === 'saude' ? 'Saúde' : 'Odonto';
+    const monthPadded = String(selectedMonth).padStart(2, '0');
 
-    doc.setFontSize(18);
-    doc.text(`Relatório de Coparticipação — ${tipoLabel}`, 14, 22);
-    doc.setFontSize(11);
-    doc.setTextColor(100);
-    doc.text(`Empresa: ${empresaAtual?.nome_fantasia || empresaAtual?.razao_social}`, 14, 30);
-    doc.text(`CNPJ: ${empresaAtual?.cnpj ? formatCpfCnpj(empresaAtual.cnpj) : ''}`, 14, 36);
-    doc.text(`Mês de Referência: ${mesLabel} de ${selectedYear}`, 14, 42);
+    // Cabeçalho azul
+    doc.setFillColor(0, 53, 128);
+    doc.rect(0, 0, pageWidth, 36, 'F');
+
+    if (logoBase64) {
+      doc.addImage(logoBase64, 'PNG', 8, 6, 26, 20);
+    }
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('Ágil Seguros', logoBase64 ? 40 : 14, 15);
+
+    doc.setFontSize(8);
+    doc.setFont(undefined, 'normal');
+    if (empresaAtual) {
+      doc.text(empresaAtual.nome_fantasia || empresaAtual.razao_social || '', logoBase64 ? 40 : 14, 22);
+      doc.text(`CNPJ: ${formatCpfCnpj(empresaAtual.cnpj || '')}`, logoBase64 ? 40 : 14, 28);
+    }
+
+    const seguradora = getSeguradora();
+    if (seguradora) {
+      doc.text(`Seguradora: ${seguradora}`, pageWidth - 8, 22, { align: 'right' });
+    }
+
+    // Título
+    doc.setTextColor(30, 30, 30);
+    doc.setFontSize(13);
+    doc.setFont(undefined, 'bold');
+    doc.text(`Relatório de Coparticipação — ${tipoLabel}`, 14, 48);
+
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Período: ${mesLabel} de ${selectedYear}`, 14, 55);
 
     const tableColumn = ["Beneficiário Titular", "Quem Utilizou", "CPF Utilizador", "Descrição", "Valor (R$)"];
     const tableRows = filteredCoparticipacoes.map(item => [
       getBeneficiarioName(item.beneficiario_id),
       item.nome_quem_utilizou || '-',
-      item.cpf_quem_utilizou || '-',
+      item.cpf_quem_utilizou ? formatCpfCnpj(item.cpf_quem_utilizou) : '-',
       item.descricao || '-',
       new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2 }).format(item.valor)
     ]);
@@ -146,18 +214,25 @@ const CoparticipacaoClientePage = () => {
       { content: new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2 }).format(totalMes), styles: { halign: 'right', fontStyle: 'bold' } }
     ]);
 
-    doc.autoTable({ head: [tableColumn], body: tableRows, startY: 50, theme: 'striped', headStyles: { fillColor: [22, 160, 133] } });
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 60,
+      headStyles: { fillColor: [0, 53, 128], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 248, 255] },
+      styles: { fontSize: 9, cellPadding: 3 },
+    });
 
     const pageCount = doc.internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
-      doc.setFontSize(9);
+      const h = doc.internal.pageSize.height;
+      doc.setFontSize(8);
       doc.setTextColor(150);
-      doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width - 30, doc.internal.pageSize.height - 10);
-      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 14, doc.internal.pageSize.height - 10);
+      doc.text(`Página ${i} de ${pageCount}`, pageWidth - 14, h - 8, { align: 'right' });
+      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 14, h - 8);
     }
 
-    const monthPadded = String(selectedMonth).padStart(2, '0');
     doc.save(`coparticipacao_${tipoFiltro}_${empresaAtual?.cnpj}_${selectedYear}-${monthPadded}.pdf`);
   };
 
@@ -300,7 +375,18 @@ const CoparticipacaoClientePage = () => {
         <Card>
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <CardTitle>Detalhamento</CardTitle>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 items-center">
+              <Select value={selectedColaboradorId} onValueChange={setSelectedColaboradorId}>
+                <SelectTrigger className="w-full sm:w-52">
+                  <SelectValue placeholder="Todos os colaboradores" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos os colaboradores</SelectItem>
+                  {beneficiariosDaEmpresa.map(b => (
+                    <SelectItem key={b.id} value={String(b.id)}>{b.nome_completo}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={filteredCoparticipacoes.length === 0}>
                 <Download className="mr-2 h-4 w-4" /> Baixar Excel
               </Button>

@@ -355,13 +355,18 @@ const ClientDashboard = () => {
   const SOL_PER_PAGE = 10;
   
   const [isExclusaoModalOpen, setIsExclusaoModalOpen] = useState(false);
-  const [exclusaoData, setExclusaoData] = useState({ beneficiarioId: null, tipoPlano: null, motivo: '', dataExclusao: '' });
-  
+  const [exclusaoData, setExclusaoData] = useState({ beneficiarioId: null, tipoPlano: null, motivo: '', dataExclusao: '', observacao: '' });
+
   const [isAlteracaoModalOpen, setIsAlteracaoModalOpen] = useState(false);
   const [alteracaoData, setAlteracaoData] = useState({ beneficiarioId: null, tipoPlano: null });
 
   const [isSolicitacaoDialogOpen, setIsSolicitacaoDialogOpen] = useState(false);
   const [selectedPlans, setSelectedPlans] = useState([]);
+
+  const [isInclusaoDetalheOpen, setIsInclusaoDetalheOpen] = useState(false);
+  const [pendingInclusaoBenefId, setPendingInclusaoBenefId] = useState(null);
+  const [pendingInclusaoPlanos, setPendingInclusaoPlanos] = useState([]);
+  const [inclusaoData, setInclusaoData] = useState({ motivo: '', dataInclusao: '', observacao: '' });
 
   const [showInclusaoAlert, setShowInclusaoAlert] = useState(true);
   const [showExclusaoAlert, setShowExclusaoAlert] = useState(true);
@@ -527,7 +532,7 @@ const ClientDashboard = () => {
     }
   };
 
-  const handleSolicitarInclusao = async (beneficiarioId, planosSelecionados) => {
+  const handleSolicitarInclusao = async (beneficiarioId, planosSelecionados, detalhes = {}) => {
     if (!planosSelecionados || planosSelecionados.length === 0) return;
 
     // Filter out plans that already have pending or processing requests
@@ -561,7 +566,12 @@ const ClientDashboard = () => {
               tipo_solicitacao: 'INCLUSAO',
               status: 'PENDENTE',
               data_solicitacao: new Date().toISOString(),
-              data_aprovacao: null
+              data_aprovacao: null,
+              dados_inclusao: {
+                dataInclusao: detalhes.dataInclusao || '',
+                motivo: detalhes.motivo || '',
+                observacao: detalhes.observacao || ''
+              }
             };
             return solicitacoesService.createSolicitacao(novaSolicitacao);
         });
@@ -579,7 +589,7 @@ const ClientDashboard = () => {
     }
   };
 
-  const handleSolicitarExclusao = async (beneficiarioId, tipoPlano, motivo, dataExclusao) => {
+  const handleSolicitarExclusao = async (beneficiarioId, tipoPlano, motivo, dataExclusao, observacao = '') => {
     // 1. Check for duplicates
     const hasOpenExclusion = solicitacoes.some(s => 
       s.beneficiario_id === beneficiarioId && 
@@ -629,7 +639,8 @@ const ClientDashboard = () => {
         data_solicitacao: new Date().toISOString(),
         dados_exclusao: {
           dataExclusao,
-          motivo
+          motivo,
+          observacao
         }
       };
 
@@ -647,7 +658,7 @@ const ClientDashboard = () => {
 
       // 8 & 9. Close modal and reset data
       setIsExclusaoModalOpen(false);
-      setExclusaoData({ beneficiarioId: null, tipoPlano: null, motivo: '', dataExclusao: '' });
+      setExclusaoData({ beneficiarioId: null, tipoPlano: null, motivo: '', dataExclusao: '', observacao: '' });
 
     } catch (error) {
       console.error('Erro ao solicitar exclusão:', error);
@@ -748,9 +759,18 @@ const ClientDashboard = () => {
 
   const confirmSolicitacao = () => {
     if (selectedPlans.length === 0) return toast({ variant: 'destructive', title: 'Selecione um plano', description: 'Selecione ao menos um plano para solicitar.' });
-    handleSolicitarInclusao(editingBeneficiario.id, selectedPlans);
+    setPendingInclusaoBenefId(editingBeneficiario.id);
+    setPendingInclusaoPlanos([...selectedPlans]);
+    setInclusaoData({ motivo: '', dataInclusao: '', observacao: '' });
     setIsSolicitacaoDialogOpen(false);
     setSelectedPlans([]);
+    setIsInclusaoDetalheOpen(true);
+  };
+
+  const confirmarInclusaoComDetalhes = async () => {
+    await handleSolicitarInclusao(pendingInclusaoBenefId, pendingInclusaoPlanos, inclusaoData);
+    setIsInclusaoDetalheOpen(false);
+    setInclusaoData({ motivo: '', dataInclusao: '', observacao: '' });
   };
 
   const renderPlanSelectionItem = (type, label, Icon, colorClass) => {
@@ -833,7 +853,7 @@ const ClientDashboard = () => {
                 <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => { setIsSolicitacaoDialogOpen(false); handleSolicitarInclusao(editingBeneficiario.id, [type]); }}
+                    onClick={() => { setIsSolicitacaoDialogOpen(false); setPendingInclusaoBenefId(editingBeneficiario.id); setPendingInclusaoPlanos([type]); setInclusaoData({ motivo: '', dataInclusao: '', observacao: '' }); setIsInclusaoDetalheOpen(true); }}
                     className="w-full h-8 text-xs border-green-300 text-green-700 hover:bg-green-50 hover:text-green-900 bg-transparent"
                 >
                     <Plus className="h-3.5 w-3.5 mr-1.5" />Solicitar Inclusão
@@ -1015,7 +1035,6 @@ const ClientDashboard = () => {
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
                                                     <Button variant="ghost" size="icon" onClick={() => openModalToEdit(b)} title="Editar"><Edit className="h-4 w-4 text-gray-500 hover:text-blue-600" /></Button>
-                                                    {user.perfil !== 'CLIENTE' && (
                                                     <AlertDialog>
                                                         <AlertDialogTrigger asChild>
                                                             <Button variant="ghost" size="icon" title="Excluir"><Trash2 className="h-4 w-4 text-gray-500 hover:text-red-600" /></Button>
@@ -1031,7 +1050,6 @@ const ClientDashboard = () => {
                                                             </AlertDialogFooter>
                                                         </AlertDialogContent>
                                                     </AlertDialog>
-                                                    )}
                                                 </div>
                                             </TableCell>
                                         </TableRow>
@@ -1109,7 +1127,55 @@ const ClientDashboard = () => {
 
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}><DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] p-0 flex flex-col overflow-hidden"><DialogHeader className="px-4 pt-4"><DialogTitle>{editingBeneficiario ? 'Editar' : 'Adicionar'} Beneficiário</DialogTitle></DialogHeader><form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">{isModalOpen && <ModalFormContent formData={formData} setFormData={setFormData} age={age} titulares={titulares} beneficiario={editingBeneficiario} isCliente={user.perfil === 'CLIENTE'} openSolicitacaoDialog={openSolicitacaoDialog} renderPlanStatusCard={renderPlanStatusCard} setIsExclusaoModalOpen={setIsExclusaoModalOpen} setExclusaoData={setExclusaoData} handleSolicitarAlteracao={handleSolicitarAlteracao} />}<DialogFooter className="px-4 mt-4 pb-4"><Button type="submit" disabled={isSubmitting} className="bg-[#003580] hover:bg-[#002060] text-white">{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar</Button></DialogFooter></form></DialogContent></Dialog>
         {editingBeneficiario && user.perfil === 'CLIENTE' && (<Dialog open={isSolicitacaoDialogOpen} onOpenChange={(open) => { if (!open) setIsSolicitacaoDialogOpen(false); }}><DialogContent className="sm:max-w-[425px] sm:max-h-[80vh] overflow-y-auto"><DialogHeader><DialogTitle>Solicitar Inclusão</DialogTitle><DialogDescription>Selecione os planos que deseja solicitar para este beneficiário.</DialogDescription></DialogHeader><div className="py-4 space-y-4">{renderPlanSelectionItem('saude', 'Plano de Saúde', Hospital, 'text-green-600')}{renderPlanSelectionItem('vida', 'Seguro de Vida', Heart, 'text-blue-600')}{renderPlanSelectionItem('odonto', 'Plano Odonto', Smile, 'text-orange-600')}</div><DialogFooter><Button variant="outline" onClick={() => setIsSolicitacaoDialogOpen(false)}>Fechar</Button><Button onClick={confirmSolicitacao}>Confirmar Solicitação</Button></DialogFooter></DialogContent></Dialog>)}
-        <Dialog open={isExclusaoModalOpen} onOpenChange={setIsExclusaoModalOpen}><DialogContent className="w-[95vw] sm:max-w-md"><DialogHeader><DialogTitle>Solicitar Exclusão de Plano</DialogTitle></DialogHeader><div className="grid gap-4 py-4"><div className="grid gap-2"><Label htmlFor="dataExclusao">Data da Exclusão</Label><Input id="dataExclusao" type="date" value={exclusaoData.dataExclusao} onChange={(e) => setExclusaoData({...exclusaoData, dataExclusao: e.target.value})} /></div><div className="grid gap-2"><Label htmlFor="motivo">Motivo</Label><Textarea id="motivo" value={exclusaoData.motivo} onChange={(e) => setExclusaoData({...exclusaoData, motivo: e.target.value})} /></div></div><DialogFooter><Button variant="outline" onClick={() => setIsExclusaoModalOpen(false)}>Cancelar</Button><Button onClick={() => { handleSolicitarExclusao(exclusaoData.beneficiarioId, exclusaoData.tipoPlano, exclusaoData.motivo, exclusaoData.dataExclusao); }}>Enviar Solicitação</Button></DialogFooter></DialogContent></Dialog>
+        <Dialog open={isExclusaoModalOpen} onOpenChange={setIsExclusaoModalOpen}>
+          <DialogContent className="w-[95vw] sm:max-w-md">
+            <DialogHeader><DialogTitle>Solicitar Exclusão de Plano</DialogTitle></DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="dataExclusao">Data da Exclusão</Label>
+                <Input id="dataExclusao" type="date" value={exclusaoData.dataExclusao} onChange={(e) => setExclusaoData({...exclusaoData, dataExclusao: e.target.value})} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="motivo">Motivo *</Label>
+                <Textarea id="motivo" value={exclusaoData.motivo} onChange={(e) => setExclusaoData({...exclusaoData, motivo: e.target.value})} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="obsExclusao">Observação</Label>
+                <Textarea id="obsExclusao" placeholder="Observações adicionais (opcional)" value={exclusaoData.observacao} onChange={(e) => setExclusaoData({...exclusaoData, observacao: e.target.value})} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsExclusaoModalOpen(false)}>Cancelar</Button>
+              <Button onClick={() => { handleSolicitarExclusao(exclusaoData.beneficiarioId, exclusaoData.tipoPlano, exclusaoData.motivo, exclusaoData.dataExclusao, exclusaoData.observacao); }}>Enviar Solicitação</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={isInclusaoDetalheOpen} onOpenChange={setIsInclusaoDetalheOpen}>
+          <DialogContent className="w-[95vw] sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Dados da Inclusão</DialogTitle>
+              <DialogDescription>Informe os detalhes da solicitação de inclusão.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="dataInclusao">Data de Inclusão</Label>
+                <Input id="dataInclusao" type="date" value={inclusaoData.dataInclusao} onChange={(e) => setInclusaoData({...inclusaoData, dataInclusao: e.target.value})} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="motivoInclusao">Motivo</Label>
+                <Textarea id="motivoInclusao" placeholder="Motivo da inclusão" value={inclusaoData.motivo} onChange={(e) => setInclusaoData({...inclusaoData, motivo: e.target.value})} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="obsInclusao">Observação</Label>
+                <Textarea id="obsInclusao" placeholder="Observações adicionais (opcional)" value={inclusaoData.observacao} onChange={(e) => setInclusaoData({...inclusaoData, observacao: e.target.value})} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsInclusaoDetalheOpen(false)}>Cancelar</Button>
+              <Button onClick={confirmarInclusaoComDetalhes} className="bg-[#003580] hover:bg-[#002060] text-white">Confirmar Solicitação</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         <Dialog open={isAlteracaoModalOpen} onOpenChange={setIsAlteracaoModalOpen}><DialogContent><DialogHeader><DialogTitle>Solicitar Alteração de Plano</DialogTitle><DialogDescription>Você está solicitando a alteração do plano <strong>{alteracaoData.tipoPlano}</strong>.</DialogDescription></DialogHeader><div className="py-4 text-sm text-gray-600"><p>Ao confirmar, uma solicitação de alteração será enviada para a administração.</p><p className="mt-2">Você poderá acompanhar o status desta solicitação no painel do beneficiário.</p></div><DialogFooter><Button variant="outline" onClick={() => setIsAlteracaoModalOpen(false)}>Cancelar</Button><Button onClick={confirmAlteracao} className="bg-blue-600 hover:bg-blue-700 text-white">Confirmar Alteração</Button></DialogFooter></DialogContent></Dialog>
 
       </DashboardLayout>
