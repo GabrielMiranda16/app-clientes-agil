@@ -648,6 +648,12 @@ const CoparticipacaoPage = () => {
 
   const HistoricoCard = ({ tipo }) => {
     const data = getCoparticipacoesByTipo(tipo);
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
+    useEffect(() => { setCurrentPage(1); }, [selectedColaboradorId, searchTerm, selectedMonth, selectedYear, tipo]);
+    const totalPages = Math.max(1, Math.ceil(data.length / ITEMS_PER_PAGE));
+    const pageData = data.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
     return (
       <Card>
         <CardHeader className="pb-3">
@@ -712,7 +718,7 @@ const CoparticipacaoPage = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {data.length > 0 ? (
-                    data.map((item) => {
+                    pageData.map((item) => {
                       const emp = empresas.find(e => e.id === item.empresa_id);
                       return (
                         <tr key={item.id} className="hover:bg-gray-50">
@@ -749,6 +755,18 @@ const CoparticipacaoPage = () => {
                   )}
                 </tbody>
               </table>
+            </div>
+          )}
+          {data.length > ITEMS_PER_PAGE && (
+            <div className="flex items-center justify-between px-4 py-3 border-t mt-2">
+              <p className="text-sm text-gray-500">
+                {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, data.length)} de {data.length} registros
+              </p>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1}>Anterior</Button>
+                <span className="text-sm font-medium px-2">{currentPage} / {totalPages}</span>
+                <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage === totalPages}>Próximo</Button>
+              </div>
             </div>
           )}
         </CardContent>

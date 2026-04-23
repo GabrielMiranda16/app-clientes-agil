@@ -40,6 +40,8 @@ const CoparticipacaoClientePage = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [tipoFiltro, setTipoFiltro] = useState('saude');
   const [selectedColaboradorId, setSelectedColaboradorId] = useState('__all__');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -142,6 +144,11 @@ const CoparticipacaoClientePage = () => {
   const totalMes = useMemo(() => {
     return filteredCoparticipacoes.reduce((acc, curr) => acc + (parseFloat(curr.valor) || 0), 0);
   }, [filteredCoparticipacoes]);
+
+  useEffect(() => { setCurrentPage(1); }, [filteredCoparticipacoes.length, tipoFiltro, selectedColaboradorId, selectedMonth, selectedYear]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredCoparticipacoes.length / ITEMS_PER_PAGE));
+  const pageData = filteredCoparticipacoes.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   const getBeneficiarioName = (id) => {
     const ben = beneficiarios.find(b => String(b.id) === String(id));
@@ -409,7 +416,7 @@ const CoparticipacaoClientePage = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white">
                   {filteredCoparticipacoes.length > 0 ? (
-                    filteredCoparticipacoes.map((item) => (
+                    pageData.map((item) => (
                       <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3 font-medium text-gray-900">{getBeneficiarioName(item.beneficiario_id)}</td>
                         <td className="px-4 py-3 text-gray-600">{item.nome_quem_utilizou || '-'}</td>
@@ -443,6 +450,18 @@ const CoparticipacaoClientePage = () => {
                 )}
               </table>
             </div>
+            {filteredCoparticipacoes.length > ITEMS_PER_PAGE && (
+              <div className="flex items-center justify-between px-4 py-3 border-t mt-2">
+                <p className="text-sm text-gray-500">
+                  {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredCoparticipacoes.length)} de {filteredCoparticipacoes.length} registros
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1}>Anterior</Button>
+                  <span className="text-sm font-medium px-2">{currentPage} / {totalPages}</span>
+                  <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage === totalPages}>Próximo</Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
