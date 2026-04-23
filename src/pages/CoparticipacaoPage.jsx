@@ -23,6 +23,7 @@ import { empresasService } from '@/services/empresasService';
 import { apolicesService } from '@/services/apolicesService';
 import { cleanCoparticipacaoData, validateCoparticipacao } from '@/lib/coparticipacaoValidator';
 import { formatCpfCnpj } from '@/lib/masks';
+import { supabase } from '@/lib/customSupabaseClient';
 
 const months = [
   { value: 1, label: 'Janeiro' },
@@ -60,9 +61,10 @@ const CoparticipacaoPage = () => {
 
   // Importação
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [importStep, setImportStep] = useState('upload'); // 'upload' | 'preview'
+  const [importStep, setImportStep] = useState('upload'); // 'upload' | 'parsing' | 'preview'
   const [importedRows, setImportedRows] = useState([]);
   const [isImporting, setIsImporting] = useState(false);
+  const [isParsing, setIsParsing] = useState(false);
   const [importTipo, setImportTipo] = useState('saude');
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -148,14 +150,62 @@ const CoparticipacaoPage = () => {
     return cols;
   };
 
+  const handlePdfImport = async (file) => {
+    setIsParsing(true);
+    setImportStep('parsing');
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      let binary = '';
+      for (let i = 0; i < uint8Array.length; i++) binary += String.fromCharCode(uint8Array[i]);
+      const pdfBase64 = btoa(binary);
+
+      const { data: result, error } = await supabase.functions.invoke('parse-coparticipacao-pdf', {
+        body: { pdfBase64 },
+      });
+
+      if (error) throw new Error(error.message || 'Erro na Edge Function.');
+      if (!result?.data?.length) throw new Error('O PDF não contém dados de coparticipação reconhecíveis.');
+
+      const rows = result.data.map(item => {
+        const matched = autoMatchBeneficiario(item.nome_beneficiario);
+        return {
+          nome_detectado: item.nome_beneficiario || '',
+          beneficiario_id: matched ? String(matched.id) : '',
+          quem_utilizou: item.quem_utilizou || item.nome_beneficiario || '',
+          cpf_quem_utilizou: (item.cpf_quem_utilizou || '').replace(/\D/g, ''),
+          valor: parseFloat(item.valor) || 0,
+          descricao: item.descricao || '',
+        };
+      }).filter(r => r.nome_detectado || r.valor > 0);
+
+      if (rows.length === 0) {
+        toast({ variant: 'destructive', title: 'Nenhum dado identificado', description: 'Verifique se o PDF é um relatório de coparticipação.' });
+        setImportStep('upload');
+        return;
+      }
+      setImportedRows(rows);
+      setImportStep('preview');
+    } catch (err) {
+      console.error('Erro ao processar PDF:', err);
+      toast({ variant: 'destructive', title: 'Erro ao processar PDF', description: err.message || 'Verifique se o arquivo é válido e tente novamente.' });
+      setImportStep('upload');
+    } finally {
+      setIsParsing(false);
+    }
+  };
+
   const handleFileImport = async (file) => {
     if (!file) return;
     if (!selectedCompanyId) {
       toast({ variant: 'destructive', title: 'Selecione uma empresa', description: 'Selecione uma empresa antes de importar.' });
       return;
     }
+    if (file.name.match(/\.pdf$/i)) {
+      return handlePdfImport(file);
+    }
     if (!file.name.match(/\.(xlsx|xls|csv)$/i)) {
-      toast({ variant: 'destructive', title: 'Formato não suportado', description: 'Use arquivos .xlsx, .xls ou .csv. Para PDF, converta para Excel primeiro.' });
+      toast({ variant: 'destructive', title: 'Formato não suportado', description: 'Use arquivos .pdf, .xlsx, .xls ou .csv.' });
       return;
     }
     try {
@@ -885,18 +935,26 @@ const CoparticipacaoPage = () => {
 
                 <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors">
                   <Upload className="h-8 w-8 text-blue-400 mb-2" />
-                  <p className="text-sm font-medium text-blue-600">Clique para selecionar a planilha</p>
-                  <p className="text-xs text-gray-500 mt-1">Formatos aceitos: .xlsx, .xls, .csv</p>
-                  <p className="text-xs text-gray-400 mt-1">PDF: converta para Excel antes de importar</p>
-                  <input type="file" className="hidden" accept=".xlsx,.xls,.csv" onChange={(e) => { if (e.target.files?.[0]) handleFileImport(e.target.files[0]); }} />
+                  <p className="text-sm font-medium text-blue-600">Clique para selecionar o arquivo</p>
+                  <p className="text-xs text-gray-500 mt-1">Formatos aceitos: .pdf, .xlsx, .xls, .csv</p>
+                  <p className="text-xs text-gray-400 mt-1">PDF da seguradora: Claude AI extrai os dados automaticamente</p>
+                  <input type="file" className="hidden" accept=".pdf,.xlsx,.xls,.csv" onChange={(e) => { if (e.target.files?.[0]) handleFileImport(e.target.files[0]); }} />
                 </label>
 
                 <div className="bg-gray-50 rounded-lg p-4 text-xs text-gray-600 space-y-1">
                   <p className="font-medium text-gray-700">Como funciona:</p>
-                  <p>1. A planilha deve ter colunas com nomes de <strong>Beneficiário/Titular</strong>, <strong>Quem Utilizou</strong>, <strong>CPF</strong> e <strong>Valor</strong>.</p>
-                  <p>2. O app detecta as colunas automaticamente e tenta associar ao beneficiário cadastrado.</p>
-                  <p>3. Você revisa e confirma antes de salvar.</p>
+                  <p>1. <strong>PDF da seguradora:</strong> o sistema usa IA para ler e extrair os dados automaticamente.</p>
+                  <p>2. <strong>Planilha (.xlsx/.csv):</strong> detecta as colunas de Beneficiário, Quem Utilizou, CPF e Valor.</p>
+                  <p>3. Você revisa e confirma os dados antes de salvar.</p>
                 </div>
+              </div>
+            )}
+
+            {importStep === 'parsing' && (
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+                <p className="text-sm font-medium text-gray-700">Lendo o PDF com IA...</p>
+                <p className="text-xs text-gray-400">Isso pode levar alguns segundos</p>
               </div>
             )}
 
