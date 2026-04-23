@@ -56,7 +56,7 @@ const CoparticipacaoPage = () => {
 
   const [apolices, setApolices] = useState([]);
   const [logoBase64, setLogoBase64] = useState(null);
-  const [selectedColaboradorId, setSelectedColaboradorId] = useState('');
+  const [selectedColaboradorId, setSelectedColaboradorId] = useState('__all__');
 
   const [searchTerm, setSearchTerm] = useState('');
   const [tipoTab, setTipoTab] = useState('saude');
@@ -155,7 +155,7 @@ const CoparticipacaoPage = () => {
       (c.tipo === tipo || (!c.tipo && tipo === 'saude'))
     );
 
-    if (selectedColaboradorId) {
+    if (selectedColaboradorId && selectedColaboradorId !== '__all__') {
       filtered = filtered.filter(item => String(item.beneficiario_id) === String(selectedColaboradorId));
     }
 
@@ -468,7 +468,7 @@ const CoparticipacaoPage = () => {
                   <SelectValue placeholder="Todos os colaboradores" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os colaboradores</SelectItem>
+                  <SelectItem value="__all__">Todos os colaboradores</SelectItem>
                   {beneficiariosFiltrados.map(b => (
                     <SelectItem key={b.id} value={String(b.id)}>{b.nome_completo}</SelectItem>
                   ))}

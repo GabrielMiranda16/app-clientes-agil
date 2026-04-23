@@ -39,7 +39,7 @@ const CoparticipacaoClientePage = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [tipoFiltro, setTipoFiltro] = useState('saude');
-  const [selectedColaboradorId, setSelectedColaboradorId] = useState('');
+  const [selectedColaboradorId, setSelectedColaboradorId] = useState('__all__');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -133,7 +133,7 @@ const CoparticipacaoClientePage = () => {
       c.competencia === selectedPeriod &&
       (c.tipo === tipoFiltro || (!c.tipo && tipoFiltro === 'saude'))
     );
-    if (selectedColaboradorId) {
+    if (selectedColaboradorId && selectedColaboradorId !== '__all__') {
       result = result.filter(c => String(c.beneficiario_id) === String(selectedColaboradorId));
     }
     return result;
@@ -381,7 +381,7 @@ const CoparticipacaoClientePage = () => {
                   <SelectValue placeholder="Todos os colaboradores" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os colaboradores</SelectItem>
+                  <SelectItem value="__all__">Todos os colaboradores</SelectItem>
                   {beneficiariosDaEmpresa.map(b => (
                     <SelectItem key={b.id} value={String(b.id)}>{b.nome_completo}</SelectItem>
                   ))}
