@@ -14,8 +14,10 @@ import { authService } from '@/services/authService';
 import { sendWelcomeEmail } from '@/services/emailService';
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('');
+  const savedEmail = localStorage.getItem('agil_remember_email') || '';
+  const [email, setEmail] = useState(savedEmail);
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(!!savedEmail);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isForgotOpen, setIsForgotOpen] = useState(false);
@@ -29,6 +31,8 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (rememberMe) localStorage.setItem('agil_remember_email', email);
+    else localStorage.removeItem('agil_remember_email');
     setIsLoggingIn(true);
 
     try {
@@ -130,6 +134,7 @@ const LoginPage = () => {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(e); }}
                       required
                       className="border-[#c8e0f5] focus:border-[#003580] bg-[#f0f7ff] pr-10"
                     />
@@ -137,6 +142,18 @@ const LoginPage = () => {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    id="remember"
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 accent-[#003580] cursor-pointer"
+                  />
+                  <label htmlFor="remember" className="text-sm text-gray-600 cursor-pointer select-none">
+                    Lembrar de mim
+                  </label>
                 </div>
                 <Button type="submit" className="w-full rounded-full font-bold text-white" style={{ background: '#003580' }} disabled={isLoggingIn}>
                   {isLoggingIn ? (
