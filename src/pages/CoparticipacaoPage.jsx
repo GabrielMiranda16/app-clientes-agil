@@ -112,7 +112,7 @@ const CoparticipacaoPage = () => {
     if (!selectedCompanyId) return null;
     const ap = apolices.find(a =>
       String(a.empresa_id) === String(selectedCompanyId) &&
-      a.segmento === 'saude-vida-odonto'
+      a.segmento === 'SAUDE_VIDA_ODONTO'
     );
     return ap?.seguradora || null;
   };
@@ -271,7 +271,7 @@ const CoparticipacaoPage = () => {
     const monthPadded = String(selectedMonth).padStart(2, '0');
     const competencia = `${selectedYear}-${monthPadded}`;
     try {
-      const created = await Promise.all(validRows.map(r => {
+      const results = await Promise.allSettled(validRows.map(r => {
         const ben = beneficiarios.find(b => String(b.id) === String(r.beneficiario_id));
         return coparticipacaoService.createCoparticipacao({
           empresa_id: selectedCompanyId,
@@ -285,8 +285,14 @@ const CoparticipacaoPage = () => {
           data_registro: new Date().toISOString()
         });
       }));
+      const created = results.filter(r => r.status === 'fulfilled').map(r => r.value);
+      const failed = results.filter(r => r.status === 'rejected').length;
       setCoparticipacoes(prev => [...prev, ...created]);
-      toast({ title: 'Importação concluída!', description: `${created.length} registro(s) importados com sucesso.` });
+      if (failed > 0) {
+        toast({ variant: 'destructive', title: 'Importação parcial', description: `${created.length} importados, ${failed} falhou(aram).` });
+      } else {
+        toast({ title: 'Importação concluída!', description: `${created.length} registro(s) importados com sucesso.` });
+      }
       setIsImportModalOpen(false);
       setImportStep('upload');
       setImportedRows([]);

@@ -286,7 +286,7 @@ const AdminSegmentoPage = () => {
 
       // Cancela todas as solicitações pendentes de todas as empresas do grupo
       const todasIds = todasEmpresas.map(e => e.id);
-      await Promise.all(todasIds.map(eid => solicitacoesService.cancelPendingByEmpresa(eid)));
+      await Promise.allSettled(todasIds.map(eid => solicitacoesService.cancelPendingByEmpresa(eid)));
       setSolicitacoes(prev => prev.map(s =>
         todasIds.includes(Number(s.empresa_id)) &&
         (s.status === 'PENDENTE' || s.status === 'EM PROCESSAMENTO')
