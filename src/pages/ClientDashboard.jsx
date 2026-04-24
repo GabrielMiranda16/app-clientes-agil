@@ -102,7 +102,7 @@ const getStatusColor = (status) => {
 const PlanCheckboxIcon = ({ label, checked }) => (
   <div className="flex items-center gap-2 cursor-default pointer-events-none" onClick={(e) => e.stopPropagation()}>
     <div className="flex items-center justify-center h-5 w-5">
-       {checked ? <CheckCircle2 className="h-5 w-5 text-green-600" /> : <div className="h-5 w-5" />}
+       {checked ? <CheckCircle2 className="h-5 w-5 text-[#003580]" /> : <div className="h-5 w-5" />}
     </div>
     <span className="text-sm font-medium leading-none">{label}</span>
   </div>
@@ -242,7 +242,7 @@ const ModalFormContent = React.memo(({ formData, setFormData, age, titulares, is
           </div>
         </AccordionContent></AccordionItem>
 
-        <AccordionItem value="health_plan"><AccordionTrigger className="text-green-600"><PlanCheckboxIcon label="Plano de Saúde" checked={formData.saude_ativo} /></AccordionTrigger><AccordionContent className="space-y-4">
+        <AccordionItem value="health_plan"><AccordionTrigger className="text-[#003580]"><PlanCheckboxIcon label="Plano de Saúde" checked={formData.saude_ativo} /></AccordionTrigger><AccordionContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField id="saude_plano_nome" label="Nome do Plano"><Input id="saude_plano_nome" value={formData.saude_plano_nome} onChange={handleInputChange} disabled={isCliente} /></FormField>
             <FormField id="saude_acomodacao" label="Acomodação"><Input id="saude_acomodacao" value={formData.saude_acomodacao} onChange={handleInputChange} disabled={isCliente} /></FormField>
@@ -263,7 +263,7 @@ const ModalFormContent = React.memo(({ formData, setFormData, age, titulares, is
           </div>
         </AccordionContent></AccordionItem>
 
-        <AccordionItem value="life_plan"><AccordionTrigger className="text-blue-600"><PlanCheckboxIcon label="Seguro de Vida" checked={formData.vida_ativo} /></AccordionTrigger><AccordionContent className="space-y-4">
+        <AccordionItem value="life_plan"><AccordionTrigger className="text-[#003580]"><PlanCheckboxIcon label="Seguro de Vida" checked={formData.vida_ativo} /></AccordionTrigger><AccordionContent className="space-y-4">
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField id="vida_plano_nome" label="Nome do Plano"><Input id="vida_plano_nome" value={formData.vida_plano_nome} onChange={handleInputChange} disabled={isCliente} /></FormField>
             <FormField id="vida_valor_fatura" label="Valor Fatura"><Input id="vida_valor_fatura" type="number" step="0.01" value={formData.vida_valor_fatura} onChange={handleInputChange} disabled={isCliente} /></FormField>
@@ -280,7 +280,7 @@ const ModalFormContent = React.memo(({ formData, setFormData, age, titulares, is
           </div>
         </AccordionContent></AccordionItem>
 
-        <AccordionItem value="dental_plan"><AccordionTrigger className="text-orange-600"><PlanCheckboxIcon label="Plano Odonto" checked={formData.odonto_ativo} /></AccordionTrigger><AccordionContent className="space-y-4">
+        <AccordionItem value="dental_plan"><AccordionTrigger className="text-[#003580]"><PlanCheckboxIcon label="Plano Odonto" checked={formData.odonto_ativo} /></AccordionTrigger><AccordionContent className="space-y-4">
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField id="odonto_plano_nome" label="Nome do Plano"><Input id="odonto_plano_nome" value={formData.odonto_plano_nome} onChange={handleInputChange} disabled={isCliente} /></FormField>
             <FormField id="odonto_valor_fatura" label="Valor Fatura"><Input id="odonto_valor_fatura" type="number" step="0.01" value={formData.odonto_valor_fatura} onChange={handleInputChange} disabled={isCliente} /></FormField>
@@ -313,9 +313,9 @@ const ModalFormContent = React.memo(({ formData, setFormData, age, titulares, is
 
         {/* Status Cards Area */}
         <div className="space-y-2">
-            {renderPlanStatusCard('saude', 'Plano de Saúde', Hospital, 'text-green-600')}
-            {renderPlanStatusCard('vida', 'Seguro de Vida', Heart, 'text-blue-600')}
-            {renderPlanStatusCard('odonto', 'Plano Odonto', Smile, 'text-orange-600')}
+            {renderPlanStatusCard('saude', 'Plano de Saúde', Hospital, 'text-[#003580]')}
+            {renderPlanStatusCard('vida', 'Seguro de Vida', Heart, 'text-[#003580]')}
+            {renderPlanStatusCard('odonto', 'Plano Odonto', Smile, 'text-[#003580]')}
         </div>
       </div>
     )}
@@ -781,13 +781,13 @@ const ClientDashboard = () => {
 
     if (isPendingOrProcessing) {
         return (
-            <div key={type} className="border border-yellow-200 bg-yellow-50 rounded-lg p-4 space-y-3 relative">
+            <div key={type} className="border border-blue-100 bg-blue-50 rounded-lg p-4 space-y-3 relative">
                  <div className="flex items-center gap-2">
-                    <div className={`p-1.5 rounded-full ${colorClass} bg-opacity-10`}><Icon className={`h-4 w-4 ${colorClass}`} /></div>
+                    <div className="p-1.5 rounded-full bg-[#003580]/10"><Icon className="h-4 w-4 text-[#003580]" /></div>
                     <h3 className="font-semibold text-sm text-gray-900">{label}</h3>
                  </div>
                  <div className="flex items-center justify-between">
-                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100 shadow-none">
+                    <Badge variant="secondary" className="bg-blue-100 text-[#003580] border-blue-200 hover:bg-blue-100 shadow-none">
                         {solicitacao.status === 'PENDENTE' ? 'Solicitação Pendente' : 'Em Processamento'}
                     </Badge>
                     <span className="text-xs text-gray-500 font-medium">
@@ -808,14 +808,14 @@ const ClientDashboard = () => {
 
     if (isActive) {
         return (
-             <div key={type} className="border border-green-200 bg-green-50 rounded-lg p-4 space-y-3 relative">
+             <div key={type} className="border border-blue-100 bg-blue-50 rounded-lg p-4 space-y-3 relative">
                  <div className="flex items-center gap-2">
-                    <div className={`p-1.5 rounded-full ${colorClass} bg-opacity-10`}><Icon className={`h-4 w-4 ${colorClass}`} /></div>
+                    <div className="p-1.5 rounded-full bg-[#003580]/10"><Icon className="h-4 w-4 text-[#003580]" /></div>
                     <h3 className="font-semibold text-sm text-gray-900">{label}</h3>
                  </div>
                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <span className="text-sm font-medium text-green-700">Plano Ativo</span>
+                    <CheckCircle2 className="h-4 w-4 text-[#003580]" />
+                    <span className="text-sm font-medium text-[#003580]">Plano Ativo</span>
                  </div>
                  <div className="flex flex-col gap-2">
                     <Button
@@ -841,20 +841,20 @@ const ClientDashboard = () => {
 
     if (isExcluded) {
         return (
-            <div key={type} className="border border-red-200 bg-red-50 rounded-lg p-4 space-y-3 relative">
+            <div key={type} className="border border-blue-100 bg-blue-50 rounded-lg p-4 space-y-3 relative">
                 <div className="flex items-center gap-2">
-                    <div className={`p-1.5 rounded-full ${colorClass} bg-opacity-10`}><Icon className={`h-4 w-4 ${colorClass}`} /></div>
+                    <div className="p-1.5 rounded-full bg-[#003580]/10"><Icon className="h-4 w-4 text-[#003580]" /></div>
                     <h3 className="font-semibold text-sm text-gray-900">{label}</h3>
                 </div>
                 <div className="flex items-center gap-2">
-                    <UserMinus className="h-4 w-4 text-red-600" />
-                    <span className="text-sm font-medium text-red-700">Plano Excluído</span>
+                    <UserMinus className="h-4 w-4 text-[#003580]" />
+                    <span className="text-sm font-medium text-[#003580]">Plano Excluído</span>
                 </div>
                 <Button
                     variant="outline"
                     size="sm"
                     onClick={() => { setIsSolicitacaoDialogOpen(false); setPendingInclusaoBenefId(editingBeneficiario.id); setPendingInclusaoPlanos([type]); setInclusaoData({ motivo: '', dataInclusao: '', observacao: '' }); setIsInclusaoDetalheOpen(true); }}
-                    className="w-full h-8 text-xs border-green-300 text-green-700 hover:bg-green-50 hover:text-green-900 bg-transparent"
+                    className="w-full h-8 text-xs border-blue-200 text-[#003580] hover:bg-blue-100 hover:text-[#002060] bg-transparent"
                 >
                     <Plus className="h-3.5 w-3.5 mr-1.5" />Solicitar Inclusão
                 </Button>
@@ -893,9 +893,9 @@ const ClientDashboard = () => {
     if (!solicitacao) {
       if (formData[`${type}_ativo`]) {
         return (
-          <Card className="mb-4 overflow-hidden border-l-4 border-l-green-500">
+          <Card className="mb-4 overflow-hidden border-l-4 border-l-[#003580]">
              <CardHeader className="p-4 pb-2">
-                <div className="flex items-center gap-2"><div className={`p-2 rounded-full ${colorClass} bg-opacity-10`}><Icon className={`h-5 w-5 ${colorClass}`} /></div><div><h4 className="font-bold text-sm flex items-center gap-2">{label}</h4><Badge variant="outline" className="w-fit bg-green-100 text-green-800 border-green-200">Ativo</Badge></div></div>
+                <div className="flex items-center gap-2"><div className="p-2 rounded-full bg-[#003580]/10"><Icon className="h-5 w-5 text-[#003580]" /></div><div><h4 className="font-bold text-sm flex items-center gap-2">{label}</h4><Badge variant="outline" className="w-fit bg-blue-100 text-[#003580] border-blue-200">Ativo</Badge></div></div>
              </CardHeader>
              <CardContent className="p-4 pt-2">
                 <div className="text-sm text-gray-600">Este plano está ativo.</div>
@@ -911,11 +911,11 @@ const ClientDashboard = () => {
     const isExclusion = solicitacao.tipo_solicitacao === 'EXCLUSAO';
 
     return (
-      <Card className="mb-4 overflow-hidden border-l-4" style={{ borderLeftColor: isRejected ? '#ef4444' : (status === 'CONCLUIDA' ? (isExclusion ? '#ef4444' : '#22c55e') : (status === 'EM PROCESSAMENTO' ? '#3b82f6' : '#eab308')) }}>
-        <CardHeader className="p-4 pb-2"><div className="flex items-center gap-2"><div className={`p-2 rounded-full ${colorClass} bg-opacity-10`}><Icon className={`h-5 w-5 ${colorClass}`} /></div><div><h4 className="font-bold text-sm flex items-center gap-2">{label}{isExclusion && (<Badge variant="destructive" className="ml-1 text-[10px] h-5 px-1">Exclusão</Badge>)}</h4><div className="flex flex-col mt-1"><Badge variant="outline" className={`w-fit ${getStatusColor(status)}`}>{status === 'PENDENTE' && (isExclusion ? 'Exclusão Pendente' : 'Inclusão Pendente')}{status === 'EM PROCESSAMENTO' && (isExclusion ? 'Exclusão em Andamento' : 'Inclusão em Andamento')}{status === 'CONCLUIDA' && (isExclusion ? 'Exclusão Concluída' : 'Inclusão Concluída')}{status === 'REJEITADA' && 'Solicitação Rejeitada'}</Badge></div></div></div></CardHeader>
+      <Card className="mb-4 overflow-hidden border-l-4" style={{ borderLeftColor: '#003580' }}>
+        <CardHeader className="p-4 pb-2"><div className="flex items-center gap-2"><div className="p-2 rounded-full bg-[#003580]/10"><Icon className="h-5 w-5 text-[#003580]" /></div><div><h4 className="font-bold text-sm flex items-center gap-2">{label}{isExclusion && (<Badge variant="destructive" className="ml-1 text-[10px] h-5 px-1">Exclusão</Badge>)}</h4><div className="flex flex-col mt-1"><Badge variant="outline" className={`w-fit ${getStatusColor(status)}`}>{status === 'PENDENTE' && (isExclusion ? 'Exclusão Pendente' : 'Inclusão Pendente')}{status === 'EM PROCESSAMENTO' && (isExclusion ? 'Exclusão em Andamento' : 'Inclusão em Andamento')}{status === 'CONCLUIDA' && (isExclusion ? 'Exclusão Concluída' : 'Inclusão Concluída')}{status === 'REJEITADA' && 'Solicitação Rejeitada'}</Badge></div></div></div></CardHeader>
         <CardContent className="p-4 pt-2">
           <div className="grid grid-cols-2 gap-y-2 text-sm text-gray-600 mb-3"><div className="flex items-center gap-2" title="Data Solicitação"><Calendar className="h-4 w-4" /><span>{formatDate(solicitacao.data_solicitacao)}</span></div><div className="flex items-center gap-2" title="Tempo Decorrido"><Timer className="h-4 w-4" /><span>{getTempoDecorrido(solicitacao.data_solicitacao)}</span></div>{solicitacao.data_aprovacao && !isExclusion && (<div className="flex items-center gap-2 col-span-2" title="Data Aprovação"><CheckCircle2 className="h-4 w-4 text-green-600" /><span>Aprovado: {formatDate(solicitacao.data_aprovacao)}</span></div>)}</div>
-          {isExclusion && status === 'CONCLUIDA' && (<div className="mt-3 p-3 bg-red-50 rounded border border-red-200"><p className="text-sm font-semibold text-red-800 flex items-center gap-2"><UserMinus className="h-4 w-4" /> Plano Excluído</p><p className="text-xs text-red-700 mt-1">Data: {formatDate(solicitacao.data_conclusao)}</p>{solicitacao.dados_exclusao?.motivo && (<p className="text-xs text-red-700">Motivo: {solicitacao.dados_exclusao.motivo}</p>)}</div>)}
+          {isExclusion && status === 'CONCLUIDA' && (<div className="mt-3 p-3 bg-blue-50 rounded border border-blue-100"><p className="text-sm font-semibold text-[#003580] flex items-center gap-2"><UserMinus className="h-4 w-4" /> Plano Excluído</p><p className="text-xs text-[#003580] mt-1">Data: {formatDate(solicitacao.data_conclusao)}</p>{solicitacao.dados_exclusao?.motivo && (<p className="text-xs text-[#003580]">Motivo: {solicitacao.dados_exclusao.motivo}</p>)}</div>)}
           {isRejected && (<div className="space-y-3"><Alert variant="destructive" className="py-2"><AlertCircle className="h-4 w-4" /><AlertDescription className="text-xs ml-2">{solicitacao.motivo_rejeicao || 'Motivo não informado.'}</AlertDescription></Alert></div>)}
         </CardContent>
       </Card>
@@ -1025,9 +1025,9 @@ const ClientDashboard = () => {
                                             <TableCell>{b.parentesco}</TableCell>
                                             <TableCell>
                                                 <div className="flex gap-2">
-                                                    {isPlanAtivo(b, 'saude') && <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Saúde</Badge>}
-                                                    {isPlanAtivo(b, 'vida') && <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Vida</Badge>}
-                                                    {isPlanAtivo(b, 'odonto') && <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">Odonto</Badge>}
+                                                    {isPlanAtivo(b, 'saude') && <Badge variant="outline" className="bg-blue-50 text-[#003580] border-blue-200">Saúde</Badge>}
+                                                    {isPlanAtivo(b, 'vida') && <Badge variant="outline" className="bg-blue-50 text-[#003580] border-blue-200">Vida</Badge>}
+                                                    {isPlanAtivo(b, 'odonto') && <Badge variant="outline" className="bg-blue-50 text-[#003580] border-blue-200">Odonto</Badge>}
                                                     {!isPlanAtivo(b, 'saude') && !isPlanAtivo(b, 'vida') && !isPlanAtivo(b, 'odonto') && <span className="text-gray-400 text-xs">-</span>}
                                                 </div>
                                             </TableCell>
@@ -1126,7 +1126,7 @@ const ClientDashboard = () => {
         </motion.div>
 
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}><DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] p-0 flex flex-col overflow-hidden"><DialogHeader className="px-4 pt-4"><DialogTitle>{editingBeneficiario ? 'Editar' : 'Adicionar'} Beneficiário</DialogTitle></DialogHeader><form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">{isModalOpen && <ModalFormContent formData={formData} setFormData={setFormData} age={age} titulares={titulares} beneficiario={editingBeneficiario} isCliente={user.perfil === 'CLIENTE'} openSolicitacaoDialog={openSolicitacaoDialog} renderPlanStatusCard={renderPlanStatusCard} setIsExclusaoModalOpen={setIsExclusaoModalOpen} setExclusaoData={setExclusaoData} handleSolicitarAlteracao={handleSolicitarAlteracao} />}<DialogFooter className="px-4 mt-4 pb-4"><Button type="submit" disabled={isSubmitting} className="bg-[#003580] hover:bg-[#002060] text-white">{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar</Button></DialogFooter></form></DialogContent></Dialog>
-        {editingBeneficiario && user.perfil === 'CLIENTE' && (<Dialog open={isSolicitacaoDialogOpen} onOpenChange={(open) => { if (!open) setIsSolicitacaoDialogOpen(false); }}><DialogContent className="sm:max-w-[425px] sm:max-h-[80vh] overflow-y-auto"><DialogHeader><DialogTitle>Solicitar Inclusão</DialogTitle><DialogDescription>Selecione os planos que deseja solicitar para este beneficiário.</DialogDescription></DialogHeader><div className="py-4 space-y-4">{renderPlanSelectionItem('saude', 'Plano de Saúde', Hospital, 'text-green-600')}{renderPlanSelectionItem('vida', 'Seguro de Vida', Heart, 'text-blue-600')}{renderPlanSelectionItem('odonto', 'Plano Odonto', Smile, 'text-orange-600')}</div><DialogFooter><Button variant="outline" onClick={() => setIsSolicitacaoDialogOpen(false)}>Fechar</Button><Button onClick={confirmSolicitacao}>Confirmar Solicitação</Button></DialogFooter></DialogContent></Dialog>)}
+        {editingBeneficiario && user.perfil === 'CLIENTE' && (<Dialog open={isSolicitacaoDialogOpen} onOpenChange={(open) => { if (!open) setIsSolicitacaoDialogOpen(false); }}><DialogContent className="sm:max-w-[425px] sm:max-h-[80vh] overflow-y-auto"><DialogHeader><DialogTitle>Solicitar Inclusão</DialogTitle><DialogDescription>Selecione os planos que deseja solicitar para este beneficiário.</DialogDescription></DialogHeader><div className="py-4 space-y-4">{renderPlanSelectionItem('saude', 'Plano de Saúde', Hospital, 'text-[#003580]')}{renderPlanSelectionItem('vida', 'Seguro de Vida', Heart, 'text-[#003580]')}{renderPlanSelectionItem('odonto', 'Plano Odonto', Smile, 'text-[#003580]')}</div><DialogFooter><Button variant="outline" onClick={() => setIsSolicitacaoDialogOpen(false)}>Fechar</Button><Button onClick={confirmSolicitacao}>Confirmar Solicitação</Button></DialogFooter></DialogContent></Dialog>)}
         <Dialog open={isExclusaoModalOpen} onOpenChange={setIsExclusaoModalOpen}>
           <DialogContent className="w-[95vw] sm:max-w-md">
             <DialogHeader><DialogTitle>Solicitar Exclusão de Plano</DialogTitle></DialogHeader>
