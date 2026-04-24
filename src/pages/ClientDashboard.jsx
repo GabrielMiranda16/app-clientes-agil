@@ -961,10 +961,10 @@ const ClientDashboard = () => {
             <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory md:grid md:grid-cols-2 md:overflow-visible md:pb-0 lg:grid-cols-4">
                {isLoading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[108px] min-w-[calc(100vw-3rem)] md:min-w-0 snap-start" />) : (
                   <>
-                    <div className="min-w-[calc(100vw-3rem)] md:min-w-0 snap-start flex-shrink-0 md:flex-shrink"><MetricCard title="Total de Beneficiários" value={metrics.total} icon={Users} color="text-gray-600" /></div>
-                    <div className="min-w-[calc(100vw-3rem)] md:min-w-0 snap-start flex-shrink-0 md:flex-shrink"><MetricCard title="Titulares" value={metrics.titulares} icon={User} color="text-blue-600" /></div>
-                    <div className="min-w-[calc(100vw-3rem)] md:min-w-0 snap-start flex-shrink-0 md:flex-shrink"><MetricCard title="Dependentes" value={metrics.dependentes} icon={Users} color="text-purple-600" /></div>
-                    <div className="min-w-[calc(100vw-3rem)] md:min-w-0 snap-start flex-shrink-0 md:flex-shrink"><MetricCard title="Beneficiários Ativos" value={metrics.ativos} icon={UserCheck} color="text-green-600" /></div>
+                    <div className="min-w-[calc(100vw-3rem)] md:min-w-0 snap-start flex-shrink-0 md:flex-shrink"><MetricCard title="Total de Beneficiários" value={metrics.total} icon={Users} color="text-[#003580]" /></div>
+                    <div className="min-w-[calc(100vw-3rem)] md:min-w-0 snap-start flex-shrink-0 md:flex-shrink"><MetricCard title="Titulares" value={metrics.titulares} icon={User} color="text-[#003580]" /></div>
+                    <div className="min-w-[calc(100vw-3rem)] md:min-w-0 snap-start flex-shrink-0 md:flex-shrink"><MetricCard title="Dependentes" value={metrics.dependentes} icon={Users} color="text-[#003580]" /></div>
+                    <div className="min-w-[calc(100vw-3rem)] md:min-w-0 snap-start flex-shrink-0 md:flex-shrink"><MetricCard title="Beneficiários Ativos" value={metrics.ativos} icon={UserCheck} color="text-[#003580]" /></div>
                   </>
                )}
             </div>
