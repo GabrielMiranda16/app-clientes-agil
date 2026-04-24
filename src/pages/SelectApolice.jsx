@@ -187,8 +187,8 @@ const SelectApolice = () => {
                                 {subs.map((s, i) => (
                                   <p key={i} className="text-sm font-bold text-gray-800">
                                     {s.tipo && <span className="text-[#003580]">{normalizeTipo(s.tipo)}</span>}
+                                    {s.seguradora && <span className="text-[#003580]"> · {s.seguradora}</span>}
                                     {s.numero && <span className="font-normal text-gray-600"> · Apólice {s.numero}</span>}
-                                    {s.seguradora && <span className="font-normal text-[#0B7EC4] text-xs"> · {s.seguradora}</span>}
                                   </p>
                                 ))}
                               </div>
