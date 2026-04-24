@@ -93,7 +93,7 @@ const SelectSegmento = () => {
   const handleLogout = () => { logout(); navigate('/login'); };
 
   const handleSelectSegmento = (segmento) => {
-    navigate(`/select-apolice/${segmento}`);
+    navigate(`/select-apolice/${segmento.toLowerCase()}`);
   };
 
   // --- Alterar Senha ---
