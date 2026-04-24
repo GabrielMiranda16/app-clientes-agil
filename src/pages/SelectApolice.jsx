@@ -19,6 +19,13 @@ const STATUS_STYLE = {
   gray:   { badge: 'bg-gray-100 text-gray-600 border-gray-200',       label: 'Sem vigência',      card: 'bg-white border-gray-100'   },
 };
 
+const TIPO_LABELS = {
+  saude: 'Saúde', Saude: 'Saúde', SAUDE: 'Saúde',
+  odonto: 'Odonto', Odonto: 'Odonto', ODONTO: 'Odonto',
+  vida: 'Vida', Vida: 'Vida', VIDA: 'Vida',
+};
+const normalizeTipo = (tipo) => TIPO_LABELS[tipo] || tipo;
+
 const SelectApolice = () => {
   const { segmento } = useParams();
   const { user, logout } = useAuth();
@@ -67,7 +74,7 @@ const SelectApolice = () => {
   return (
     <>
       <Helmet>
-        <title>{segConfig?.label || segmento} - Ágil Seguros</title>
+        <title>{segConfig?.label || segmento?.replace(/_/g, ' ').toLowerCase()} - Ágil Seguros</title>
       </Helmet>
       <div className="min-h-screen bg-soft-gradient flex flex-col">
 
@@ -179,9 +186,9 @@ const SelectApolice = () => {
                               <div className="space-y-0.5">
                                 {subs.map((s, i) => (
                                   <p key={i} className="text-sm font-bold text-gray-800">
-                                    {s.tipo && <span className="text-[#003580]">{s.tipo}</span>}
+                                    {s.tipo && <span className="text-[#003580]">{normalizeTipo(s.tipo)}</span>}
                                     {s.numero && <span className="font-normal text-gray-600"> · Apólice {s.numero}</span>}
-                                    {s.seguradora && <span className="font-normal text-gray-400 text-xs"> · {s.seguradora}</span>}
+                                    {s.seguradora && <span className="font-normal text-[#0B7EC4] text-xs"> · {s.seguradora}</span>}
                                   </p>
                                 ))}
                               </div>
@@ -192,7 +199,7 @@ const SelectApolice = () => {
                               <p className="text-xs text-gray-400 uppercase tracking-wide mb-0.5">Apólice</p>
                               <p className="text-lg font-bold text-gray-800">{apolice.numero_apolice || (isSVDSemVigencia ? 'Plano Saúde/Vida/Odonto' : '—')}</p>
                               {apolice.seguradora && (
-                                <p className="text-sm text-gray-500 mt-0.5">{apolice.seguradora}</p>
+                                <p className="text-sm text-[#0B7EC4] mt-0.5">{apolice.seguradora}</p>
                               )}
                             </>
                           );
