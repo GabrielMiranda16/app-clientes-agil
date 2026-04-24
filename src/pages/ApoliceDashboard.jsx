@@ -200,9 +200,28 @@ const ApoliceDashboard = () => {
 
         <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 sm:pb-8">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-white">
-              Apólice {apolice.numero_apolice || '—'}
-            </h1>
+            <div>
+              <h1 className="text-2xl font-bold text-white">
+                {(() => {
+                  if (apolice.numero_apolice) return `Apólice ${apolice.numero_apolice}`;
+                  if (isSVD) {
+                    const nums = (apolice.dados_adicionais?.sub_apolices || []).map(s => s.numero).filter(Boolean);
+                    if (nums.length > 0) return `Apólice ${nums.join(' / ')}`;
+                  }
+                  return segLabel;
+                })()}
+              </h1>
+              {apolice.empresas && (
+                <p className="text-white/70 text-sm mt-0.5 flex items-center gap-1.5">
+                  {apolice.empresas.nome_fantasia || apolice.empresas.razao_social}
+                  {apolice.empresas.tipo && (
+                    <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${apolice.empresas.tipo === 'MATRIZ' ? 'bg-blue-500/30 text-blue-200' : 'bg-white/20 text-white/80'}`}>
+                      {apolice.empresas.tipo === 'MATRIZ' ? 'Matriz' : 'Filial'}
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
             {showGestaoButton && (
               <Button variant="ghost" onClick={() => navigate(`/cliente/${apolice.empresa_id}`)} className="text-white/80 hover:text-white hover:bg-white/10 border border-white/20">
                 <Users className="mr-2 h-4 w-4" /> Acessar Gestão <ChevronRight className="ml-1 h-4 w-4" />

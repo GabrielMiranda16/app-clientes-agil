@@ -84,7 +84,7 @@ export const apolicesService = {
     try {
       const { data, error } = await supabase
         .from('apolices')
-        .select('*, empresas(razao_social, nome_fantasia, cnpj)')
+        .select('*, empresas(razao_social, nome_fantasia, cnpj, tipo)')
         .eq('id', id)
         .single();
 
