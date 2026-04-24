@@ -212,7 +212,7 @@ const ApoliceDashboard = () => {
                 })()}
               </h1>
               {apolice.empresas && (
-                <p className="text-white/70 text-sm mt-0.5 flex items-center gap-1.5">
+                <p className="text-white/90 text-base font-medium mt-0.5 flex items-center gap-1.5">
                   {apolice.empresas.nome_fantasia || apolice.empresas.razao_social}
                   {apolice.empresas.tipo && (
                     <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${apolice.empresas.tipo === 'MATRIZ' ? 'bg-blue-500/30 text-blue-200' : 'bg-white/20 text-white/80'}`}>
