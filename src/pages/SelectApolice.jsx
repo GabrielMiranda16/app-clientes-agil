@@ -183,13 +183,18 @@ const SelectApolice = () => {
                           const subs = apolice.dados_adicionais?.sub_apolices?.filter(s => s.tipo || s.numero);
                           if (subs?.length > 0) {
                             return (
-                              <div className="space-y-0.5">
+                              <div className="space-y-3">
                                 {subs.map((s, i) => (
-                                  <p key={i} className="text-sm font-bold text-gray-800">
-                                    {s.tipo && <span className="text-[#003580]">{normalizeTipo(s.tipo)}</span>}
-                                    {s.seguradora && <span className="text-[#003580]"> · {s.seguradora}</span>}
-                                    {s.numero && <span className="font-normal text-gray-600"> · Apólice {s.numero}</span>}
-                                  </p>
+                                  <div key={i}>
+                                    {s.tipo && (
+                                      <p className="text-xs text-[#003580] font-semibold uppercase tracking-wide mb-0.5">{normalizeTipo(s.tipo)}</p>
+                                    )}
+                                    <p className="text-xs text-gray-400 uppercase tracking-wide mb-0.5">Apólice</p>
+                                    <p className="text-lg font-bold text-gray-800">{s.numero || '—'}</p>
+                                    {s.seguradora && (
+                                      <p className="text-sm text-[#0B7EC4] mt-0.5">{s.seguradora}</p>
+                                    )}
+                                  </div>
                                 ))}
                               </div>
                             );
