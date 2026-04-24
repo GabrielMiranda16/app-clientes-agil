@@ -206,6 +206,7 @@ export const apolicesService = {
     if (!vigencia_fim) return { label: 'Sem vigência', color: 'gray' };
     const hoje = new Date();
     const fim = new Date(vigencia_fim);
+    if (isNaN(fim.getTime())) return { label: 'Sem vigência', color: 'gray' };
     const diasRestantes = Math.floor((fim - hoje) / (1000 * 60 * 60 * 24));
 
     if (diasRestantes < 0)  return { label: 'Vencida',           color: 'red',    dias: diasRestantes };

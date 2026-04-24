@@ -59,7 +59,7 @@ const DashboardLayout = ({ children }) => {
   
   const [empresas, setEmpresas] = useState([]);
   const [solicitacoes, setSolicitacoes] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [currentUserData, setCurrentUserData] = useState(null);
   const [loadingData, setLoadingData] = useState(true);
 
   const { formattedDate, formattedTime } = useDateTime('America/Sao_Paulo');
@@ -68,17 +68,16 @@ const DashboardLayout = ({ children }) => {
     const loadData = async () => {
       setLoadingData(true);
       try {
-        const [empData, solData, usersResult] = await Promise.all([
+        const [empData, solData, userResult] = await Promise.allSettled([
           empresasService.getEmpresas(),
           solicitacoesService.getAllSolicitacoes(),
-          supabaseClient.from('users').select('*')
+          supabaseClient.from('users').select('*').eq('id', user?.id).single()
         ]);
-        
-        setEmpresas(empData || []);
-        setSolicitacoes(solData || []);
-        
-        if (usersResult.data) {
-          setUsers(usersResult.data);
+
+        setEmpresas(empData.status === 'fulfilled' ? (empData.value || []) : []);
+        setSolicitacoes(solData.status === 'fulfilled' ? (solData.value || []) : []);
+        if (userResult.status === 'fulfilled' && userResult.value?.data) {
+          setCurrentUserData(userResult.value.data);
         }
       } catch (error) {
         console.error("Error loading dashboard data:", error);
@@ -128,14 +127,13 @@ const DashboardLayout = ({ children }) => {
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    const userInStorage = users.find(u => String(u.id) === String(user.id));
-    if (!userInStorage) {
+    if (!currentUserData) {
       toast({ variant: 'destructive', title: 'Erro', description: 'Usuário não encontrado.' });
       return;
     }
 
     // Suporta senhas em bcrypt (novas) e texto puro (legado)
-    const storedPassword = userInStorage.password || '';
+    const storedPassword = currentUserData.password || '';
     const isBcrypt = storedPassword.startsWith('$2');
     const isOldCorrect = isBcrypt
       ? await bcrypt.compare(oldPassword, storedPassword)

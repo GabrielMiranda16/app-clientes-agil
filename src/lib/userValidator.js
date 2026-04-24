@@ -9,7 +9,7 @@ export const validatePasswordStrength = (password) => {
 };
 
 export const validateEmail = (email) => {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const re = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
   return re.test(String(email).toLowerCase());
 };
 

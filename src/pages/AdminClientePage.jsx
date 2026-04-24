@@ -13,7 +13,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, Building, ChevronRight, AlertTriangle, Heart, Car, Plane, Home, PawPrint, Building2, Package, Monitor, Loader2, Users, FileText, Trash2, Edit } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { applyCnpjMask, applyCpfMask } from '@/lib/masks';
 
@@ -38,7 +37,6 @@ const SEGMENTOS_CONFIG = [
 const AdminClientePage = () => {
   const { matrizId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -60,11 +58,14 @@ const AdminClientePage = () => {
     const load = async () => {
       try {
         setIsLoading(true);
-        const [todasEmpresas, todosBeneficios, todasSolicitacoes] = await Promise.all([
+        const [empresasResult, beneficiariosResult, solicitacoesResult] = await Promise.allSettled([
           empresasService.getEmpresas(),
           beneficiariosService.getAllBeneficiarios(),
           solicitacoesService.getAllSolicitacoes(),
         ]);
+        const todasEmpresas = empresasResult.status === 'fulfilled' ? empresasResult.value : [];
+        const todosBeneficios = beneficiariosResult.status === 'fulfilled' ? beneficiariosResult.value : [];
+        const todasSolicitacoes = solicitacoesResult.status === 'fulfilled' ? solicitacoesResult.value : [];
 
         const id = Number(matrizId);
         const matrizEncontrada = todasEmpresas.find(e => e.id === id && e.tipo === 'MATRIZ');
@@ -92,7 +93,7 @@ const AdminClientePage = () => {
       }
     };
     load();
-  }, [matrizId, location.key]);
+  }, [matrizId]);
 
   const getSolicitacoesPendentes = (empresaId) =>
     solicitacoes.filter(s => Number(s.empresa_id) === empresaId && (s.status === 'PENDENTE' || s.status === 'EM PROCESSAMENTO')).length;

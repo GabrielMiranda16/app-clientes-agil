@@ -134,11 +134,10 @@ const ModalFormContent = React.memo(({ formData, setFormData, age, titulares, is
   const handleCepBlur = async (e) => {
     const cep = e.target.value.replace(/\D/g, '');
     if (cep.length !== 8) { return; }
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
       const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`, { signal: controller.signal });
-      clearTimeout(timeout);
       if (!response.ok) throw new Error('CEP não encontrado');
       const data = await response.json();
       if (data.erro) {
@@ -149,6 +148,8 @@ const ModalFormContent = React.memo(({ formData, setFormData, age, titulares, is
       toast({ title: 'Endereço preenchido!', description: 'Os dados de endereço foram carregados.' });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Erro ao buscar CEP', description: 'Não foi possível buscar o endereço. Tente novamente.' });
+    } finally {
+      clearTimeout(timeout);
     }
   };
 
@@ -376,38 +377,27 @@ const ClientDashboard = () => {
     if (empresaId) {
       setSelectedCompanyId(empresaId);
     }
-  }, [empresaId, setSelectedCompanyId]);
+  }, [empresaId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchData = async () => {
      try {
        setIsLoading(true);
        const empresaId_num = Number(empresaId);
 
-       // Debug logs
-       console.log("Iniciando fetchData para empresaId:", empresaId_num);
-
-       // Validação de empresaId_num
        if (!empresaId_num || isNaN(empresaId_num)) {
-          console.warn("empresaId inválido. Abortando fetchData.");
           setIsLoading(false);
           return;
        }
 
-       const [empresasData, beneficiariosData, solicitacoesData] = await Promise.all([
+       const [empresasResult, beneficiariosResult, solicitacoesResult] = await Promise.allSettled([
            empresasService.getEmpresas(),
            beneficiariosService.getAllBeneficiarios(),
            solicitacoesService.getAllSolicitacoes()
        ]);
-       
-       console.log("Dados carregados com sucesso:", {
-           empresas: empresasData?.length,
-           beneficiarios: beneficiariosData?.length,
-           solicitacoes: solicitacoesData?.length
-       });
 
-       setEmpresas(empresasData || []);
-       setBeneficiarios(beneficiariosData || []);
-       setSolicitacoes(solicitacoesData || []);
+       setEmpresas(empresasResult.status === 'fulfilled' ? (empresasResult.value || []) : []);
+       setBeneficiarios(beneficiariosResult.status === 'fulfilled' ? (beneficiariosResult.value || []) : []);
+       setSolicitacoes(solicitacoesResult.status === 'fulfilled' ? (solicitacoesResult.value || []) : []);
      } catch (error) {
        console.error("Error fetching client data:", error);
        toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao carregar dados.' });
@@ -420,7 +410,7 @@ const ClientDashboard = () => {
 
   const beneficiariosDaEmpresa = useMemo(() => {
     if (!empresaId) return [];
-    return beneficiarios.filter(b => b.empresa_id === empresaId);
+    return beneficiarios.filter(b => Number(b.empresa_id) === empresaId);
   }, [beneficiarios, empresaId]);
 
   const empresa = useMemo(() => empresas.find(e => e.id === empresaId), [empresas, empresaId]);
@@ -497,7 +487,7 @@ const ClientDashboard = () => {
       return;
     }
     const unmaskedCpf = formData.cpf.replace(/\D/g, '');
-    if (beneficiarios.some(b => b.empresa_id === empresaId && b.cpf.replace(/\D/g, '') === unmaskedCpf && b.id !== editingBeneficiario?.id)) {
+    if (beneficiarios.some(b => Number(b.empresa_id) === empresaId && b.cpf.replace(/\D/g, '') === unmaskedCpf && b.id !== editingBeneficiario?.id)) {
       toast({ variant: "destructive", title: "Erro de Validação", description: "CPF já cadastrado nesta empresa." });
       return;
     }
@@ -536,11 +526,11 @@ const ClientDashboard = () => {
     if (!planosSelecionados || planosSelecionados.length === 0) return;
 
     // Filter out plans that already have pending or processing requests
-    const validPlans = planosSelecionados.filter(plano => {
-      const hasDuplicate = solicitacoes.some(s => 
-        s.beneficiario_id === beneficiarioId && 
-        s.tipo_plano === plano && 
-        s.tipo_solicitacao === 'INCLUSAO' && 
+    const validPlans = planosSelecionados.map(p => p.toLowerCase()).filter(plano => {
+      const hasDuplicate = solicitacoes.some(s =>
+        s.beneficiario_id === beneficiarioId &&
+        s.tipo_plano?.toLowerCase() === plano &&
+        s.tipo_solicitacao === 'INCLUSAO' &&
         ['PENDENTE', 'EM PROCESSAMENTO'].includes(s.status)
       );
       
@@ -562,7 +552,7 @@ const ClientDashboard = () => {
               beneficiario_id: beneficiarioId,
               empresa_id: parseInt(empresaId),
               usuario_solicitante_id: user.id,
-              tipo_plano: plano,
+              tipo_plano: plano.toLowerCase(),
               tipo_solicitacao: 'INCLUSAO',
               status: 'PENDENTE',
               data_solicitacao: new Date().toISOString(),
@@ -591,10 +581,11 @@ const ClientDashboard = () => {
 
   const handleSolicitarExclusao = async (beneficiarioId, tipoPlano, motivo, dataExclusao, observacao = '') => {
     // 1. Check for duplicates
-    const hasOpenExclusion = solicitacoes.some(s => 
-      s.beneficiario_id === beneficiarioId && 
-      s.tipo_plano === tipoPlano && 
-      s.tipo_solicitacao === 'EXCLUSAO' && 
+    const tipoPlanoNorm = tipoPlano?.toLowerCase();
+    const hasOpenExclusion = solicitacoes.some(s =>
+      s.beneficiario_id === beneficiarioId &&
+      s.tipo_plano?.toLowerCase() === tipoPlanoNorm &&
+      s.tipo_solicitacao === 'EXCLUSAO' &&
       ['PENDENTE', 'EM PROCESSAMENTO'].includes(s.status)
     );
 
@@ -672,10 +663,10 @@ const ClientDashboard = () => {
   };
 
   const handleSolicitarAlteracao = (beneficiarioId, tipoPlano) => {
-    const hasOpenAlteracao = solicitacoes.some(s => 
-      s.beneficiario_id === beneficiarioId && 
-      s.tipo_plano === tipoPlano && 
-      s.tipo_solicitacao === 'ALTERACAO' && 
+    const hasOpenAlteracao = solicitacoes.some(s =>
+      s.beneficiario_id === beneficiarioId &&
+      s.tipo_plano?.toLowerCase() === tipoPlano?.toLowerCase() &&
+      s.tipo_solicitacao === 'ALTERACAO' &&
       ['PENDENTE', 'EM PROCESSAMENTO'].includes(s.status)
     );
 

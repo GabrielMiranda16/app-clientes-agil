@@ -45,7 +45,7 @@ const LoginPage = () => {
       });
 
       if (user.must_change_password) navigate('/force-change-password');
-      else if (user.aceite_termos === false || user.aceite_termos === null) navigate('/termos-aceite');
+      else if (user.aceite_termos !== true) navigate('/termos-aceite');
       else if (user.perfil === 'CEO') navigate('/ceo');
       else if (user.perfil === 'ADM') navigate('/admin');
       else if (user.perfil === 'CLIENTE') navigate('/select-segmento');
@@ -76,7 +76,7 @@ const LoginPage = () => {
       if (emailResult.ok) {
         toast({ title: 'E-mail enviado!', description: 'Verifique sua caixa de entrada com a senha temporária.' });
       } else {
-        toast({ variant: 'destructive', title: 'Erro ao enviar e-mail', description: `Senha redefinida mas o e-mail não pôde ser enviado. Entre em contato com o suporte.`, duration: 10000 });
+        toast({ variant: 'destructive', title: 'E-mail não enviado', description: 'Sua senha foi redefinida, mas não conseguimos enviar o e-mail com a senha temporária. Anote: entre em contato com o suporte para receber sua nova senha.', duration: 10000 });
       }
       setIsForgotOpen(false);
       setForgotEmail('');

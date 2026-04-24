@@ -30,39 +30,8 @@ export const validateCPF = (cpf) => {
 
 export const validateEmail = (email) => {
   if (!email) return false;
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const re = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
   return re.test(email);
-};
-
-export const formatCPF = (cpf) => {
-  if (!cpf) return '';
-  const cleanCPF = cpf.replace(/[^\d]/g, '');
-  if (cleanCPF.length <= 11) {
-    return cleanCPF
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
-      .replace(/(-\d{2})\d+?$/, '$1');
-  }
-  return cleanCPF;
-};
-
-export const formatPhone = (phone) => {
-  if (!phone) return '';
-  const cleanPhone = phone.replace(/[^\d]/g, '');
-  if (cleanPhone.length <= 11) {
-    return cleanPhone
-      .replace(/(\d{2})(\d)/, '($1) $2')
-      .replace(/(\d{5})(\d)/, '$1-$2')
-      .replace(/(-\d{4})\d+?$/, '$1');
-  }
-  return cleanPhone;
-};
-
-export const formatCEP = (cep) => {
-  if (!cep) return '';
-  const cleanCEP = cep.replace(/[^\d]/g, '');
-  return cleanCEP.replace(/(\d{5})(\d{3})/, '$1-$2');
 };
 
 export const cleanBeneficiarioData = (data) => {

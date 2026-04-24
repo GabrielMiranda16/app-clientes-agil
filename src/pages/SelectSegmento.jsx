@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { apolicesService, SEGMENTOS } from '@/services/apolicesService';
 import { authService } from '@/services/authService';
@@ -35,7 +35,6 @@ const logoUrl = "https://storage.googleapis.com/hostinger-horizons-assets-prod/b
 const SelectSegmento = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -88,7 +87,7 @@ const SelectSegmento = () => {
       }
     };
     fetchData();
-  }, [user, location.key]);
+  }, [user]);
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
