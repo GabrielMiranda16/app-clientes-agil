@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Building, Plus, Trash2, ArrowRight, Search, Loader2, GitBranchPlus, Edit, Users, FileText, AlertTriangle, X, User, Building2, CheckCircle2, XCircle } from 'lucide-react';
@@ -49,6 +50,7 @@ const AdminDashboard = () => {
   const [newEmpresa, setNewEmpresa] = useState({ razao_social: '', nome_fantasia: '', cnpj: '', endereco_completo: '', email_cliente: '', data_nascimento: '', cep: '', rua: '', bairro: '', cidade: '', estado: '', numero: '', complemento: '' });
   const [isCepLoading, setIsCepLoading] = useState(false);
   const [editingEmpresa, setEditingEmpresa] = useState(null);
+  const [editingDocTipo, setEditingDocTipo] = useState('PJ'); // 'PJ' | 'PF'
   const [filialFormData, setFilialFormData] = useState({ razao_social: '', nome_fantasia: '', cnpj: '', endereco_completo: '' });
   const [editingFilial, setEditingFilial] = useState(null);
   const [selectedMatriz, setSelectedMatriz] = useState(null);
@@ -307,13 +309,12 @@ const AdminDashboard = () => {
       if (senha_cliente) updatePayload.password = senha_cliente;
       await authService.updateUser(clientUser.id, updatePayload);
       // Use direct supabase call to avoid cleanEmpresaData nullifying required fields
-      const isPF = editingEmpresa.cnpj?.replace(/\D/g, '').length === 11;
       const empUpdate = {
         razao_social: editingEmpresa.razao_social || null,
         endereco_completo: editingEmpresa.endereco_completo || null,
         email_cliente,
         cnpj: cnpj.replace(/\D/g, ''),
-        ...(isPF && { data_nascimento: editingEmpresa.data_nascimento || null }),
+        ...(editingDocTipo === 'PF' && { data_nascimento: editingEmpresa.data_nascimento || null }),
       };
       const { error: empUpdateError } = await supabaseClient.from('empresas')
         .update(empUpdate)
@@ -410,6 +411,7 @@ const AdminDashboard = () => {
     if (!canManage) return;
     const clientUser = users.find(u => u.empresa_matriz_id === matriz.id);
     setEditingEmpresa({ ...matriz, email_cliente: clientUser?.email || '', senha_cliente: '', data_nascimento: matriz.data_nascimento || '' });
+    setEditingDocTipo(matriz.cnpj?.replace(/\D/g, '').length === 11 ? 'PF' : 'PJ');
     setIsEditEmpresaModalOpen(true);
   };
 
@@ -625,22 +627,22 @@ const AdminDashboard = () => {
           <form onSubmit={validateAndSubmitMatriz}>
             <div className="py-4 space-y-4">
 
-              {/* Toggle PF / PJ */}
-              <div className="flex gap-2 p-1 bg-gray-100 rounded-xl w-fit">
-                <button
-                  type="button"
-                  onClick={() => { setTipoPessoa('PJ'); setNewEmpresa({ razao_social: '', nome_fantasia: '', cnpj: '', endereco_completo: '', email_cliente: '', data_nascimento: '', cep: '', rua: '', bairro: '', cidade: '', estado: '', numero: '', complemento: '' }); }}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tipoPessoa === 'PJ' ? 'bg-white shadow text-blue-700' : 'text-gray-500 hover:text-gray-700'}`}
+              {/* Seletor PF / PJ */}
+              <div className="space-y-1">
+                <Label>Tipo de Pessoa *</Label>
+                <Select
+                  value={tipoPessoa}
+                  onValueChange={(val) => {
+                    setTipoPessoa(val);
+                    setNewEmpresa({ razao_social: '', nome_fantasia: '', cnpj: '', endereco_completo: '', email_cliente: '', data_nascimento: '', cep: '', rua: '', bairro: '', cidade: '', estado: '', numero: '', complemento: '' });
+                  }}
                 >
-                  <Building2 className="h-4 w-4" /> Pessoa Jurídica
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setTipoPessoa('PF'); setNewEmpresa({ razao_social: '', nome_fantasia: '', cnpj: '', endereco_completo: '', email_cliente: '', data_nascimento: '', cep: '', rua: '', bairro: '', cidade: '', estado: '', numero: '', complemento: '' }); }}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tipoPessoa === 'PF' ? 'bg-white shadow text-blue-700' : 'text-gray-500 hover:text-gray-700'}`}
-                >
-                  <User className="h-4 w-4" /> Pessoa Física
-                </button>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PJ">Pessoa Jurídica (CNPJ)</SelectItem>
+                    <SelectItem value="PF">Pessoa Física (CPF)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {tipoPessoa === 'PJ' ? (
@@ -788,15 +790,36 @@ const AdminDashboard = () => {
             </DialogHeader>
             <form onSubmit={validateAndSubmitEditMatriz}>
               <div className="space-y-4 py-4">
+                <div className="space-y-1">
+                  <Label>Tipo de Documento *</Label>
+                  <Select
+                    value={editingDocTipo}
+                    onValueChange={(val) => {
+                      setEditingDocTipo(val);
+                      setEditingEmpresa(prev => ({ ...prev, cnpj: '' }));
+                    }}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PJ">CNPJ (Pessoa Jurídica)</SelectItem>
+                      <SelectItem value="PF">CPF (Pessoa Física)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div>
-                  <Label htmlFor="razao_social">{editingEmpresa.cnpj?.replace(/\D/g, '').length === 11 ? 'Nome Completo' : 'Razão Social'} *</Label>
+                  <Label htmlFor="razao_social">{editingDocTipo === 'PF' ? 'Nome Completo' : 'Razão Social'} *</Label>
                   <Input id="razao_social" value={editingEmpresa.razao_social || ''} onChange={e => handleInputChange(e, setEditingEmpresa)} />
                 </div>
                 <div>
-                  <Label htmlFor="cnpj">{editingEmpresa.cnpj?.replace(/\D/g, '').length === 11 ? 'CPF' : 'CNPJ'} *</Label>
-                  <Input id="cnpj" value={editingEmpresa.cnpj || ''} onChange={e => handleInputChange(e, setEditingEmpresa)} />
+                  <Label htmlFor="cnpj">{editingDocTipo === 'PF' ? 'CPF' : 'CNPJ'} *</Label>
+                  <Input
+                    id="cnpj"
+                    value={editingEmpresa.cnpj || ''}
+                    placeholder={editingDocTipo === 'PF' ? '000.000.000-00' : '00.000.000/0000-00'}
+                    onChange={e => handleInputChange(e, setEditingEmpresa, editingDocTipo === 'PF')}
+                  />
                 </div>
-                {editingEmpresa.cnpj?.replace(/\D/g, '').length === 11 && (
+                {editingDocTipo === 'PF' && (
                   <div>
                     <Label htmlFor="data_nascimento">Data de Nascimento</Label>
                     <Input id="data_nascimento" type="date" value={editingEmpresa.data_nascimento || ''} onChange={e => handleInputChange(e, setEditingEmpresa)} />
