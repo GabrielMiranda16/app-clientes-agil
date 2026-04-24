@@ -1,9 +1,3 @@
-import { createClient } from '@supabase/supabase-js';
-
-// Vite exposes environment variables prefixed with VITE_ via import.meta.env
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-export const supabaseClient = supabaseUrl && supabaseAnonKey
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : createClient('https://placeholder.supabase.co', 'placeholder');
+// Re-exports the single shared Supabase instance from customSupabaseClient
+// so all files (regardless of which lib they import from) use the same client.
+export { customSupabaseClient as supabaseClient } from './customSupabaseClient';

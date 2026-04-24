@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useToast } from '@/components/ui/use-toast';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useCompany } from '@/contexts/CompanyContext';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -28,7 +28,6 @@ import { supabaseClient } from '@/lib/supabase';
 const AdminDashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
   const { setSelectedCompanyId } = useCompany();
 
@@ -59,17 +58,16 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const [empresasData, beneficiariosData, solicitacoesData, usersData] = await Promise.all([
+      const [empresasResult, beneficiariosResult, solicitacoesResult, usersResult] = await Promise.allSettled([
         empresasService.getEmpresas(),
         beneficiariosService.getAllBeneficiarios(),
         solicitacoesService.getAllSolicitacoes(),
         supabaseClient.from('users').select('*'),
       ]);
-      if (usersData.error) throw usersData.error;
-      setEmpresas(empresasData);
-      setBeneficiarios(beneficiariosData);
-      setSolicitacoes(solicitacoesData);
-      setUsers(usersData.data || []);
+      setEmpresas(empresasResult.status === 'fulfilled' ? (empresasResult.value || []) : []);
+      setBeneficiarios(beneficiariosResult.status === 'fulfilled' ? (beneficiariosResult.value || []) : []);
+      setSolicitacoes(solicitacoesResult.status === 'fulfilled' ? (solicitacoesResult.value || []) : []);
+      setUsers(usersResult.status === 'fulfilled' ? (usersResult.value?.data || []) : []);
       try {
         const apolicesData = await apolicesService.getAllApolices();
         setApolices(apolicesData);
@@ -83,7 +81,7 @@ const AdminDashboard = () => {
     }
   };
 
-  useEffect(() => { fetchData(); }, [location.key]);
+  useEffect(() => { fetchData(); }, []);
 
   const matrizes = useMemo(() => empresas.filter(e => e.tipo === 'MATRIZ'), [empresas]);
   const filiais = useMemo(() => empresas.filter(e => e.tipo === 'FILIAL'), [empresas]);

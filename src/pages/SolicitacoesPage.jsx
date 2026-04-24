@@ -306,9 +306,7 @@ const SolicitacoesPage = () => {
       };
 
       if (editingSolicitacao) {
-        await solicitacoesService.updateSolicitacao(editingSolicitacao.id, payload);
-
-        // Se concluindo exclusão, desativar o plano no beneficiário
+        // Atualizar beneficiário ANTES da solicitação — se falhar, a solicitação fica intacta
         if (formData.status === 'CONCLUIDA' && formData.tipo_solicitacao === 'EXCLUSAO' && formData.tipo_plano) {
           const planoField = `${formData.tipo_plano}_ativo`;
           await beneficiariosService.updateBeneficiario(beneficiario.id, {
@@ -318,13 +316,13 @@ const SolicitacoesPage = () => {
           setBeneficiarios(prev => prev.map(b => b.id === beneficiario.id ? { ...b, [planoField]: false } : b));
         }
 
-        // Se concluindo inclusão, ativar o plano no beneficiário
         if (formData.status === 'CONCLUIDA' && formData.tipo_solicitacao === 'INCLUSAO' && formData.tipo_plano) {
           const planoField = `${formData.tipo_plano}_ativo`;
           await beneficiariosService.updateBeneficiario(beneficiario.id, { [planoField]: true });
           setBeneficiarios(prev => prev.map(b => b.id === beneficiario.id ? { ...b, [planoField]: true } : b));
         }
 
+        await solicitacoesService.updateSolicitacao(editingSolicitacao.id, payload);
         setSolicitacoes(prev => prev.map(s => s.id === editingSolicitacao.id ? { ...s, ...payload } : s));
         toast({ title: 'Sucesso', description: 'Solicitação atualizada com sucesso.' });
       } else {

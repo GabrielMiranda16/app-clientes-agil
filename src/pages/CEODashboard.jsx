@@ -87,26 +87,24 @@ const CEODashboard = () => {
     try {
       setIsLoading(true);
       const [
-        empresasData,
-        beneficiariosData,
-        solicitacoesData,
-        coparticipacoesData,
-        usersData
-      ] = await Promise.all([
+        empresasResult,
+        beneficiariosResult,
+        solicitacoesResult,
+        coparticipacoesResult,
+        usersResult
+      ] = await Promise.allSettled([
         empresasService.getEmpresas(),
         beneficiariosService.getAllBeneficiarios(),
         solicitacoesService.getAllSolicitacoes(),
         coparticipacaoService.getAllCoparticipacoes(),
-        supabaseClient.from('users').select('*') // Direct query for users management
+        supabaseClient.from('users').select('*')
       ]);
 
-      if (usersData.error) throw usersData.error;
-
-      setEmpresas(empresasData);
-      setBeneficiarios(beneficiariosData);
-      setSolicitacoes(solicitacoesData);
-      setCoparticipacoes(coparticipacoesData);
-      setUsers(usersData.data || []);
+      setEmpresas(empresasResult.status === 'fulfilled' ? (empresasResult.value || []) : []);
+      setBeneficiarios(beneficiariosResult.status === 'fulfilled' ? (beneficiariosResult.value || []) : []);
+      setSolicitacoes(solicitacoesResult.status === 'fulfilled' ? (solicitacoesResult.value || []) : []);
+      setCoparticipacoes(coparticipacoesResult.status === 'fulfilled' ? (coparticipacoesResult.value || []) : []);
+      setUsers(usersResult.status === 'fulfilled' ? (usersResult.value?.data || []) : []);
       try {
         const apolicesData = await apolicesService.getAllApolices();
         setApolices(apolicesData);
@@ -279,10 +277,14 @@ const CEODashboard = () => {
         nomeCliente: newAdminEmail,
         emailCliente: newAdminEmail,
         senhaTemporaria,
-      }).catch(() => {});
+      }).then(r => {
+        if (!r?.ok) toast({ variant: 'destructive', title: 'E-mail não enviado', description: 'Admin criado, mas o e-mail com a senha temporária falhou. Compartilhe a senha manualmente.' });
+      }).catch(() => {
+        toast({ variant: 'destructive', title: 'E-mail não enviado', description: 'Admin criado, mas o e-mail com a senha temporária falhou. Compartilhe a senha manualmente.' });
+      });
 
       setUsers([...users, createdUser]);
-      toast({ title: 'Sucesso', description: `${newAdminPerfil === 'CEO' ? 'CEO' : 'Administrador'} adicionado. Senha temporária enviada por e-mail.` });
+      toast({ title: 'Sucesso', description: `${newAdminPerfil === 'CEO' ? 'CEO' : 'Administrador'} adicionado com sucesso.` });
       setNewAdminEmail('');
       setNewAdminPerfil('ADM');
       setIsModalOpen(false);
