@@ -262,7 +262,7 @@ const AdminClientePage = () => {
                   </p>
                   {canManage && (
                     <Button size="sm" variant="outline" onClick={() => setIsAddFilialModalOpen(true)}>
-                      + Adicionar Filial
+                      Adicionar Filial
                     </Button>
                   )}
                 </div>
