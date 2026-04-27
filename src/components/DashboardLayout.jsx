@@ -17,6 +17,7 @@ import {
   Lock,
   Loader2,
   User,
+  UserCog,
   Menu,
   X,
   Users,
@@ -25,6 +26,7 @@ import {
   ClipboardList,
   Shield
 } from 'lucide-react';
+import { formatCpfCnpj } from '@/lib/masks';
 import useDateTime from '@/hooks/use-date-time';
 import {
   Dialog,
@@ -97,6 +99,67 @@ const DashboardLayout = ({ children }) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [isPassSubmitting, setIsPassSubmitting] = useState(false);
+
+  // Dados Modal (CLIENTE)
+  const [isDadosModalOpen, setIsDadosModalOpen] = useState(false);
+  const [dadosForm, setDadosForm] = useState({});
+  const [isCepLoading, setIsCepLoading] = useState(false);
+  const [isSavingDados, setIsSavingDados] = useState(false);
+
+  const clientEmpresa = user?.perfil === 'CLIENTE'
+    ? empresas.find(e => e.id === (user?.empresa_id || user?.empresa_matriz_id)) || empresas[0]
+    : null;
+  const isPF = clientEmpresa?.cnpj && clientEmpresa.cnpj.replace(/\D/g, '').length === 11;
+
+  const openDados = () => {
+    if (!clientEmpresa) return;
+    setDadosForm({
+      razao_social: clientEmpresa.razao_social || '',
+      cnpj: clientEmpresa.cnpj || '',
+      data_nascimento: clientEmpresa.data_nascimento || '',
+      endereco_completo: clientEmpresa.endereco_completo || '',
+      cep_busca: '', rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '',
+    });
+    setIsDadosModalOpen(true);
+  };
+
+  const buscarCepDados = async (cep) => {
+    const nums = cep.replace(/\D/g, '');
+    if (nums.length !== 8) return;
+    setIsCepLoading(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${nums}/json/`);
+      const data = await res.json();
+      if (!data.erro) {
+        setDadosForm(prev => ({ ...prev, rua: data.logradouro || '', bairro: data.bairro || '', cidade: data.localidade || '', estado: data.uf || '' }));
+      } else {
+        toast({ variant: 'destructive', title: 'CEP não encontrado' });
+      }
+    } catch {} finally { setIsCepLoading(false); }
+  };
+
+  const handleSaveDados = async (e) => {
+    e.preventDefault();
+    setIsSavingDados(true);
+    try {
+      const parts = [
+        dadosForm.rua, dadosForm.numero && `nº ${dadosForm.numero}`,
+        dadosForm.complemento, dadosForm.bairro,
+        dadosForm.cidade && dadosForm.estado ? `${dadosForm.cidade}/${dadosForm.estado}` : (dadosForm.cidade || dadosForm.estado),
+        dadosForm.cep_busca && `CEP ${dadosForm.cep_busca}`,
+      ].filter(Boolean);
+      const endereco_completo = parts.length > 0 ? parts.join(', ') : (dadosForm.endereco_completo || '');
+      await supabaseClient.from('empresas').update({
+        razao_social: dadosForm.razao_social,
+        endereco_completo,
+        ...(isPF && { data_nascimento: dadosForm.data_nascimento || null }),
+      }).eq('id', clientEmpresa.id);
+      toast({ title: 'Dados atualizados com sucesso.' });
+      setIsDadosModalOpen(false);
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro ao salvar dados' });
+    } finally { setIsSavingDados(false); }
+  };
 
   const pendingCount = solicitacoes.filter(s => s.status === 'PENDENTE').length;
 
@@ -250,6 +313,13 @@ const DashboardLayout = ({ children }) => {
                       <Lock className="mr-2 h-4 w-4" /> Alterar Senha
                     </Button>
                   </DropdownMenuItem>
+                  {user?.perfil === 'CLIENTE' && clientEmpresa && (
+                    <DropdownMenuItem asChild>
+                      <Button variant="ghost" className="w-full justify-start cursor-pointer font-normal" onClick={openDados}>
+                        <UserCog className="mr-2 h-4 w-4" /> {isPF ? 'Dados Pessoais' : 'Dados da Empresa'}
+                      </Button>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Button variant="ghost" className="w-full justify-start cursor-pointer text-red-600 hover:text-red-600 hover:bg-red-50" onClick={handleLogout}>
@@ -340,6 +410,12 @@ const DashboardLayout = ({ children }) => {
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors w-full">
                   <Lock className="h-5 w-5" /> Alterar Senha
                 </button>
+                {user?.perfil === 'CLIENTE' && clientEmpresa && (
+                  <button onClick={() => { openDados(); setMobileMenuOpen(false); }}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors w-full">
+                    <UserCog className="h-5 w-5" /> {isPF ? 'Dados Pessoais' : 'Dados da Empresa'}
+                  </button>
+                )}
                 <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-300 hover:bg-red-500/20 hover:text-red-200 transition-colors w-full">
                   <LogOut className="h-5 w-5" /> Sair
@@ -393,6 +469,67 @@ const DashboardLayout = ({ children }) => {
               <Button type="submit" disabled={isPassSubmitting}>
                 {isPassSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Salvar
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Dados Pessoais / Empresa (CLIENTE) */}
+      <Dialog open={isDadosModalOpen} onOpenChange={setIsDadosModalOpen}>
+        <DialogContent className="w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{isPF ? 'Dados Pessoais' : 'Dados da Empresa'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveDados} className="space-y-4 py-2">
+            <div>
+              <Label>{isPF ? 'Nome Completo' : 'Razão Social'}</Label>
+              <Input value={dadosForm.razao_social || ''} onChange={e => setDadosForm(p => ({ ...p, razao_social: e.target.value }))} />
+            </div>
+            <div>
+              <Label>{isPF ? 'CPF' : 'CNPJ'}</Label>
+              <Input value={dadosForm.cnpj ? formatCpfCnpj(dadosForm.cnpj) : ''} readOnly className="bg-gray-50 text-gray-500" />
+            </div>
+            {isPF && (
+              <div>
+                <Label>Data de Nascimento</Label>
+                <Input type="date" value={dadosForm.data_nascimento || ''} onChange={e => setDadosForm(p => ({ ...p, data_nascimento: e.target.value }))} />
+              </div>
+            )}
+            {dadosForm.endereco_completo && (
+              <div className="p-3 bg-gray-50 rounded-md border text-sm text-gray-600">
+                <p className="text-xs font-medium text-gray-400 mb-1">Endereço atual</p>
+                {dadosForm.endereco_completo}
+              </div>
+            )}
+            <div>
+              <Label>Atualizar Endereço via CEP</Label>
+              <div className="flex gap-2">
+                <Input placeholder="00000-000" maxLength={9} value={dadosForm.cep_busca || ''}
+                  onChange={e => { const v = e.target.value.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2'); setDadosForm(p => ({ ...p, cep_busca: v })); }}
+                  onBlur={e => buscarCepDados(e.target.value)} />
+                <Button type="button" variant="outline" disabled={isCepLoading} onClick={() => buscarCepDados(dadosForm.cep_busca || '')}>
+                  {isCepLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Buscar'}
+                </Button>
+              </div>
+            </div>
+            <div>
+              <Label>Rua / Logradouro</Label>
+              <Input value={dadosForm.rua || ''} onChange={e => setDadosForm(p => ({ ...p, rua: e.target.value }))} placeholder="Preenchido automaticamente pelo CEP" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div><Label>Número</Label><Input value={dadosForm.numero || ''} onChange={e => setDadosForm(p => ({ ...p, numero: e.target.value }))} /></div>
+              <div><Label>Complemento</Label><Input value={dadosForm.complemento || ''} onChange={e => setDadosForm(p => ({ ...p, complemento: e.target.value }))} /></div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div><Label>Bairro</Label><Input value={dadosForm.bairro || ''} readOnly className="bg-gray-50 text-gray-500" /></div>
+              <div><Label>Cidade</Label><Input value={dadosForm.cidade || ''} readOnly className="bg-gray-50 text-gray-500" /></div>
+            </div>
+            <div><Label>Estado</Label><Input value={dadosForm.estado || ''} readOnly className="bg-gray-50 text-gray-500 w-full sm:w-24" /></div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsDadosModalOpen(false)}>Cancelar</Button>
+              <Button type="submit" disabled={isSavingDados} className="bg-[#003580] hover:bg-[#002060] text-white">
+                {isSavingDados && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Salvar
               </Button>
             </DialogFooter>
           </form>
