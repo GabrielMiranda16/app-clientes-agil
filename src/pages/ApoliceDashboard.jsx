@@ -18,8 +18,8 @@ import {
   Download, AlertTriangle, CheckCircle, Clock, Loader2,
   Car, Plane, Home, PawPrint, Building2, HeartPulse,
   Users, ClipboardList, ChevronRight, Package, Monitor,
-  Menu, X, LogOut
 } from 'lucide-react';
+import DashboardLayout from '@/components/DashboardLayout';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatCpfCnpj } from '@/lib/masks';
@@ -51,14 +51,12 @@ const STATUS_SOL_COLORS = {
 
 const ApoliceDashboard = () => {
   const { apoliceId } = useParams();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { setSelectedCompanyId } = useCompany();
   const navigate = useNavigate();
 
   const isAdmin = user?.perfil === 'CEO' || user?.perfil === 'ADM';
   const isCliente = user?.perfil === 'CLIENTE';
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const handleLogout = () => { logout(); navigate('/login'); };
 
   const [loading, setLoading] = useState(true);
   const [apolice, setApolice] = useState(null);
@@ -73,8 +71,6 @@ const ApoliceDashboard = () => {
   const [loadingBen, setLoadingBen] = useState(false);
   const [loadingSol, setLoadingSol] = useState(false);
   const [loadingCopat, setLoadingCopat] = useState(false);
-
-  const logoUrl = "https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/247eb5219c397bb2ed2bcac42f39a442.png";
 
   useEffect(() => {
     apolicesService.getApolice(apoliceId)
@@ -150,52 +146,8 @@ const ApoliceDashboard = () => {
       <Helmet>
         <title>Apólice {apolice.numero_apolice || apoliceId} - Ágil Seguros</title>
       </Helmet>
-      <div className="min-h-screen bg-soft-gradient flex flex-col">
-
-        {/* Header */}
-        <header className="z-40" style={{ background: 'transparent' }}>
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16 sm:h-24">
-              <div className="flex items-center gap-2">
-                <img src={logoUrl} alt="Ágil Seguros" className="h-10 sm:h-20 w-auto object-contain" />
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="hidden sm:flex items-center gap-2 text-white/80 text-sm">
-                  <SegIcon className="h-4 w-4" />
-                  <span>{segLabel}</span>
-                </div>
-                <button
-                  className="sm:hidden p-2 rounded-lg text-white/80 hover:bg-white/10 transition-colors"
-                  onClick={() => setMobileMenuOpen(v => !v)}
-                  aria-label="Menu"
-                >
-                  {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-                </button>
-              </div>
-            </div>
-          </div>
-          {mobileMenuOpen && (
-            <div className="sm:hidden border-t border-white/10 bg-[#003580]/95 backdrop-blur px-4 py-4 space-y-1">
-              <div className="px-3 py-2 mb-2">
-                <p className="text-sm font-semibold text-white">{user?.email}</p>
-              </div>
-              <div className="border-t border-white/10 pt-2 space-y-1">
-                <button onClick={() => { navigate('/select-segmento'); setMobileMenuOpen(false); }}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors w-full">
-                  <ArrowLeft className="h-5 w-5" /> Meus Seguros
-                </button>
-                <div className="border-t border-white/10 pt-1 mt-1">
-                  <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-300 hover:bg-red-500/20 hover:text-red-200 transition-colors w-full">
-                    <LogOut className="h-5 w-5" /> Sair
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </header>
-
-        <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 sm:pb-8">
+      <DashboardLayout>
+        <div className="space-y-4">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 flex-wrap mb-4">
             {isAdmin ? (
@@ -682,8 +634,8 @@ const ApoliceDashboard = () => {
               )}
             </Tabs>
           </motion.div>
-        </main>
-      </div>
+        </div>
+      </DashboardLayout>
     </>
   );
 };

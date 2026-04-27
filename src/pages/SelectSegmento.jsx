@@ -3,21 +3,16 @@ import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { apolicesService, SEGMENTOS } from '@/services/apolicesService';
-import { authService } from '@/services/authService';
-import { empresasService } from '@/services/empresasService';
 import { supabaseClient } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { motion } from 'framer-motion';
-import { LogOut, HeartPulse, Car, Plane, Home, PawPrint, Building2, Package, Monitor, Loader2, User, Lock, UserCog, Eye, EyeOff, Menu, X, Repeat } from 'lucide-react';
-import { applyCpfMask, applyCepMask, formatCpfCnpj } from '@/lib/masks';
-import ChatWidget from '@/components/ChatWidget';
-import { validatePasswordStrength } from '@/lib/userValidator';
-import bcrypt from 'bcryptjs';
+import { HeartPulse, Car, Plane, Home, PawPrint, Building2, Package, Monitor, Loader2, UserCog } from 'lucide-react';
+import { formatCpfCnpj } from '@/lib/masks';
+import DashboardLayout from '@/components/DashboardLayout';
 
 const SEGMENTO_CONFIG = {
   SAUDE_VIDA_ODONTO: { label: 'Saúde, Vida e Odonto', descricao: 'Planos de saúde, seguro de vida e planos odontológicos', Icon: HeartPulse },
@@ -30,27 +25,14 @@ const SEGMENTO_CONFIG = {
   EQUIPAMENTOS:      { label: 'Equipamentos',          descricao: 'Cobertura para equipamentos e maquinários',           Icon: Monitor  },
 };
 
-const logoUrl = "https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/247eb5219c397bb2ed2bcac42f39a442.png";
-
 const SelectSegmento = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [apolicesPorSegmento, setApolicesPorSegmento] = useState({});
   const [empresa, setEmpresa] = useState(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // Modal senha
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [oldPassword, setOldPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [isSavingPass, setIsSavingPass] = useState(false);
-  const [showOldPass, setShowOldPass] = useState(false);
-  const [showNewPass, setShowNewPass] = useState(false);
-  const [showConfirmPass, setShowConfirmPass] = useState(false);
 
   // Modal dados pessoais
   const [isDadosModalOpen, setIsDadosModalOpen] = useState(false);
@@ -89,38 +71,8 @@ const SelectSegmento = () => {
     fetchData();
   }, [user]);
 
-  const handleLogout = () => { logout(); navigate('/login'); };
-
   const handleSelectSegmento = (segmento) => {
     navigate(`/select-apolice/${segmento.toLowerCase()}`);
-  };
-
-  // --- Alterar Senha ---
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
-    const { data: userDb } = await supabaseClient.from('users').select('password').eq('id', user.id).single();
-    if (!userDb) return toast({ variant: 'destructive', title: 'Erro', description: 'Usuário não encontrado.' });
-
-    const stored = userDb.password || '';
-    const isBcrypt = stored.startsWith('$2');
-    const isOldCorrect = isBcrypt ? await bcrypt.compare(oldPassword, stored) : oldPassword === stored;
-
-    if (!isOldCorrect) return toast({ variant: 'destructive', title: 'Senha antiga incorreta.' });
-    const pwErrors = validatePasswordStrength(newPassword);
-    if (pwErrors.length > 0) return toast({ variant: 'destructive', title: 'Senha fraca', description: pwErrors[0] });
-    if (newPassword !== confirmPassword) return toast({ variant: 'destructive', title: 'As senhas não conferem.' });
-
-    setIsSavingPass(true);
-    try {
-      await authService.updateUser(user.id, { password: newPassword });
-      toast({ title: 'Senha alterada com sucesso.' });
-      setIsPasswordModalOpen(false);
-      setOldPassword(''); setNewPassword(''); setConfirmPassword('');
-    } catch {
-      toast({ variant: 'destructive', title: 'Erro ao salvar senha.' });
-    } finally {
-      setIsSavingPass(false);
-    }
   };
 
   // --- Dados Pessoais ---
@@ -216,97 +168,26 @@ const SelectSegmento = () => {
   return (
     <>
       <Helmet><title>Meus Seguros - Ágil Seguros</title></Helmet>
-      <div className="bg-soft-gradient flex flex-col overflow-auto" style={{ height: '100dvh' }}>
-
-        {/* Header */}
-        <header className="z-40" style={{ background: 'transparent' }}>
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16 sm:h-24">
-              <img src={logoUrl} alt="Ágil Seguros" className="h-12 sm:h-24 w-auto object-contain" />
-
-              {/* Desktop nav */}
-              <div className="hidden sm:flex items-center gap-2">
-                {empresaNome && (
-                  <span className="text-white/90 text-sm font-medium">{empresaNome}</span>
-                )}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="text-white/80 hover:text-white hover:bg-white/10 border border-white/20">
-                      <User className="h-4 w-4 mr-2" /> Minha Conta
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-52">
-                    <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setIsPasswordModalOpen(true)} className="cursor-pointer">
-                      <Lock className="mr-2 h-4 w-4" /> Alterar Senha
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={openDados} className="cursor-pointer">
-                      <UserCog className="mr-2 h-4 w-4" />
-                      {isPF ? 'Dados Pessoais' : 'Dados da Empresa'}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-600">
-                      <LogOut className="mr-2 h-4 w-4" /> Sair
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <Button variant="ghost" onClick={handleLogout} className="text-white/80 hover:text-white hover:bg-white/10 border border-white/20">
-                  <LogOut className="mr-2 h-4 w-4" /> Sair
-                </Button>
-              </div>
-
-              {/* Mobile: hamburger */}
-              <button
-                className="sm:hidden p-2 rounded-lg text-white/80 hover:bg-white/10 transition-colors"
-                onClick={() => setMobileMenuOpen(v => !v)}
-                aria-label="Menu"
-              >
-                {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-              </button>
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-white mb-1">Meus Seguros</h1>
+              {empresaNome && <p className="text-white/70 text-sm">{empresaNome}</p>}
             </div>
+            {empresa && (
+              <Button variant="outline" size="sm" onClick={openDados} className="border-white/30 text-white hover:bg-white/10 shrink-0">
+                <UserCog className="h-4 w-4 mr-2" /> {isPF ? 'Dados Pessoais' : 'Dados da Empresa'}
+              </Button>
+            )}
           </div>
-
-          {/* Mobile menu panel */}
-          {mobileMenuOpen && (
-            <div className="sm:hidden border-t border-white/10 bg-[#003580]/95 backdrop-blur px-4 py-4 space-y-1">
-              <div className="px-3 py-2 mb-2">
-                <p className="text-sm font-semibold text-white">{user?.email}</p>
-                {empresaNome && <p className="text-xs text-blue-200">{empresaNome}</p>}
-              </div>
-              <div className="border-t border-white/10 pt-2 space-y-1">
-                <button onClick={() => { openDados(); setMobileMenuOpen(false); }}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors w-full">
-                  <UserCog className="h-5 w-5" /> {isPF ? 'Dados Pessoais' : 'Dados da Empresa'}
-                </button>
-                <button onClick={() => { setIsPasswordModalOpen(true); setMobileMenuOpen(false); }}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors w-full">
-                  <Lock className="h-5 w-5" /> Alterar Senha
-                </button>
-                <div className="border-t border-white/10 pt-1 mt-1">
-                  <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-300 hover:bg-red-500/20 hover:text-red-200 transition-colors w-full">
-                    <LogOut className="h-5 w-5" /> Sair
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </header>
-
-        {/* Content */}
-        <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 sm:pb-8">
-          <h1 className="text-2xl font-bold tracking-tight text-white mb-1">Meus Seguros</h1>
-          {empresaNome && <p className="text-white/70 text-sm mb-6">{empresaNome}</p>}
 
           {segmentosDisponiveis.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 text-center">
               <Building2 className="h-12 w-12 text-white/30 mb-4" />
               <h2 className="text-xl font-semibold text-white">Nenhum seguro ativo</h2>
               <p className="text-white/60 mt-2">Entre em contato com o administrador.</p>
-              <Button onClick={handleLogout} className="mt-6 border-white/30 text-white hover:bg-white/10" variant="outline">
-                <LogOut className="mr-2 h-4 w-4" /> Sair
-              </Button>
+              <p className="text-white/60 mt-4 text-sm">Use o menu acima para sair.</p>
             </div>
           ) : (
             <motion.div
@@ -340,42 +221,8 @@ const SelectSegmento = () => {
               })}
             </motion.div>
           )}
-        </main>
-      </div>
-
-      {/* Modal Alterar Senha */}
-      <Dialog open={isPasswordModalOpen} onOpenChange={setIsPasswordModalOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-md">
-          <DialogHeader><DialogTitle>Alterar Senha</DialogTitle></DialogHeader>
-          <form onSubmit={handleChangePassword} className="space-y-4 py-2">
-            <div><Label>Senha atual</Label><div className="relative mt-1"><Input type={showOldPass ? 'text' : 'password'} value={oldPassword} onChange={e => setOldPassword(e.target.value)} className="pr-10" /><button type="button" onClick={() => setShowOldPass(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">{showOldPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></div></div>
-            <div>
-              <Label>Nova senha</Label>
-              <div className="relative mt-1"><Input type={showNewPass ? 'text' : 'password'} value={newPassword} onChange={e => setNewPassword(e.target.value)} className="pr-10" /><button type="button" onClick={() => setShowNewPass(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">{showNewPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></div>
-              <div className="mt-2 bg-gray-50 rounded-lg p-2.5 space-y-1">
-                {[
-                  { ok: newPassword.length >= 6,           txt: 'Mínimo 6 caracteres' },
-                  { ok: /[A-Z]/.test(newPassword),         txt: '1 letra maiúscula' },
-                  { ok: /[a-z]/.test(newPassword),         txt: '1 letra minúscula' },
-                  { ok: /[0-9]/.test(newPassword),         txt: '1 número' },
-                  { ok: /[^a-zA-Z0-9]/.test(newPassword),  txt: '1 caractere especial' },
-                ].map(({ ok, txt }) => (
-                  <div key={txt} className={`flex items-center gap-1.5 text-xs ${ok ? 'text-green-600' : 'text-gray-400'}`}>
-                    <span>{ok ? '✓' : '○'}</span> {txt}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div><Label>Confirmar nova senha</Label><div className="relative mt-1"><Input type={showConfirmPass ? 'text' : 'password'} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="pr-10" /><button type="button" onClick={() => setShowConfirmPass(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">{showConfirmPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></div></div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsPasswordModalOpen(false)}>Cancelar</Button>
-              <Button type="submit" disabled={isSavingPass} className="bg-[#003580] hover:bg-[#002060] text-white">
-                {isSavingPass && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Salvar
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </DashboardLayout>
 
       {/* Modal Dados */}
       <Dialog open={isDadosModalOpen} onOpenChange={setIsDadosModalOpen}>
@@ -461,7 +308,6 @@ const SelectSegmento = () => {
           </form>
         </DialogContent>
       </Dialog>
-      <ChatWidget />
     </>
   );
 };
