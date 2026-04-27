@@ -83,9 +83,9 @@ const SelectApolice = () => {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16 sm:h-24">
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" onClick={() => navigate('/select-segmento')} className="text-white/80 hover:text-white hover:bg-white/10">
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
+                <button onClick={() => navigate('/select-segmento')} className="flex items-center gap-1 text-sm text-white/60 hover:text-white transition-colors">
+                  <ArrowLeft className="h-4 w-4" /> Meus Seguros
+                </button>
                 <img src={logoUrl} alt="Ágil Seguros" className="h-10 sm:h-20 w-auto object-contain" />
               </div>
               <Button variant="ghost" onClick={handleLogout} className="hidden sm:flex text-white/80 hover:text-white hover:bg-white/10 border border-white/20">
@@ -122,7 +122,7 @@ const SelectApolice = () => {
         </header>
 
         <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 sm:pb-8">
-          <h1 className="text-2xl font-bold text-white mb-6">{segConfig?.label || segmento?.toLowerCase().replace(/_/g, ' ')}</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-white mb-6">{segConfig?.label || segmento?.toLowerCase().replace(/_/g, ' ')}</h1>
 
           {apolices.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 text-center">

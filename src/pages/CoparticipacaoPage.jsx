@@ -788,7 +788,7 @@ const CoparticipacaoPage = () => {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">Coparticipação</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-white">Coparticipação</h1>
             {(() => { const emp = empresas.find(e => String(e.id) === String(selectedCompanyId)); return emp ? <p className="text-white font-medium">{emp.nome_fantasia || emp.razao_social} · <span className="text-white/70">{formatCpfCnpj(emp.cnpj || emp.cpf)}</span></p> : null; })()}
             <p className="text-white/70">Gerencie os valores de coparticipação mensal por empresa.</p>
           </div>

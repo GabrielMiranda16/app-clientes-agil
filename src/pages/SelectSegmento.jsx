@@ -296,7 +296,7 @@ const SelectSegmento = () => {
 
         {/* Content */}
         <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 sm:pb-8">
-          <h1 className="text-2xl font-bold text-white mb-1">Meus Seguros</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-white mb-1">Meus Seguros</h1>
           {empresaNome && <p className="text-white/70 text-sm mb-6">{empresaNome}</p>}
 
           {segmentosDisponiveis.length === 0 ? (

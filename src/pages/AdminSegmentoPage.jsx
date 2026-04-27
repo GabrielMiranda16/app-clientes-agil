@@ -347,14 +347,7 @@ const AdminSegmentoPage = () => {
           </div>
 
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <button onClick={() => navigate(`/admin/cliente/${matrizId}`)} className="flex items-center gap-1 text-white/60 hover:text-white transition-colors mr-1">
-                <ArrowLeft className="h-4 w-4" />
-              </button>
-              <h1 className="text-xl font-bold text-white">{label}</h1>
-            </div>
-          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-white">{label}</h1>
 
           {/* Empresas */}
           {todasEmpresas.map((empresa) => {

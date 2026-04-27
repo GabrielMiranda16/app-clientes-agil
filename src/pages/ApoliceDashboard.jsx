@@ -205,7 +205,7 @@ const ApoliceDashboard = () => {
 
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-white">
+              <h1 className="text-2xl font-bold tracking-tight text-white">
                 {(() => {
                   if (apolice.numero_apolice) return `Apólice ${apolice.numero_apolice}`;
                   if (isSVD) {

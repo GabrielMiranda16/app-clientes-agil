@@ -548,11 +548,13 @@ const SolicitacoesPage = () => {
       <Helmet><title>Solicitações - Sistema</title></Helmet>
       
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="text-white/80 hover:text-white hover:bg-white/10">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-3xl font-bold tracking-tight text-white">Solicitações</h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-white/60 hover:text-white transition-colors">
+              <ArrowLeft className="h-4 w-4" /> Voltar
+            </button>
+            <h1 className="text-2xl font-bold tracking-tight text-white">Solicitações</h1>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
