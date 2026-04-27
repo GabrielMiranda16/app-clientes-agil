@@ -251,8 +251,8 @@ const AdminClientePage = () => {
 
           {/* Breadcrumb */}
           <div className="flex items-center gap-2">
-            <button onClick={() => navigate('/admin')} className="flex items-center gap-1 text-sm text-white/60 hover:text-white transition-colors">
-              <ArrowLeft className="h-4 w-4" /> Clientes
+            <button onClick={() => navigate('/admin')} className="text-sm text-white/60 hover:text-white transition-colors">
+              Clientes
             </button>
             <ChevronRight className="h-4 w-4 text-white/30" />
             <span className="text-sm font-medium text-white">{matriz.nome_fantasia || matriz.razao_social}</span>

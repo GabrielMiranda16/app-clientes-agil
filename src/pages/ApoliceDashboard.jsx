@@ -196,11 +196,37 @@ const ApoliceDashboard = () => {
         </header>
 
         <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 sm:pb-8">
-          {/* Breadcrumb / voltar */}
-          <div className="flex items-center gap-2 mb-4">
-            <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-white/60 hover:text-white transition-colors">
-              <ArrowLeft className="h-4 w-4" /> Voltar
-            </button>
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 flex-wrap mb-4">
+            {isAdmin ? (
+              <>
+                <button onClick={() => navigate('/admin')} className="text-sm text-white/60 hover:text-white transition-colors">Clientes</button>
+                {apolice.empresas && (
+                  <>
+                    <ChevronRight className="h-4 w-4 text-white/30" />
+                    <button onClick={() => navigate(`/admin/cliente/${apolice.empresa_id}`)} className="text-sm text-white/60 hover:text-white transition-colors">
+                      {apolice.empresas.nome_fantasia || apolice.empresas.razao_social}
+                    </button>
+                  </>
+                )}
+                <ChevronRight className="h-4 w-4 text-white/30" />
+                <button onClick={() => navigate(`/admin/cliente/${apolice.empresa_id}/segmento/${apolice.segmento?.toLowerCase().replace(/_/g, '-')}`)} className="text-sm text-white/60 hover:text-white transition-colors">
+                  {segLabel}
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => navigate('/select-segmento')} className="text-sm text-white/60 hover:text-white transition-colors">Meus Seguros</button>
+                <ChevronRight className="h-4 w-4 text-white/30" />
+                <button onClick={() => navigate(`/select-apolice/${apolice.segmento}`)} className="text-sm text-white/60 hover:text-white transition-colors">
+                  {segLabel}
+                </button>
+              </>
+            )}
+            <ChevronRight className="h-4 w-4 text-white/30" />
+            <span className="text-sm text-white">
+              {apolice.numero_apolice ? `Apólice ${apolice.numero_apolice}` : segLabel}
+            </span>
           </div>
 
           <div className="flex items-center justify-between mb-6">

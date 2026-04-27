@@ -341,9 +341,7 @@ const AdminSegmentoPage = () => {
               {matriz.nome_fantasia || matriz.razao_social}
             </button>
             <ChevronRight className="h-4 w-4 text-white/30" />
-            <span className="text-sm font-semibold text-white flex items-center gap-1.5">
-              <Icon className="h-4 w-4" /> {label}
-            </span>
+            <span className="text-sm text-white">{label}</span>
           </div>
 
           {/* Header */}
