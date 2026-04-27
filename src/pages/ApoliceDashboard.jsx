@@ -212,7 +212,7 @@ const ApoliceDashboard = () => {
               )}
             </div>
             {showGestaoButton && (
-              <Button variant="ghost" onClick={() => navigate(`/cliente/${apolice.empresa_id}`)} className="text-white/80 hover:text-white hover:bg-white/10 border border-white/20">
+              <Button variant="ghost" onClick={() => navigate(`/cliente/${apolice.empresa_id}`, { state: { from: 'apolice', apoliceId: apolice.id, segmento: apolice.segmento, segLabel, apoliceNum: apolice.numero_apolice } })} className="text-white/80 hover:text-white hover:bg-white/10 border border-white/20">
                 <Users className="mr-2 h-4 w-4" /> Acessar Gestão <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             )}
@@ -494,7 +494,7 @@ const ApoliceDashboard = () => {
                       <CardTitle className="flex items-center gap-2 text-base">
                         <Users className="h-4 w-4" /> Beneficiários
                       </CardTitle>
-                      <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white" onClick={() => navigate(`/cliente/${apolice.empresa_id}`)}>
+                      <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white" onClick={() => navigate(`/cliente/${apolice.empresa_id}`, { state: { from: 'apolice', apoliceId: apolice.id, segmento: apolice.segmento, segLabel, apoliceNum: apolice.numero_apolice } })}>
                         Gerenciar <ChevronRight className="ml-1 h-4 w-4" />
                       </Button>
                     </CardHeader>
@@ -522,7 +522,7 @@ const ApoliceDashboard = () => {
                                 </div>
                               ))}
                             </div>
-                            <Button size="sm" variant="outline" className="w-full mt-1" onClick={() => navigate(`/cliente/${apolice.empresa_id}`)}>
+                            <Button size="sm" variant="outline" className="w-full mt-1" onClick={() => navigate(`/cliente/${apolice.empresa_id}`, { state: { from: 'apolice', apoliceId: apolice.id, segmento: apolice.segmento, segLabel, apoliceNum: apolice.numero_apolice } })}>
                               Ver e gerenciar beneficiários <ChevronRight className="ml-1 h-3.5 w-3.5" />
                             </Button>
                           </div>
@@ -544,7 +544,7 @@ const ApoliceDashboard = () => {
                       </CardTitle>
                       <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white" onClick={() => {
                         if (isAdmin) { setSelectedCompanyId(Number(apolice.empresa_id)); navigate('/solicitacoes'); }
-                        else navigate(`/cliente/${apolice.empresa_id}`);
+                        else navigate(`/cliente/${apolice.empresa_id}`, { state: { from: 'apolice', apoliceId: apolice.id, segmento: apolice.segmento, segLabel, apoliceNum: apolice.numero_apolice } });
                       }}>
                         {isAdmin ? 'Gerenciar' : 'Ver'} <ChevronRight className="ml-1 h-4 w-4" />
                       </Button>

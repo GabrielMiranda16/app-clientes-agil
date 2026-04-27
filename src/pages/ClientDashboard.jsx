@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -342,6 +342,8 @@ const ClientDashboard = () => {
   const { setSelectedCompanyId } = useCompany();
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
   const empresaId = Number(paramEmpresaId);
   const empresaId_num = empresaId;
 
@@ -959,20 +961,63 @@ const ClientDashboard = () => {
       <DashboardLayout>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
 
+          {/* Breadcrumb */}
+          {(() => {
+            const isAdmin = user?.perfil === 'CEO' || user?.perfil === 'ADM';
+            const fromState = location.state;
+            if (isAdmin) {
+              return (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button onClick={() => navigate('/admin')} className="text-sm text-white/60 hover:text-white transition-colors">Clientes</button>
+                  <ChevronRight className="h-4 w-4 text-white/30" />
+                  <span className="text-sm text-white">{empresa?.nome_fantasia || empresa?.razao_social || 'Empresa'}</span>
+                </div>
+              );
+            }
+            return (
+              <div className="flex items-center gap-2 flex-wrap">
+                <button onClick={() => navigate('/select-segmento')} className="text-sm text-white/60 hover:text-white transition-colors">Meus Seguros</button>
+                {fromState?.segLabel && (
+                  <>
+                    <ChevronRight className="h-4 w-4 text-white/30" />
+                    <button onClick={() => navigate(`/select-apolice/${fromState.segmento?.toLowerCase()}`)} className="text-sm text-white/60 hover:text-white transition-colors">{fromState.segLabel}</button>
+                  </>
+                )}
+                {fromState?.apoliceId && (
+                  <>
+                    <ChevronRight className="h-4 w-4 text-white/30" />
+                    <button onClick={() => navigate(`/apolice/${fromState.apoliceId}`)} className="text-sm text-white/60 hover:text-white transition-colors">
+                      {fromState.apoliceNum ? `Apólice ${fromState.apoliceNum}` : 'Apólice'}
+                    </button>
+                  </>
+                )}
+                <ChevronRight className="h-4 w-4 text-white/30" />
+                <span className="text-sm text-white">Gestão</span>
+              </div>
+            );
+          })()}
+
           {/* Título */}
           {empresa && (
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-white">
-                {empresa.nome_fantasia || empresa.razao_social}
-              </h1>
-              <p className="text-white/80 text-base font-medium mt-0.5 flex items-center gap-1.5">
-                {empresa.razao_social && empresa.nome_fantasia && <span className="text-white/60 text-sm">{empresa.razao_social}</span>}
-                {empresa.tipo && (
-                  <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${empresa.tipo === 'MATRIZ' ? 'bg-blue-500/30 text-blue-200' : 'bg-white/20 text-white/80'}`}>
-                    {empresa.tipo === 'MATRIZ' ? 'Matriz' : 'Filial'}
-                  </span>
-                )}
-              </p>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-white">
+                  {empresa.nome_fantasia || empresa.razao_social}
+                </h1>
+                <p className="text-white/80 text-base font-medium mt-0.5 flex items-center gap-1.5">
+                  {empresa.razao_social && empresa.nome_fantasia && <span className="text-white/60 text-sm">{empresa.razao_social}</span>}
+                  {empresa.tipo && (
+                    <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${empresa.tipo === 'MATRIZ' ? 'bg-blue-500/30 text-blue-200' : 'bg-white/20 text-white/80'}`}>
+                      {empresa.tipo === 'MATRIZ' ? 'Matriz' : 'Filial'}
+                    </span>
+                  )}
+                </p>
+              </div>
+              {user?.perfil === 'CLIENTE' && (
+                <Button variant="ghost" onClick={() => navigate(`/cliente/${empresaId}/coparticipacao`)} className="text-white/80 hover:text-white hover:bg-white/10 border border-white/20 shrink-0">
+                  <DollarSign className="mr-2 h-4 w-4" /> Minha Coparticipação <ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
+              )}
             </div>
           )}
 

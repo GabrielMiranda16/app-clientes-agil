@@ -250,15 +250,6 @@ const DashboardLayout = ({ children }) => {
                   className={`${isApolicePage ? 'h-10' : 'h-12'} sm:h-20 w-auto object-contain`}
                 />
               </Link>
-              {currentEmpresa && (
-                <div className="hidden md:flex items-center text-sm min-w-0">
-                  <ChevronsRight className="h-5 w-5 text-white/40 mx-1 shrink-0" />
-                  <span className="font-semibold text-white/80 truncate max-w-xs">
-                    {currentEmpresa.nome_fantasia || currentEmpresa.razao_social}
-                  </span>
-                  <Badge variant={currentEmpresa.tipo === 'MATRIZ' ? 'default' : 'secondary'} className="ml-2 shrink-0">{currentEmpresa.tipo}</Badge>
-                </div>
-              )}
             </div>
 
             {/* Desktop nav */}
@@ -276,17 +267,6 @@ const DashboardLayout = ({ children }) => {
                 </div>
               )}
 
-              {isClientDashboard && empresaId && (
-                <NavLink
-                  to={`/cliente/${empresaId}/coparticipacao`}
-                  className={({ isActive }) =>
-                    `flex items-center p-2 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`
-                  }
-                >
-                  <DollarSign className="h-5 w-5 mr-2" />
-                  <span>Minha Coparticipação</span>
-                </NavLink>
-              )}
 
               {isAdminViewingClient && (
                 <Button variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10 border border-white/20" onClick={handleGoBack}>
@@ -396,12 +376,6 @@ const DashboardLayout = ({ children }) => {
                     className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
                     <FileText className="h-5 w-5" /> Meus Seguros
                   </NavLink>
-                  {isClientDashboard && empresaId && (
-                    <NavLink to={`/cliente/${empresaId}/coparticipacao`} onClick={() => setMobileMenuOpen(false)}
-                      className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
-                      <DollarSign className="h-5 w-5" /> Minha Coparticipação
-                    </NavLink>
-                  )}
                 </>
               )}
 
