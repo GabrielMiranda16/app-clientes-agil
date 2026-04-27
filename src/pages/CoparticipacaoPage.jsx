@@ -695,7 +695,7 @@ const CoparticipacaoPage = () => {
               <Button variant="outline" size="sm" onClick={() => { setImportTipo(tipo); setImportStep('upload'); setImportedRows([]); setIsImportModalOpen(true); }} disabled={!selectedCompanyId}>
                 <Upload className="mr-2 h-4 w-4" /> Importar
               </Button>
-              <Button onClick={() => handleAddClick(tipo)} className="bg-[#003580] hover:bg-[#002060] text-white" disabled={!selectedCompanyId}>
+              <Button size="sm" onClick={() => handleAddClick(tipo)} className="bg-[#003580] hover:bg-[#002060] text-white" disabled={!selectedCompanyId}>
                 Registrar
               </Button>
             </div>
