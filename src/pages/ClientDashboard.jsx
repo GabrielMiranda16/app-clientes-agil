@@ -959,6 +959,23 @@ const ClientDashboard = () => {
       <DashboardLayout>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
 
+          {/* Título */}
+          {empresa && (
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-white">
+                {empresa.nome_fantasia || empresa.razao_social}
+              </h1>
+              <p className="text-white/80 text-base font-medium mt-0.5 flex items-center gap-1.5">
+                {empresa.razao_social && empresa.nome_fantasia && <span className="text-white/60 text-sm">{empresa.razao_social}</span>}
+                {empresa.tipo && (
+                  <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${empresa.tipo === 'MATRIZ' ? 'bg-blue-500/30 text-blue-200' : 'bg-white/20 text-white/80'}`}>
+                    {empresa.tipo === 'MATRIZ' ? 'Matriz' : 'Filial'}
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
+
           <div>
             <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory md:grid md:grid-cols-2 md:overflow-visible md:pb-0 lg:grid-cols-4">
                {isLoading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[108px] min-w-[calc(100vw-3rem)] md:min-w-0 snap-start" />) : (
