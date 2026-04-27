@@ -12,9 +12,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Building, ChevronRight, AlertTriangle, Heart, Car, Plane, Home, PawPrint, Building2, Package, Monitor, Loader2, Users, FileText, Trash2, Edit } from 'lucide-react';
+import { ArrowLeft, Building, ChevronRight, AlertTriangle, Heart, Car, Plane, Home, PawPrint, Building2, Package, Monitor, Loader2, Users, FileText, Trash2, Edit, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { applyCnpjMask, applyCpfMask } from '@/lib/masks';
+import { applyCnpjMask, applyCpfMask, applyCepMask } from '@/lib/masks';
 
 import { empresasService } from '@/services/empresasService';
 import { beneficiariosService } from '@/services/beneficiariosService';
@@ -52,7 +52,9 @@ const AdminClientePage = () => {
   const [isEditFilialModalOpen, setIsEditFilialModalOpen] = useState(false);
   const [filialEditando, setFilialEditando] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [filialFormData, setFilialFormData] = useState({ razao_social: '', nome_fantasia: '', cnpj: '', endereco_completo: '' });
+  const [isCepLoading, setIsCepLoading] = useState(false);
+  const emptyFilialForm = { razao_social: '', nome_fantasia: '', cnpj: '', cep: '', rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' };
+  const [filialFormData, setFilialFormData] = useState(emptyFilialForm);
 
   const canManage = user.perfil === 'CEO' || user.perfil === 'ADM';
 
@@ -112,7 +114,34 @@ const AdminClientePage = () => {
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
-    setFilialFormData(prev => ({ ...prev, [id]: id === 'cnpj' ? applyCnpjMask(value) : value }));
+    let formatted = value;
+    if (id === 'cnpj') formatted = applyCnpjMask(value);
+    if (id === 'cep') formatted = applyCepMask(value);
+    setFilialFormData(prev => ({ ...prev, [id]: formatted }));
+  };
+
+  const buscarCep = async (cep) => {
+    const nums = cep.replace(/\D/g, '');
+    if (nums.length !== 8) return;
+    setIsCepLoading(true);
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch(`https://viacep.com.br/ws/${nums}/json/`, { signal: controller.signal });
+      clearTimeout(timeout);
+      const data = await res.json();
+      if (data.erro) return toast({ variant: 'destructive', title: 'CEP não encontrado' });
+      setFilialFormData(prev => ({ ...prev, rua: data.logradouro || '', bairro: data.bairro || '', cidade: data.localidade || '', estado: data.uf || '' }));
+    } catch {
+      toast({ variant: 'destructive', title: 'Erro ao buscar CEP' });
+    } finally {
+      setIsCepLoading(false);
+    }
+  };
+
+  const buildEndereco = (f) => {
+    const partes = [f.rua, f.numero && `nº ${f.numero}`, f.complemento, f.bairro, f.cidade && f.estado ? `${f.cidade}/${f.estado}` : f.cidade || f.estado, f.cep && `CEP ${f.cep}`];
+    return partes.filter(Boolean).join(', ');
   };
 
   const handleAddFilial = async (e) => {
@@ -121,16 +150,19 @@ const AdminClientePage = () => {
       return toast({ variant: 'destructive', title: 'Erro', description: 'Razão Social e CNPJ são obrigatórios.' });
     setIsSubmitting(true);
     try {
+      const { cep, rua, numero, complemento, bairro, cidade, estado, ...rest } = filialFormData;
+      const endereco_completo = buildEndereco(filialFormData);
       const created = await empresasService.createEmpresa({
         tipo: 'FILIAL',
         empresa_matriz_id: Number(matrizId),
-        ...filialFormData,
+        ...rest,
+        endereco_completo,
         data_cadastro: new Date().toISOString(),
       });
       setFiliais(prev => [...prev, created]);
       toast({ title: 'Filial adicionada.' });
       setIsAddFilialModalOpen(false);
-      setFilialFormData({ razao_social: '', nome_fantasia: '', cnpj: '', endereco_completo: '' });
+      setFilialFormData(emptyFilialForm);
     } catch (err) {
       toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao adicionar filial.' });
     } finally {
@@ -141,10 +173,10 @@ const AdminClientePage = () => {
   const handleOpenEditFilial = (filial) => {
     setFilialEditando(filial);
     setFilialFormData({
+      ...emptyFilialForm,
       razao_social: filial.razao_social || '',
       nome_fantasia: filial.nome_fantasia || '',
       cnpj: filial.cnpj ? applyCnpjMask(filial.cnpj) : '',
-      endereco_completo: filial.endereco_completo || '',
     });
     setIsEditFilialModalOpen(true);
   };
@@ -155,7 +187,9 @@ const AdminClientePage = () => {
       return toast({ variant: 'destructive', title: 'Erro', description: 'Razão Social e CNPJ são obrigatórios.' });
     setIsSubmitting(true);
     try {
-      const updated = await empresasService.updateEmpresa(filialEditando.id, filialFormData);
+      const { cep, rua, numero, complemento, bairro, cidade, estado, ...rest } = filialFormData;
+      const endereco_completo = buildEndereco(filialFormData) || filialEditando.endereco_completo || '';
+      const updated = await empresasService.updateEmpresa(filialEditando.id, { ...rest, endereco_completo });
       setFiliais(prev => prev.map(f => f.id === filialEditando.id ? { ...f, ...updated } : f));
       toast({ title: 'Filial atualizada.' });
       setIsEditFilialModalOpen(false);
@@ -355,17 +389,42 @@ const AdminClientePage = () => {
       </DashboardLayout>
 
       {/* Modal Adicionar Filial */}
-      <Dialog open={isAddFilialModalOpen} onOpenChange={setIsAddFilialModalOpen}>
-        <DialogContent className="sm:max-w-lg">
+      <Dialog open={isAddFilialModalOpen} onOpenChange={(open) => { setIsAddFilialModalOpen(open); if (!open) setFilialFormData(emptyFilialForm); }}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Adicionar Filial</DialogTitle>
             <p className="text-sm text-muted-foreground">{matriz.nome_fantasia || matriz.razao_social}</p>
           </DialogHeader>
-          <form onSubmit={handleAddFilial} className="space-y-4 py-2">
-            <div><Label>Razão Social *</Label><Input id="razao_social" value={filialFormData.razao_social} onChange={handleInputChange} /></div>
-            <div><Label>Nome Fantasia</Label><Input id="nome_fantasia" value={filialFormData.nome_fantasia} onChange={handleInputChange} /></div>
-            <div><Label>CNPJ *</Label><Input id="cnpj" value={filialFormData.cnpj} onChange={handleInputChange} /></div>
-            <div><Label>Endereço</Label><Input id="endereco_completo" value={filialFormData.endereco_completo} onChange={handleInputChange} /></div>
+          <form onSubmit={handleAddFilial} className="space-y-3 py-2">
+            <div className="grid grid-cols-1 gap-3">
+              <div><Label>Razão Social *</Label><Input id="razao_social" value={filialFormData.razao_social} onChange={handleInputChange} /></div>
+              <div><Label>Nome Fantasia</Label><Input id="nome_fantasia" value={filialFormData.nome_fantasia} onChange={handleInputChange} /></div>
+              <div><Label>CNPJ *</Label><Input id="cnpj" placeholder="00.000.000/0000-00" value={filialFormData.cnpj} onChange={handleInputChange} /></div>
+            </div>
+            <div className="border-t pt-3">
+              <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Endereço</p>
+              <div className="grid grid-cols-1 gap-3">
+                <div>
+                  <Label>CEP</Label>
+                  <div className="flex gap-2">
+                    <Input id="cep" placeholder="00000-000" maxLength={9} value={filialFormData.cep} onChange={handleInputChange} onBlur={() => buscarCep(filialFormData.cep)} />
+                    <button type="button" onClick={() => buscarCep(filialFormData.cep)} disabled={isCepLoading} className="px-3 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 flex items-center gap-1 text-sm">
+                      {isCepLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-2"><Label>Rua</Label><Input id="rua" value={filialFormData.rua} readOnly className="bg-gray-50 text-gray-600" /></div>
+                  <div><Label>Número</Label><Input id="numero" placeholder="123" value={filialFormData.numero} onChange={handleInputChange} /></div>
+                </div>
+                <div><Label>Complemento</Label><Input id="complemento" placeholder="Apto, bloco..." value={filialFormData.complemento} onChange={handleInputChange} /></div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div><Label>Bairro</Label><Input id="bairro" value={filialFormData.bairro} readOnly className="bg-gray-50 text-gray-600" /></div>
+                  <div><Label>Cidade</Label><Input id="cidade" value={filialFormData.cidade} readOnly className="bg-gray-50 text-gray-600" /></div>
+                  <div><Label>UF</Label><Input id="estado" value={filialFormData.estado} readOnly className="bg-gray-50 text-gray-600" /></div>
+                </div>
+              </div>
+            </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsAddFilialModalOpen(false)}>Cancelar</Button>
               <Button type="submit" disabled={isSubmitting} className="bg-[#003580] hover:bg-[#002060] text-white">
@@ -378,16 +437,44 @@ const AdminClientePage = () => {
       </Dialog>
       {/* Modal Editar Filial */}
       <Dialog open={isEditFilialModalOpen} onOpenChange={setIsEditFilialModalOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Filial</DialogTitle>
             <p className="text-sm text-muted-foreground">{filialEditando?.nome_fantasia || filialEditando?.razao_social}</p>
           </DialogHeader>
-          <form onSubmit={handleEditFilial} className="space-y-4 py-2">
-            <div><Label>Razão Social *</Label><Input id="razao_social" value={filialFormData.razao_social} onChange={handleInputChange} /></div>
-            <div><Label>Nome Fantasia</Label><Input id="nome_fantasia" value={filialFormData.nome_fantasia} onChange={handleInputChange} /></div>
-            <div><Label>CNPJ *</Label><Input id="cnpj" value={filialFormData.cnpj} onChange={handleInputChange} /></div>
-            <div><Label>Endereço</Label><Input id="endereco_completo" value={filialFormData.endereco_completo} onChange={handleInputChange} /></div>
+          <form onSubmit={handleEditFilial} className="space-y-3 py-2">
+            <div className="grid grid-cols-1 gap-3">
+              <div><Label>Razão Social *</Label><Input id="razao_social" value={filialFormData.razao_social} onChange={handleInputChange} /></div>
+              <div><Label>Nome Fantasia</Label><Input id="nome_fantasia" value={filialFormData.nome_fantasia} onChange={handleInputChange} /></div>
+              <div><Label>CNPJ *</Label><Input id="cnpj" placeholder="00.000.000/0000-00" value={filialFormData.cnpj} onChange={handleInputChange} /></div>
+            </div>
+            <div className="border-t pt-3">
+              <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Endereço</p>
+              {filialEditando?.endereco_completo && !filialFormData.cep && (
+                <p className="text-xs text-gray-500 bg-gray-50 rounded p-2 mb-3">Atual: {filialEditando.endereco_completo}</p>
+              )}
+              <div className="grid grid-cols-1 gap-3">
+                <div>
+                  <Label>CEP</Label>
+                  <div className="flex gap-2">
+                    <Input id="cep" placeholder="00000-000" maxLength={9} value={filialFormData.cep} onChange={handleInputChange} onBlur={() => buscarCep(filialFormData.cep)} />
+                    <button type="button" onClick={() => buscarCep(filialFormData.cep)} disabled={isCepLoading} className="px-3 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 flex items-center gap-1 text-sm">
+                      {isCepLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-2"><Label>Rua</Label><Input id="rua" value={filialFormData.rua} readOnly className="bg-gray-50 text-gray-600" /></div>
+                  <div><Label>Número</Label><Input id="numero" placeholder="123" value={filialFormData.numero} onChange={handleInputChange} /></div>
+                </div>
+                <div><Label>Complemento</Label><Input id="complemento" placeholder="Apto, bloco..." value={filialFormData.complemento} onChange={handleInputChange} /></div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div><Label>Bairro</Label><Input id="bairro" value={filialFormData.bairro} readOnly className="bg-gray-50 text-gray-600" /></div>
+                  <div><Label>Cidade</Label><Input id="cidade" value={filialFormData.cidade} readOnly className="bg-gray-50 text-gray-600" /></div>
+                  <div><Label>UF</Label><Input id="estado" value={filialFormData.estado} readOnly className="bg-gray-50 text-gray-600" /></div>
+                </div>
+              </div>
+            </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsEditFilialModalOpen(false)}>Cancelar</Button>
               <Button type="submit" disabled={isSubmitting} className="bg-[#003580] hover:bg-[#002060] text-white">
