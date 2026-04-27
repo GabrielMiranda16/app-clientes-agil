@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Download, Edit2, Trash2, ArrowLeft, Loader2, Search, Upload, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { Plus, Download, Edit2, Trash2, ArrowLeft, Loader2, Search, Upload, CheckCircle2, AlertCircle, X, ChevronRight } from 'lucide-react';
 import { useCompany } from '@/contexts/CompanyContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -786,15 +786,17 @@ const CoparticipacaoPage = () => {
       </Helmet>
 
       <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-white">Coparticipação</h1>
-            {(() => { const emp = empresas.find(e => String(e.id) === String(selectedCompanyId)); return emp ? <p className="text-white font-medium">{emp.nome_fantasia || emp.razao_social} · <span className="text-white/70">{formatCpfCnpj(emp.cnpj || emp.cpf)}</span></p> : null; })()}
-            <p className="text-white/70">Gerencie os valores de coparticipação mensal por empresa.</p>
-          </div>
-          <Button variant="outline" onClick={() => navigate(-1)}>
-            <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-          </Button>
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <button onClick={() => navigate('/admin')} className="text-sm text-white/60 hover:text-white transition-colors">Clientes</button>
+          <ChevronRight className="h-4 w-4 text-white/30" />
+          <span className="text-sm text-white">Coparticipação</span>
+        </div>
+
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-white">Coparticipação</h1>
+          {(() => { const emp = empresas.find(e => String(e.id) === String(selectedCompanyId)); return emp ? <p className="text-white font-medium">{emp.nome_fantasia || emp.razao_social} · <span className="text-white/70">{formatCpfCnpj(emp.cnpj || emp.cpf)}</span></p> : null; })()}
+          <p className="text-white/70">Gerencie os valores de coparticipação mensal por empresa.</p>
         </div>
 
         {/* Card de filtros em sequência */}

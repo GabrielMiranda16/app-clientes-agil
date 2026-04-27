@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Download, FileText, ArrowLeft, Calendar, Loader2, Search } from 'lucide-react';
+import { Download, FileText, ArrowLeft, Calendar, Loader2, Search, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useCompany } from '@/contexts/CompanyContext';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -286,17 +286,16 @@ const CoparticipacaoClientePage = () => {
       </Helmet>
 
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-white">Minha Coparticipação</h1>
-            <p className="text-white/70">Visualize os lançamentos mensais de coparticipação vinculados ao seu CNPJ.</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate(-1)}>
-              <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-            </Button>
-          </div>
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <button onClick={() => navigate('/select-segmento')} className="text-sm text-white/60 hover:text-white transition-colors">Meus Seguros</button>
+          <ChevronRight className="h-4 w-4 text-white/30" />
+          <span className="text-sm text-white">Minha Coparticipação</span>
+        </div>
+
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-white">Minha Coparticipação</h1>
+          <p className="text-white/70">Visualize os lançamentos mensais de coparticipação vinculados ao seu CNPJ.</p>
         </div>
 
         {/* Filter & Summary */}

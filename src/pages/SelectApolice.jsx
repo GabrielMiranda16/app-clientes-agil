@@ -122,6 +122,13 @@ const SelectApolice = () => {
         </header>
 
         <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 sm:pb-8">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 flex-wrap mb-4">
+            <button onClick={() => navigate('/select-segmento')} className="text-sm text-white/60 hover:text-white transition-colors">Meus Seguros</button>
+            <ChevronRight className="h-4 w-4 text-white/30" />
+            <span className="text-sm text-white">{segConfig?.label || segmento?.toLowerCase().replace(/_/g, ' ')}</span>
+          </div>
+
           <h1 className="text-2xl font-bold tracking-tight text-white mb-6">{segConfig?.label || segmento?.toLowerCase().replace(/_/g, ' ')}</h1>
 
           {apolices.length === 0 ? (
