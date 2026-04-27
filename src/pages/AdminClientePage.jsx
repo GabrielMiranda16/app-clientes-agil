@@ -143,7 +143,7 @@ const AdminClientePage = () => {
     setFilialFormData({
       razao_social: filial.razao_social || '',
       nome_fantasia: filial.nome_fantasia || '',
-      cnpj: filial.cnpj || '',
+      cnpj: filial.cnpj ? applyCnpjMask(filial.cnpj) : '',
       endereco_completo: filial.endereco_completo || '',
     });
     setIsEditFilialModalOpen(true);
