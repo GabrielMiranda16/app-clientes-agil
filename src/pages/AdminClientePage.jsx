@@ -49,6 +49,8 @@ const AdminClientePage = () => {
 
   // Filial modal
   const [isAddFilialModalOpen, setIsAddFilialModalOpen] = useState(false);
+  const [isEditFilialModalOpen, setIsEditFilialModalOpen] = useState(false);
+  const [filialEditando, setFilialEditando] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filialFormData, setFilialFormData] = useState({ razao_social: '', nome_fantasia: '', cnpj: '', endereco_completo: '' });
 
@@ -131,6 +133,35 @@ const AdminClientePage = () => {
       setFilialFormData({ razao_social: '', nome_fantasia: '', cnpj: '', endereco_completo: '' });
     } catch (err) {
       toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao adicionar filial.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleOpenEditFilial = (filial) => {
+    setFilialEditando(filial);
+    setFilialFormData({
+      razao_social: filial.razao_social || '',
+      nome_fantasia: filial.nome_fantasia || '',
+      cnpj: filial.cnpj || '',
+      endereco_completo: filial.endereco_completo || '',
+    });
+    setIsEditFilialModalOpen(true);
+  };
+
+  const handleEditFilial = async (e) => {
+    e.preventDefault();
+    if (!filialFormData.razao_social || !filialFormData.cnpj)
+      return toast({ variant: 'destructive', title: 'Erro', description: 'Razão Social e CNPJ são obrigatórios.' });
+    setIsSubmitting(true);
+    try {
+      const updated = await empresasService.updateEmpresa(filialEditando.id, filialFormData);
+      setFiliais(prev => prev.map(f => f.id === filialEditando.id ? { ...f, ...updated } : f));
+      toast({ title: 'Filial atualizada.' });
+      setIsEditFilialModalOpen(false);
+      setFilialEditando(null);
+    } catch {
+      toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao atualizar filial.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -253,6 +284,10 @@ const AdminClientePage = () => {
                             )}
                           </div>
                           {canManage && (
+                            <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-400 hover:text-blue-600" onClick={() => handleOpenEditFilial(f)}>
+                              <Edit className="h-3.5 w-3.5" />
+                            </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-red-400 hover:text-red-600">
@@ -264,6 +299,7 @@ const AdminClientePage = () => {
                                 <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteFilial(f.id)} className={buttonVariants({ variant: 'destructive' })}>Remover</AlertDialogAction></AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
+                            </div>
                           )}
                         </div>
                       );
@@ -335,6 +371,28 @@ const AdminClientePage = () => {
               <Button type="submit" disabled={isSubmitting} className="bg-[#003580] hover:bg-[#002060] text-white">
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Adicionar
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      {/* Modal Editar Filial */}
+      <Dialog open={isEditFilialModalOpen} onOpenChange={setIsEditFilialModalOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Editar Filial</DialogTitle>
+            <p className="text-sm text-muted-foreground">{filialEditando?.nome_fantasia || filialEditando?.razao_social}</p>
+          </DialogHeader>
+          <form onSubmit={handleEditFilial} className="space-y-4 py-2">
+            <div><Label>Razão Social *</Label><Input id="razao_social" value={filialFormData.razao_social} onChange={handleInputChange} /></div>
+            <div><Label>Nome Fantasia</Label><Input id="nome_fantasia" value={filialFormData.nome_fantasia} onChange={handleInputChange} /></div>
+            <div><Label>CNPJ *</Label><Input id="cnpj" value={filialFormData.cnpj} onChange={handleInputChange} /></div>
+            <div><Label>Endereço</Label><Input id="endereco_completo" value={filialFormData.endereco_completo} onChange={handleInputChange} /></div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsEditFilialModalOpen(false)}>Cancelar</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-[#003580] hover:bg-[#002060] text-white">
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Salvar
               </Button>
             </DialogFooter>
           </form>

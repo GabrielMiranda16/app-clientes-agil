@@ -579,11 +579,6 @@ const AdminDashboard = () => {
                         </Button>
                         {canManage && (
                           <>
-                            {!(matriz.cnpj && matriz.cnpj.replace(/\D/g, '').length === 11) && (
-                              <Button variant="outline" size="sm" className="h-8 px-2 text-xs" onClick={() => openAddFilialModal(matriz)}>
-                                Filial
-                              </Button>
-                            )}
                             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openEditModal(matriz)} title="Editar acesso">
                               <Edit className="h-4 w-4" />
                             </Button>
