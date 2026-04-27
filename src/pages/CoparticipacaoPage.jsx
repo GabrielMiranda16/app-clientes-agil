@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -68,7 +67,7 @@ const CoparticipacaoPage = () => {
   const [importTipo, setImportTipo] = useState('saude');
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [tipoTab, setTipoTab] = useState('saude');
+  const [tipoTab, setTipoTab] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
@@ -798,56 +797,64 @@ const CoparticipacaoPage = () => {
           </Button>
         </div>
 
-        <Tabs value={tipoTab} onValueChange={setTipoTab} className="space-y-4">
-          <TabsList className="bg-white/10">
-            <TabsTrigger value="saude" className="text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
-              Saúde
-            </TabsTrigger>
-            <TabsTrigger value="odonto" className="text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
-              Odonto
-            </TabsTrigger>
-          </TabsList>
+        {/* Card de filtros em sequência */}
+        <Card>
+          <CardContent className="pt-5 space-y-5">
 
-          {['saude', 'odonto'].map((tipo) => (
-            <TabsContent key={tipo} value={tipo} className="space-y-4">
-              {/* Month/Year selector */}
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="flex flex-wrap gap-4 items-end">
-                    <div className="space-y-1">
-                      <Label>Mês</Label>
-                      <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
-                        <SelectTrigger className="w-40">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {months.map(m => (
-                            <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1">
-                      <Label>Ano</Label>
-                      <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(parseInt(v))}>
-                        <SelectTrigger className="w-28">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {years.map(y => (
-                            <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Passo 1 — Tipo */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-gray-700">Tipo de Coparticipação</Label>
+              <div className="flex gap-3">
+                {['saude', 'odonto'].map((tipo) => (
+                  <button
+                    key={tipo}
+                    type="button"
+                    onClick={() => { setTipoTab(tipo); setSearchTerm(''); setSelectedColaboradorId('__all__'); }}
+                    className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${
+                      tipoTab === tipo
+                        ? 'border-[#003580] bg-[#003580] text-white shadow'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-[#003580] hover:text-[#003580]'
+                    }`}
+                  >
+                    {tipo === 'saude' ? 'Saúde' : 'Odonto'}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-              <HistoricoCard tipo={tipo} />
-            </TabsContent>
-          ))}
-        </Tabs>
+            {/* Passo 2 — Mês e Ano (só aparece após escolher tipo) */}
+            {tipoTab && (
+              <div className="flex flex-wrap gap-4 items-end border-t pt-4">
+                <div className="space-y-1">
+                  <Label>Mês</Label>
+                  <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
+                    <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {months.map(m => (
+                        <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Ano</Label>
+                  <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(parseInt(v))}>
+                    <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {years.map(y => (
+                        <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+          </CardContent>
+        </Card>
+
+        {/* Passo 3 — Histórico (só aparece após escolher tipo) */}
+        {tipoTab && <HistoricoCard tipo={tipoTab} />}
 
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogContent className="sm:max-w-[600px]">
