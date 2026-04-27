@@ -131,9 +131,10 @@ const ModalFormContent = React.memo(({ formData, setFormData, age, titulares, is
     });
   };
 
-  const handleCepBlur = async (e) => {
-    const cep = e.target.value.replace(/\D/g, '');
-    if (cep.length !== 8) { return; }
+  const buscarCep = async (cepValue) => {
+    const cep = cepValue.replace(/\D/g, '');
+    if (cep.length !== 8) return;
+    setIsCepLoading(true);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
     try {
@@ -144,14 +145,16 @@ const ModalFormContent = React.memo(({ formData, setFormData, age, titulares, is
         toast({ variant: 'destructive', title: 'CEP não encontrado', description: 'Por favor, verifique o CEP digitado.' });
         return;
       }
-      setFormData(prev => ({ ...prev, rua: data.logradouro, bairro: data.bairro, cidade: data.localidade, estado: data.uf, }));
-      toast({ title: 'Endereço preenchido!', description: 'Os dados de endereço foram carregados.' });
-    } catch (error) {
+      setFormData(prev => ({ ...prev, rua: data.logradouro, bairro: data.bairro, cidade: data.localidade, estado: data.uf }));
+    } catch {
       toast({ variant: 'destructive', title: 'Erro ao buscar CEP', description: 'Não foi possível buscar o endereço. Tente novamente.' });
     } finally {
       clearTimeout(timeout);
+      setIsCepLoading(false);
     }
   };
+
+  const handleCepBlur = (e) => buscarCep(e.target.value);
 
   const handleSelectChange = (id, value) => {
     setFormData(prev => {
@@ -233,7 +236,14 @@ const ModalFormContent = React.memo(({ formData, setFormData, age, titulares, is
             <FormField id="email_beneficiario" label="E-mail"><Input id="email_beneficiario" type="email" value={formData.email_beneficiario} onChange={handleInputChange} /></FormField>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
-            <FormField id="cep" label="CEP"><Input id="cep" value={formData.cep} onChange={handleInputChange} onBlur={handleCepBlur} /></FormField>
+            <FormField id="cep" label="CEP">
+              <div className="flex gap-2">
+                <Input id="cep" value={formData.cep} placeholder="00000-000" maxLength={9} onChange={handleInputChange} onBlur={handleCepBlur} />
+                <button type="button" onClick={() => buscarCep(formData.cep)} disabled={isCepLoading} className="px-3 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 flex items-center gap-1 text-sm">
+                  {isCepLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                </button>
+              </div>
+            </FormField>
             <div className="md:col-span-2"><FormField id="rua" label="Rua"><Input id="rua" value={formData.rua} onChange={handleInputChange} /></FormField></div>
             <FormField id="numero" label="Número"><Input id="numero" value={formData.numero} onChange={handleInputChange} /></FormField>
             <FormField id="complemento" label="Complemento"><Input id="complemento" value={formData.complemento} onChange={handleInputChange} /></FormField>
@@ -342,6 +352,7 @@ const ClientDashboard = () => {
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCepLoading, setIsCepLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBeneficiario, setEditingBeneficiario] = useState(null);
   const [formData, setFormData] = useState(emptyBeneficiario);
