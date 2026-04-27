@@ -28,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Users, UserCheck, UserX, UserMinus, Plus, Edit, Trash2, Search, Loader2, Info, Heart, Smile, Hotel as Hospital, ExternalLink, CheckCircle2, Calendar, Timer, RotateCcw, AlertCircle, X, User, ClipboardList, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, UserCheck, UserX, UserMinus, Plus, Edit, Trash2, Search, Loader2, Info, Heart, Smile, Hotel as Hospital, ExternalLink, CheckCircle2, Calendar, Timer, RotateCcw, AlertCircle, X, User, ClipboardList, Clock, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { applyCpfMask, applyPhoneMask, applyCepMask, formatCpfCnpj } from '@/lib/masks';
 import { calculateAge, formatCurrency, formatDate } from '@/lib/utils';
