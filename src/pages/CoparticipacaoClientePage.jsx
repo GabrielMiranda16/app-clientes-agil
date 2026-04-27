@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Download, FileText, ArrowLeft, Calendar, Loader2, Search, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useCompany } from '@/contexts/CompanyContext';
@@ -25,6 +25,8 @@ import { formatCpfCnpj } from '@/lib/masks';
 const CoparticipacaoClientePage = () => {
   const navigate = useNavigate();
   const { empresaId } = useParams();
+  const location = useLocation();
+  const fromState = location.state;
   const { setSelectedCompanyId } = useCompany();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -289,6 +291,22 @@ const CoparticipacaoClientePage = () => {
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 flex-wrap">
           <button onClick={() => navigate('/select-segmento')} className="text-sm text-white/60 hover:text-white transition-colors">Meus Seguros</button>
+          {fromState?.segLabel && (
+            <>
+              <ChevronRight className="h-4 w-4 text-white/30" />
+              <button onClick={() => navigate(`/select-apolice/${fromState.segmento?.toLowerCase()}`)} className="text-sm text-white/60 hover:text-white transition-colors">{fromState.segLabel}</button>
+            </>
+          )}
+          {fromState?.apoliceId && (
+            <>
+              <ChevronRight className="h-4 w-4 text-white/30" />
+              <button onClick={() => navigate(`/apolice/${fromState.apoliceId}`)} className="text-sm text-white/60 hover:text-white transition-colors">
+                {fromState.apoliceNum ? `Apólice ${fromState.apoliceNum}` : 'Apólice'}
+              </button>
+            </>
+          )}
+          <ChevronRight className="h-4 w-4 text-white/30" />
+          <button onClick={() => navigate(`/cliente/${empresaId}`, { state: fromState })} className="text-sm text-white/60 hover:text-white transition-colors">Gestão</button>
           <ChevronRight className="h-4 w-4 text-white/30" />
           <span className="text-sm text-white">Minha Coparticipação</span>
         </div>

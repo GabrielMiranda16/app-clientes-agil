@@ -1014,7 +1014,7 @@ const ClientDashboard = () => {
                 </p>
               </div>
               {user?.perfil === 'CLIENTE' && (
-                <Button variant="ghost" onClick={() => navigate(`/cliente/${empresaId}/coparticipacao`)} className="text-white/80 hover:text-white hover:bg-white/10 border border-white/20 shrink-0">
+                <Button variant="ghost" onClick={() => navigate(`/cliente/${empresaId}/coparticipacao`, { state: location.state })} className="text-white/80 hover:text-white hover:bg-white/10 border border-white/20 shrink-0">
                   <DollarSign className="mr-2 h-4 w-4" /> Minha Coparticipação <ChevronRight className="ml-1 h-4 w-4" />
                 </Button>
               )}
