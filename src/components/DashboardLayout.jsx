@@ -200,16 +200,18 @@ const DashboardLayout = ({ children }) => {
 
             {/* Desktop nav */}
             <div className="hidden sm:flex items-center space-x-2 md:space-x-4">
-              <div className="hidden lg:flex items-center space-x-4 text-sm font-medium text-white/80">
-                <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
-                  <Calendar className="h-4 w-4 text-white/70" />
-                  <span>{formattedDate}</span>
+              {(user?.perfil === 'CEO' || user?.perfil === 'ADM') && (
+                <div className="hidden lg:flex items-center space-x-4 text-sm font-medium text-white/80">
+                  <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
+                    <Calendar className="h-4 w-4 text-white/70" />
+                    <span>{formattedDate}</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
+                    <Clock className="h-4 w-4 text-white/70" />
+                    <span>{formattedTime} (Brasília)</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full">
-                  <Clock className="h-4 w-4 text-white/70" />
-                  <span>{formattedTime} (Brasília)</span>
-                </div>
-              </div>
+              )}
 
               {isClientDashboard && empresaId && (
                 <NavLink
