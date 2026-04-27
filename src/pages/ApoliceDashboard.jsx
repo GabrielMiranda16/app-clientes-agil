@@ -225,7 +225,14 @@ const ApoliceDashboard = () => {
             )}
             <ChevronRight className="h-4 w-4 text-white/30" />
             <span className="text-sm text-white">
-              {apolice.numero_apolice ? `Apólice ${apolice.numero_apolice}` : segLabel}
+              {(() => {
+                if (apolice.numero_apolice) return `Apólice ${apolice.numero_apolice}`;
+                if (isSVD) {
+                  const nums = (apolice.dados_adicionais?.sub_apolices || []).map(s => s.numero).filter(Boolean);
+                  if (nums.length > 0) return `Apólice ${nums.join(' / ')}`;
+                }
+                return segLabel;
+              })()}
             </span>
           </div>
 
