@@ -157,9 +157,6 @@ const ApoliceDashboard = () => {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16 sm:h-24">
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="text-white/80 hover:text-white hover:bg-white/10">
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
                 <img src={logoUrl} alt="Ágil Seguros" className="h-10 sm:h-20 w-auto object-contain" />
               </div>
               <div className="flex items-center gap-2">
@@ -199,6 +196,13 @@ const ApoliceDashboard = () => {
         </header>
 
         <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 sm:pb-8">
+          {/* Breadcrumb / voltar */}
+          <div className="flex items-center gap-2 mb-4">
+            <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-white/60 hover:text-white transition-colors">
+              <ArrowLeft className="h-4 w-4" /> Voltar
+            </button>
+          </div>
+
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold text-white">
