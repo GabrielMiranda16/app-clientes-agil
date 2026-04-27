@@ -68,8 +68,8 @@ const CoparticipacaoPage = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [tipoTab, setTipoTab] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState('');
+  const [selectedYear, setSelectedYear] = useState('');
 
   const [currentDependents, setCurrentDependents] = useState([]);
   const [selectedDependentId, setSelectedDependentId] = useState('titular');
@@ -335,7 +335,7 @@ const CoparticipacaoPage = () => {
   };
 
   const getMonthName = (monthValue) => {
-    const month = months.find(m => m.value === monthValue);
+    const month = months.find(m => String(m.value) === String(monthValue));
     return month ? month.label : '';
   };
 
@@ -809,7 +809,7 @@ const CoparticipacaoPage = () => {
                   <button
                     key={tipo}
                     type="button"
-                    onClick={() => { setTipoTab(tipo); setSearchTerm(''); setSelectedColaboradorId('__all__'); }}
+                    onClick={() => { setTipoTab(tipo); setSelectedMonth(''); setSelectedYear(''); setSearchTerm(''); setSelectedColaboradorId('__all__'); }}
                     className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${
                       tipoTab === tipo
                         ? 'border-[#003580] bg-[#003580] text-white shadow'
@@ -827,8 +827,8 @@ const CoparticipacaoPage = () => {
               <div className="flex flex-wrap gap-4 items-end border-t pt-4">
                 <div className="space-y-1">
                   <Label>Mês</Label>
-                  <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
-                    <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                  <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(v)}>
+                    <SelectTrigger className="w-40"><SelectValue placeholder="Selecione o mês" /></SelectTrigger>
                     <SelectContent>
                       {months.map(m => (
                         <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>
@@ -838,8 +838,8 @@ const CoparticipacaoPage = () => {
                 </div>
                 <div className="space-y-1">
                   <Label>Ano</Label>
-                  <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(parseInt(v))}>
-                    <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                  <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(v)}>
+                    <SelectTrigger className="w-28"><SelectValue placeholder="Ano" /></SelectTrigger>
                     <SelectContent>
                       {years.map(y => (
                         <SelectItem key={y} value={String(y)}>{y}</SelectItem>
@@ -853,8 +853,8 @@ const CoparticipacaoPage = () => {
           </CardContent>
         </Card>
 
-        {/* Passo 3 — Histórico (só aparece após escolher tipo) */}
-        {tipoTab && <HistoricoCard tipo={tipoTab} />}
+        {/* Passo 3 — Histórico (só aparece após escolher tipo + mês + ano) */}
+        {tipoTab && selectedMonth && selectedYear && <HistoricoCard tipo={tipoTab} />}
 
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogContent className="sm:max-w-[600px]">
