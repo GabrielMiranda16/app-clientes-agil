@@ -506,41 +506,39 @@ const ApoliceDashboard = () => {
                         <Users className="h-4 w-4" /> Beneficiários
                       </CardTitle>
                       <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white" onClick={() => navigate(`/cliente/${apolice.empresa_id}`)}>
-                        {isAdmin ? 'Gerenciar' : 'Ver'} <ChevronRight className="ml-1 h-4 w-4" />
+                        Gerenciar <ChevronRight className="ml-1 h-4 w-4" />
                       </Button>
                     </CardHeader>
                     <CardContent>
                       {loadingBen ? (
                         <div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></div>
-                      ) : beneficiarios.length === 0 ? (
-                        <div className="text-center py-8 text-gray-400">
-                          <Users className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                          <p className="text-sm">Nenhum beneficiário cadastrado.</p>
-                          <Button size="sm" className="mt-3 bg-[#003580] hover:bg-[#002060] text-white" onClick={() => navigate(`/cliente/${apolice.empresa_id}`)}>
-                            {isAdmin ? 'Adicionar Beneficiário' : 'Ver detalhes'}
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          {[...beneficiarios].sort((a, b) => new Date(b.data_inclusao || b.created_at || 0) - new Date(a.data_inclusao || a.created_at || 0)).slice(0, 5).map(b => (
-                            <div key={b.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border text-sm">
-                              <div>
-                                <p className="font-medium text-gray-800">{b.nome_completo}</p>
-                                <p className="text-xs text-gray-400">{formatCpfCnpj(b.cpf)} · {b.tipo_beneficiario || '—'}</p>
-                              </div>
-                              <Badge variant="outline" className={b.data_exclusao ? 'text-red-600' : 'text-green-600'}>
-                                {b.data_exclusao ? 'Inativo' : 'Ativo'}
-                              </Badge>
+                      ) : (() => {
+                        const ativos = beneficiarios.filter(b => !b.data_exclusao);
+                        const saude  = ativos.filter(b => b.saude_ativo);
+                        const odonto = ativos.filter(b => b.odonto_ativo);
+                        const vida   = ativos.filter(b => b.vida_ativo);
+                        const cards = [
+                          { label: 'Beneficiários Ativos', value: ativos.length,  color: 'bg-[#003580]', text: 'text-white' },
+                          { label: 'Planos de Saúde',      value: saude.length,   color: 'bg-[#003580]/10', text: 'text-[#003580]' },
+                          { label: 'Planos de Odonto',     value: odonto.length,  color: 'bg-[#003580]/10', text: 'text-[#003580]' },
+                          { label: 'Seguros de Vida',      value: vida.length,    color: 'bg-[#003580]/10', text: 'text-[#003580]' },
+                        ];
+                        return (
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                              {cards.map(({ label, value, color, text }) => (
+                                <div key={label} className={`${color} rounded-xl p-4`}>
+                                  <p className={`text-xs font-semibold uppercase mb-1 ${text} opacity-70`}>{label}</p>
+                                  <p className={`text-3xl font-bold ${text}`}>{value}</p>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                          {beneficiarios.length > 5 && (
-                            <p className="text-xs text-gray-400 text-center pt-1">+{beneficiarios.length - 5} outros</p>
-                          )}
-                          <Button size="sm" variant="outline" className="w-full mt-2" onClick={() => navigate(`/cliente/${apolice.empresa_id}`)}>
-                            Ver todos {isAdmin && 'e gerenciar'} <ChevronRight className="ml-1 h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      )}
+                            <Button size="sm" variant="outline" className="w-full mt-1" onClick={() => navigate(`/cliente/${apolice.empresa_id}`)}>
+                              Ver e gerenciar beneficiários <ChevronRight className="ml-1 h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        );
+                      })()}
                     </CardContent>
                   </Card>
                 </TabsContent>
@@ -620,15 +618,15 @@ const ApoliceDashboard = () => {
                         return (
                           <div className="space-y-3">
                             <div className="grid grid-cols-2 gap-3">
-                              <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
-                                <p className="text-xs text-blue-500 uppercase font-semibold mb-1">Saúde</p>
-                                <p className="text-xl font-bold text-blue-700">{fmt(totalSaude)}</p>
-                                <p className="text-xs text-blue-400 mt-0.5">{doMes.filter(c => c.tipo === 'saude' || !c.tipo).length} lançamento(s)</p>
+                              <div className="p-4 bg-[#003580]/10 rounded-xl border border-[#003580]/20">
+                                <p className="text-xs text-[#003580] uppercase font-semibold mb-1">Saúde</p>
+                                <p className="text-xl font-bold text-[#003580]">{fmt(totalSaude)}</p>
+                                <p className="text-xs text-[#003580]/60 mt-0.5">{doMes.filter(c => c.tipo === 'saude' || !c.tipo).length} lançamento(s)</p>
                               </div>
-                              <div className="p-4 bg-green-50 rounded-xl border border-green-100">
-                                <p className="text-xs text-green-500 uppercase font-semibold mb-1">Odonto</p>
-                                <p className="text-xl font-bold text-green-700">{fmt(totalOdonto)}</p>
-                                <p className="text-xs text-green-400 mt-0.5">{doMes.filter(c => c.tipo === 'odonto').length} lançamento(s)</p>
+                              <div className="p-4 bg-[#003580]/10 rounded-xl border border-[#003580]/20">
+                                <p className="text-xs text-[#003580] uppercase font-semibold mb-1">Odonto</p>
+                                <p className="text-xl font-bold text-[#003580]">{fmt(totalOdonto)}</p>
+                                <p className="text-xs text-[#003580]/60 mt-0.5">{doMes.filter(c => c.tipo === 'odonto').length} lançamento(s)</p>
                               </div>
                             </div>
                             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border text-sm">
