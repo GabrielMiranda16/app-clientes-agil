@@ -28,7 +28,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Users, UserCheck, UserX, UserMinus, Plus, Edit, Trash2, Search, Loader2, Info, Heart, Smile, Hotel as Hospital, ExternalLink, CheckCircle2, Calendar, Timer, RotateCcw, AlertCircle, X, User, ClipboardList, Clock, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react';
+import { Users, UserCheck, UserX, UserMinus, Plus, Edit, Trash2, Search, Loader2, Info, Heart, Smile, Hotel as Hospital, ExternalLink, CheckCircle2, Calendar, Timer, RotateCcw, AlertCircle, X, User, ClipboardList, Clock, ChevronLeft, ChevronRight, DollarSign, Upload, FileSpreadsheet, FileText as FilePdf, CheckCheck, AlertTriangle } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { motion } from 'framer-motion';
 import { applyCpfMask, applyPhoneMask, applyCepMask, formatCpfCnpj } from '@/lib/masks';
 import { calculateAge, formatCurrency, formatDate } from '@/lib/utils';
@@ -38,6 +39,7 @@ import { differenceInMinutes } from 'date-fns';
 import { empresasService } from '@/services/empresasService';
 import { beneficiariosService } from '@/services/beneficiariosService';
 import { solicitacoesService } from '@/services/solicitacoesService';
+import { supabase } from '@/lib/customSupabaseClient';
 
 const emptyBeneficiario = {
   nome_completo: '', cpf: '', parentesco: '', data_nascimento: '', nome_mae: '', nome_titular: '', celular: '', email_beneficiario: '', 
@@ -384,6 +386,13 @@ const ClientDashboard = () => {
 
   const [showInclusaoAlert, setShowInclusaoAlert] = useState(true);
   const [showExclusaoAlert, setShowExclusaoAlert] = useState(true);
+
+  // Import Beneficiários
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [importStep, setImportStep] = useState('upload'); // 'upload' | 'parsing' | 'preview' | 'saving'
+  const [importedRows, setImportedRows] = useState([]);
+  const [isParsing, setIsParsing] = useState(false);
+  const [importSaving, setImportSaving] = useState(false);
 
   // Effects and Memos
   useEffect(() => {
@@ -926,7 +935,233 @@ const ClientDashboard = () => {
     );
   };
   
-  const getBadgeClass = (situacao) => { 
+  // ── Import Beneficiários ────────────────────────────────────────────────────
+
+  const normalizeStr = (s = '') => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, '').trim();
+
+  const PARENTESCO_OPTS = ['TITULAR','CONJUGE','FILHO','FILHA','PAI','MAE','OUTRO'];
+
+  const buildRowFromParsed = (item, existingCpfs) => {
+    const cpf = (item.cpf || '').replace(/\D/g,'');
+    return {
+      nome_completo:  (item.nome_completo || '').toUpperCase().trim(),
+      cpf,
+      data_nascimento: item.data_nascimento || '',
+      parentesco:     item.parentesco || 'TITULAR',
+      nome_titular:   (item.nome_titular || '').toUpperCase().trim(),
+      matricula:      item.matricula || '',
+      data_admissao:  item.data_admissao || '',
+      situacao:       item.situacao || 'ATIVO',
+      saude_ativo:    (item.planos || []).includes('saude'),
+      odonto_ativo:   (item.planos || []).includes('odonto'),
+      vida_ativo:     (item.planos || []).includes('vida'),
+      _jaExiste:      cpf.length === 11 && existingCpfs.has(cpf),
+    };
+  };
+
+  const detectCols = (headers) => {
+    const cols = { nome:-1, cpf:-1, nascimento:-1, parentesco:-1, nomeTitular:-1, matricula:-1, admissao:-1, situacao:-1 };
+    headers.forEach((h, i) => {
+      const nh = normalizeStr(String(h));
+      if (cols.nome === -1 && /nome|beneficiario|segurado|titular|colaborador|empregado/.test(nh)) cols.nome = i;
+      if (cols.cpf === -1 && /cpf/.test(nh)) cols.cpf = i;
+      if (cols.nascimento === -1 && /nascimento|nasc|datanasc|dtnascimento/.test(nh)) cols.nascimento = i;
+      if (cols.parentesco === -1 && /parentesco|tipo|grau|relacao/.test(nh)) cols.parentesco = i;
+      if (cols.nomeTitular === -1 && /titular|nometitular|nometit/.test(nh) && i !== cols.nome) cols.nomeTitular = i;
+      if (cols.matricula === -1 && /matricula|matricul|codigo|registro/.test(nh)) cols.matricula = i;
+      if (cols.admissao === -1 && /admissao|admis|inclusao|dtinclusao|entrada/.test(nh)) cols.admissao = i;
+      if (cols.situacao === -1 && /situacao|status|ativo|inativo/.test(nh)) cols.situacao = i;
+    });
+    return cols;
+  };
+
+  const parseDate = (raw) => {
+    if (!raw) return '';
+    const s = String(raw).trim();
+    // YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    // DD/MM/YYYY
+    const m = s.match(/^(\d{2})[\/\-](\d{2})[\/\-](\d{4})$/);
+    if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+    // Excel serial
+    if (/^\d+$/.test(s)) {
+      const d = new Date((parseInt(s) - 25569) * 86400000);
+      if (!isNaN(d)) return d.toISOString().split('T')[0];
+    }
+    return '';
+  };
+
+  const parseParentesco = (raw) => {
+    const s = normalizeStr(String(raw || ''));
+    if (/titular/.test(s)) return 'TITULAR';
+    if (/conjuge|esposo|esposa|marido|mulher/.test(s)) return 'CONJUGE';
+    if (/filha/.test(s)) return 'FILHA';
+    if (/filho/.test(s)) return 'FILHO';
+    if (/pai|genitor/.test(s)) return 'PAI';
+    if (/mae|genitora|mother/.test(s)) return 'MAE';
+    return 'OUTRO';
+  };
+
+  const handlePdfImport = async (file) => {
+    setIsParsing(true);
+    setImportStep('parsing');
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      let binary = '';
+      for (let i = 0; i < uint8Array.length; i++) binary += String.fromCharCode(uint8Array[i]);
+      const pdfBase64 = btoa(binary);
+
+      const { data: result, error } = await supabase.functions.invoke('parse-beneficiarios-pdf', {
+        body: { pdfBase64 },
+      });
+
+      if (error) throw new Error(error.message || 'Erro na Edge Function.');
+      if (!result?.data?.length) throw new Error('O PDF não contém dados de beneficiários reconhecíveis.');
+
+      const existingCpfs = new Set(beneficiariosDaEmpresa.map(b => (b.cpf || '').replace(/\D/g,'')));
+      const rows = result.data
+        .filter(item => item.nome_completo)
+        .map(item => buildRowFromParsed(item, existingCpfs));
+
+      setImportedRows(rows);
+      setImportStep('preview');
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro ao processar PDF', description: err.message });
+      setImportStep('upload');
+    } finally {
+      setIsParsing(false);
+    }
+  };
+
+  const handleExcelImport = async (file) => {
+    setIsParsing(true);
+    setImportStep('parsing');
+    try {
+      const raw = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            resolve(XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }));
+          } catch (err) { reject(err); }
+        };
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(file);
+      });
+
+      let headerIdx = 0;
+      for (let i = 0; i < Math.min(15, raw.length); i++) {
+        if (raw[i].filter(c => c !== '').length >= 3) { headerIdx = i; break; }
+      }
+      const headers = raw[headerIdx].map(String);
+      const cols = detectCols(headers);
+      const dataRows = raw.slice(headerIdx + 1).filter(r => r.some(c => c !== ''));
+      const existingCpfs = new Set(beneficiariosDaEmpresa.map(b => (b.cpf || '').replace(/\D/g,'')));
+
+      // First pass: collect all titulares by nome
+      const titularesByNome = {};
+      dataRows.forEach(r => {
+        const parentescoRaw = cols.parentesco >= 0 ? String(r[cols.parentesco] || '') : '';
+        const p = parseParentesco(parentescoRaw);
+        if (p === 'TITULAR') {
+          const nome = cols.nome >= 0 ? String(r[cols.nome] || '').toUpperCase().trim() : '';
+          if (nome) titularesByNome[nome] = nome;
+        }
+      });
+
+      const rows = dataRows.map(r => {
+        const nome = cols.nome >= 0 ? String(r[cols.nome] || '').toUpperCase().trim() : '';
+        if (!nome) return null;
+        const cpf = (cols.cpf >= 0 ? String(r[cols.cpf] || '') : '').replace(/\D/g,'');
+        const parentesco = parseParentesco(cols.parentesco >= 0 ? String(r[cols.parentesco] || '') : '');
+        // Try to find titular name from dedicated column, or from first titular in file
+        let nomeTitular = cols.nomeTitular >= 0 ? String(r[cols.nomeTitular] || '').toUpperCase().trim() : '';
+        if (!nomeTitular && parentesco === 'TITULAR') nomeTitular = nome;
+        if (!nomeTitular && Object.keys(titularesByNome).length === 1) nomeTitular = Object.keys(titularesByNome)[0];
+
+        const situacaoRaw = cols.situacao >= 0 ? normalizeStr(String(r[cols.situacao] || '')) : 'ativo';
+        const situacao = /inativo|inactiv/.test(situacaoRaw) ? 'INATIVO' : 'ATIVO';
+
+        return {
+          nome_completo:   nome,
+          cpf,
+          data_nascimento: parseDate(cols.nascimento >= 0 ? r[cols.nascimento] : ''),
+          parentesco,
+          nome_titular:    nomeTitular,
+          matricula:       cols.matricula >= 0 ? String(r[cols.matricula] || '').trim() : '',
+          data_admissao:   parseDate(cols.admissao >= 0 ? r[cols.admissao] : ''),
+          situacao,
+          saude_ativo:     true,
+          odonto_ativo:    false,
+          vida_ativo:      false,
+          _jaExiste:       cpf.length === 11 && existingCpfs.has(cpf),
+        };
+      }).filter(Boolean);
+
+      if (!rows.length) {
+        toast({ variant: 'destructive', title: 'Nenhum dado encontrado', description: 'Verifique se a planilha está no formato correto.' });
+        setImportStep('upload');
+        return;
+      }
+      setImportedRows(rows);
+      setImportStep('preview');
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro ao ler arquivo', description: err.message });
+      setImportStep('upload');
+    } finally {
+      setIsParsing(false);
+    }
+  };
+
+  const handleImportFile = (file) => {
+    if (!file) return;
+    if (file.name.match(/\.pdf$/i)) return handlePdfImport(file);
+    if (file.name.match(/\.(xlsx|xls|csv)$/i)) return handleExcelImport(file);
+    toast({ variant: 'destructive', title: 'Formato não suportado', description: 'Use .pdf, .xlsx, .xls ou .csv.' });
+  };
+
+  const handleSaveImport = async () => {
+    const toSave = importedRows.filter(r => !r._jaExiste && !r._skip);
+    if (!toSave.length) {
+      toast({ variant: 'destructive', title: 'Nada para salvar' });
+      return;
+    }
+    setImportSaving(true);
+    setImportStep('saving');
+    let saved = 0, errors = 0;
+    for (const row of toSave) {
+      try {
+        await beneficiariosService.createBeneficiario({
+          ...emptyBeneficiario,
+          empresa_id: empresaId,
+          nome_completo:   row.nome_completo,
+          cpf:             row.cpf,
+          data_nascimento: row.data_nascimento || null,
+          parentesco:      row.parentesco,
+          nome_titular:    row.nome_titular || '',
+          matricula_empresa: row.matricula || '',
+          data_admissao:   row.data_admissao || null,
+          situacao:        row.situacao,
+          saude_ativo:     row.saude_ativo,
+          odonto_ativo:    row.odonto_ativo,
+          vida_ativo:      row.vida_ativo,
+        });
+        saved++;
+      } catch { errors++; }
+    }
+    setImportSaving(false);
+    toast({ title: `${saved} beneficiário(s) importado(s)${errors ? ` • ${errors} erro(s)` : ''}` });
+    setIsImportOpen(false);
+    setImportStep('upload');
+    setImportedRows([]);
+    fetchData();
+  };
+
+  // ── End Import ───────────────────────────────────────────────────────────────
+
+  const getBadgeClass = (situacao) => {
     switch (situacao) { 
         case 'ATIVO': return 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100'; 
         case 'INATIVO': return 'bg-red-100 text-red-800 border-red-200 hover:bg-red-100'; 
@@ -1013,11 +1248,16 @@ const ClientDashboard = () => {
                   )}
                 </p>
               </div>
-              {user?.perfil === 'CLIENTE' && (
-                <Button variant="ghost" onClick={() => navigate(`/cliente/${empresaId}/coparticipacao`, { state: location.state })} className="text-white/80 hover:text-white hover:bg-white/10 border border-white/20 shrink-0">
-                  <DollarSign className="mr-2 h-4 w-4" /> Minha Coparticipação <ChevronRight className="ml-1 h-4 w-4" />
+              <div className="flex items-center gap-2 flex-wrap">
+                {user?.perfil === 'CLIENTE' && (
+                  <Button variant="ghost" onClick={() => navigate(`/cliente/${empresaId}/coparticipacao`, { state: location.state })} className="text-white/80 hover:text-white hover:bg-white/10 border border-white/20 shrink-0">
+                    <DollarSign className="mr-2 h-4 w-4" /> Minha Coparticipação <ChevronRight className="ml-1 h-4 w-4" />
+                  </Button>
+                )}
+                <Button variant="ghost" onClick={() => { setImportStep('upload'); setImportedRows([]); setIsImportOpen(true); }} className="text-white/80 hover:text-white hover:bg-white/10 border border-white/20 shrink-0">
+                  <Upload className="mr-2 h-4 w-4" /> Importar Beneficiários
                 </Button>
-              )}
+              </div>
             </div>
           )}
 
@@ -1241,6 +1481,136 @@ const ClientDashboard = () => {
           </DialogContent>
         </Dialog>
         <Dialog open={isAlteracaoModalOpen} onOpenChange={setIsAlteracaoModalOpen}><DialogContent><DialogHeader><DialogTitle>Solicitar Alteração de Plano</DialogTitle><DialogDescription>Você está solicitando a alteração do plano <strong>{alteracaoData.tipoPlano}</strong>.</DialogDescription></DialogHeader><div className="py-4 text-sm text-gray-600"><p>Ao confirmar, uma solicitação de alteração será enviada para a administração.</p><p className="mt-2">Você poderá acompanhar o status desta solicitação no painel do beneficiário.</p></div><DialogFooter><Button variant="outline" onClick={() => setIsAlteracaoModalOpen(false)}>Cancelar</Button><Button onClick={confirmAlteracao} className="bg-blue-600 hover:bg-blue-700 text-white">Confirmar Alteração</Button></DialogFooter></DialogContent></Dialog>
+
+        {/* ── Modal Importar Beneficiários ── */}
+        <Dialog open={isImportOpen} onOpenChange={(v) => { if (!isParsing && !importSaving) { setIsImportOpen(v); if (!v) { setImportStep('upload'); setImportedRows([]); } } }}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Upload className="h-5 w-5 text-[#003580]" /> Importar Beneficiários
+              </DialogTitle>
+            </DialogHeader>
+
+            {/* Step: upload */}
+            {importStep === 'upload' && (
+              <div className="space-y-6 py-4">
+                <p className="text-sm text-gray-500">Selecione um arquivo da seguradora. Suportamos PDF (IA extrai os dados automaticamente) e Excel/CSV.</p>
+                <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-200 rounded-2xl cursor-pointer hover:border-[#003580]/50 hover:bg-blue-50/30 transition-colors">
+                  <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                  <span className="text-sm font-medium text-gray-600">Clique ou arraste o arquivo aqui</span>
+                  <span className="text-xs text-gray-400 mt-1">.pdf, .xlsx, .xls, .csv</span>
+                  <input type="file" className="hidden" accept=".pdf,.xlsx,.xls,.csv" onChange={e => { const f = e.target.files?.[0]; if (f) handleImportFile(f); e.target.value = ''; }} />
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-blue-50 rounded-xl p-3 text-xs text-blue-800">
+                    <FilePdf className="h-4 w-4 mb-1" /><strong>PDF</strong><br/>IA da Anthropic lê o documento e extrai todos os beneficiários automaticamente, inclusive dependentes vinculados ao titular.
+                  </div>
+                  <div className="bg-green-50 rounded-xl p-3 text-xs text-green-800">
+                    <FileSpreadsheet className="h-4 w-4 mb-1" /><strong>Excel / CSV</strong><br/>Detecta colunas automaticamente: nome, CPF, nascimento, parentesco, matrícula, situação, nome do titular.
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step: parsing */}
+            {importStep === 'parsing' && (
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <Loader2 className="h-10 w-10 animate-spin text-[#003580]" />
+                <p className="text-sm font-medium text-gray-600">Analisando arquivo com IA…</p>
+                <p className="text-xs text-gray-400">Isso pode levar alguns segundos</p>
+              </div>
+            )}
+
+            {/* Step: preview */}
+            {importStep === 'preview' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-600">
+                    <strong>{importedRows.filter(r => !r._jaExiste).length}</strong> novos · <span className="text-yellow-600"><strong>{importedRows.filter(r => r._jaExiste).length}</strong> já cadastrados (serão ignorados)</span>
+                  </p>
+                  <Button variant="outline" size="sm" onClick={() => setImportStep('upload')}>Trocar arquivo</Button>
+                </div>
+
+                <div className="overflow-auto rounded-lg border max-h-[45vh]">
+                  <table className="w-full text-xs">
+                    <thead className="bg-gray-50 sticky top-0">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-600">Nome</th>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-600">CPF</th>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-600">Nascimento</th>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-600">Parentesco</th>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-600">Titular</th>
+                        <th className="px-3 py-2 text-center font-semibold text-gray-600">Planos</th>
+                        <th className="px-3 py-2 text-center font-semibold text-gray-600">Status</th>
+                        <th className="px-3 py-2 text-center font-semibold text-gray-600">Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {importedRows.map((row, i) => (
+                        <tr key={i} className={row._jaExiste ? 'bg-yellow-50' : row._skip ? 'bg-gray-50 opacity-50' : 'bg-white'}>
+                          <td className="px-3 py-2 font-medium text-gray-900 max-w-[160px] truncate">{row.nome_completo}</td>
+                          <td className="px-3 py-2 text-gray-500">{row.cpf ? row.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') : '—'}</td>
+                          <td className="px-3 py-2 text-gray-500">{row.data_nascimento ? row.data_nascimento.split('-').reverse().join('/') : '—'}</td>
+                          <td className="px-3 py-2">
+                            <Select value={row.parentesco} onValueChange={v => setImportedRows(prev => prev.map((r,j) => j===i ? {...r, parentesco: v} : r))}>
+                              <SelectTrigger className="h-7 text-xs w-28"><SelectValue /></SelectTrigger>
+                              <SelectContent>{PARENTESCO_OPTS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-3 py-2 text-gray-500 max-w-[130px] truncate">{row.nome_titular || '—'}</td>
+                          <td className="px-3 py-2 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              {[['S','saude_ativo','bg-blue-100 text-blue-700'],['O','odonto_ativo','bg-purple-100 text-purple-700'],['V','vida_ativo','bg-green-100 text-green-700']].map(([lbl, key, cls]) => (
+                                <button key={key} onClick={() => setImportedRows(prev => prev.map((r,j) => j===i ? {...r, [key]: !r[key]} : r))}
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-opacity ${row[key] ? cls : 'bg-gray-100 text-gray-400'}`}>
+                                  {lbl}
+                                </button>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            {row._jaExiste
+                              ? <span className="text-yellow-600 font-medium flex items-center justify-center gap-1"><AlertTriangle className="h-3 w-3"/>Existe</span>
+                              : <span className="text-green-600 font-medium flex items-center justify-center gap-1"><CheckCheck className="h-3 w-3"/>Novo</span>
+                            }
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            {!row._jaExiste && (
+                              <button onClick={() => setImportedRows(prev => prev.map((r,j) => j===i ? {...r, _skip: !r._skip} : r))}
+                                className={`text-xs px-2 py-0.5 rounded ${row._skip ? 'bg-gray-200 text-gray-500' : 'bg-red-50 text-red-500 hover:bg-red-100'}`}>
+                                {row._skip ? 'Incluir' : 'Ignorar'}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <p className="text-xs text-gray-400">Clique nos botões S/O/V para ativar/desativar planos (Saúde, Odonto, Vida). Ajuste o parentesco se necessário.</p>
+              </div>
+            )}
+
+            {/* Step: saving */}
+            {importStep === 'saving' && (
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <Loader2 className="h-10 w-10 animate-spin text-[#003580]" />
+                <p className="text-sm font-medium text-gray-600">Salvando beneficiários…</p>
+              </div>
+            )}
+
+            {importStep === 'preview' && (
+              <DialogFooter>
+                <Button variant="outline" onClick={() => { setIsImportOpen(false); setImportStep('upload'); setImportedRows([]); }}>Cancelar</Button>
+                <Button onClick={handleSaveImport} disabled={importedRows.filter(r => !r._jaExiste && !r._skip).length === 0} className="bg-[#003580] hover:bg-[#002060] text-white">
+                  <CheckCheck className="mr-2 h-4 w-4" />
+                  Importar {importedRows.filter(r => !r._jaExiste && !r._skip).length} beneficiário(s)
+                </Button>
+              </DialogFooter>
+            )}
+          </DialogContent>
+        </Dialog>
 
       </DashboardLayout>
     </>
