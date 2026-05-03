@@ -3,6 +3,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const PROMPT = 'Este e um relatorio ou lista de beneficiarios de um plano de saude, odontologico ou de vida de uma seguradora brasileira.\n\nExtraia TODOS os beneficiarios presentes no documento.\n\nPara cada beneficiario retorne:\n- nome_completo: Nome completo da pessoa (em MAIUSCULAS)\n- cpf: CPF com apenas 11 digitos numericos, sem pontos ou tracas (ex: "12345678901"). Se nao encontrado, use ""\n- data_nascimento: Data no formato YYYY-MM-DD. Se nao encontrado, use ""\n- parentesco: Um dos valores: "TITULAR", "CONJUGE", "FILHO", "FILHA", "PAI", "MAE", "OUTRO". Deduza pelo campo de tipo/parentesco do documento. Se nao encontrado, use "TITULAR"\n- nome_titular: Nome do titular ao qual este beneficiario esta vinculado. Para titulares, use o proprio nome. Para dependentes, use o nome do titular correspondente conforme aparece no documento\n- matricula: Numero de matricula ou codigo do beneficiario. Se nao encontrado, use ""\n- data_admissao: Data de admissao/inclusao no formato YYYY-MM-DD. Se nao encontrado, use ""\n- situacao: "ATIVO" ou "INATIVO". Se nao informado, use "ATIVO"\n- planos: array com os planos ativos da pessoa. Valores possiveis: "saude", "odonto", "vida". Ex: ["saude", "odonto"]\n\nRetorne APENAS um JSON valido no seguinte formato, sem nenhum texto antes ou depois:\n[\n  {\n    "nome_completo": "NOME COMPLETO",\n    "cpf": "12345678901",\n    "data_nascimento": "1990-01-15",\n    "parentesco": "TITULAR",\n    "nome_titular": "NOME DO TITULAR",\n    "matricula": "12345",\n    "data_admissao": "2020-03-01",\n    "situacao": "ATIVO",\n    "planos": ["saude"]\n  }\n]\n\nRegras obrigatorias:\n- Retorne SOMENTE o JSON, absolutamente nada mais\n- Inclua TODOS os beneficiarios do documento, titulares e dependentes\n- Para dependentes, sempre preencha nome_titular com o nome do titular correspondente\n- planos deve ser array, nunca string\n- Se o documento for de saude, inclua "saude" nos planos; se for odonto, inclua "odonto"; se for vida, inclua "vida"\n- Se o documento misturar tipos, deduza pelo contexto de cada linha';
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -12,14 +14,14 @@ Deno.serve(async (req) => {
     const { pdfBase64 } = await req.json();
 
     if (!pdfBase64) {
-      return new Response(JSON.stringify({ error: 'PDF não informado.' }), {
+      return new Response(JSON.stringify({ error: 'PDF nao informado.' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY não configurada.' }), {
+      return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY nao configurada.' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -48,43 +50,7 @@ Deno.serve(async (req) => {
               },
               {
                 type: 'text',
-                text: `Este é um relatório ou lista de beneficiários de um plano de saúde, odontológico ou de vida de uma seguradora brasileira.
-
-Extraia TODOS os beneficiários presentes no documento.
-
-Para cada beneficiário retorne:
-- nome_completo: Nome completo da pessoa (em MAIÚSCULAS)
-- cpf: CPF com apenas 11 dígitos numéricos, sem pontos ou traços (ex: "12345678901"). Se não encontrado, use ""
-- data_nascimento: Data no formato YYYY-MM-DD. Se não encontrado, use ""
-- parentesco: Um dos valores: "TITULAR", "CONJUGE", "FILHO", "FILHA", "PAI", "MAE", "OUTRO". Deduza pelo campo de tipo/parentesco do documento. Se não encontrado, use "TITULAR"
-- nome_titular: Nome do titular ao qual este beneficiário está vinculado. Para titulares, use o próprio nome. Para dependentes, use o nome do titular correspondente conforme aparece no documento
-- matricula: Número de matrícula ou código do beneficiário. Se não encontrado, use ""
-- data_admissao: Data de admissão/inclusão no formato YYYY-MM-DD. Se não encontrado, use ""
-- situacao: "ATIVO" ou "INATIVO". Se não informado, use "ATIVO"
-- planos: array com os planos ativos da pessoa. Valores possíveis: "saude", "odonto", "vida". Ex: ["saude", "odonto"]
-
-Retorne APENAS um JSON válido no seguinte formato, sem nenhum texto antes ou depois:
-[
-  {
-    "nome_completo": "NOME COMPLETO",
-    "cpf": "12345678901",
-    "data_nascimento": "1990-01-15",
-    "parentesco": "TITULAR",
-    "nome_titular": "NOME DO TITULAR",
-    "matricula": "12345",
-    "data_admissao": "2020-03-01",
-    "situacao": "ATIVO",
-    "planos": ["saude"]
-  }
-]
-
-Regras obrigatórias:
-- Retorne SOMENTE o JSON, absolutamente nada mais
-- Inclua TODOS os beneficiários do documento, titulares e dependentes
-- Para dependentes, sempre preencha nome_titular com o nome do titular correspondente
-- planos deve ser array, nunca string
-- Se o documento for de saúde, inclua "saude" nos planos; se for odonto, inclua "odonto"; se for vida, inclua "vida"
-- Se o documento misturar tipos, deduza pelo contexto de cada linha`,
+                text: PROMPT,
               },
             ],
           },
@@ -94,15 +60,15 @@ Regras obrigatórias:
 
     if (!anthropicRes.ok) {
       const errText = await anthropicRes.text();
-      throw new Error(`Anthropic API error ${anthropicRes.status}: ${errText}`);
+      throw new Error('Anthropic API error ' + anthropicRes.status + ': ' + errText);
     }
 
     const anthropicData = await anthropicRes.json();
-    const text: string = anthropicData.content?.[0]?.text || '';
+    const text = anthropicData.content?.[0]?.text || '';
 
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
-      throw new Error('Claude não retornou dados estruturados. Verifique se o PDF contém uma lista de beneficiários.');
+      throw new Error('Claude nao retornou dados estruturados.');
     }
 
     const data = JSON.parse(jsonMatch[0]);
@@ -111,7 +77,7 @@ Regras obrigatórias:
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  } catch (err: any) {
+  } catch (err) {
     console.error('[parse-beneficiarios-pdf]', err);
     return new Response(JSON.stringify({ error: err.message || 'Erro ao processar o PDF.' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
