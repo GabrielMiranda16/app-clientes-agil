@@ -999,9 +999,9 @@ const ClientDashboard = () => {
     // DD/MM/YYYY
     const m = s.match(/^(\d{2})[\/\-](\d{2})[\/\-](\d{4})$/);
     if (m) return `${m[3]}-${m[2]}-${m[1]}`;
-    // Excel serial
-    if (/^\d+$/.test(s)) {
-      const d = new Date((parseInt(s) - 25569) * 86400000);
+    // Excel serial (int or float like 27892.999...)
+    if (/^\d+(\.\d+)?$/.test(s)) {
+      const d = new Date((parseFloat(s) - 25569) * 86400000);
       if (!isNaN(d)) return d.toISOString().split('T')[0];
     }
     return '';
