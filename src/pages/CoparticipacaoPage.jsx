@@ -376,17 +376,9 @@ const CoparticipacaoPage = () => {
 
   const beneficiariosFiltrados = useMemo(() => {
     if (!selectedCompanyId) return [];
-    const empresaSelecionada = empresas.find(e => String(e.id) === String(selectedCompanyId));
-    if (!empresaSelecionada) return [];
-    let idsDasEmpresas = [];
-    if (empresaSelecionada.tipo === 'MATRIZ') {
-      const filiais = empresas.filter(e => String(e.empresa_matriz_id) === String(selectedCompanyId));
-      idsDasEmpresas = [selectedCompanyId, ...filiais.map(f => f.id)].map(String);
-    } else {
-      idsDasEmpresas = [String(selectedCompanyId)];
-    }
-    return beneficiarios.filter(b => idsDasEmpresas.includes(String(b.empresa_id)) && !b.data_exclusao);
-  }, [beneficiarios, selectedCompanyId, empresas]);
+    // Coparticipação é por apólice/CNPJ — mostra apenas beneficiários da empresa selecionada
+    return beneficiarios.filter(b => String(b.empresa_id) === String(selectedCompanyId) && !b.data_exclusao);
+  }, [beneficiarios, selectedCompanyId]);
 
   const handleAddClick = (tipo) => {
     if (!selectedCompanyId) {
