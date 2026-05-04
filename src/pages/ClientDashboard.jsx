@@ -1658,8 +1658,9 @@ const ClientDashboard = () => {
 
         {/* ── Modal Importar Beneficiários ── */}
         <Dialog open={isImportOpen} onOpenChange={(v) => { if (!isParsing && !importSaving) { setIsImportOpen(v); if (!v) { setImportStep('upload'); setImportedRows([]); } } }}>
-          <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
+          <DialogContent className="w-[95vw] max-w-[90vw] xl:max-w-7xl rounded-2xl p-0 overflow-hidden">
+            <div className="overflow-y-auto max-h-[90vh] p-6">
+            <DialogHeader className="mb-4">
               <DialogTitle className="flex items-center gap-2">
                 <Upload className="h-5 w-5 text-[#003580]" /> Importar Beneficiários
               </DialogTitle>
@@ -1775,7 +1776,7 @@ const ClientDashboard = () => {
             )}
 
             {importStep === 'preview' && (
-              <DialogFooter>
+              <DialogFooter className="mt-4">
                 <Button variant="outline" onClick={() => { setIsImportOpen(false); setImportStep('upload'); setImportedRows([]); }}>Cancelar</Button>
                 <Button onClick={handleSaveImport} disabled={importedRows.filter(r => !r._jaExiste && !r._skip).length === 0} className="bg-[#003580] hover:bg-[#002060] text-white">
                   <CheckCheck className="mr-2 h-4 w-4" />
@@ -1783,6 +1784,7 @@ const ClientDashboard = () => {
                 </Button>
               </DialogFooter>
             )}
+            </div>
           </DialogContent>
         </Dialog>
 
