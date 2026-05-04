@@ -944,20 +944,8 @@ const CoparticipacaoPage = () => {
 
             {importStep === 'upload' && (
               <div className="py-6 space-y-6">
-                <div className="flex gap-4 items-end">
-                  <div className="space-y-1">
-                    <Label>Tipo</Label>
-                    <Select value={importTipo} onValueChange={setImportTipo}>
-                      <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="saude">Saúde</SelectItem>
-                        <SelectItem value="odonto">Odonto</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    Mês de competência: <strong>{getMonthName(selectedMonth)}/{selectedYear}</strong>
-                  </div>
+                <div className="text-sm text-gray-500">
+                  Tipo: <strong>{importTipo === 'saude' ? 'Saúde' : 'Odonto'}</strong> · Mês de competência: <strong>{getMonthName(selectedMonth)}/{selectedYear}</strong>
                 </div>
 
                 <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors">
