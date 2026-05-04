@@ -410,7 +410,10 @@ const AdminSegmentoPage = () => {
                                 );
                               })()}
                               <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-3">
-                                <span className="flex items-center gap-1"><Users className="h-3 w-3" /> Beneficiários, Solicitações e Coparticipação disponíveis dentro</span>
+                                <span className="flex items-center gap-1">
+                                  <Users className="h-3 w-3" />
+                                  <span className="font-semibold text-gray-600">{empBeneficiarios.length}</span> beneficiário{empBeneficiarios.length !== 1 ? 's' : ''} ativo{empBeneficiarios.length !== 1 ? 's' : ''} · Solicitações e Coparticipação disponíveis dentro
+                                </span>
                               </p>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
