@@ -96,7 +96,7 @@ const CoparticipacaoClientePage = () => {
   const getSeguradora = () => {
     const ap = apolices.find(a =>
       String(a.empresa_id) === String(empresaId) &&
-      a.segmento === 'saude-vida-odonto'
+      a.segmento === 'SAUDE_VIDA_ODONTO'
     );
     return ap?.seguradora || null;
   };
