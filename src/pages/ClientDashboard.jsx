@@ -407,6 +407,8 @@ const ClientDashboard = () => {
   const [showExclusaoAlert, setShowExclusaoAlert] = useState(true);
 
   // Import Beneficiários
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [importStep, setImportStep] = useState('upload'); // 'upload' | 'parsing' | 'preview' | 'saving'
   const [importedRows, setImportedRows] = useState([]);
@@ -561,6 +563,22 @@ const ClientDashboard = () => {
     } catch(error) {
         toast({ variant: 'destructive', title: 'Erro ao excluir beneficiário', description: error?.message || JSON.stringify(error) });
     }
+  };
+
+  const deleteSelected = async () => {
+    if (!selectedIds.size) return;
+    setIsBulkDeleting(true);
+    let ok = 0, fail = 0;
+    for (const id of selectedIds) {
+      try {
+        await beneficiariosService.deleteBeneficiario(id);
+        ok++;
+      } catch { fail++; }
+    }
+    setBeneficiarios(prev => prev.filter(b => !selectedIds.has(b.id)));
+    setSelectedIds(new Set());
+    setIsBulkDeleting(false);
+    toast({ title: `${ok} excluído(s)${fail ? ` • ${fail} erro(s)` : ''}` });
   };
 
   const handleSolicitarInclusao = async (beneficiarioId, planosSelecionados, detalhes = {}) => {
@@ -1393,6 +1411,26 @@ const ClientDashboard = () => {
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                     <CardTitle>Beneficiários</CardTitle>
                     <div className="flex items-center gap-2 w-full md:w-auto flex-wrap justify-end">
+                        {selectedIds.size > 0 && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm" disabled={isBulkDeleting}>
+                                {isBulkDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                                Excluir {selectedIds.size} selecionado(s)
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Confirmar Exclusão em Massa</AlertDialogTitle>
+                                <AlertDialogDescription>Você está prestes a excluir <strong>{selectedIds.size} beneficiário(s)</strong>. Esta ação é permanente e não pode ser desfeita.</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={deleteSelected} className={buttonVariants({ variant: 'destructive' })}>Excluir todos</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                         <div className="relative w-full sm:w-auto flex-grow sm:flex-grow-0">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                             <Input placeholder="Buscar por nome, CPF ou carteirinha..." className="pl-10 w-full sm:w-64" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
@@ -1421,6 +1459,19 @@ const ClientDashboard = () => {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
+                                        <TableHead className="w-10">
+                                          <Checkbox
+                                            checked={currentBeneficiarios.length > 0 && currentBeneficiarios.every(b => selectedIds.has(b.id))}
+                                            onCheckedChange={(v) => {
+                                              setSelectedIds(prev => {
+                                                const next = new Set(prev);
+                                                if (v) filteredBeneficiarios.forEach(b => next.add(b.id));
+                                                else filteredBeneficiarios.forEach(b => next.delete(b.id));
+                                                return next;
+                                              });
+                                            }}
+                                          />
+                                        </TableHead>
                                         <TableHead>Nome Completo</TableHead>
                                         <TableHead>CPF</TableHead>
                                         <TableHead>Parentesco</TableHead>
@@ -1431,7 +1482,17 @@ const ClientDashboard = () => {
                                 </TableHeader>
                                 <TableBody>
                                     {currentBeneficiarios.map((b) => (
-                                        <TableRow key={b.id}>
+                                        <TableRow key={b.id} data-selected={selectedIds.has(b.id)} className={selectedIds.has(b.id) ? 'bg-blue-50' : ''}>
+                                            <TableCell>
+                                              <Checkbox
+                                                checked={selectedIds.has(b.id)}
+                                                onCheckedChange={(v) => setSelectedIds(prev => {
+                                                  const next = new Set(prev);
+                                                  v ? next.add(b.id) : next.delete(b.id);
+                                                  return next;
+                                                })}
+                                              />
+                                            </TableCell>
                                             <TableCell className="font-medium">
                                                 <div className="flex flex-col">
                                                     <span>{b.nome_completo}</span>
