@@ -163,10 +163,9 @@ const CoparticipacaoPage = () => {
         body: { pdfBase64 },
       });
 
-      if (error) throw new Error('Edge Function error: ' + (error.message || JSON.stringify(error)));
-      if (result?.error) throw new Error('Retorno da IA: ' + result.error);
-      if (!result?.data) throw new Error('Resposta vazia da Edge Function. result=' + JSON.stringify(result));
-      if (!result.data.length) throw new Error('IA retornou array vazio. Verifique o PDF.');
+      if (error) throw new Error(error.message || 'Erro ao processar o PDF.');
+      if (result?.error) throw new Error(result.error);
+      if (!result?.data?.length) throw new Error('Não foi possível extrair dados do PDF. Verifique se o arquivo contém informações de coparticipação.');
 
       const rows = result.data.map(item => {
         const matched = autoMatchBeneficiario(item.nome_beneficiario);

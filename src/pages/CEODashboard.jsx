@@ -406,13 +406,6 @@ const CEODashboard = () => {
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-bold tracking-tight text-white">Dashboard do CEO</h1>
               </div>
-              <Button
-                onClick={() => navigate('/admin')}
-                className="bg-[#003580] hover:bg-[#002060] text-white flex items-center gap-2 ml-auto"
-              >
-                <Shield className="h-4 w-4" />
-                Administração
-              </Button>
             </div>
             <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 h-auto md:h-10 gap-1">
               <TabsTrigger className="text-xs md:text-sm" value="dashboard">Dashboard</TabsTrigger>
@@ -551,6 +544,15 @@ const CEODashboard = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
                   <div><CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" />Gestão de Administradores</CardTitle><CardDescription>Adicione e gerencie os administradores do sistema.</CardDescription></div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={() => navigate('/admin')}
+                      variant="outline"
+                      className="flex items-center gap-2"
+                    >
+                      <Shield className="h-4 w-4" />
+                      Administração
+                    </Button>
                   <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                     <DialogTrigger asChild>
                       <Button className="bg-[#003580] hover:bg-[#002060] text-white shadow-md hover:shadow-lg transition-all">
@@ -585,6 +587,7 @@ const CEODashboard = () => {
                       </form>
                     </DialogContent>
                   </Dialog>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
