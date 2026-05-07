@@ -58,7 +58,8 @@ const SelectSegmento = () => {
   }, [user]);
 
   const handleSelectSegmento = (segmento) => {
-    navigate(`/select-apolice/${segmento.toLowerCase()}`);
+    const slug = SEGMENTOS[segmento]?.slug || segmento.toLowerCase().replace(/_/g, '-');
+    navigate(`/select-apolice/${slug}`);
   };
 
   const segmentosDisponiveis = Object.keys(SEGMENTOS).filter(
