@@ -1060,160 +1060,48 @@ const ClientDashboard = () => {
     setIsParsing(true);
     setImportStep('parsing');
     try {
-      // Read file → find sheet (prefer PlanilhaDeVidas)
-      const { raw, isPlanilhaVidas } = await new Promise((resolve, reject) => {
+      // Convert Excel/CSV to text and send to AI Edge Function
+      const csvText = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => {
           try {
-            const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-            const hasPV = wb.SheetNames.includes('PlanilhaDeVidas');
-            const ws = wb.Sheets[hasPV ? 'PlanilhaDeVidas' : wb.SheetNames[0]];
-            resolve({ raw: XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }), isPlanilhaVidas: hasPV });
+            if (file.name.match(/\.csv$/i)) {
+              resolve(e.target.result);
+            } else {
+              const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+              // Prefer 'PlanilhaDeVidas' sheet if present, otherwise first sheet
+              const sheetName = wb.SheetNames.includes('PlanilhaDeVidas')
+                ? 'PlanilhaDeVidas'
+                : wb.SheetNames[0];
+              const ws = wb.Sheets[sheetName];
+              resolve(XLSX.utils.sheet_to_csv(ws));
+            }
           } catch (err) { reject(err); }
         };
         reader.onerror = reject;
-        reader.readAsArrayBuffer(file);
+        if (file.name.match(/\.csv$/i)) {
+          reader.readAsText(file, 'utf-8');
+        } else {
+          reader.readAsArrayBuffer(file);
+        }
       });
 
+      const { data: result, error } = await supabase.functions.invoke('parse-beneficiarios-pdf', {
+        body: { csvText },
+      });
+
+      if (error) throw new Error(error.message || 'Erro na Edge Function.');
+      if (!result?.data?.length) throw new Error('A planilha não contém dados de beneficiários reconhecíveis.');
+
       const existingCpfs = new Set(beneficiariosDaEmpresa.map(b => (b.cpf || '').replace(/\D/g,'')));
-      const padNum = (v, len) => { const s = String(v || '').replace(/\D/g,''); return s ? s.padStart(len, '0') : ''; };
+      const rows = result.data
+        .filter(item => item.nome_completo)
+        .map(item => buildRowFromParsed(item, existingCpfs));
 
-      let rows = [];
-
-      if (isPlanilhaVidas) {
-        // ── PlanilhaDeVidas format (SulAmérica / operadoras) ──
-        // Find header row (contains "TIPO MOVIMENTO")
-        let hi = 0;
-        for (let i = 0; i < Math.min(10, raw.length); i++) {
-          if (raw[i].some(c => normalizeStr(String(c)).includes('tipo movimento'))) { hi = i; break; }
-        }
-        const H = raw[hi].map(h => normalizeStr(String(h)));
-        const ci = (kw) => H.findIndex(h => h.includes(kw));
-
-        const C = {
-          seqFam:    H.findIndex(h => /n.*seq.*01|seq.*01/.test(h)),
-          nome:      H.findIndex(h => h === 'nome*' || h === 'nome'),
-          nomeMae:   ci('nome mae'),
-          cpf:       H.findIndex(h => h === 'cpf#' || h === 'cpf'),
-          dataNasc:  ci('data nasc'),
-          grau:      H.findIndex(h => h.includes('grau parentesco') && !h.includes('responsavel')),
-          cep:       H.findIndex(h => h === 'cep*' || h === 'cep'),
-          tipoLogr:  ci('tipo de logradouro'),
-          logr:      H.findIndex(h => h === 'logradouro*' || h === 'logradouro'),
-          numero:    H.findIndex(h => h === 'numero*' || h === 'numero'),
-          compl:     H.findIndex(h => h === 'complemento'),
-          bairro:    H.findIndex(h => h === 'bairro*' || h === 'bairro'),
-          cidade:    H.findIndex(h => h === 'cidade*' || h === 'cidade'),
-          uf:        H.findIndex(h => h === 'uf*' || h === 'uf'),
-          email:     H.findIndex(h => h === 'e-mail' || h === 'email'),
-          ddd:       H.findIndex(h => h === 'ddd'),
-          fone:      H.findIndex(h => h === 'telefone'),
-          adesao:    ci('data de adesao'),
-          admissao:  H.findIndex(h => h.includes('data admissao')),
-          registro:  ci('registro funcional'),
-        };
-
-        const dataRows = raw.slice(hi + 1).filter(r => r[C.nome] !== '' || r[C.cpf] !== '');
-
-        // First pass: map seqFam → titular name
-        const titularPorSeq = {};
-        dataRows.forEach(r => {
-          const grau = parseInt(String(r[C.grau] || ''));
-          const seq = String(r[C.seqFam] || '').trim();
-          if ((grau === 1 || grau === 10) && seq) {
-            const nome = String(r[C.nome] || '').toUpperCase().trim();
-            if (nome) titularPorSeq[seq] = nome;
-          }
-        });
-
-        rows = dataRows.map(r => {
-          const nome = String(r[C.nome] || '').toUpperCase().trim();
-          if (!nome) return null;
-          const cpf = padNum(r[C.cpf], 11);
-          const parentesco = parseParentesco(r[C.grau]);
-          const seq = String(r[C.seqFam] || '').trim();
-          const nomeTitular = parentesco === 'TITULAR' ? nome : (titularPorSeq[seq] || '');
-          const ddd = String(r[C.ddd] || '').replace(/\D/g,'');
-          const fone = String(r[C.fone] || '').replace(/\D/g,'');
-          const celular = ddd && fone ? `(${ddd}) ${fone.length === 9 ? fone.slice(0,5)+'-'+fone.slice(5) : fone.slice(0,4)+'-'+fone.slice(4)}` : '';
-          const tipoLogr = String(r[C.tipoLogr] || '').trim();
-          const logr = String(r[C.logr] || '').trim();
-          const rua = tipoLogr && logr ? `${tipoLogr} ${logr}` : logr || tipoLogr;
-          const cepFormatado = (() => { const c = padNum(r[C.cep], 8); return c.length === 8 ? c.slice(0,5)+'-'+c.slice(5) : c; })();
-          return {
-            nome_completo:      nome,
-            cpf:                cpf !== '00000000000' ? cpf : '',
-            data_nascimento:    parseDate(r[C.dataNasc]),
-            parentesco,
-            nome_titular:       nomeTitular,
-            nome_mae:           String(r[C.nomeMae] || '').toUpperCase().trim(),
-            matricula:          String(r[C.registro] || '').trim(),
-            data_admissao:      parseDate(r[C.adesao] || r[C.admissao]),
-            situacao:           'ATIVO',
-            cep:                cepFormatado,
-            rua,
-            numero:             String(r[C.numero] || '').trim(),
-            complemento:        String(r[C.compl] || '').trim(),
-            bairro:             String(r[C.bairro] || '').trim(),
-            cidade:             String(r[C.cidade] || '').trim(),
-            estado:             String(r[C.uf] || '').trim(),
-            email_beneficiario: String(r[C.email] || '').trim(),
-            celular,
-            _jaExiste:          cpf.length === 11 && cpf !== '00000000000' && existingCpfs.has(cpf),
-          };
-        }).filter(Boolean);
-
-      } else {
-        // ── Generic format: detect columns by header text ──
-        let headerIdx = 0;
-        for (let i = 0; i < Math.min(15, raw.length); i++) {
-          if (raw[i].filter(c => c !== '').length >= 3) { headerIdx = i; break; }
-        }
-        const headers = raw[headerIdx].map(String);
-        const cols = detectCols(headers);
-        const dataRows = raw.slice(headerIdx + 1).filter(r => r.some(c => c !== ''));
-
-        const titularesBySeq = {};
-        dataRows.forEach(r => {
-          const p = parseParentesco(cols.parentesco >= 0 ? String(r[cols.parentesco] || '') : '');
-          if (p === 'TITULAR') {
-            const nome = cols.nome >= 0 ? String(r[cols.nome] || '').toUpperCase().trim() : '';
-            if (nome) titularesBySeq[nome] = nome;
-          }
-        });
-
-        rows = dataRows.map(r => {
-          const nome = cols.nome >= 0 ? String(r[cols.nome] || '').toUpperCase().trim() : '';
-          if (!nome) return null;
-          const cpf = (cols.cpf >= 0 ? String(r[cols.cpf] || '') : '').replace(/\D/g,'');
-          const parentesco = parseParentesco(cols.parentesco >= 0 ? String(r[cols.parentesco] || '') : '');
-          let nomeTitular = cols.nomeTitular >= 0 ? String(r[cols.nomeTitular] || '').toUpperCase().trim() : '';
-          if (!nomeTitular && parentesco === 'TITULAR') nomeTitular = nome;
-          if (!nomeTitular && Object.keys(titularesBySeq).length === 1) nomeTitular = Object.keys(titularesBySeq)[0];
-          const situacaoRaw = cols.situacao >= 0 ? normalizeStr(String(r[cols.situacao] || '')) : '';
-          return {
-            nome_completo:   nome,
-            cpf,
-            data_nascimento: parseDate(cols.nascimento >= 0 ? r[cols.nascimento] : ''),
-            parentesco,
-            nome_titular:    nomeTitular,
-            matricula:       cols.matricula >= 0 ? String(r[cols.matricula] || '').trim() : '',
-            data_admissao:   parseDate(cols.admissao >= 0 ? r[cols.admissao] : ''),
-            situacao:        /inativo/.test(situacaoRaw) ? 'INATIVO' : 'ATIVO',
-            _jaExiste:       cpf.length === 11 && existingCpfs.has(cpf),
-          };
-        }).filter(Boolean);
-      }
-
-      if (!rows.length) {
-        toast({ variant: 'destructive', title: 'Nenhum dado encontrado', description: 'Verifique se a planilha está no formato correto.' });
-        setImportStep('upload');
-        return;
-      }
       setImportedRows(rows);
       setImportStep('preview');
     } catch (err) {
-      toast({ variant: 'destructive', title: 'Erro ao ler arquivo', description: err.message });
+      toast({ variant: 'destructive', title: 'Erro ao processar planilha', description: err.message });
       setImportStep('upload');
     } finally {
       setIsParsing(false);

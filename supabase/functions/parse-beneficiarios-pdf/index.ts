@@ -11,10 +11,11 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { pdfBase64 } = await req.json();
+    const body = await req.json();
+    const { pdfBase64, csvText } = body;
 
-    if (!pdfBase64) {
-      return new Response(JSON.stringify({ error: 'PDF nao informado.' }), {
+    if (!pdfBase64 && !csvText) {
+      return new Response(JSON.stringify({ error: 'Arquivo nao informado.' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -26,6 +27,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Build message content depending on input type
+    const messageContent = pdfBase64
+      ? [
+          {
+            type: 'document',
+            source: {
+              type: 'base64',
+              media_type: 'application/pdf',
+              data: pdfBase64,
+            },
+          },
+          { type: 'text', text: PROMPT },
+        ]
+      : [
+          { type: 'text', text: PROMPT + '\n\nDados da planilha (CSV):\n\n' + csvText },
+        ];
+
     const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -36,25 +54,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 8192,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'document',
-                source: {
-                  type: 'base64',
-                  media_type: 'application/pdf',
-                  data: pdfBase64,
-                },
-              },
-              {
-                type: 'text',
-                text: PROMPT,
-              },
-            ],
-          },
-        ],
+        messages: [{ role: 'user', content: messageContent }],
       }),
     });
 
@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
 
   } catch (err) {
     console.error('[parse-beneficiarios-pdf]', err);
-    return new Response(JSON.stringify({ error: err.message || 'Erro ao processar o PDF.' }), {
+    return new Response(JSON.stringify({ error: err.message || 'Erro ao processar arquivo.' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
