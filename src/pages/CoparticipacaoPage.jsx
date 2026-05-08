@@ -208,56 +208,64 @@ const CoparticipacaoPage = () => {
       toast({ variant: 'destructive', title: 'Formato não suportado', description: 'Use arquivos .pdf, .xlsx, .xls ou .csv.' });
       return;
     }
+
+    // Excel/CSV → AI parsing
+    setIsParsing(true);
+    setImportStep('parsing');
     try {
-      const raw = await new Promise((resolve, reject) => {
+      const csvText = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => {
           try {
-            const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-            const ws = wb.Sheets[wb.SheetNames[0]];
-            resolve(XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }));
+            if (file.name.match(/\.csv$/i)) {
+              resolve(e.target.result);
+            } else {
+              const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+              const ws = wb.Sheets[wb.SheetNames[0]];
+              resolve(XLSX.utils.sheet_to_csv(ws));
+            }
           } catch (err) { reject(err); }
         };
         reader.onerror = reject;
-        reader.readAsArrayBuffer(file);
+        if (file.name.match(/\.csv$/i)) {
+          reader.readAsText(file, 'utf-8');
+        } else {
+          reader.readAsArrayBuffer(file);
+        }
       });
 
-      // Encontra linha de cabeçalho
-      let headerIdx = 0;
-      for (let i = 0; i < Math.min(15, raw.length); i++) {
-        if (raw[i].filter(c => c !== '').length >= 3) { headerIdx = i; break; }
-      }
-      const headers = raw[headerIdx].map(String);
-      const cols = detectCols(headers);
-      const dataRows = raw.slice(headerIdx + 1).filter(r => r.some(c => c !== ''));
+      const { data: result, error } = await supabase.functions.invoke('parse-coparticipacao-pdf', {
+        body: { csvText },
+      });
 
-      const rows = dataRows.map(r => {
-        const nomeDetectado = cols.beneficiario >= 0 ? String(r[cols.beneficiario] || '').trim() : '';
-        const matched = autoMatchBeneficiario(nomeDetectado);
-        const quemRaw = cols.quemUtilizou >= 0 ? String(r[cols.quemUtilizou] || '').trim() : '';
-        const cpfRaw = cols.cpf >= 0 ? String(r[cols.cpf] || '').replace(/\D/g, '') : '';
-        const valorRaw = cols.valor >= 0 ? r[cols.valor] : 0;
-        const valor = parseFloat(String(valorRaw).replace(/[^\d,.-]/g, '').replace(',', '.')) || 0;
-        const descricao = cols.descricao >= 0 ? String(r[cols.descricao] || '').trim() : '';
+      if (error) throw new Error(error.message || 'Erro ao processar a planilha.');
+      if (result?.error) throw new Error(result.error);
+      if (!result?.data?.length) throw new Error('Não foi possível extrair dados da planilha. Verifique se o arquivo contém informações de coparticipação.');
+
+      const rows = result.data.map(item => {
+        const matched = autoMatchBeneficiario(item.nome_beneficiario);
         return {
-          nome_detectado: nomeDetectado,
+          nome_detectado: item.nome_beneficiario || '',
           beneficiario_id: matched ? String(matched.id) : '',
-          quem_utilizou: quemRaw || matched?.nome_completo || nomeDetectado,
-          cpf_quem_utilizou: cpfRaw || (matched?.cpf || '').replace(/\D/g, ''),
-          valor,
-          descricao,
+          quem_utilizou: item.quem_utilizou || item.nome_beneficiario || '',
+          cpf_quem_utilizou: (item.cpf_quem_utilizou || '').replace(/\D/g, ''),
+          valor: parseFloat(item.valor) || 0,
+          descricao: item.descricao || '',
         };
       }).filter(r => r.nome_detectado || r.valor > 0);
 
       if (rows.length === 0) {
-        toast({ variant: 'destructive', title: 'Nenhum dado identificado', description: 'Verifique se a planilha está no formato correto.' });
+        toast({ variant: 'destructive', title: 'Nenhum dado identificado', description: 'Verifique se a planilha contém dados de coparticipação.' });
+        setImportStep('upload');
         return;
       }
       setImportedRows(rows);
       setImportStep('preview');
     } catch (err) {
-      console.error('Erro ao parsear arquivo:', err);
-      toast({ variant: 'destructive', title: 'Erro ao ler arquivo', description: 'Verifique se o arquivo não está corrompido.' });
+      toast({ variant: 'destructive', title: 'Erro ao processar planilha', description: err.message });
+      setImportStep('upload');
+    } finally {
+      setIsParsing(false);
     }
   };
 
