@@ -1067,35 +1067,113 @@ const ClientDashboard = () => {
     }
   };
 
+  // Detecta e parseia o formato Ágil (UNIDADE, ADMISSÃO, NOME, PARENTESCO, CONTATO, E-MAIL, ENDEREÇO, CEP, NOME DA MÃE, CPF, RG, NASCIMENTO, CONV. SAÚDE, STATUS)
+  const tryParseAgilFormat = (rows, existingCpfs) => {
+    if (!rows.length) return null;
+    const headers = Object.keys(rows[0]).map(h => h.trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, ''));
+    const hasAgilCols = ['NOME', 'CPF', 'NASCIMENTO', 'ADMISSAO', 'PARENTESCO', 'CONV. SAUDE'].every(
+      col => headers.some(h => h.includes(col.replace('Ã', 'A').replace('Õ', 'O')))
+    );
+    if (!hasAgilCols) return null;
+
+    const parseExcelDate = (val) => {
+      if (!val) return '';
+      const s = String(val).trim();
+      // JS Date object from cellDates: true (formato M/D/YY ou similar)
+      const mdy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+      if (mdy) {
+        const year = mdy[3].length === 2 ? (parseInt(mdy[3]) > 30 ? '19' : '20') + mdy[3] : mdy[3];
+        return `${year}-${String(mdy[1]).padStart(2,'0')}-${String(mdy[2]).padStart(2,'0')}`;
+      }
+      return parseDate(s);
+    };
+
+    const parseEndereco = (end) => {
+      if (!end) return { rua: '', bairro: '', cidade: '', estado: '' };
+      const parts = end.split(' - ').map(p => p.trim()).filter(Boolean);
+      const rua = parts[0] || '';
+      const bairro = parts[1] || '';
+      const cidadeEstado = parts[2] || '';
+      const [cidade, estado] = cidadeEstado.includes('-')
+        ? cidadeEstado.split('-').map(p => p.trim())
+        : [cidadeEstado, ''];
+      return { rua, bairro, cidade: cidade || '', estado: estado || 'SP' };
+    };
+
+    const getCol = (row, ...keys) => {
+      for (const key of keys) {
+        const found = Object.keys(row).find(k => k.trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').includes(key));
+        if (found) return String(row[found] || '').trim();
+      }
+      return '';
+    };
+
+    return rows
+      .filter(row => getCol(row, 'NOME'))
+      .map(row => {
+        const cpf = getCol(row, 'CPF').replace(/\D/g, '');
+        const endStr = getCol(row, 'ENDERECO', 'ENDERE');
+        const { rua, bairro, cidade, estado } = parseEndereco(endStr);
+        const plano = getCol(row, 'CONV', 'CONVENIO', 'PLANO');
+        return {
+          nome_completo:      getCol(row, 'NOME').toUpperCase(),
+          cpf,
+          data_nascimento:    parseExcelDate(getCol(row, 'NASCIMENTO', 'NASC')),
+          data_admissao:      parseExcelDate(getCol(row, 'ADMISS')),
+          parentesco:         getCol(row, 'PARENTESCO') || 'TITULAR',
+          nome_titular:       getCol(row, 'NOME').toUpperCase(),
+          nome_mae:           getCol(row, 'MAE', 'NOME DA MAE').toUpperCase(),
+          matricula:          '',
+          situacao:           getCol(row, 'STATUS') || 'ATIVO',
+          celular:            getCol(row, 'CONTATO', 'TELEFONE', 'CELULAR').replace(/\D/g, ''),
+          email_beneficiario: getCol(row, 'E-MAIL', 'EMAIL'),
+          cep:                getCol(row, 'CEP').replace(/\D/g, ''),
+          rua, bairro, cidade, estado,
+          numero:             '',
+          saude_plano_nome:   plano,
+          saude_ativo:        !!plano,
+          _jaExiste:          cpf.length === 11 && existingCpfs.has(cpf),
+        };
+      });
+  };
+
   const handleExcelImport = async (file) => {
     setIsParsing(true);
     setImportStep('parsing');
     try {
-      // Convert Excel/CSV to text and send to AI Edge Function
-      const csvText = await new Promise((resolve, reject) => {
+      const rows = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => {
           try {
             if (file.name.match(/\.csv$/i)) {
-              resolve(e.target.result);
+              const wb = XLSX.read(e.target.result, { type: 'string' });
+              resolve(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' }));
             } else {
               const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
-              // Prefer 'PlanilhaDeVidas' sheet if present, otherwise first sheet
-              const sheetName = wb.SheetNames.includes('PlanilhaDeVidas')
-                ? 'PlanilhaDeVidas'
-                : wb.SheetNames[0];
-              const ws = wb.Sheets[sheetName];
-              resolve(XLSX.utils.sheet_to_csv(ws));
+              const sheetName = wb.SheetNames.includes('PlanilhaDeVidas') ? 'PlanilhaDeVidas' : wb.SheetNames[0];
+              resolve(XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' }));
             }
           } catch (err) { reject(err); }
         };
         reader.onerror = reject;
-        if (file.name.match(/\.csv$/i)) {
-          reader.readAsText(file, 'utf-8');
-        } else {
-          reader.readAsArrayBuffer(file);
-        }
+        file.name.match(/\.csv$/i) ? reader.readAsText(file, 'utf-8') : reader.readAsArrayBuffer(file);
       });
+
+      const existingCpfs = new Set(beneficiariosDaEmpresa.map(b => (b.cpf || '').replace(/\D/g,'')));
+
+      // Tenta parser direto para formato Ágil (sem IA, instantâneo)
+      const directRows = tryParseAgilFormat(rows, existingCpfs);
+      if (directRows) {
+        setImportedRows(directRows.filter(r => r.nome_completo));
+        setImportStep('preview');
+        return;
+      }
+
+      // Fallback: envia CSV para IA (formatos desconhecidos)
+      const csvText = [
+        Object.keys(rows[0]).join(','),
+        ...rows.map(r => Object.values(r).map(v => `"${String(v).replace(/"/g,'""')}"`).join(','))
+      ].join('\n');
 
       const { data: result, error } = await supabase.functions.invoke('parse-beneficiarios-pdf', {
         body: { csvText },
@@ -1104,12 +1182,7 @@ const ClientDashboard = () => {
       if (error) throw new Error(error.message || 'Erro na Edge Function.');
       if (!result?.data?.length) throw new Error('A planilha não contém dados de beneficiários reconhecíveis.');
 
-      const existingCpfs = new Set(beneficiariosDaEmpresa.map(b => (b.cpf || '').replace(/\D/g,'')));
-      const rows = result.data
-        .filter(item => item.nome_completo)
-        .map(item => buildRowFromParsed(item, existingCpfs));
-
-      setImportedRows(rows);
+      setImportedRows(result.data.filter(item => item.nome_completo).map(item => buildRowFromParsed(item, existingCpfs)));
       setImportStep('preview');
     } catch (err) {
       toast({ variant: 'destructive', title: 'Erro ao processar planilha', description: err.message });
