@@ -3,6 +3,7 @@ const TEMPLATE_ID                 = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
 const PUBLIC_KEY                  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 const TEMPLATE_TERMOS_CLIENTE     = import.meta.env.VITE_EMAILJS_TEMPLATE_TERMOS_CLIENTE;
 const EMPRESA_EMAIL               = 'contato@segurosagil.com.br';
+const LOGIN_URL                   = 'https://www.agilseguros.app/login';
 
 export function generateTempPassword(length = 10) {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#!';
@@ -96,7 +97,8 @@ export async function sendWelcomeEmail({ nomeCliente, emailCliente, senhaTempora
           to_name:       nomeCliente,
           to_email:      emailCliente,
           temp_password: senhaTemporaria,
-          from_name:     'Seguros Ágil',
+          login_url:     LOGIN_URL,
+          from_name:     'Ágil Seguros',
         },
       }),
     });
