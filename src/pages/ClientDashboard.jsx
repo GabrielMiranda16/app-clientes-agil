@@ -963,15 +963,26 @@ const ClientDashboard = () => {
   const buildRowFromParsed = (item, existingCpfs) => {
     const cpf = (item.cpf || '').replace(/\D/g,'');
     return {
-      nome_completo:  (item.nome_completo || '').toUpperCase().trim(),
+      nome_completo:      (item.nome_completo || '').toUpperCase().trim(),
       cpf,
-      data_nascimento: item.data_nascimento || '',
-      parentesco:     item.parentesco || 'TITULAR',
-      nome_titular:   (item.nome_titular || '').toUpperCase().trim(),
-      matricula:      item.matricula || '',
-      data_admissao:  item.data_admissao || '',
-      situacao:       item.situacao || 'ATIVO',
-      _jaExiste:      cpf.length === 11 && existingCpfs.has(cpf),
+      data_nascimento:    item.data_nascimento || '',
+      parentesco:         item.parentesco || 'TITULAR',
+      nome_titular:       (item.nome_titular || '').toUpperCase().trim(),
+      nome_mae:           (item.nome_mae || '').toUpperCase().trim(),
+      matricula:          item.matricula || '',
+      data_admissao:      item.data_admissao || '',
+      situacao:           item.situacao || 'ATIVO',
+      celular:            (item.celular || '').replace(/\D/g,''),
+      email_beneficiario: item.email_beneficiario || '',
+      cep:                (item.cep || '').replace(/\D/g,''),
+      rua:                item.rua || '',
+      numero:             item.numero || '',
+      bairro:             item.bairro || '',
+      cidade:             item.cidade || '',
+      estado:             item.estado || '',
+      saude_plano_nome:   item.saude_plano_nome || '',
+      saude_ativo:        item.saude_ativo === true || item.saude_ativo === 'true',
+      _jaExiste:          cpf.length === 11 && existingCpfs.has(cpf),
     };
   };
 
@@ -1068,7 +1079,7 @@ const ClientDashboard = () => {
             if (file.name.match(/\.csv$/i)) {
               resolve(e.target.result);
             } else {
-              const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+              const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
               // Prefer 'PlanilhaDeVidas' sheet if present, otherwise first sheet
               const sheetName = wb.SheetNames.includes('PlanilhaDeVidas')
                 ? 'PlanilhaDeVidas'
@@ -1128,25 +1139,28 @@ const ClientDashboard = () => {
       try {
         await beneficiariosService.createBeneficiario({
           ...emptyBeneficiario,
-          empresa_id:        empresaId,
-          nome_completo:     row.nome_completo,
-          cpf:               row.cpf || '',
-          data_nascimento:   row.data_nascimento || null,
-          parentesco:        row.parentesco,
-          nome_titular:      row.nome_titular || '',
-          nome_mae:          row.nome_mae || '',
-          matricula_empresa: row.matricula || '',
-          data_admissao:     row.data_admissao || null,
-          situacao:          row.situacao,
-          cep:               row.cep || '',
-          rua:               row.rua || '',
-          numero:            row.numero || '',
-          complemento:       row.complemento || '',
-          bairro:            row.bairro || '',
-          cidade:            row.cidade || '',
-          estado:            row.estado || '',
+          empresa_id:         empresaId,
+          nome_completo:      row.nome_completo,
+          cpf:                row.cpf || '',
+          data_nascimento:    row.data_nascimento || null,
+          parentesco:         row.parentesco,
+          nome_titular:       row.nome_titular || '',
+          nome_mae:           row.nome_mae || '',
+          matricula_empresa:  row.matricula || '',
+          data_admissao:      row.data_admissao || null,
+          situacao:           row.situacao,
+          cep:                row.cep || '',
+          rua:                row.rua || '',
+          numero:             row.numero || '',
+          complemento:        row.complemento || '',
+          bairro:             row.bairro || '',
+          cidade:             row.cidade || '',
+          estado:             row.estado || '',
           email_beneficiario: row.email_beneficiario || '',
-          celular:           row.celular || '',
+          celular:            row.celular || '',
+          saude_ativo:        row.saude_ativo || false,
+          saude_plano_nome:   row.saude_plano_nome || '',
+          saude_data_inclusao: row.data_admissao || null,
         });
         saved++;
       } catch { errors++; }
