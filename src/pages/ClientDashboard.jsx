@@ -956,8 +956,6 @@ const ClientDashboard = () => {
   
   // ── Import Beneficiários ────────────────────────────────────────────────────
 
-  const normalizeStr = (s = '') => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, '').trim();
-
   const PARENTESCO_OPTS = ['TITULAR','CONJUGE','FILHO','FILHA','PAI','MAE','OUTRO'];
 
   const buildRowFromParsed = (item, existingCpfs) => {
@@ -986,54 +984,6 @@ const ClientDashboard = () => {
     };
   };
 
-  const detectCols = (headers) => {
-    const cols = { nome:-1, cpf:-1, nascimento:-1, parentesco:-1, nomeTitular:-1, matricula:-1, admissao:-1, situacao:-1 };
-    headers.forEach((h, i) => {
-      const nh = normalizeStr(String(h));
-      if (cols.nome === -1 && /nome|beneficiario|segurado|titular|colaborador|empregado/.test(nh)) cols.nome = i;
-      if (cols.cpf === -1 && /cpf/.test(nh)) cols.cpf = i;
-      if (cols.nascimento === -1 && /nascimento|nasc|datanasc|dtnascimento/.test(nh)) cols.nascimento = i;
-      if (cols.parentesco === -1 && /parentesco|tipo|grau|relacao/.test(nh)) cols.parentesco = i;
-      if (cols.nomeTitular === -1 && /titular|nometitular|nometit/.test(nh) && i !== cols.nome) cols.nomeTitular = i;
-      if (cols.matricula === -1 && /matricula|matricul|codigo|registro/.test(nh)) cols.matricula = i;
-      if (cols.admissao === -1 && /admissao|admis|inclusao|dtinclusao|entrada/.test(nh)) cols.admissao = i;
-      if (cols.situacao === -1 && /situacao|status|ativo|inativo/.test(nh)) cols.situacao = i;
-    });
-    return cols;
-  };
-
-  const parseDate = (raw) => {
-    if (!raw) return '';
-    const s = String(raw).trim();
-    // YYYY-MM-DD
-    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-    // DD/MM/YYYY
-    const m = s.match(/^(\d{2})[\/\-](\d{2})[\/\-](\d{4})$/);
-    if (m) return `${m[3]}-${m[2]}-${m[1]}`;
-    // Excel serial (int or float like 27892.999...)
-    if (/^\d+(\.\d+)?$/.test(s)) {
-      const d = new Date((parseFloat(s) - 25569) * 86400000);
-      if (!isNaN(d)) return d.toISOString().split('T')[0];
-    }
-    return '';
-  };
-
-  const parseParentesco = (raw) => {
-    // Numeric code (PlanilhaDeVidas format)
-    const n = parseInt(String(raw || ''));
-    if (!isNaN(n)) {
-      const MAP = { 1: 'TITULAR', 10: 'TITULAR', 2: 'CONJUGE', 3: 'FILHO', 5: 'MAE', 6: 'FILHA', 9: 'PAI' };
-      return MAP[n] || 'OUTRO';
-    }
-    const s = normalizeStr(String(raw || ''));
-    if (/titular/.test(s)) return 'TITULAR';
-    if (/conjuge|esposo|esposa|marido|mulher/.test(s)) return 'CONJUGE';
-    if (/filha/.test(s)) return 'FILHA';
-    if (/filho/.test(s)) return 'FILHO';
-    if (/pai|genitor/.test(s)) return 'PAI';
-    if (/mae|genitora|mother/.test(s)) return 'MAE';
-    return 'OUTRO';
-  };
 
   const handlePdfImport = async (file) => {
     setIsParsing(true);
@@ -1067,76 +1017,6 @@ const ClientDashboard = () => {
     }
   };
 
-  // Detecta e parseia o formato Ágil (UNIDADE, ADMISSÃO, NOME, PARENTESCO, CONTATO, E-MAIL, ENDEREÇO, CEP, NOME DA MÃE, CPF, RG, NASCIMENTO, CONV. SAÚDE, STATUS)
-  const tryParseAgilFormat = (rows, existingCpfs) => {
-    if (!rows.length) return null;
-    const headers = Object.keys(rows[0]).map(h => h.trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, ''));
-    const hasAgilCols = ['NOME', 'CPF', 'NASCIMENTO', 'ADMISSAO', 'PARENTESCO', 'CONV. SAUDE'].every(
-      col => headers.some(h => h.includes(col.replace('Ã', 'A').replace('Õ', 'O')))
-    );
-    if (!hasAgilCols) return null;
-
-    const parseExcelDate = (val) => {
-      if (!val) return '';
-      const s = String(val).trim();
-      // JS Date object from cellDates: true (formato M/D/YY ou similar)
-      const mdy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-      if (mdy) {
-        const year = mdy[3].length === 2 ? (parseInt(mdy[3]) > 30 ? '19' : '20') + mdy[3] : mdy[3];
-        return `${year}-${String(mdy[1]).padStart(2,'0')}-${String(mdy[2]).padStart(2,'0')}`;
-      }
-      return parseDate(s);
-    };
-
-    const parseEndereco = (end) => {
-      if (!end) return { rua: '', bairro: '', cidade: '', estado: '' };
-      const parts = end.split(' - ').map(p => p.trim()).filter(Boolean);
-      const rua = parts[0] || '';
-      const bairro = parts[1] || '';
-      const cidadeEstado = parts[2] || '';
-      const [cidade, estado] = cidadeEstado.includes('-')
-        ? cidadeEstado.split('-').map(p => p.trim())
-        : [cidadeEstado, ''];
-      return { rua, bairro, cidade: cidade || '', estado: estado || 'SP' };
-    };
-
-    const getCol = (row, ...keys) => {
-      for (const key of keys) {
-        const found = Object.keys(row).find(k => k.trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').includes(key));
-        if (found) return String(row[found] || '').trim();
-      }
-      return '';
-    };
-
-    return rows
-      .filter(row => getCol(row, 'NOME'))
-      .map(row => {
-        const cpf = getCol(row, 'CPF').replace(/\D/g, '');
-        const endStr = getCol(row, 'ENDERECO', 'ENDERE');
-        const { rua, bairro, cidade, estado } = parseEndereco(endStr);
-        const plano = getCol(row, 'CONV', 'CONVENIO', 'PLANO');
-        return {
-          nome_completo:      getCol(row, 'NOME').toUpperCase(),
-          cpf,
-          data_nascimento:    parseExcelDate(getCol(row, 'NASCIMENTO', 'NASC')),
-          data_admissao:      parseExcelDate(getCol(row, 'ADMISS')),
-          parentesco:         getCol(row, 'PARENTESCO') || 'TITULAR',
-          nome_titular:       getCol(row, 'NOME').toUpperCase(),
-          nome_mae:           getCol(row, 'MAE', 'NOME DA MAE').toUpperCase(),
-          matricula:          '',
-          situacao:           getCol(row, 'STATUS') || 'ATIVO',
-          celular:            getCol(row, 'CONTATO', 'TELEFONE', 'CELULAR').replace(/\D/g, ''),
-          email_beneficiario: getCol(row, 'E-MAIL', 'EMAIL'),
-          cep:                getCol(row, 'CEP').replace(/\D/g, ''),
-          rua, bairro, cidade, estado,
-          numero:             '',
-          saude_plano_nome:   plano,
-          saude_ativo:        !!plano,
-          _jaExiste:          cpf.length === 11 && existingCpfs.has(cpf),
-        };
-      });
-  };
-
   const handleExcelImport = async (file) => {
     setIsParsing(true);
     setImportStep('parsing');
@@ -1159,30 +1039,51 @@ const ClientDashboard = () => {
         file.name.match(/\.csv$/i) ? reader.readAsText(file, 'utf-8') : reader.readAsArrayBuffer(file);
       });
 
-      const existingCpfs = new Set(beneficiariosDaEmpresa.map(b => (b.cpf || '').replace(/\D/g,'')));
+      if (!rows.length) throw new Error('Planilha vazia ou sem dados.');
 
-      // Tenta parser direto para formato Ágil (sem IA, instantâneo)
-      const directRows = tryParseAgilFormat(rows, existingCpfs);
-      if (directRows) {
-        setImportedRows(directRows.filter(r => r.nome_completo));
-        setImportStep('preview');
-        return;
+      const existingCpfs = new Set(beneficiariosDaEmpresa.map(b => (b.cpf || '').replace(/\D/g,'')));
+      const headers = Object.keys(rows[0]).join(',');
+
+      // Divide em lotes de 40 linhas e envia todos em paralelo para a IA
+      const CHUNK_SIZE = 40;
+      const chunks = [];
+      for (let i = 0; i < rows.length; i += CHUNK_SIZE) {
+        chunks.push(rows.slice(i, i + CHUNK_SIZE));
       }
 
-      // Fallback: envia CSV para IA (formatos desconhecidos)
-      const csvText = [
-        Object.keys(rows[0]).join(','),
-        ...rows.map(r => Object.values(r).map(v => `"${String(v).replace(/"/g,'""')}"`).join(','))
-      ].join('\n');
+      const results = await Promise.allSettled(
+        chunks.map(chunk => {
+          const csvText = [
+            headers,
+            ...chunk.map(r => Object.values(r).map(v => `"${String(v).replace(/"/g,'""')}"`).join(','))
+          ].join('\n');
+          return supabase.functions.invoke('parse-beneficiarios-pdf', { body: { csvText } });
+        })
+      );
 
-      const { data: result, error } = await supabase.functions.invoke('parse-beneficiarios-pdf', {
-        body: { csvText },
-      });
+      const allItems = [];
+      let hasErrors = false;
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          const { data, error } = result.value;
+          if (error) { hasErrors = true; continue; }
+          if (data?.data?.length) allItems.push(...data.data);
+        } else {
+          hasErrors = true;
+        }
+      }
 
-      if (error) throw new Error(error.message || 'Erro na Edge Function.');
-      if (!result?.data?.length) throw new Error('A planilha não contém dados de beneficiários reconhecíveis.');
+      if (!allItems.length) throw new Error('A IA não conseguiu extrair beneficiários da planilha.');
 
-      setImportedRows(result.data.filter(item => item.nome_completo).map(item => buildRowFromParsed(item, existingCpfs)));
+      if (hasErrors) {
+        toast({ title: 'Atenção', description: 'Alguns blocos da planilha não foram processados, mas os demais foram importados.' });
+      }
+
+      const importRows = allItems
+        .filter(item => item.nome_completo)
+        .map(item => buildRowFromParsed(item, existingCpfs));
+
+      setImportedRows(importRows);
       setImportStep('preview');
     } catch (err) {
       toast({ variant: 'destructive', title: 'Erro ao processar planilha', description: err.message });
