@@ -345,7 +345,14 @@ const AdminSegmentoPage = () => {
           </div>
 
           {/* Header */}
-          <h1 className="text-2xl font-bold tracking-tight text-white">{label}</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold tracking-tight text-white">{label}</h1>
+            {canManage && (
+              <Button size="sm" className="bg-white text-[#003580] hover:bg-gray-100 font-semibold" onClick={() => openNewApolice(todasEmpresas[0]?.id)}>
+                <Plus className="mr-1.5 h-4 w-4" /> Nova Apólice
+              </Button>
+            )}
+          </div>
 
           {/* Empresas */}
           {todasEmpresas.map((empresa) => {
@@ -371,14 +378,7 @@ const AdminSegmentoPage = () => {
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3">
-                    <p className="text-xs text-gray-400 hidden sm:block">{applyCnpjMask(empresa.cnpj)}</p>
-                    {canManage && (
-                      <Button size="sm" variant="outline" className="border-[#003580] text-[#003580] hover:bg-[#003580] hover:text-white h-7 px-2.5 text-xs" onClick={() => openNewApolice(empresa.id)}>
-                        <Plus className="mr-1 h-3.5 w-3.5" /> Nova Apólice
-                      </Button>
-                    )}
-                  </div>
+                  <p className="text-xs text-gray-400 hidden sm:block">{applyCnpjMask(empresa.cnpj)}</p>
                 </div>
 
                 <CardContent className="pt-4 pb-4">
