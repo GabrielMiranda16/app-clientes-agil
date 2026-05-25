@@ -87,7 +87,7 @@ const AdminSegmentoPage = () => {
   const isSVD = segConfig?.isSVD;
 
   useEffect(() => {
-    if (!segConfig) { navigate('/admin'); return; }
+    if (!segConfig) { navigate('/admin/clientes'); return; }
     const load = async () => {
       try {
         setIsLoading(true);
@@ -98,7 +98,7 @@ const AdminSegmentoPage = () => {
         ]);
 
         const matrizData = todasEmpresas.find(e => e.id === id && e.tipo === 'MATRIZ');
-        if (!matrizData) { navigate('/admin'); return; }
+        if (!matrizData) { navigate('/admin/clientes'); return; }
         const filiaisData = todasEmpresas.filter(e => e.tipo === 'FILIAL' && e.empresa_matriz_id === id);
         const todasIds = [id, ...filiaisData.map(f => f.id)];
 
@@ -335,7 +335,7 @@ const AdminSegmentoPage = () => {
 
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 flex-wrap">
-            <button onClick={() => navigate('/admin')} className="text-sm text-white/60 hover:text-white transition-colors">Clientes</button>
+            <button onClick={() => navigate('/admin/clientes')} className="text-sm text-white/60 hover:text-white transition-colors">Clientes</button>
             <ChevronRight className="h-4 w-4 text-white/30" />
             <button onClick={() => navigate(`/admin/cliente/${matrizId}`)} className="text-sm text-white/70 hover:text-white transition-colors">
               {matriz.nome_fantasia || matriz.razao_social}

@@ -184,7 +184,7 @@ const DashboardLayout = ({ children }) => {
     if (user?.perfil === 'CEO') {
       navigate('/ceo');
     } else if (user?.perfil === 'ADM') {
-      navigate('/admin');
+      navigate('/admin/clientes');
     }
   };
 
@@ -338,7 +338,7 @@ const DashboardLayout = ({ children }) => {
                     className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
                     <LayoutDashboard className="h-5 w-5" /> Dashboard CEO
                   </NavLink>
-                  <NavLink to="/admin" onClick={() => setMobileMenuOpen(false)}
+                  <NavLink to="/admin/clientes" onClick={() => setMobileMenuOpen(false)}
                     className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
                     <Shield className="h-5 w-5" /> Administração
                   </NavLink>
@@ -352,7 +352,7 @@ const DashboardLayout = ({ children }) => {
               {/* ADM nav */}
               {user?.perfil === 'ADM' && (
                 <>
-                  <NavLink to="/admin" onClick={() => setMobileMenuOpen(false)}
+                  <NavLink to="/admin/clientes" onClick={() => setMobileMenuOpen(false)}
                     className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
                     <Users className="h-5 w-5" /> Clientes
                   </NavLink>

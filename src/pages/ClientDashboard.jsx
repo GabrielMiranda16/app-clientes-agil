@@ -1191,7 +1191,7 @@ const ClientDashboard = () => {
             if (isAdmin) {
               return (
                 <div className="flex items-center gap-2 flex-wrap">
-                  <button onClick={() => navigate('/admin')} className="text-sm text-white/60 hover:text-white transition-colors">Clientes</button>
+                  <button onClick={() => navigate('/admin/clientes')} className="text-sm text-white/60 hover:text-white transition-colors">Clientes</button>
                   <ChevronRight className="h-4 w-4 text-white/30" />
                   <span className="text-sm text-white">{empresa?.nome_fantasia || empresa?.razao_social || 'Empresa'}</span>
                 </div>
