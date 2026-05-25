@@ -348,7 +348,7 @@ const AdminSegmentoPage = () => {
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold tracking-tight text-white">{label}</h1>
             {canManage && (
-              <Button variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white border border-white/20 rounded-full" onClick={() => openNewApolice(todasEmpresas[0]?.id)}>
+              <Button variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white border border-white/20 rounded-lg" onClick={() => openNewApolice(todasEmpresas[0]?.id)}>
                 <Plus className="mr-1.5 h-4 w-4" /> Nova Apólice
               </Button>
             )}
