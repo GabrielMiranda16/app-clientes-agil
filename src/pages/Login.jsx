@@ -47,8 +47,9 @@ const LoginPage = () => {
       if (user.must_change_password) navigate('/force-change-password');
       else if (user.aceite_termos !== true) navigate('/termos-aceite');
       else if (user.perfil === 'CEO') navigate('/ceo');
-      else if (user.perfil === 'ADM') navigate('/admin');
+      else if (user.perfil === 'ADM') navigate('/admin-selecao');
       else if (user.perfil === 'CLIENTE') navigate('/select-segmento');
+      else if (user.perfil === 'PARCEIRO') navigate('/parceiro');
     } catch (error) {
       console.error("Login error caught in component:", error);
       toast({

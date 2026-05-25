@@ -33,7 +33,8 @@ const TermosAceite = () => {
   const getHomeRoute = () => {
     if (!user) return '/login';
     if (user.perfil === 'CEO') return '/ceo';
-    if (user.perfil === 'ADM') return '/admin';
+    if (user.perfil === 'ADM') return '/admin-selecao';
+    if (user.perfil === 'PARCEIRO') return '/parceiro';
     return '/select-segmento';
   };
 

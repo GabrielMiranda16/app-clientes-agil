@@ -17,11 +17,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { 
-  Users, Building, UserCheck, UserPlus, Trash2, ToggleLeft, ToggleRight, 
-  Loader2, Edit, FileText, Briefcase, ClipboardList, Shield, 
+import {
+  Users, Building, UserCheck, UserPlus, Trash2, ToggleLeft, ToggleRight,
+  Loader2, Edit, FileText, Briefcase, ClipboardList, Shield,
   Clock, CheckCircle2, DollarSign, MoreHorizontal, ChevronLeft, ChevronRight,
-  AlertCircle, TrendingUp, AlertTriangle, Download, FileSpreadsheet
+  AlertCircle, TrendingUp, AlertTriangle, Download, FileSpreadsheet, Handshake, Plus
 } from 'lucide-react';
 import { motion } from "framer-motion";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -83,6 +83,15 @@ const CEODashboard = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(true);
 
+  // Parceiros state
+  const [parceiros, setParceiros] = useState([]);
+  const [isNovoParceiro, setIsNovoParceiro] = useState(false);
+  const [isSubmittingParceiro, setIsSubmittingParceiro] = useState(false);
+  const [novoParceiro, setNovoParceiro] = useState({
+    nome_completo: '', email: '', telefone: '', modalidade: 'PF',
+    cpf_cnpj: '', comissao_percentual: '50',
+  });
+
   const fetchData = async () => {
     try {
       setIsLoading(true);
@@ -91,13 +100,15 @@ const CEODashboard = () => {
         beneficiariosResult,
         solicitacoesResult,
         coparticipacoesResult,
-        usersResult
+        usersResult,
+        parceirosResult,
       ] = await Promise.allSettled([
         empresasService.getEmpresas(),
         beneficiariosService.getAllBeneficiarios(),
         solicitacoesService.getAllSolicitacoes(),
         coparticipacaoService.getAllCoparticipacoes(),
-        supabaseClient.from('users').select('*')
+        supabaseClient.from('users').select('*'),
+        supabaseClient.from('parceiros').select('*, users(name, email, ativo)').order('created_at', { ascending: false }),
       ]);
 
       setEmpresas(empresasResult.status === 'fulfilled' ? (empresasResult.value || []) : []);
@@ -105,6 +116,7 @@ const CEODashboard = () => {
       setSolicitacoes(solicitacoesResult.status === 'fulfilled' ? (solicitacoesResult.value || []) : []);
       setCoparticipacoes(coparticipacoesResult.status === 'fulfilled' ? (coparticipacoesResult.value || []) : []);
       setUsers(usersResult.status === 'fulfilled' ? (usersResult.value?.data || []) : []);
+      setParceiros(parceirosResult.status === 'fulfilled' ? (parceirosResult.value?.data || []) : []);
       try {
         const apolicesData = await apolicesService.getAllApolices();
         setApolices(apolicesData);
@@ -407,11 +419,12 @@ const CEODashboard = () => {
                 <h1 className="text-2xl font-bold tracking-tight text-white">Dashboard do CEO</h1>
               </div>
             </div>
-            <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 h-auto md:h-10 gap-1 bg-white/10 border border-white/20 rounded-lg p-1">
+            <TabsList className="grid grid-cols-3 md:grid-cols-6 h-auto gap-1 bg-white/10 border border-white/20 rounded-lg p-1">
               <TabsTrigger className="text-xs md:text-sm rounded-md text-white/70 data-[state=active]:bg-white/25 data-[state=active]:text-white data-[state=active]:font-semibold hover:text-white" value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger className="text-xs md:text-sm rounded-md text-white/70 data-[state=active]:bg-white/25 data-[state=active]:text-white data-[state=active]:font-semibold hover:text-white" value="empresas">Empresas</TabsTrigger>
               <TabsTrigger className="text-xs md:text-sm rounded-md text-white/70 data-[state=active]:bg-white/25 data-[state=active]:text-white data-[state=active]:font-semibold hover:text-white" value="solicitacoes">Solicitações</TabsTrigger>
               <TabsTrigger className="text-xs md:text-sm rounded-md text-white/70 data-[state=active]:bg-white/25 data-[state=active]:text-white data-[state=active]:font-semibold hover:text-white" value="admins">Admins</TabsTrigger>
+              <TabsTrigger className="text-xs md:text-sm rounded-md text-white/70 data-[state=active]:bg-white/25 data-[state=active]:text-white data-[state=active]:font-semibold hover:text-white" value="parceiros">Parceiros</TabsTrigger>
               <TabsTrigger className="text-xs md:text-sm rounded-md text-white/70 data-[state=active]:bg-white/25 data-[state=active]:text-white data-[state=active]:font-semibold hover:text-white" value="relatorios">Relatórios</TabsTrigger>
             </TabsList>
           </div>
@@ -605,6 +618,47 @@ const CEODashboard = () => {
             </motion.div>
           </TabsContent>
 
+          {/* ── Parceiros ── */}
+          <TabsContent value="parceiros" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-white/70">{parceiros.length} parceiro{parceiros.length !== 1 ? 's' : ''} cadastrado{parceiros.length !== 1 ? 's' : ''}</p>
+              <Button variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white border border-white/20 rounded-lg" onClick={() => setIsNovoParceiro(true)}>
+                <Plus className="mr-1.5 h-4 w-4" /> Novo Parceiro
+              </Button>
+            </div>
+            <div className="space-y-3">
+              {parceiros.length === 0 ? (
+                <Card className="border shadow-sm">
+                  <CardContent className="text-center py-14">
+                    <Handshake className="h-10 w-10 mx-auto mb-3 text-gray-300" />
+                    <p className="text-gray-500 font-medium">Nenhum parceiro cadastrado</p>
+                    <p className="text-xs text-gray-400 mt-1">Clique em "Novo Parceiro" para adicionar o primeiro.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                parceiros.map(p => (
+                  <Card key={p.id} className="border shadow-sm">
+                    <CardContent className="p-4 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-full bg-[#003580]/10">
+                          <Handshake className="h-5 w-5 text-[#003580]" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-800">{p.nome_completo}</p>
+                          <p className="text-xs text-gray-400">{p.users?.email} · {p.modalidade} · {p.comissao_percentual}% comissão</p>
+                          {p.telefone && <p className="text-xs text-gray-400">{p.telefone}</p>}
+                        </div>
+                      </div>
+                      <Badge className={p.users?.ativo !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+                        {p.users?.ativo !== false ? 'Ativo' : 'Inativo'}
+                      </Badge>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </TabsContent>
+
           <TabsContent value="relatorios">
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }}>
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -656,6 +710,90 @@ const CEODashboard = () => {
             </motion.div>
           </TabsContent>
         </Tabs>
+
+        {/* Modal Novo Parceiro */}
+        <Dialog open={isNovoParceiro} onOpenChange={setIsNovoParceiro}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Novo Parceiro</DialogTitle>
+              <DialogDescription>Crie uma conta de parceiro. Uma senha temporária será enviada por e-mail.</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setIsSubmittingParceiro(true);
+              try {
+                const tempPassword = generateTempPassword();
+                const userCreated = await authService.createUser({
+                  name: novoParceiro.nome_completo,
+                  email: novoParceiro.email,
+                  password: tempPassword,
+                  perfil: 'PARCEIRO',
+                  ativo: true,
+                  must_change_password: true,
+                });
+                const { supabase: sb } = await import('@/lib/customSupabaseClient');
+                await (await import('@/lib/customSupabaseClient')).supabase.from('parceiros').insert([{
+                  user_id: userCreated.id,
+                  nome_completo: novoParceiro.nome_completo,
+                  modalidade: novoParceiro.modalidade,
+                  cpf_cnpj: novoParceiro.cpf_cnpj || null,
+                  telefone: novoParceiro.telefone || null,
+                  comissao_percentual: parseFloat(novoParceiro.comissao_percentual) || 50,
+                }]);
+                await sendWelcomeEmail({ nomeCliente: novoParceiro.nome_completo, emailCliente: novoParceiro.email, senhaTemporaria: tempPassword });
+                toast({ title: 'Parceiro criado!', description: `Senha temporária enviada para ${novoParceiro.email}.`, className: 'bg-green-600 text-white border-green-700' });
+                setIsNovoParceiro(false);
+                setNovoParceiro({ nome_completo: '', email: '', telefone: '', modalidade: 'PF', cpf_cnpj: '', comissao_percentual: '50' });
+                fetchData();
+              } catch (err) {
+                toast({ variant: 'destructive', title: 'Erro', description: err.message });
+              } finally {
+                setIsSubmittingParceiro(false);
+              }
+            }} className="space-y-4 py-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 space-y-1">
+                  <Label>Nome completo</Label>
+                  <Input value={novoParceiro.nome_completo} onChange={e => setNovoParceiro(p => ({...p, nome_completo: e.target.value}))} required />
+                </div>
+                <div className="col-span-2 space-y-1">
+                  <Label>E-mail</Label>
+                  <Input type="email" value={novoParceiro.email} onChange={e => setNovoParceiro(p => ({...p, email: e.target.value}))} required />
+                </div>
+                <div className="space-y-1">
+                  <Label>Modalidade</Label>
+                  <Select value={novoParceiro.modalidade} onValueChange={v => setNovoParceiro(p => ({...p, modalidade: v}))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PF">Pessoa Física</SelectItem>
+                      <SelectItem value="CORRETOR">Corretor Autônomo</SelectItem>
+                      <SelectItem value="EMPRESA">Empresa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>CPF / CNPJ</Label>
+                  <Input value={novoParceiro.cpf_cnpj} onChange={e => setNovoParceiro(p => ({...p, cpf_cnpj: e.target.value}))} placeholder="Opcional" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Telefone</Label>
+                  <Input value={novoParceiro.telefone} onChange={e => setNovoParceiro(p => ({...p, telefone: e.target.value}))} placeholder="(11) 99999-0000" />
+                </div>
+                <div className="space-y-1">
+                  <Label>% Comissão padrão</Label>
+                  <Input type="number" min="0" max="100" step="0.5" value={novoParceiro.comissao_percentual} onChange={e => setNovoParceiro(p => ({...p, comissao_percentual: e.target.value}))} />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsNovoParceiro(false)}>Cancelar</Button>
+                <Button type="submit" disabled={isSubmittingParceiro} className="bg-[#003580] hover:bg-[#002060] text-white">
+                  {isSubmittingParceiro && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Criar parceiro
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}><DialogContent className="sm:max-w-[425px]"><DialogHeader><DialogTitle>Editar Administrador</DialogTitle></DialogHeader><form onSubmit={handleEditAdmin}><div className="grid gap-4 py-4"><div className="space-y-2"><Label htmlFor="edit-email">Email</Label><Input id="edit-email" type="email" value={editAdminEmail} onChange={e => setEditAdminEmail(e.target.value)} /></div><div className="space-y-2"><Label htmlFor="edit-password">Senha</Label><Input id="edit-password" type="password" value={editAdminPassword} onChange={e => setEditAdminPassword(e.target.value)} /></div></div><DialogFooter><Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancelar</Button><Button type="submit" disabled={isSubmitting} className="bg-[#003580] hover:bg-[#002060] text-white">{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar Alterações</Button></DialogFooter></form></DialogContent></Dialog>
         
