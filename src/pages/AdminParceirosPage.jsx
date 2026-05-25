@@ -71,7 +71,11 @@ const AdminParceirosPage = () => {
   // Form comissão
   const [formC, setFormC] = useState({ valor_base: '', comissao_percentual: '' });
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+    const interval = setInterval(loadData, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const loadData = async () => {
     setLoading(true);
@@ -543,8 +547,14 @@ const AdminParceirosPage = () => {
                   const isSelected = selected?.id === o.id;
                   return (
                     <Card key={o.id}
-                      className={`border shadow-sm cursor-pointer transition-all border-l-4 ${cfg.border} ${isSelected ? 'ring-2 ring-[#003580]' : 'hover:shadow-md'}`}
+                      className={`relative border shadow-sm cursor-pointer transition-all border-l-4 ${cfg.border} ${isSelected ? 'ring-2 ring-[#003580]' : 'hover:shadow-md'}`}
                       onClick={() => openDetail(o)}>
+                      {o.status === 'SOLICITACAO' && (
+                        <span className="absolute top-3 right-3 flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                        </span>
+                      )}
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
