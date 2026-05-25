@@ -407,12 +407,12 @@ const CEODashboard = () => {
                 <h1 className="text-2xl font-bold tracking-tight text-white">Dashboard do CEO</h1>
               </div>
             </div>
-            <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 h-auto md:h-10 gap-1">
-              <TabsTrigger className="text-xs md:text-sm" value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger className="text-xs md:text-sm" value="empresas">Empresas</TabsTrigger>
-              <TabsTrigger className="text-xs md:text-sm" value="solicitacoes">Solicitações</TabsTrigger>
-              <TabsTrigger className="text-xs md:text-sm" value="admins">Admins</TabsTrigger>
-              <TabsTrigger className="text-xs md:text-sm" value="relatorios">Relatórios</TabsTrigger>
+            <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 h-auto md:h-10 gap-1 bg-white/10 border border-white/20 p-1">
+              <TabsTrigger className="text-xs md:text-sm text-white/70 data-[state=active]:bg-white data-[state=active]:text-[#003580] data-[state=active]:font-semibold hover:text-white" value="dashboard">Dashboard</TabsTrigger>
+              <TabsTrigger className="text-xs md:text-sm text-white/70 data-[state=active]:bg-white data-[state=active]:text-[#003580] data-[state=active]:font-semibold hover:text-white" value="empresas">Empresas</TabsTrigger>
+              <TabsTrigger className="text-xs md:text-sm text-white/70 data-[state=active]:bg-white data-[state=active]:text-[#003580] data-[state=active]:font-semibold hover:text-white" value="solicitacoes">Solicitações</TabsTrigger>
+              <TabsTrigger className="text-xs md:text-sm text-white/70 data-[state=active]:bg-white data-[state=active]:text-[#003580] data-[state=active]:font-semibold hover:text-white" value="admins">Admins</TabsTrigger>
+              <TabsTrigger className="text-xs md:text-sm text-white/70 data-[state=active]:bg-white data-[state=active]:text-[#003580] data-[state=active]:font-semibold hover:text-white" value="relatorios">Relatórios</TabsTrigger>
             </TabsList>
           </div>
 
