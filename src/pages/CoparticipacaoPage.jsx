@@ -204,12 +204,12 @@ const CoparticipacaoPage = () => {
     if (file.name.match(/\.pdf$/i)) {
       return handlePdfImport(file);
     }
-    if (!file.name.match(/\.(xlsx|xls|csv)$/i)) {
-      toast({ variant: 'destructive', title: 'Formato não suportado', description: 'Use arquivos .pdf, .xlsx, .xls ou .csv.' });
+    if (!file.name.match(/\.(xlsx|xls|csv|txt)$/i)) {
+      toast({ variant: 'destructive', title: 'Formato não suportado', description: 'Use arquivos .pdf, .xlsx, .xls, .csv ou .txt.' });
       return;
     }
 
-    // Excel/CSV → AI parsing
+    // Excel/CSV/TXT → AI parsing
     setIsParsing(true);
     setImportStep('parsing');
     try {
@@ -217,7 +217,7 @@ const CoparticipacaoPage = () => {
         const reader = new FileReader();
         reader.onload = (e) => {
           try {
-            if (file.name.match(/\.csv$/i)) {
+            if (file.name.match(/\.(csv|txt)$/i)) {
               resolve(e.target.result);
             } else {
               const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
@@ -227,8 +227,8 @@ const CoparticipacaoPage = () => {
           } catch (err) { reject(err); }
         };
         reader.onerror = reject;
-        if (file.name.match(/\.csv$/i)) {
-          reader.readAsText(file, 'utf-8');
+        if (file.name.match(/\.(csv|txt)$/i)) {
+          reader.readAsText(file, 'latin1');
         } else {
           reader.readAsArrayBuffer(file);
         }
@@ -958,9 +958,9 @@ const CoparticipacaoPage = () => {
                 <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors">
                   <Upload className="h-8 w-8 text-blue-400 mb-2" />
                   <p className="text-sm font-medium text-blue-600">Clique para selecionar o arquivo</p>
-                  <p className="text-xs text-gray-500 mt-1">Formatos aceitos: .pdf, .xlsx, .xls, .csv</p>
-                  <p className="text-xs text-gray-400 mt-1">PDF da seguradora: Claude AI extrai os dados automaticamente</p>
-                  <input type="file" className="hidden" accept=".pdf,.xlsx,.xls,.csv" onChange={(e) => { if (e.target.files?.[0]) handleFileImport(e.target.files[0]); }} />
+                  <p className="text-xs text-gray-500 mt-1">Formatos aceitos: .pdf, .xlsx, .xls, .csv, .txt</p>
+                  <p className="text-xs text-gray-400 mt-1">A IA extrai os dados automaticamente de qualquer formato</p>
+                  <input type="file" className="hidden" accept=".pdf,.xlsx,.xls,.csv,.txt" onChange={(e) => { if (e.target.files?.[0]) handleFileImport(e.target.files[0]); }} />
                 </label>
 
                 <div className="bg-gray-50 rounded-lg p-4 text-xs text-gray-600 space-y-1">
