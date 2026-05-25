@@ -9,6 +9,9 @@ import { Loader2 } from 'lucide-react';
 import LoginPage from '@/pages/Login';
 import CEODashboard from '@/pages/CEODashboard';
 import AdminDashboard from '@/pages/AdminDashboard';
+import AdminSelecaoPage from '@/pages/AdminSelecaoPage';
+import AdminParceirosPage from '@/pages/AdminParceirosPage';
+import ParceiroDashboard from '@/pages/ParceiroDashboard';
 import AdminClientePage from '@/pages/AdminClientePage';
 import AdminSegmentoPage from '@/pages/AdminSegmentoPage';
 import ClientDashboard from '@/pages/ClientDashboard';
@@ -29,8 +32,9 @@ const AppRoutes = () => {
     if (!user) return '/login';
     switch (user.perfil) {
       case 'CEO': return '/ceo';
-      case 'ADM': return '/admin';
+      case 'ADM': return '/admin-selecao';
       case 'CLIENTE': return '/select-segmento';
+      case 'PARCEIRO': return '/parceiro';
       default: return '/login';
     }
   };
@@ -51,7 +55,7 @@ const AppRoutes = () => {
       <Route
         path="/termos-aceite"
         element={
-          <ProtectedRoute allowedRoles={['CEO', 'ADM', 'CLIENTE']}>
+          <ProtectedRoute allowedRoles={['CEO', 'ADM', 'CLIENTE', 'PARCEIRO']}>
             <TermosAceite />
           </ProtectedRoute>
         }
@@ -62,15 +66,39 @@ const AppRoutes = () => {
           <ProtectedRoute allowedRoles={['CEO']}>
             <CEODashboard />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin" 
+      <Route
+        path="/admin-selecao"
+        element={
+          <ProtectedRoute allowedRoles={['CEO', 'ADM']}>
+            <AdminSelecaoPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin"
         element={
           <ProtectedRoute allowedRoles={['CEO', 'ADM']}>
             <AdminDashboard />
           </ProtectedRoute>
-        } 
+        }
+      />
+      <Route
+        path="/admin/parceiros"
+        element={
+          <ProtectedRoute allowedRoles={['CEO', 'ADM']}>
+            <AdminParceirosPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/parceiro"
+        element={
+          <ProtectedRoute allowedRoles={['PARCEIRO']}>
+            <ParceiroDashboard />
+          </ProtectedRoute>
+        }
       />
       <Route
         path="/admin/cliente/:matrizId"
@@ -145,7 +173,7 @@ const AppRoutes = () => {
         }
       />
 
-      <Route path="/force-change-password" element={<ProtectedRoute allowedRoles={['CEO','ADM','CLIENTE']}><ForceChangePassword /></ProtectedRoute>} />
+      <Route path="/force-change-password" element={<ProtectedRoute allowedRoles={['CEO','ADM','CLIENTE','PARCEIRO']}><ForceChangePassword /></ProtectedRoute>} />
       <Route path="/" element={<Navigate to={getHomeRoute()} replace />} />
       <Route path="*" element={<Navigate to={getHomeRoute()} replace />} />
     </Routes>
