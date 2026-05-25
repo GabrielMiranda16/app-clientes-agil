@@ -437,7 +437,7 @@ const AdminDashboard = () => {
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold tracking-tight text-white">Clientes</h1>
             {canManage && (
-              <Button onClick={() => setIsNewClienteModalOpen(true)} className="bg-[#003580] hover:bg-[#002060] text-white">
+              <Button variant="ghost" onClick={() => setIsNewClienteModalOpen(true)} className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white border border-white/20 rounded-lg">
                 <Plus className="mr-2 h-4 w-4" /> Novo Cliente
               </Button>
             )}
