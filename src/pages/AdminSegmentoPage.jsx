@@ -371,7 +371,14 @@ const AdminSegmentoPage = () => {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-400 hidden sm:block">{applyCnpjMask(empresa.cnpj)}</p>
+                  <div className="flex items-center gap-3">
+                    <p className="text-xs text-gray-400 hidden sm:block">{applyCnpjMask(empresa.cnpj)}</p>
+                    {canManage && (
+                      <Button size="sm" variant="outline" className="border-[#003580] text-[#003580] hover:bg-[#003580] hover:text-white h-7 px-2.5 text-xs" onClick={() => openNewApolice(empresa.id)}>
+                        <Plus className="mr-1 h-3.5 w-3.5" /> Nova Apólice
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 <CardContent className="pt-4 pb-4">
@@ -432,11 +439,6 @@ const AdminSegmentoPage = () => {
                             </div>
                           </div>
                         ))
-                      )}
-                      {canManage && (
-                        <Button size="sm" variant="outline" className="mt-1 w-full border-dashed" onClick={() => openNewApolice(empresa.id)}>
-                          <Plus className="mr-1.5 h-3.5 w-3.5" /> {empApolices.length === 0 ? 'Registrar Apólice' : 'Nova Apólice'}
-                        </Button>
                       )}
                     </div>
                   ) : (
@@ -524,11 +526,6 @@ const AdminSegmentoPage = () => {
                             </div>
                           );
                         })
-                      )}
-                      {canManage && (
-                        <Button size="sm" variant="outline" className="mt-1 w-full border-dashed" onClick={() => openNewApolice(empresa.id)}>
-                          <Plus className="mr-1.5 h-3.5 w-3.5" /> Nova Apólice
-                        </Button>
                       )}
                     </div>
                   )}
