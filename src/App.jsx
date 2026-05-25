@@ -24,6 +24,7 @@ import CoparticipacaoPage from '@/pages/CoparticipacaoPage';
 import CoparticipacaoClientePage from '@/pages/CoparticipacaoClientePage';
 import ForceChangePassword from '@/pages/ForceChangePassword';
 import TermosAceite from '@/pages/TermosAceite';
+import OrcamentoPublicoPage from '@/pages/OrcamentoPublicoPage';
 
 const AppRoutes = () => {
   const { user, authLoading } = useAuth();
@@ -174,6 +175,7 @@ const AppRoutes = () => {
       />
 
       <Route path="/force-change-password" element={<ProtectedRoute allowedRoles={['CEO','ADM','CLIENTE','PARCEIRO']}><ForceChangePassword /></ProtectedRoute>} />
+      <Route path="/orcamento/:slug" element={<OrcamentoPublicoPage />} />
       <Route path="/" element={<Navigate to={getHomeRoute()} replace />} />
       <Route path="*" element={<Navigate to={getHomeRoute()} replace />} />
     </Routes>
