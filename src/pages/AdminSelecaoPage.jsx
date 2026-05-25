@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, Handshake } from 'lucide-react';
+import { Users, HeartHandshake } from 'lucide-react';
 import { Helmet } from 'react-helmet';
 import DashboardLayout from '@/components/DashboardLayout';
 
@@ -16,7 +16,7 @@ const AdminSelecaoPage = () => {
       route: '/admin',
     },
     {
-      icon: Handshake,
+      icon: HeartHandshake,
       title: 'Parceiros',
       description: 'Gerencie orçamentos, documentos e comissões dos parceiros de vendas.',
       route: '/admin/parceiros',

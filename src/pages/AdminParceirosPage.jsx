@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Handshake, FileText, Clock, CheckCircle2, DollarSign,
+  HeartHandshake, FileText, Clock, CheckCircle2, DollarSign,
   X, Send, Loader2, ChevronRight, Copy, Check, ExternalLink,
   Upload, Eye, Plus, Trash2, ArrowRight,
 } from 'lucide-react';
@@ -532,7 +532,7 @@ const AdminParceirosPage = () => {
               ) : orcamentosFiltrados.length === 0 ? (
                 <Card className="border shadow-sm">
                   <CardContent className="text-center py-16">
-                    <Handshake className="h-10 w-10 mx-auto mb-3 text-gray-300" />
+                    <HeartHandshake className="h-10 w-10 mx-auto mb-3 text-gray-300" />
                     <p className="text-gray-500 font-medium">Nenhum orçamento {filtro !== 'TODOS' ? `com status "${STATUS_CONFIG[filtro]?.label}"` : 'ainda'}</p>
                   </CardContent>
                 </Card>
