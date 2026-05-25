@@ -162,6 +162,22 @@ const ParceiroDashboard = () => {
 
       if (error) throw error;
       toast({ title: 'Orçamento solicitado!', description: 'O ADM será notificado e responderá em breve.' });
+
+      // Notifica ADM via WhatsApp
+      const segLabel = SEGMENTOS.find(s => s.value === form.segmento)?.label || form.segmento;
+      supabase.functions.invoke('send-whatsapp', {
+        body: {
+          phone: '5511999996863',
+          message:
+            `🔔 *Nova solicitação de orçamento!*\n\n` +
+            `Parceiro: *${parceiro.nome_completo}*\n` +
+            `Cliente: ${form.cliente_nome.trim()}\n` +
+            `Telefone: ${form.cliente_telefone.trim()}\n` +
+            `Segmento: ${segLabel}\n\n` +
+            `Acesse o portal para responder com o orçamento.`,
+        },
+      }).catch(() => {});
+
       setModalAberto(false);
       loadData();
     } catch (err) {

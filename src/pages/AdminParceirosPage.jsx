@@ -109,11 +109,16 @@ const AdminParceirosPage = () => {
   const closeDetail = () => { setSelected(null); setDocs([]); };
 
   const refreshSelected = async (id) => {
-    const { data } = await supabase.from('orcamentos').select('*, parceiros(nome_completo, modalidade, comissao_percentual)').eq('id', id).maybeSingle();
-    if (data) {
+    const [orcRes, docsRes] = await Promise.allSettled([
+      supabase.from('orcamentos').select('*, parceiros(nome_completo, modalidade, comissao_percentual, telefone)').eq('id', id).maybeSingle(),
+      supabase.from('orcamento_documentos').select('*').eq('orcamento_id', id).order('enviado_em', { ascending: true }),
+    ]);
+    if (orcRes.status === 'fulfilled' && orcRes.value.data) {
+      const data = orcRes.value.data;
       setSelected(data);
       setOrcamentos(prev => prev.map(o => o.id === id ? data : o));
     }
+    if (docsRes.status === 'fulfilled') setDocs(docsRes.value.data || []);
   };
 
   const handleResponder = async () => {
@@ -169,6 +174,22 @@ const AdminParceirosPage = () => {
       const { error } = await supabase.from('orcamentos').update(update).eq('id', selected.id);
       if (error) throw error;
       toast({ title: 'Status atualizado!' });
+
+      // Notifica parceiro via WhatsApp
+      const parceiroTel = selected.parceiros?.telefone;
+      if (parceiroTel) {
+        const nome = selected.parceiros?.nome_completo?.split(' ')[0] || 'Parceiro';
+        const msgs = {
+          ASSINATURA: `📄 *Processo avançou para assinatura!*\n\nOlá, ${nome}! Os documentos do cliente *${selected.cliente_nome}* foram recebidos e o processo avançou para assinatura. Quase lá! 🎯`,
+          CONCLUIDO: `🎉 *Proposta assinada! Contrato fechado!*\n\nOlá, ${nome}! O contrato do cliente *${selected.cliente_nome}* foi concluído com sucesso. A comissão será registrada em breve. 💰`,
+        };
+        if (msgs[novoStatus]) {
+          supabase.functions.invoke('send-whatsapp', {
+            body: { phone: parceiroTel, message: msgs[novoStatus] },
+          }).catch(() => {});
+        }
+      }
+
       await loadData();
       await refreshSelected(selected.id);
     } catch (err) {
