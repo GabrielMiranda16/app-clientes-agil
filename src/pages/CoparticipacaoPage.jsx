@@ -975,7 +975,7 @@ const CoparticipacaoPage = () => {
             {importStep === 'parsing' && (
               <div className="flex flex-col items-center justify-center py-16 gap-4">
                 <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
-                <p className="text-sm font-medium text-gray-700">Lendo o PDF com IA...</p>
+                <p className="text-sm font-medium text-gray-700">Lendo coparticipação com IA...</p>
                 <p className="text-xs text-gray-400">Isso pode levar alguns segundos</p>
               </div>
             )}
