@@ -78,7 +78,7 @@ const AdminParceirosPage = () => {
     try {
       const { data } = await supabase
         .from('orcamentos')
-        .select('*, parceiros(nome_completo, modalidade, comissao_percentual)')
+        .select('*, parceiros(nome_completo, modalidade, comissao_percentual, telefone)')
         .order('created_at', { ascending: false });
       setOrcamentos(data || []);
     } finally {
@@ -132,7 +132,24 @@ const AdminParceirosPage = () => {
         data_orcamento: new Date().toISOString(),
       }).eq('id', selected.id);
       if (error) throw error;
-      toast({ title: 'Orçamento enviado!', description: 'O link foi gerado. Informe o parceiro para repassar ao cliente.' });
+      toast({ title: 'Orçamento enviado!', description: 'O link foi gerado. Informando o parceiro via WhatsApp...' });
+
+      // Notifica parceiro via WhatsApp
+      const parceiroTel = selected.parceiros?.telefone;
+      if (parceiroTel) {
+        const segLabel = SEGMENTO_LABEL[selected.segmento] || selected.segmento;
+        supabase.functions.invoke('send-whatsapp', {
+          body: {
+            phone: parceiroTel,
+            message:
+              `📋 *Orçamento pronto para envio!*\n\n` +
+              `Olá, ${selected.parceiros?.nome_completo?.split(' ')[0] || 'Parceiro'}! O orçamento para o cliente *${selected.cliente_nome}* (${segLabel}) já foi respondido.\n\n` +
+              `Acesse o portal da Ágil Seguros, copie o link e envie diretamente para o cliente:\n` +
+              `🔗 ${window.location.origin}/orcamento/${slug}`,
+          },
+        }).catch(() => {});
+      }
+
       await loadData();
       await refreshSelected(selected.id);
     } catch (err) {
@@ -183,6 +200,25 @@ const AdminParceirosPage = () => {
       }
       await supabase.from('orcamentos').update({ status: 'COMISSAO' }).eq('id', selected.id);
       toast({ title: 'Comissão registrada!' });
+
+      // Notifica parceiro via WhatsApp
+      const parceiroTel = selected.parceiros?.telefone;
+      if (parceiroTel) {
+        const base = parseFloat(formC.valor_base.replace(',', '.')) || 0;
+        const pct = parseFloat(formC.comissao_percentual) || 0;
+        const comissao = base * (1 - 0.06) * (pct / 100);
+        supabase.functions.invoke('send-whatsapp', {
+          body: {
+            phone: parceiroTel,
+            message:
+              `🎉 *Contrato fechado! Comissão registrada*\n\n` +
+              `Parabéns, ${selected.parceiros?.nome_completo?.split(' ')[0] || 'Parceiro'}! O contrato do cliente *${selected.cliente_nome}* foi concluído.\n\n` +
+              `💰 Sua comissão: *R$ ${comissao.toFixed(2).replace('.', ',')}*\n\n` +
+              `Acesse o portal para acompanhar o pagamento.`,
+          },
+        }).catch(() => {});
+      }
+
       await loadData();
       await refreshSelected(selected.id);
     } catch (err) {

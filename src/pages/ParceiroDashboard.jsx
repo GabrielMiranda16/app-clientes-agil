@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import {
   LayoutDashboard, FileText, CheckCircle2, DollarSign,
   Plus, TrendingUp, Clock, Copy, Check,
-  ArrowUpRight, X, Send, Loader2,
+  ArrowUpRight, X, Send, Loader2, Eye, Phone, Mail,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -18,12 +18,12 @@ import { useToast } from '@/components/ui/use-toast';
 import DashboardLayout from '@/components/DashboardLayout';
 
 const STATUS_CONFIG = {
-  SOLICITACAO:  { label: 'Solicitação',  color: 'bg-gray-100 text-gray-700' },
-  ORCAMENTO:    { label: 'Orçamento',    color: 'bg-blue-100 text-blue-700' },
-  DOCUMENTOS:   { label: 'Documentos',   color: 'bg-yellow-100 text-yellow-700' },
-  ASSINATURA:   { label: 'Assinatura',   color: 'bg-purple-100 text-purple-700' },
-  CONCLUIDO:    { label: 'Concluído',    color: 'bg-green-100 text-green-700' },
-  COMISSAO:     { label: 'Comissão',     color: 'bg-emerald-100 text-emerald-700' },
+  SOLICITACAO:  { label: 'Solicitação',  color: 'bg-gray-100 text-gray-700',     desc: 'Aguardando resposta do ADM' },
+  ORCAMENTO:    { label: 'Orçamento',    color: 'bg-blue-100 text-blue-700',     desc: 'Link pronto — envie para o cliente' },
+  DOCUMENTOS:   { label: 'Documentos',   color: 'bg-yellow-100 text-yellow-700', desc: 'Cliente aceitou — enviando documentos' },
+  ASSINATURA:   { label: 'Assinatura',   color: 'bg-purple-100 text-purple-700', desc: 'Documentos recebidos — em assinatura' },
+  CONCLUIDO:    { label: 'Concluído',    color: 'bg-green-100 text-green-700',   desc: 'Contrato assinado — aguardando comissão' },
+  COMISSAO:     { label: 'Comissão',     color: 'bg-emerald-100 text-emerald-700', desc: 'Comissão registrada' },
 };
 
 const SEGMENTOS = [
@@ -41,57 +41,54 @@ const SEGMENTO_LABEL = Object.fromEntries(SEGMENTOS.map(s => [s.value, s.label])
 
 const SEGMENTO_CAMPOS = {
   SAUDE_VIDA_ODONTO: [
-    { key: 'data_nascimento',  label: 'Data de nascimento',              placeholder: 'DD/MM/AAAA' },
-    { key: 'tipo_cobertura',   label: 'Tipo de cobertura desejada',      placeholder: 'Ex: individual, familiar, empresarial' },
-    { key: 'qtd_vidas',        label: 'Quantidade de vidas',             placeholder: 'Ex: 1, 5, 20' },
+    { key: 'data_nascimento',  label: 'Data de nascimento',         placeholder: 'DD/MM/AAAA' },
+    { key: 'tipo_cobertura',   label: 'Tipo de cobertura desejada', placeholder: 'Ex: individual, familiar, empresarial' },
+    { key: 'qtd_vidas',        label: 'Quantidade de vidas',        placeholder: 'Ex: 1, 5, 20' },
   ],
   AUTO_FROTA: [
-    { key: 'modelo_veiculo',   label: 'Modelo do veículo',               placeholder: 'Ex: Honda Civic 2023' },
-    { key: 'placa',            label: 'Placa (opcional)',                 placeholder: 'Ex: ABC-1D23' },
-    { key: 'ano_fabricacao',   label: 'Ano de fabricação',               placeholder: 'Ex: 2022' },
+    { key: 'modelo_veiculo',   label: 'Modelo do veículo',          placeholder: 'Ex: Honda Civic 2023' },
+    { key: 'placa',            label: 'Placa (opcional)',            placeholder: 'Ex: ABC-1D23' },
+    { key: 'ano_fabricacao',   label: 'Ano de fabricação',          placeholder: 'Ex: 2022' },
   ],
   VIAGEM: [
-    { key: 'destino',          label: 'Destino da viagem',               placeholder: 'Ex: Europa, EUA, Nordeste' },
-    { key: 'periodo_viagem',   label: 'Período / Duração',               placeholder: 'Ex: 15/06 a 30/06 (15 dias)' },
-    { key: 'qtd_viajantes',    label: 'Quantidade de viajantes',         placeholder: 'Ex: 2' },
+    { key: 'destino',          label: 'Destino da viagem',          placeholder: 'Ex: Europa, EUA, Nordeste' },
+    { key: 'periodo_viagem',   label: 'Período / Duração',          placeholder: 'Ex: 15/06 a 30/06 (15 dias)' },
+    { key: 'qtd_viajantes',    label: 'Quantidade de viajantes',    placeholder: 'Ex: 2' },
   ],
   RESIDENCIAL: [
-    { key: 'endereco_imovel',  label: 'Endereço do imóvel',              placeholder: 'Rua, número, bairro, cidade' },
-    { key: 'tipo_imovel',      label: 'Tipo de imóvel',                  placeholder: 'Casa ou apartamento' },
-    { key: 'valor_imovel',     label: 'Valor aproximado do imóvel',      placeholder: 'Ex: R$ 350.000' },
+    { key: 'endereco_imovel',  label: 'Endereço do imóvel',         placeholder: 'Rua, número, bairro, cidade' },
+    { key: 'tipo_imovel',      label: 'Tipo de imóvel',             placeholder: 'Casa ou apartamento' },
+    { key: 'valor_imovel',     label: 'Valor aproximado do imóvel', placeholder: 'Ex: R$ 350.000' },
   ],
   PET_SAUDE: [
-    { key: 'nome_pet',         label: 'Nome do pet',                     placeholder: 'Ex: Rex' },
-    { key: 'especie_raca',     label: 'Espécie e raça',                  placeholder: 'Ex: Cachorro — Golden Retriever' },
-    { key: 'idade_pet',        label: 'Idade do pet',                    placeholder: 'Ex: 3 anos' },
+    { key: 'nome_pet',         label: 'Nome do pet',                placeholder: 'Ex: Rex' },
+    { key: 'especie_raca',     label: 'Espécie e raça',             placeholder: 'Ex: Cachorro — Golden Retriever' },
+    { key: 'idade_pet',        label: 'Idade do pet',               placeholder: 'Ex: 3 anos' },
   ],
   EMPRESARIAL: [
-    { key: 'cnpj_empresa',     label: 'CNPJ da empresa',                 placeholder: 'Ex: 00.000.000/0001-00' },
-    { key: 'qtd_funcionarios', label: 'Nº de funcionários',              placeholder: 'Ex: 25' },
-    { key: 'segmento_empresa', label: 'Segmento da empresa',             placeholder: 'Ex: Tecnologia, Varejo, Saúde' },
+    { key: 'cnpj_empresa',     label: 'CNPJ da empresa',            placeholder: 'Ex: 00.000.000/0001-00' },
+    { key: 'qtd_funcionarios', label: 'Nº de funcionários',         placeholder: 'Ex: 25' },
+    { key: 'segmento_empresa', label: 'Segmento da empresa',        placeholder: 'Ex: Tecnologia, Varejo, Saúde' },
   ],
   CARGAS: [
-    { key: 'tipo_mercadoria',  label: 'Tipo de mercadoria',              placeholder: 'Ex: Eletrônicos, Alimentos' },
-    { key: 'trajeto',          label: 'Trajeto (origem → destino)',      placeholder: 'Ex: São Paulo → Rio de Janeiro' },
-    { key: 'valor_carga',      label: 'Valor aproximado da carga',       placeholder: 'Ex: R$ 50.000' },
+    { key: 'tipo_mercadoria',  label: 'Tipo de mercadoria',         placeholder: 'Ex: Eletrônicos, Alimentos' },
+    { key: 'trajeto',          label: 'Trajeto (origem → destino)', placeholder: 'Ex: São Paulo → Rio de Janeiro' },
+    { key: 'valor_carga',      label: 'Valor aproximado da carga',  placeholder: 'Ex: R$ 50.000' },
   ],
   EQUIPAMENTOS: [
-    { key: 'descricao_equip',  label: 'Descrição do equipamento',        placeholder: 'Ex: Notebook Dell XPS 15' },
-    { key: 'valor_equip',      label: 'Valor do equipamento',            placeholder: 'Ex: R$ 8.000' },
-    { key: 'uso_equip',        label: 'Uso principal',                   placeholder: 'Ex: Trabalho remoto, Fotografia' },
+    { key: 'descricao_equip',  label: 'Descrição do equipamento',   placeholder: 'Ex: Notebook Dell XPS 15' },
+    { key: 'valor_equip',      label: 'Valor do equipamento',       placeholder: 'Ex: R$ 8.000' },
+    { key: 'uso_equip',        label: 'Uso principal',              placeholder: 'Ex: Trabalho remoto, Fotografia' },
   ],
 };
 
 const FUNIL = ['SOLICITACAO', 'ORCAMENTO', 'DOCUMENTOS', 'ASSINATURA', 'CONCLUIDO', 'COMISSAO'];
 
-const FORM_VAZIO = {
-  segmento: '',
-  cliente_nome: '',
-  cliente_telefone: '',
-  cliente_email: '',
-  cliente_cpf: '',
-  observacoes: '',
-  extras: {},
+const FORM_VAZIO = { segmento: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', cliente_cpf: '', observacoes: '', extras: {} };
+
+const fmtData = (iso) => {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
 const ParceiroDashboard = () => {
@@ -106,6 +103,9 @@ const ParceiroDashboard = () => {
   const [modalAberto, setModalAberto] = useState(false);
   const [form, setForm] = useState(FORM_VAZIO);
   const [enviando, setEnviando] = useState(false);
+
+  const [detalhe, setDetalhe] = useState(null);
+  const [detalheComissao, setDetalheComissao] = useState(null);
 
   useEffect(() => {
     if (user?.id) loadData();
@@ -129,11 +129,7 @@ const ParceiroDashboard = () => {
     }
   };
 
-  const abrirModal = () => {
-    setForm(FORM_VAZIO);
-    setModalAberto(true);
-  };
-
+  const abrirModal = () => { setForm(FORM_VAZIO); setModalAberto(true); };
   const setField = (key, value) => setForm(f => ({ ...f, [key]: value }));
   const setExtra = (key, value) => setForm(f => ({ ...f, extras: { ...f.extras, [key]: value } }));
 
@@ -154,18 +150,17 @@ const ParceiroDashboard = () => {
       if (form.observacoes.trim()) obsTexto += `\nObservações: ${form.observacoes.trim()}`;
 
       const { error } = await supabase.from('orcamentos').insert({
-        parceiro_id:      parceiro.id,
-        segmento:         form.segmento,
-        status:           'SOLICITACAO',
-        cliente_nome:     form.cliente_nome.trim(),
+        parceiro_id: parceiro.id,
+        segmento: form.segmento,
+        status: 'SOLICITACAO',
+        cliente_nome: form.cliente_nome.trim(),
         cliente_telefone: form.cliente_telefone.trim(),
-        cliente_email:    form.cliente_email.trim() || null,
-        cliente_cpf:      form.cliente_cpf.trim() || null,
-        observacoes:      obsTexto.trim() || null,
+        cliente_email: form.cliente_email.trim() || null,
+        cliente_cpf: form.cliente_cpf.trim() || null,
+        observacoes: obsTexto.trim() || null,
       });
 
       if (error) throw error;
-
       toast({ title: 'Orçamento solicitado!', description: 'O ADM será notificado e responderá em breve.' });
       setModalAberto(false);
       loadData();
@@ -173,6 +168,15 @@ const ParceiroDashboard = () => {
       toast({ variant: 'destructive', title: 'Erro ao solicitar.', description: err?.message || 'Tente novamente.' });
     } finally {
       setEnviando(false);
+    }
+  };
+
+  const abrirDetalhe = async (o) => {
+    setDetalhe(o);
+    setDetalheComissao(null);
+    if (['CONCLUIDO', 'COMISSAO'].includes(o.status)) {
+      const { data } = await supabase.from('comissoes').select('*').eq('orcamento_id', o.id).maybeSingle();
+      setDetalheComissao(data);
     }
   };
 
@@ -189,22 +193,25 @@ const ParceiroDashboard = () => {
   const comissaoRecebida = comissoes.filter(c => c.status === 'PAGO').reduce((s, c) => s + Number(c.valor_comissao || 0), 0);
 
   const metrics = [
-    { label: 'Orçamentos em andamento', value: emAndamento.length, icon: Clock, color: 'text-blue-600' },
+    { label: 'Em andamento', value: emAndamento.length, icon: Clock, color: 'text-blue-600' },
     { label: 'Contratos fechados', value: concluidos.length, icon: CheckCircle2, color: 'text-green-600' },
-    { label: 'Comissão a receber', value: `R$ ${comissaoPendente.toFixed(2).replace('.', ',')}`, icon: DollarSign, color: 'text-yellow-600' },
+    { label: 'A receber', value: `R$ ${comissaoPendente.toFixed(2).replace('.', ',')}`, icon: DollarSign, color: 'text-yellow-600' },
     { label: 'Total recebido', value: `R$ ${comissaoRecebida.toFixed(2).replace('.', ',')}`, icon: TrendingUp, color: 'text-emerald-600' },
   ];
 
-  const renderOrcamentoCard = (o) => {
+  const renderOrcamentoCard = (o, clicavel = true) => {
     const cfg = STATUS_CONFIG[o.status] || STATUS_CONFIG.SOLICITACAO;
     const step = FUNIL.indexOf(o.status);
     return (
-      <div key={o.id} className="border rounded-xl p-4 bg-white hover:shadow-sm transition-shadow">
+      <div key={o.id}
+        className={`border rounded-xl p-4 bg-white transition-shadow ${clicavel ? 'cursor-pointer hover:shadow-md active:scale-[0.99]' : ''}`}
+        onClick={clicavel ? () => abrirDetalhe(o) : undefined}
+      >
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-gray-800 truncate">{o.cliente_nome || 'Cliente não informado'}</p>
             <p className="text-xs text-gray-400 mt-0.5">{SEGMENTO_LABEL[o.segmento] || o.segmento}</p>
-            {o.cliente_telefone && <p className="text-xs text-gray-400">{o.cliente_telefone}</p>}
+            <p className="text-xs text-gray-500 mt-0.5">{cfg.desc}</p>
             {o.valor_mensalidade && (
               <p className="text-xs text-gray-500 mt-1">Mensalidade: <span className="font-semibold text-gray-700">R$ {Number(o.valor_mensalidade).toFixed(2).replace('.', ',')}</span></p>
             )}
@@ -212,7 +219,8 @@ const ParceiroDashboard = () => {
           <div className="flex flex-col items-end gap-2 shrink-0">
             <Badge className={`text-xs ${cfg.color}`}>{cfg.label}</Badge>
             {o.status === 'ORCAMENTO' && o.slug && (
-              <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5" onClick={() => copyLink(o.slug)}>
+              <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5"
+                onClick={e => { e.stopPropagation(); copyLink(o.slug); }}>
                 {copiedSlug === o.slug ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
                 {copiedSlug === o.slug ? 'Copiado' : 'Copiar link'}
               </Button>
@@ -266,9 +274,7 @@ const ParceiroDashboard = () => {
                 {metrics.map(({ label, value, icon: Icon, color }) => (
                   <Card key={label} className="border shadow-sm">
                     <CardContent className="p-4 flex items-center gap-3">
-                      <div className={`p-2 rounded-lg bg-gray-50 ${color}`}>
-                        <Icon className="h-5 w-5" />
-                      </div>
+                      <div className={`p-2 rounded-lg bg-gray-50 ${color}`}><Icon className="h-5 w-5" /></div>
                       <div>
                         <p className="text-xs text-gray-500">{label}</p>
                         <p className="text-lg font-bold text-gray-800">{value}</p>
@@ -277,11 +283,10 @@ const ParceiroDashboard = () => {
                   </Card>
                 ))}
               </div>
-
               <Card className="border shadow-sm">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base font-semibold text-gray-800">Orçamentos em andamento</CardTitle>
+                    <CardTitle className="text-base font-semibold text-gray-800">Em andamento</CardTitle>
                     <Button size="sm" onClick={abrirModal} className="bg-[#003580] hover:bg-[#002060] text-white rounded-lg gap-1.5">
                       <Plus className="h-4 w-4" /> Solicitar
                     </Button>
@@ -294,10 +299,9 @@ const ParceiroDashboard = () => {
                     <div className="text-center py-8 text-gray-400">
                       <FileText className="h-8 w-8 mx-auto mb-2 opacity-30" />
                       <p className="text-sm">Nenhum orçamento em andamento.</p>
-                      <p className="text-xs mt-1">Solicite um novo orçamento para começar.</p>
                     </div>
                   ) : (
-                    emAndamento.slice(0, 5).map(renderOrcamentoCard)
+                    emAndamento.slice(0, 5).map(o => renderOrcamentoCard(o))
                   )}
                 </CardContent>
               </Card>
@@ -319,11 +323,10 @@ const ParceiroDashboard = () => {
                     <CardContent className="text-center py-12">
                       <FileText className="h-10 w-10 mx-auto mb-3 text-gray-300" />
                       <p className="text-gray-500 font-medium">Nenhum orçamento ainda</p>
-                      <p className="text-xs text-gray-400 mt-1">Solicite um orçamento para começar a vender.</p>
                     </CardContent>
                   </Card>
                 ) : (
-                  orcamentos.map(renderOrcamentoCard)
+                  orcamentos.map(o => renderOrcamentoCard(o))
                 )}
               </div>
             </TabsContent>
@@ -338,11 +341,10 @@ const ParceiroDashboard = () => {
                     <CardContent className="text-center py-12">
                       <CheckCircle2 className="h-10 w-10 mx-auto mb-3 text-gray-300" />
                       <p className="text-gray-500 font-medium">Nenhum contrato fechado ainda</p>
-                      <p className="text-xs text-gray-400 mt-1">Contratos concluídos aparecerão aqui.</p>
                     </CardContent>
                   </Card>
                 ) : (
-                  concluidos.map(renderOrcamentoCard)
+                  concluidos.map(o => renderOrcamentoCard(o))
                 )}
               </div>
             </TabsContent>
@@ -371,7 +373,6 @@ const ParceiroDashboard = () => {
                     <CardContent className="text-center py-12">
                       <DollarSign className="h-10 w-10 mx-auto mb-3 text-gray-300" />
                       <p className="text-gray-500 font-medium">Nenhuma comissão registrada</p>
-                      <p className="text-xs text-gray-400 mt-1">As comissões aparecem após a conclusão dos contratos.</p>
                     </CardContent>
                   </Card>
                 ) : (
@@ -383,7 +384,7 @@ const ParceiroDashboard = () => {
                             <p className="font-semibold text-gray-800">{c.orcamentos?.cliente_nome || 'Cliente'}</p>
                             <p className="text-xs text-gray-400">{SEGMENTO_LABEL[c.orcamentos?.segmento] || c.orcamentos?.segmento}</p>
                             <p className="text-xs text-gray-500 mt-1">
-                              Base: R$ {Number(c.valor_base).toFixed(2).replace('.', ',')} · {c.comissao_percentual}% · Imposto {c.imposto_percentual}%
+                              Base: R$ {Number(c.valor_base).toFixed(2).replace('.', ',')} · {c.comissao_percentual}% · 6% imposto
                             </p>
                           </div>
                           <div className="text-right">
@@ -391,7 +392,7 @@ const ParceiroDashboard = () => {
                             <Badge className={c.status === 'PAGO' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}>
                               {c.status === 'PAGO' ? 'Pago' : 'Pendente'}
                             </Badge>
-                            {c.data_pagamento && <p className="text-xs text-gray-400 mt-1">{c.data_pagamento}</p>}
+                            {c.data_pagamento && <p className="text-xs text-gray-400 mt-1">{fmtData(c.data_pagamento)}</p>}
                           </div>
                         </div>
                         {c.comprovante_path && (
@@ -409,30 +410,163 @@ const ParceiroDashboard = () => {
         </motion.div>
       </DashboardLayout>
 
+      {/* ── Modal Detalhe do Orçamento ── */}
+      <AnimatePresence>
+        {detalhe && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-4"
+            onClick={e => { if (e.target === e.currentTarget) setDetalhe(null); }}>
+            <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto">
+              {/* Header */}
+              <div className={`px-5 py-4 flex items-start justify-between rounded-t-2xl sticky top-0 z-10 ${
+                detalhe.status === 'SOLICITACAO' ? 'bg-gray-600' :
+                detalhe.status === 'ORCAMENTO' ? 'bg-blue-600' :
+                detalhe.status === 'DOCUMENTOS' ? 'bg-yellow-600' :
+                detalhe.status === 'ASSINATURA' ? 'bg-purple-600' :
+                detalhe.status === 'CONCLUIDO' ? 'bg-green-600' : 'bg-emerald-600'
+              }`}>
+                <div>
+                  <p className="text-white font-bold text-base">{detalhe.cliente_nome}</p>
+                  <p className="text-white/80 text-xs">{SEGMENTO_LABEL[detalhe.segmento] || detalhe.segmento}</p>
+                  <Badge className={`mt-1 text-xs ${STATUS_CONFIG[detalhe.status]?.color}`}>{STATUS_CONFIG[detalhe.status]?.label}</Badge>
+                </div>
+                <button onClick={() => setDetalhe(null)} className="text-white/70 hover:text-white p-1 rounded-lg hover:bg-white/10">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-4">
+                {/* Status desc */}
+                <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-600">
+                  {STATUS_CONFIG[detalhe.status]?.desc}
+                </div>
+
+                {/* Link (se ORCAMENTO) */}
+                {detalhe.status === 'ORCAMENTO' && detalhe.slug && (
+                  <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 space-y-2">
+                    <p className="text-xs font-semibold text-blue-700">Link para o cliente</p>
+                    <p className="text-xs text-blue-600 font-mono break-all">{window.location.origin}/orcamento/{detalhe.slug}</p>
+                    <Button size="sm" onClick={() => copyLink(detalhe.slug)}
+                      className="w-full rounded-lg bg-blue-600 hover:bg-blue-700 text-white gap-1.5 text-xs">
+                      {copiedSlug === detalhe.slug ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                      {copiedSlug === detalhe.slug ? 'Copiado!' : 'Copiar link e enviar ao cliente'}
+                    </Button>
+                  </div>
+                )}
+
+                {/* Proposta (se ADM já respondeu) */}
+                {detalhe.valor_mensalidade && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Proposta da Ágil</p>
+                    <div className="bg-gradient-to-r from-[#003580]/5 to-[#0B7EC4]/5 rounded-xl p-4 border border-[#003580]/10">
+                      <p className="text-xs text-gray-500">Mensalidade</p>
+                      <p className="text-2xl font-bold text-[#003580]">R$ {Number(detalhe.valor_mensalidade).toFixed(2).replace('.', ',')}</p>
+                      {detalhe.descricao_orcamento && <p className="text-xs text-gray-600 mt-2 whitespace-pre-wrap">{detalhe.descricao_orcamento}</p>}
+                    </div>
+                  </div>
+                )}
+
+                {/* Dados do cliente */}
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Cliente</p>
+                  <div className="space-y-1 text-sm text-gray-700">
+                    {detalhe.cliente_telefone && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                        <a href={`tel:${detalhe.cliente_telefone}`} className="hover:underline text-blue-600">{detalhe.cliente_telefone}</a>
+                      </div>
+                    )}
+                    {detalhe.cliente_email && (
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                        {detalhe.cliente_email}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Dados da solicitação */}
+                {detalhe.observacoes && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Dados enviados</p>
+                    <pre className="bg-gray-50 rounded-xl p-3 text-xs text-gray-600 whitespace-pre-wrap font-sans">{detalhe.observacoes}</pre>
+                  </div>
+                )}
+
+                {/* Timeline */}
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Progresso</p>
+                  <div className="flex gap-1 mb-1">
+                    {FUNIL.map((s, i) => (
+                      <div key={s} className={`h-1.5 flex-1 rounded-full ${i <= FUNIL.indexOf(detalhe.status) ? 'bg-[#003580]' : 'bg-gray-200'}`} />
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-3 gap-y-1.5 text-xs text-gray-500">
+                    {[
+                      { label: 'Solicitação', date: detalhe.data_solicitacao || detalhe.created_at },
+                      { label: 'Orçamento', date: detalhe.data_orcamento },
+                      { label: 'Documentos', date: detalhe.data_documentos },
+                      { label: 'Assinatura', date: detalhe.data_assinatura },
+                      { label: 'Concluído', date: detalhe.data_conclusao },
+                    ].map(({ label, date }) => date ? (
+                      <div key={label}>
+                        <p className="font-medium text-gray-600">{label}</p>
+                        <p className="text-[10px]">{fmtData(date)}</p>
+                      </div>
+                    ) : null)}
+                  </div>
+                </div>
+
+                {/* Comissão (se CONCLUIDO/COMISSAO) */}
+                {detalheComissao && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Comissão</p>
+                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-gray-500">
+                            Base R$ {Number(detalheComissao.valor_base).toFixed(2).replace('.', ',')} · {detalheComissao.comissao_percentual}% · 6% imposto
+                          </p>
+                          <p className="text-2xl font-bold text-emerald-700 mt-0.5">
+                            R$ {Number(detalheComissao.valor_comissao || 0).toFixed(2).replace('.', ',')}
+                          </p>
+                        </div>
+                        <Badge className={detalheComissao.status === 'PAGO' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}>
+                          {detalheComissao.status === 'PAGO' ? 'Pago ✓' : 'Pendente'}
+                        </Badge>
+                      </div>
+                      {detalheComissao.comprovante_path && (
+                        <a href={detalheComissao.comprovante_path} target="_blank" rel="noreferrer"
+                          className="mt-3 flex items-center gap-1 text-xs text-blue-600 hover:underline">
+                          <Eye className="h-3 w-3" /> Ver comprovante de pagamento
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── Modal Solicitar Orçamento ── */}
       <AnimatePresence>
         {modalAberto && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-4"
-            onClick={e => { if (e.target === e.currentTarget) setModalAberto(false); }}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 40 }}
+            onClick={e => { if (e.target === e.currentTarget) setModalAberto(false); }}>
+            <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
-            >
-              {/* Header */}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
               <div className="bg-[#003580] px-6 py-4 flex items-center justify-between rounded-t-2xl sticky top-0 z-10">
                 <div>
                   <h2 className="text-white font-bold text-lg">Solicitar Orçamento</h2>
                   <p className="text-white/70 text-xs mt-0.5">Preencha os dados do cliente e do seguro</p>
                 </div>
-                <button onClick={() => setModalAberto(false)} className="text-white/70 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors">
+                <button onClick={() => setModalAberto(false)} className="text-white/70 hover:text-white p-1 rounded-lg hover:bg-white/10">
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -441,15 +575,11 @@ const ParceiroDashboard = () => {
                 {/* Segmento */}
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-gray-700">Segmento <span className="text-red-500">*</span></Label>
-                  <select
-                    value={form.segmento}
+                  <select value={form.segmento}
                     onChange={e => { setField('segmento', e.target.value); setForm(f => ({ ...f, extras: {} })); }}
-                    className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580]"
-                  >
+                    className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580]">
                     <option value="">Selecione o segmento...</option>
-                    {SEGMENTOS.map(s => (
-                      <option key={s.value} value={s.value}>{s.label}</option>
-                    ))}
+                    {SEGMENTOS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
                 </div>
 
@@ -458,41 +588,28 @@ const ParceiroDashboard = () => {
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Dados do cliente</p>
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-gray-700">Nome completo <span className="text-red-500">*</span></Label>
-                    <Input
-                      value={form.cliente_nome}
-                      onChange={e => setField('cliente_nome', e.target.value)}
+                    <input value={form.cliente_nome} onChange={e => setField('cliente_nome', e.target.value)}
                       placeholder="Nome completo do cliente"
-                      className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]"
-                    />
+                      className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580]" />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-gray-700">Telefone / WhatsApp <span className="text-red-500">*</span></Label>
-                    <Input
-                      value={form.cliente_telefone}
-                      onChange={e => setField('cliente_telefone', e.target.value)}
+                    <input value={form.cliente_telefone} onChange={e => setField('cliente_telefone', e.target.value)}
                       placeholder="(11) 99999-0000"
-                      className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]"
-                    />
+                      className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580]" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label className="text-sm font-medium text-gray-700">E-mail <span className="text-gray-400 font-normal">(opcional)</span></Label>
-                      <Input
-                        value={form.cliente_email}
-                        onChange={e => setField('cliente_email', e.target.value)}
-                        placeholder="email@exemplo.com"
-                        type="email"
-                        className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]"
-                      />
+                      <input value={form.cliente_email} onChange={e => setField('cliente_email', e.target.value)}
+                        placeholder="email@exemplo.com" type="email"
+                        className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580]" />
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-sm font-medium text-gray-700">CPF <span className="text-gray-400 font-normal">(opcional)</span></Label>
-                      <Input
-                        value={form.cliente_cpf}
-                        onChange={e => setField('cliente_cpf', e.target.value)}
+                      <input value={form.cliente_cpf} onChange={e => setField('cliente_cpf', e.target.value)}
                         placeholder="000.000.000-00"
-                        className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]"
-                      />
+                        className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580]" />
                     </div>
                   </div>
                 </div>
@@ -506,45 +623,30 @@ const ParceiroDashboard = () => {
                     {camposDoSegmento.map(({ key, label, placeholder }) => (
                       <div key={key} className="space-y-1.5">
                         <Label className="text-sm font-medium text-gray-700">{label}</Label>
-                        <Input
-                          value={form.extras[key] || ''}
-                          onChange={e => setExtra(key, e.target.value)}
+                        <input value={form.extras[key] || ''} onChange={e => setExtra(key, e.target.value)}
                           placeholder={placeholder}
-                          className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]"
-                        />
+                          className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580]" />
                       </div>
                     ))}
                   </div>
                 )}
 
-                {/* Observações livres */}
+                {/* Observações */}
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-gray-700">Observações <span className="text-gray-400 font-normal">(opcional)</span></Label>
-                  <textarea
-                    value={form.observacoes}
-                    onChange={e => setField('observacoes', e.target.value)}
-                    placeholder="Alguma informação adicional para o ADM..."
-                    rows={3}
-                    className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580] resize-none"
-                  />
+                  <textarea value={form.observacoes} onChange={e => setField('observacoes', e.target.value)}
+                    placeholder="Alguma informação adicional para o ADM..." rows={3}
+                    className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580] resize-none" />
                 </div>
 
-                {/* Botões */}
                 <div className="flex gap-3 pt-1">
-                  <Button
-                    variant="outline"
-                    onClick={() => setModalAberto(false)}
-                    className="flex-1 rounded-lg border-gray-200 text-gray-600 hover:bg-gray-50"
-                    disabled={enviando}
-                  >
+                  <Button variant="outline" onClick={() => setModalAberto(false)} disabled={enviando}
+                    className="flex-1 rounded-lg border-gray-200 text-gray-600 hover:bg-gray-50">
                     Cancelar
                   </Button>
-                  <Button
-                    onClick={handleSolicitar}
+                  <Button onClick={handleSolicitar}
                     disabled={enviando || !form.segmento || !form.cliente_nome.trim() || !form.cliente_telefone.trim()}
-                    className="flex-1 rounded-lg text-white font-semibold gap-2"
-                    style={{ background: '#003580' }}
-                  >
+                    className="flex-1 rounded-lg text-white font-semibold gap-2" style={{ background: '#003580' }}>
                     {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     {enviando ? 'Enviando...' : 'Solicitar'}
                   </Button>
