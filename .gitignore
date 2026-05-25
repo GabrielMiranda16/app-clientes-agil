@@ -18,3 +18,9 @@ npm-debug.log*
 .DS_Store
 .vscode/
 .vercel
+
+# Supabase temp
+supabase/.temp/
+
+# Arquivos de teste / prints locais
+Prints/
