@@ -419,13 +419,20 @@ const CEODashboard = () => {
                 <h1 className="text-2xl font-bold tracking-tight text-white">Dashboard do CEO</h1>
               </div>
             </div>
-            <TabsList className="grid grid-cols-3 md:grid-cols-6 h-auto gap-1 bg-white/10 border border-white/20 rounded-lg p-1">
-              <TabsTrigger className="text-xs md:text-sm rounded-md text-white/70 data-[state=active]:bg-white/25 data-[state=active]:text-white data-[state=active]:font-semibold hover:text-white" value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger className="text-xs md:text-sm rounded-md text-white/70 data-[state=active]:bg-white/25 data-[state=active]:text-white data-[state=active]:font-semibold hover:text-white" value="empresas">Empresas</TabsTrigger>
-              <TabsTrigger className="text-xs md:text-sm rounded-md text-white/70 data-[state=active]:bg-white/25 data-[state=active]:text-white data-[state=active]:font-semibold hover:text-white" value="solicitacoes">Solicitações</TabsTrigger>
-              <TabsTrigger className="text-xs md:text-sm rounded-md text-white/70 data-[state=active]:bg-white/25 data-[state=active]:text-white data-[state=active]:font-semibold hover:text-white" value="admins">Admins</TabsTrigger>
-              <TabsTrigger className="text-xs md:text-sm rounded-md text-white/70 data-[state=active]:bg-white/25 data-[state=active]:text-white data-[state=active]:font-semibold hover:text-white" value="parceiros">Parceiros</TabsTrigger>
-              <TabsTrigger className="text-xs md:text-sm rounded-md text-white/70 data-[state=active]:bg-white/25 data-[state=active]:text-white data-[state=active]:font-semibold hover:text-white" value="relatorios">Relatórios</TabsTrigger>
+            <TabsList className="flex overflow-x-auto h-auto gap-1 bg-white/10 border border-white/20 rounded-lg p-1 [&::-webkit-scrollbar]:hidden">
+              {[
+                { value: 'dashboard',   label: 'Dashboard' },
+                { value: 'empresas',    label: 'Empresas' },
+                { value: 'solicitacoes',label: 'Solicitações' },
+                { value: 'admins',      label: 'Admins' },
+                { value: 'parceiros',   label: 'Parceiros' },
+                { value: 'relatorios',  label: 'Relatórios' },
+              ].map(({ value, label }) => (
+                <TabsTrigger key={value} value={value}
+                  className="shrink-0 text-xs md:text-sm rounded-md text-white/70 data-[state=active]:bg-white/25 data-[state=active]:text-white data-[state=active]:font-semibold hover:text-white px-3 py-1.5">
+                  {label}
+                </TabsTrigger>
+              ))}
             </TabsList>
           </div>
 
