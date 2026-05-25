@@ -33,7 +33,7 @@ const AppRoutes = () => {
     if (!user) return '/login';
     switch (user.perfil) {
       case 'CEO': return '/ceo';
-      case 'ADM': return '/admin-selecao';
+      case 'ADM': return '/admin';
       case 'CLIENTE': return '/select-segmento';
       case 'PARCEIRO': return '/parceiro';
       default: return '/login';
@@ -70,7 +70,7 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/admin-selecao"
+        path="/admin"
         element={
           <ProtectedRoute allowedRoles={['CEO', 'ADM']}>
             <AdminSelecaoPage />
@@ -78,7 +78,7 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/admin"
+        path="/admin/clientes"
         element={
           <ProtectedRoute allowedRoles={['CEO', 'ADM']}>
             <AdminDashboard />

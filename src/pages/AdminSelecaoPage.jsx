@@ -24,7 +24,7 @@ const AdminSelecaoPage = () => {
       icon: Users,
       title: 'Clientes',
       description: 'Gerencie empresas, apólices, beneficiários e solicitações dos clientes.',
-      route: '/admin',
+      route: '/admin/clientes',
       badge: null,
     },
     {

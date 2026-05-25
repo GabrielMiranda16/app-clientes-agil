@@ -73,7 +73,7 @@ const AdminClientePage = () => {
 
         const id = Number(matrizId);
         const matrizEncontrada = todasEmpresas.find(e => e.id === id && e.tipo === 'MATRIZ');
-        if (!matrizEncontrada) { navigate('/admin'); return; }
+        if (!matrizEncontrada) { navigate('/admin/clientes'); return; }
 
         const filiaisData = todasEmpresas.filter(e => e.tipo === 'FILIAL' && e.empresa_matriz_id === id);
         const todasIds = [id, ...filiaisData.map(f => f.id)];
@@ -91,7 +91,7 @@ const AdminClientePage = () => {
         }
       } catch (err) {
         toast({ variant: 'destructive', title: 'Erro', description: 'Falha ao carregar dados do cliente.' });
-        navigate('/admin');
+        navigate('/admin/clientes');
       } finally {
         setIsLoading(false);
       }
@@ -251,7 +251,7 @@ const AdminClientePage = () => {
 
           {/* Breadcrumb */}
           <div className="flex items-center gap-2">
-            <button onClick={() => navigate('/admin')} className="text-sm text-white/60 hover:text-white transition-colors">
+            <button onClick={() => navigate('/admin/clientes')} className="text-sm text-white/60 hover:text-white transition-colors">
               Clientes
             </button>
             <ChevronRight className="h-4 w-4 text-white/30" />

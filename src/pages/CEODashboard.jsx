@@ -566,7 +566,7 @@ const CEODashboard = () => {
                   <div><CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" />Gestão de Administradores</CardTitle><CardDescription>Adicione e gerencie os administradores do sistema.</CardDescription></div>
                   <div className="flex items-center gap-2">
                     <Button
-                      onClick={() => navigate('/admin')}
+                      onClick={() => navigate('/admin/clientes')}
                       variant="outline"
                       className="flex items-center gap-2"
                     >
@@ -811,7 +811,7 @@ const CEODashboard = () => {
               <DialogDescription>Nenhuma empresa cadastrada ainda. Crie uma empresa ou um administrador para começar.</DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <Button onClick={() => { setIsWelcomeModalOpen(false); navigate('/admin'); }}>Ir para Administração</Button>
+              <Button onClick={() => { setIsWelcomeModalOpen(false); navigate('/admin/clientes'); }}>Ir para Administração</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
