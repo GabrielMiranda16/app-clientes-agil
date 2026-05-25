@@ -21,7 +21,7 @@ import {
   Users, Building, UserCheck, UserPlus, Trash2, ToggleLeft, ToggleRight,
   Loader2, Edit, FileText, Briefcase, ClipboardList, Shield,
   Clock, CheckCircle2, DollarSign, MoreHorizontal, ChevronLeft, ChevronRight,
-  AlertCircle, TrendingUp, AlertTriangle, Download, FileSpreadsheet, Handshake, Plus
+  AlertCircle, TrendingUp, AlertTriangle, Download, FileSpreadsheet, HeartHandshake, Plus
 } from 'lucide-react';
 import { motion } from "framer-motion";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -637,7 +637,7 @@ const CEODashboard = () => {
               {parceiros.length === 0 ? (
                 <Card className="border shadow-sm">
                   <CardContent className="text-center py-14">
-                    <Handshake className="h-10 w-10 mx-auto mb-3 text-gray-300" />
+                    <HeartHandshake className="h-10 w-10 mx-auto mb-3 text-gray-300" />
                     <p className="text-gray-500 font-medium">Nenhum parceiro cadastrado</p>
                     <p className="text-xs text-gray-400 mt-1">Clique em "Novo Parceiro" para adicionar o primeiro.</p>
                   </CardContent>
@@ -648,7 +648,7 @@ const CEODashboard = () => {
                     <CardContent className="p-4 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <div className="p-2 rounded-full bg-[#003580]/10">
-                          <Handshake className="h-5 w-5 text-[#003580]" />
+                          <HeartHandshake className="h-5 w-5 text-[#003580]" />
                         </div>
                         <div>
                           <p className="font-semibold text-gray-800">{p.nome_completo}</p>
