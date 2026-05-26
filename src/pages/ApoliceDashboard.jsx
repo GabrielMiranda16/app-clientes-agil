@@ -585,7 +585,7 @@ const ApoliceDashboard = () => {
                     <CardHeader className="flex flex-row items-center justify-between">
                       <CardTitle className="flex items-center gap-2 text-base">
                         <DollarSign className="h-4 w-4" /> Coparticipação
-                        {(() => { const now = new Date(); return <span className="text-xs font-normal text-gray-400 ml-1">{String(now.getMonth()+1).padStart(2,'0')}/{now.getFullYear()}</span>; })()}
+                        {(() => { const d = new Date(); d.setMonth(d.getMonth() - 1); return <span className="text-xs font-normal text-gray-400 ml-1">{String(d.getMonth()+1).padStart(2,'0')}/{d.getFullYear()}</span>; })()}
                       </CardTitle>
                       <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white" onClick={() => {
                         if (isAdmin) goToCoparticipacao();
@@ -598,8 +598,8 @@ const ApoliceDashboard = () => {
                       {loadingCopat ? (
                         <div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></div>
                       ) : (() => {
-                        const now = new Date();
-                        const periodo = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+                        const d = new Date(); d.setMonth(d.getMonth() - 1);
+                        const periodo = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
                         const doMes = coparticipacoes.filter(c => c.competencia === periodo);
                         const totalSaude = doMes.filter(c => c.tipo === 'saude' || !c.tipo).reduce((acc, c) => acc + (Number(c.valor) || 0), 0);
                         const totalOdonto = doMes.filter(c => c.tipo === 'odonto').reduce((acc, c) => acc + (Number(c.valor) || 0), 0);
@@ -623,7 +623,7 @@ const ApoliceDashboard = () => {
                               <span className="font-bold text-gray-800">{fmt(totalSaude + totalOdonto)}</span>
                             </div>
                             {doMes.length === 0 && (
-                              <p className="text-center text-xs text-gray-400 pt-1">Nenhum lançamento registrado neste mês.</p>
+                              <p className="text-center text-xs text-gray-400 pt-1">Nenhum lançamento registrado no mês anterior.</p>
                             )}
                           </div>
                         );
