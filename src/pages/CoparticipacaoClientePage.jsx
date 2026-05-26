@@ -404,7 +404,7 @@ const CoparticipacaoClientePage = () => {
                 <SelectTrigger className="w-full sm:w-52">
                   <SelectValue placeholder="Todos os colaboradores" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[320px] overflow-y-auto">
                   <SelectItem value="__all__">Todos os colaboradores</SelectItem>
                   {beneficiariosDaEmpresa.map(b => (
                     <SelectItem key={b.id} value={String(b.id)}>{b.nome_completo}</SelectItem>
