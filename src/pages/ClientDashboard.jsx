@@ -388,6 +388,13 @@ const ClientDashboard = () => {
   const [showInclusaoAlert, setShowInclusaoAlert] = useState(true);
   const [showExclusaoAlert, setShowExclusaoAlert] = useState(true);
 
+  // Import Planos
+  const [isImportPlanosOpen, setIsImportPlanosOpen] = useState(false);
+  const [importPlanosStep, setImportPlanosStep] = useState('upload');
+  const [importPlanosRows, setImportPlanosRows] = useState([]);
+  const [isParsingPlanos, setIsParsingPlanos] = useState(false);
+  const [importPlanosSaving, setImportPlanosSaving] = useState(false);
+
   // Import Beneficiários
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
@@ -1100,6 +1107,71 @@ const ClientDashboard = () => {
     toast({ variant: 'destructive', title: 'Formato não suportado', description: 'Use .pdf, .xlsx, .xls ou .csv.' });
   };
 
+  // ── Import Planos ────────────────────────────────────────────────────────────
+  const handlePlanosFile = async (file) => {
+    if (!file || !file.name.match(/\.pdf$/i)) {
+      toast({ variant: 'destructive', title: 'Envie um arquivo PDF.' });
+      return;
+    }
+    setIsParsingPlanos(true);
+    setImportPlanosStep('parsing');
+    try {
+      const base64 = await new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = (e) => res(e.target.result.split(',')[1]);
+        reader.onerror = rej;
+        reader.readAsDataURL(file);
+      });
+      const { data: result, error } = await supabase.functions.invoke('parse-relatorio-matriz', { body: { pdfBase64: base64 } });
+      if (error || !result?.data) throw new Error(error?.message || 'Falha ao processar PDF.');
+      const benefs = beneficiarios.filter(b => String(b.empresa_id) === String(empresaId));
+      const rows = result.data.map(item => {
+        const cpf = (item.cpf || '').replace(/\D/g, '');
+        const matched = benefs.find(b => (b.cpf || '').replace(/\D/g, '') === cpf && cpf.length === 11);
+        return { ...item, _matchedId: matched?.id || null, _matchedName: matched?.nome_completo || null };
+      });
+      setImportPlanosRows(rows);
+      setImportPlanosStep('preview');
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro ao processar PDF.', description: err.message });
+      setImportPlanosStep('upload');
+    } finally {
+      setIsParsingPlanos(false);
+    }
+  };
+
+  const handleSavePlanos = async () => {
+    const toUpdate = importPlanosRows.filter(r => r._matchedId);
+    if (!toUpdate.length) {
+      toast({ variant: 'destructive', title: 'Nenhum beneficiário encontrado para atualizar.' });
+      return;
+    }
+    setImportPlanosSaving(true);
+    let ok = 0, fail = 0;
+    for (const r of toUpdate) {
+      try {
+        const tipo = r.tipo_plano || 'saude';
+        const upd = {
+          [`${tipo}_numero_carteirinha`]: r.cod_identificacao || null,
+          [`${tipo}_plano_nome`]: r.plano || null,
+          [`${tipo}_data_inclusao`]: r.inicio_vigencia || null,
+          [`${tipo}_valor_fatura`]: r.premio || null,
+          [`${tipo}_ativo`]: true,
+        };
+        if (r.id_funcional) upd.matricula_empresa = r.id_funcional;
+        await beneficiariosService.updateBeneficiario(r._matchedId, upd);
+        ok++;
+      } catch { fail++; }
+    }
+    setImportPlanosSaving(false);
+    toast({ title: `${ok} plano(s) atualizado(s)!`, description: fail > 0 ? `${fail} erro(s)` : undefined });
+    setIsImportPlanosOpen(false);
+    setImportPlanosStep('upload');
+    setImportPlanosRows([]);
+    fetchData();
+  };
+  // ── End Import Planos ────────────────────────────────────────────────────────
+
   const handleSaveImport = async () => {
     const toSave = importedRows.filter(r => !r._jaExiste && !r._skip);
     if (!toSave.length) {
@@ -1245,6 +1317,11 @@ const ClientDashboard = () => {
                 <Button variant="ghost" onClick={() => { setImportStep('upload'); setImportedRows([]); setIsImportOpen(true); }} className="text-white/80 hover:text-white hover:bg-white/10 border border-white/20 shrink-0">
                   <Upload className="mr-2 h-4 w-4" /> Importar Beneficiários
                 </Button>
+                {(user?.perfil === 'ADM' || user?.perfil === 'CEO') && (
+                  <Button variant="ghost" onClick={() => { setImportPlanosStep('upload'); setImportPlanosRows([]); setIsImportPlanosOpen(true); }} className="text-white/80 hover:text-white hover:bg-white/10 border border-white/20 shrink-0">
+                    <FileSpreadsheet className="mr-2 h-4 w-4" /> Importar Planos
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -1642,6 +1719,107 @@ const ClientDashboard = () => {
               </DialogFooter>
             )}
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* ── Modal Importar Planos (Relatório Matriz) — só ADM/CEO ── */}
+        <Dialog open={isImportPlanosOpen} onOpenChange={(v) => { if (!isParsingPlanos && !importPlanosSaving) { setIsImportPlanosOpen(v); if (!v) { setImportPlanosStep('upload'); setImportPlanosRows([]); } } }}>
+          <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] p-0 flex flex-col overflow-hidden">
+            <DialogHeader className="px-5 pt-5 pb-3 border-b">
+              <DialogTitle className="flex items-center gap-2">
+                <FileSpreadsheet className="h-5 w-5 text-[#003580]" /> Importar Planos — Relatório Matriz
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="flex-1 overflow-y-auto px-5 py-4">
+
+              {/* Upload */}
+              {importPlanosStep === 'upload' && (
+                <label className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-gray-300 rounded-xl p-10 cursor-pointer hover:border-[#003580] hover:bg-blue-50/40 transition-colors">
+                  <FileSpreadsheet className="h-10 w-10 text-gray-300" />
+                  <p className="text-sm font-medium text-gray-600">Clique ou arraste o PDF do Relatório Matriz aqui</p>
+                  <p className="text-xs text-gray-400">Relação de Segurados Ativos (Sul América, Bradesco, Amil, etc.)</p>
+                  <input type="file" accept=".pdf" className="hidden" onChange={e => e.target.files?.[0] && handlePlanosFile(e.target.files[0])} />
+                </label>
+              )}
+
+              {/* Parsing */}
+              {importPlanosStep === 'parsing' && (
+                <div className="flex flex-col items-center justify-center py-16 gap-4">
+                  <Loader2 className="h-10 w-10 animate-spin text-[#003580]" />
+                  <p className="text-sm font-medium text-gray-600">Lendo Relatório Matriz com IA…</p>
+                </div>
+              )}
+
+              {/* Saving */}
+              {importPlanosStep === 'saving' && (
+                <div className="flex flex-col items-center justify-center py-16 gap-4">
+                  <Loader2 className="h-10 w-10 animate-spin text-[#003580]" />
+                  <p className="text-sm font-medium text-gray-600">Atualizando beneficiários…</p>
+                </div>
+              )}
+
+              {/* Preview */}
+              {importPlanosStep === 'preview' && (() => {
+                const matched = importPlanosRows.filter(r => r._matchedId);
+                const notFound = importPlanosRows.filter(r => !r._matchedId);
+                return (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 text-sm">
+                      <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">{matched.length} encontrado(s)</span>
+                      {notFound.length > 0 && <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{notFound.length} não encontrado(s)</span>}
+                    </div>
+                    <div className="overflow-x-auto rounded-lg border border-gray-200">
+                      <table className="w-full text-xs">
+                        <thead className="bg-gray-50 text-gray-500 uppercase tracking-wide">
+                          <tr>
+                            <th className="px-3 py-2 text-left">Nome</th>
+                            <th className="px-3 py-2 text-left">CPF</th>
+                            <th className="px-3 py-2 text-left">Plano</th>
+                            <th className="px-3 py-2 text-left">Carteirinha</th>
+                            <th className="px-3 py-2 text-left">Início Vig.</th>
+                            <th className="px-3 py-2 text-right">Prêmio</th>
+                            <th className="px-3 py-2 text-center">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {importPlanosRows.map((r, i) => (
+                            <tr key={i} className={r._matchedId ? 'bg-white' : 'bg-gray-50 opacity-60'}>
+                              <td className="px-3 py-2 font-medium text-gray-800 max-w-[160px] truncate">{r.nome_completo}</td>
+                              <td className="px-3 py-2 text-gray-500 font-mono">{r.cpf ? `${r.cpf.substring(0,3)}.***.***-${r.cpf.substring(9)}` : '—'}</td>
+                              <td className="px-3 py-2 text-gray-600 max-w-[120px] truncate">{r.plano}</td>
+                              <td className="px-3 py-2 text-gray-500 font-mono text-[10px]">{r.cod_identificacao}</td>
+                              <td className="px-3 py-2 text-gray-500">{r.inicio_vigencia ? r.inicio_vigencia.split('-').reverse().join('/') : '—'}</td>
+                              <td className="px-3 py-2 text-right text-gray-700">{r.premio ? `R$ ${Number(r.premio).toFixed(2).replace('.', ',')}` : '—'}</td>
+                              <td className="px-3 py-2 text-center">
+                                {r._matchedId
+                                  ? <span className="text-green-600 font-semibold">✓ Encontrado</span>
+                                  : <span className="text-gray-400">Não encontrado</span>
+                                }
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {notFound.length > 0 && (
+                      <p className="text-xs text-gray-400">* Beneficiários "não encontrados" não serão alterados (CPF não cadastrado nesta empresa).</p>
+                    )}
+                  </div>
+                );
+              })()}
+
+            </div>
+
+            {importPlanosStep === 'preview' && (
+              <div className="px-5 py-3 border-t flex justify-end gap-2">
+                <Button variant="outline" onClick={() => { setIsImportPlanosOpen(false); setImportPlanosStep('upload'); setImportPlanosRows([]); }}>Cancelar</Button>
+                <Button onClick={handleSavePlanos} disabled={importPlanosRows.filter(r => r._matchedId).length === 0} className="bg-[#003580] hover:bg-[#002060] text-white">
+                  <CheckCheck className="mr-2 h-4 w-4" />
+                  Atualizar {importPlanosRows.filter(r => r._matchedId).length} beneficiário(s)
+                </Button>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
 
