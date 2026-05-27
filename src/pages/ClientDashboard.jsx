@@ -1865,7 +1865,7 @@ const ClientDashboard = () => {
       {/* Modal Preview Boleto — cliente */}
       <Dialog open={!!boletoPreviewCliente} onOpenChange={(open) => { if (!open) setBoletoPreviewCliente(null); }}>
         <DialogContent className="w-[95vw] max-w-4xl h-[90vh] p-0 flex flex-col overflow-hidden">
-          <DialogHeader className="px-5 pt-4 pb-3 border-b flex flex-row items-center justify-between">
+          <DialogHeader className="px-5 pt-4 pb-3 border-b flex flex-row items-center justify-between pr-12">
             <DialogTitle className="flex items-center gap-2 text-base">
               <Receipt className="h-5 w-5 text-[#003580]" />
               Boleto{boletoPreviewCliente ? ` — ${(() => { try { const [y,m] = boletoPreviewCliente.mes.split('-'); const d = new Date(Number(y), Number(m)-1, 1); const l = d.toLocaleString('pt-BR',{month:'long',year:'numeric'}); return l.charAt(0).toUpperCase()+l.slice(1); } catch { return boletoPreviewCliente.mes; } })()}` : ''}

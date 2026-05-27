@@ -861,7 +861,7 @@ const ApoliceDashboard = () => {
         {/* Modal Preview Boleto (cliente + ADM) */}
         <Dialog open={!!boletoPreview} onOpenChange={(open) => { if (!open) setBoletoPreview(null); }}>
           <DialogContent className="w-[95vw] max-w-4xl h-[90vh] p-0 flex flex-col overflow-hidden">
-            <DialogHeader className="px-5 pt-4 pb-3 border-b flex flex-row items-center justify-between">
+            <DialogHeader className="px-5 pt-4 pb-3 border-b flex flex-row items-center justify-between pr-12">
               <DialogTitle className="flex items-center gap-2 text-base">
                 <Receipt className="h-5 w-5 text-[#003580]" />
                 Boleto — {boletoPreview ? mesLabel(boletoPreview.mes) : ''}
