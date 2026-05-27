@@ -498,7 +498,7 @@ const ClientDashboard = () => {
   useEffect(() => { setAge(formData.data_nascimento ? calculateAge(formData.data_nascimento) : ''); }, [formData.data_nascimento]);
 
   const openModalToAdd = () => { setEditingBeneficiario(null); setFormData(emptyBeneficiario); setIsModalOpen(true); };
-  const openModalToEdit = (b) => { setEditingBeneficiario(b); setFormData({ ...emptyBeneficiario, ...b, cpf: b.cpf ? formatCpfCnpj(b.cpf) : '' }); setIsModalOpen(true); };
+  const openModalToEdit = (b) => { setEditingBeneficiario(b); setFormData({ ...emptyBeneficiario, ...b, cpf: b.cpf ? formatCpfCnpj(b.cpf) : '', parentesco: normalizeParentesco(b.parentesco) }); setIsModalOpen(true); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -963,7 +963,13 @@ const ClientDashboard = () => {
   
   // ── Import Beneficiários ────────────────────────────────────────────────────
 
-  const PARENTESCO_OPTS = ['TITULAR','CONJUGE','FILHO','FILHA','PAI','MAE','OUTRO'];
+  const PARENTESCO_OPTS = ['TITULAR','CONJUGE','FILHO(A)','IRMÃO(Ã)','NETO(A)','PAI','MÃE'];
+
+  const normalizeParentesco = (p) => {
+    if (!p) return '';
+    const map = { 'FILHO':'FILHO(A)', 'FILHA':'FILHO(A)', 'MAE':'MÃE', 'IRMÃO':'IRMÃO(Ã)', 'IRMÃ':'IRMÃO(Ã)', 'NETO':'NETO(A)', 'NETA':'NETO(A)', 'CÔNJUGE':'CONJUGE' };
+    return map[p.toUpperCase()] || p;
+  };
 
   const buildRowFromParsed = (item, existingCpfs) => {
     const cpf = (item.cpf || '').replace(/\D/g,'');
