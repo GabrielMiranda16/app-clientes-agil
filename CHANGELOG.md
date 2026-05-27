@@ -4,6 +4,72 @@
 
 ---
 
+### [v3.0] — Sistema de Parceiros + Boletos (2026-05-25 / 2026-05-27)
+
+---
+
+#### Sessão 2026-05-25 — 19 commits
+
+##### Sistema de Parceiros (Etapas 1–9) — implementação completa do zero
+- **Etapa 1** (`30cd554`): 5 tabelas Supabase (`parceiros`, `orcamentos`, `orcamento_documentos`, `orcamento_acessos`, `comissoes`), role PARCEIRO, páginas base
+- **Etapa 2** (`d00a3b4`): modal "Solicitar Orçamento" com campos dinâmicos por segmento
+- **Etapas 3–9** (`d724c2a`): sistema completo — ADM responde + gera slug, página pública `/orcamento/:slug` (auth 3 dígitos CPF + tracking), upload de docs, WhatsApp via Evolution API, avanço de etapas (SOLICITACAO→ORCAMENTO→DOCUMENTOS→ASSINATURA→CONCLUIDO→COMISSAO), modal comissão + comprovante
+- **Notificações** (`5f20aac`, `23da0c3`): WhatsApp ao parceiro + painel detalhe no portal
+
+##### ADM melhorias
+- Rotas ADM reorganizadas (`0bec969`): `/admin` → seleção (AdminSelecaoPage), `/admin/clientes` → lista
+- Badge de solicitações pendentes + auto-refresh a cada 30s + pulse em AdminParceirosPage (`0ff9126`)
+- Tabs CEO com scroll horizontal — aba Parceiros visível em telas menores (`e6fe45f`)
+- Fix ícone Handshake → HeartHandshake (`647a30b`)
+
+##### Visual — glassmorphism
+- Botão Nova Apólice fora dos cards + glassmorphism (`1a607de`, `11cd9b1`)
+- Tabs CEO glassmorphism — ativo bg-white/25 (`6caaefe`, `5d48317`)
+- Botões glassmorphism rounded-lg (`0c60661`)
+- Botão Novo Cliente glassmorphism (`0551a9b`)
+
+##### Coparticipação
+- Parser TXT posicional tipo "20" + prompt acumulativo (`824f133`)
+- Scroll colaboradores max-h-[320px] em CoparticipacaoPage e CoparticipacaoClientePage (`8bd6342`, `0bec63a`)
+- Card coparticipação na ApoliceDashboard exibe mês anterior (correto) (`bd8c296`)
+
+##### IA — Importar Planos
+- Botão "Importar Planos" (só ADM/CEO) em ClientDashboard (`8db4592`)
+- Edge Function `parse-relatorio-matriz`: lê PDF "Relação de Segurados Ativos", extrai carteirinha/plano/CPF/vigência/prêmio, match por CPF, atualiza beneficiários
+
+---
+
+#### Sessão 2026-05-27 — 3 commits
+
+##### Fix: parentesco não aparecia ao editar beneficiário importado (`28f1cf7`)
+- `PARENTESCO_OPTS` do import usava valores diferentes do Select do form (`FILHO/FILHA/MAE` vs `FILHO(A)/MÃE`)
+- Adicionada função `normalizeParentesco()` em `openModalToEdit` — mapeia valores antigos ao abrir modal
+- `PARENTESCO_OPTS` agora usa os mesmos valores do form: `FILHO(A)`, `IRMÃO(Ã)`, `NETO(A)`, `MÃE`
+
+##### feat: sistema de boletos para SVD (`7ddede8`)
+- **`boletosService.js`**: upload, substituição, exclusão, URL assinada (1h), auto-cleanup (deleta boletos com mais de 2 meses automaticamente ao carregar)
+- **Storage Supabase**: bucket `boletos` (privado)
+- **Tabela `boletos`**: `id`, `apolice_id`, `mes_referencia`, `arquivo_url`, `created_at` — UNIQUE por apólice + mês
+
+**Onde está o boleto no ADM:**
+`Clientes → [cliente] → Saúde, Vida e Odonto → Acessar [apólice] → aba "Apólice" → card "Boleto de Pagamento"`
+- Botão **"Enviar Boleto"** → modal com seleção do mês de referência + upload PDF
+- Cada boleto tem botão **Visualizar** (preview iframe), **Editar** (substituir PDF) e **Excluir**
+
+**Onde está no cliente (`/cliente/:empresaId`):**
+- Botão no topo da página ao lado de "Minha Coparticipação"
+- Sem boleto → `Boleto` (desabilitado, cinza)
+- Com boleto → `Boleto Disponível` (azul/destaque, clicável)
+- Abre modal com preview do PDF (iframe) + botão Baixar
+
+**Observações técnicas:**
+- Boletos disponíveis: últimos 2 meses (auto-cleanup no carregamento)
+- URLs assinadas (signed URLs) — acesso privado, expiram em 1h
+- `apoliceId` passado via `location.state` da navegação `/apolice/:id → /cliente/:id`
+- Se cliente acessar `/cliente/:id` diretamente sem vir da apólice, o botão Boleto não aparece (sem `apoliceId` no state)
+
+---
+
 ### [v2.0] — Ciclo de Melhorias (Sessões anteriores + Sessão atual — 2026-04-08)
 
 ---
