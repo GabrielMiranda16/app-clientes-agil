@@ -28,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Users, UserCheck, UserX, UserMinus, Plus, Edit, Trash2, Search, Loader2, Info, Heart, Smile, Hotel as Hospital, ExternalLink, CheckCircle2, Calendar, Timer, RotateCcw, AlertCircle, X, User, ClipboardList, Clock, ChevronLeft, ChevronRight, DollarSign, Upload, FileSpreadsheet, FileText as FilePdf, CheckCheck, AlertTriangle } from 'lucide-react';
+import { Users, UserCheck, UserX, UserMinus, Plus, Edit, Trash2, Search, Loader2, Info, Heart, Smile, Hotel as Hospital, ExternalLink, CheckCircle2, Calendar, Timer, RotateCcw, AlertCircle, X, User, ClipboardList, Clock, ChevronLeft, ChevronRight, DollarSign, Upload, FileSpreadsheet, FileText as FilePdf, CheckCheck, AlertTriangle, Receipt, Download, FileText } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { motion } from 'framer-motion';
 import { applyCpfMask, applyPhoneMask, applyCepMask, formatCpfCnpj } from '@/lib/masks';
@@ -39,6 +39,7 @@ import { differenceInMinutes } from 'date-fns';
 import { empresasService } from '@/services/empresasService';
 import { beneficiariosService } from '@/services/beneficiariosService';
 import { solicitacoesService } from '@/services/solicitacoesService';
+import { boletosService } from '@/services/boletosService';
 import { supabase } from '@/lib/customSupabaseClient';
 
 const emptyBeneficiario = {
@@ -354,6 +355,11 @@ const ClientDashboard = () => {
   const [empresas, setEmpresas] = useState([]);
   const [beneficiarios, setBeneficiarios] = useState([]);
   const [solicitacoes, setSolicitacoes] = useState([]);
+
+  // Boletos
+  const [boletos, setBoletos] = useState([]);
+  const [boletoPreviewCliente, setBoletoPreviewCliente] = useState(null); // { url, mes }
+  const [loadingBoletoPreview, setLoadingBoletoPreview] = useState(false);
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -439,6 +445,13 @@ const ClientDashboard = () => {
   };
   
   useEffect(() => { if (empresaId_num) { fetchData(); } }, [empresaId_num]);
+
+  // Carrega boletos a partir do apoliceId da navegação (se disponível)
+  useEffect(() => {
+    const apoliceId = location.state?.apoliceId;
+    if (!apoliceId) return;
+    boletosService.getBoletosByApolice(apoliceId).then(setBoletos).catch(() => {});
+  }, [location.state?.apoliceId]);
 
   const beneficiariosDaEmpresa = useMemo(() => {
     if (!empresaId) return [];
@@ -1320,6 +1333,26 @@ const ClientDashboard = () => {
                     <DollarSign className="mr-2 h-4 w-4" /> Minha Coparticipação <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
                 )}
+                {user?.perfil === 'CLIENTE' && (
+                  boletos.length > 0 ? (
+                    <Button variant="ghost" onClick={async () => {
+                      const b = boletos[0];
+                      setLoadingBoletoPreview(true);
+                      setBoletoPreviewCliente({ url: null, mes: b.mes_referencia });
+                      try {
+                        const url = await boletosService.getSignedUrl(b.arquivo_url);
+                        setBoletoPreviewCliente({ url, mes: b.mes_referencia });
+                      } catch { setBoletoPreviewCliente({ url: b.arquivo_url, mes: b.mes_referencia }); }
+                      finally { setLoadingBoletoPreview(false); }
+                    }} className="text-white hover:text-white bg-white/20 hover:bg-white/30 border border-white/40 shrink-0 font-medium">
+                      <Receipt className="mr-2 h-4 w-4" /> Boleto Disponível
+                    </Button>
+                  ) : (
+                    <Button variant="ghost" disabled className="text-white/40 border border-white/10 shrink-0 cursor-default">
+                      <Receipt className="mr-2 h-4 w-4" /> Boleto
+                    </Button>
+                  )
+                )}
                 <Button variant="ghost" onClick={() => { setImportStep('upload'); setImportedRows([]); setIsImportOpen(true); }} className="text-white/80 hover:text-white hover:bg-white/10 border border-white/20 shrink-0">
                   <Upload className="mr-2 h-4 w-4" /> Importar Beneficiários
                 </Button>
@@ -1828,6 +1861,34 @@ const ClientDashboard = () => {
             )}
           </DialogContent>
         </Dialog>
+
+      {/* Modal Preview Boleto — cliente */}
+      <Dialog open={!!boletoPreviewCliente} onOpenChange={(open) => { if (!open) setBoletoPreviewCliente(null); }}>
+        <DialogContent className="w-[95vw] max-w-4xl h-[90vh] p-0 flex flex-col overflow-hidden">
+          <DialogHeader className="px-5 pt-4 pb-3 border-b flex flex-row items-center justify-between">
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Receipt className="h-5 w-5 text-[#003580]" />
+              Boleto{boletoPreviewCliente ? ` — ${(() => { try { const [y,m] = boletoPreviewCliente.mes.split('-'); const d = new Date(Number(y), Number(m)-1, 1); const l = d.toLocaleString('pt-BR',{month:'long',year:'numeric'}); return l.charAt(0).toUpperCase()+l.slice(1); } catch { return boletoPreviewCliente.mes; } })()}` : ''}
+            </DialogTitle>
+            {boletoPreviewCliente?.url && (
+              <a href={boletoPreviewCliente.url} download target="_blank" rel="noopener noreferrer">
+                <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white">
+                  <Download className="h-4 w-4 mr-1.5" /> Baixar PDF
+                </Button>
+              </a>
+            )}
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden bg-gray-100">
+            {loadingBoletoPreview || !boletoPreviewCliente?.url ? (
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-8 w-8 animate-spin text-[#003580]" />
+              </div>
+            ) : (
+              <iframe src={boletoPreviewCliente.url} className="w-full h-full border-0" title="Boleto PDF" />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       </DashboardLayout>
     </>
