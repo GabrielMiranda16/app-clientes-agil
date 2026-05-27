@@ -360,6 +360,7 @@ const ClientDashboard = () => {
   const [boletos, setBoletos] = useState([]);
   const [boletoPreviewCliente, setBoletoPreviewCliente] = useState(null); // { url, mes }
   const [loadingBoletoPreview, setLoadingBoletoPreview] = useState(false);
+  const [boletoSelectorOpen, setBoletoSelectorOpen] = useState(false);
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -452,6 +453,23 @@ const ClientDashboard = () => {
     if (!apoliceId) return;
     boletosService.getBoletosByApolice(apoliceId).then(setBoletos).catch(() => {});
   }, [location.state?.apoliceId]);
+
+  const mesAtual = useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  }, []);
+
+  const MES_OPTS_CLIENTE = useMemo(() => {
+    const now = new Date();
+    return Array.from({ length: 2 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = d.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+      return { val, label: label.charAt(0).toUpperCase() + label.slice(1) };
+    });
+  }, []);
+
+  const temBoletoMesAtual = useMemo(() => boletos.some(b => b.mes_referencia === mesAtual), [boletos, mesAtual]);
 
   const beneficiariosDaEmpresa = useMemo(() => {
     if (!empresaId) return [];
@@ -1334,24 +1352,17 @@ const ClientDashboard = () => {
                   </Button>
                 )}
                 {user?.perfil === 'CLIENTE' && (
-                  boletos.length > 0 ? (
-                    <Button variant="ghost" onClick={async () => {
-                      const b = boletos[0];
-                      setLoadingBoletoPreview(true);
-                      setBoletoPreviewCliente({ url: null, mes: b.mes_referencia });
-                      try {
-                        const url = await boletosService.getSignedUrl(b.arquivo_url);
-                        setBoletoPreviewCliente({ url, mes: b.mes_referencia });
-                      } catch { setBoletoPreviewCliente({ url: b.arquivo_url, mes: b.mes_referencia }); }
-                      finally { setLoadingBoletoPreview(false); }
-                    }} className="text-white hover:text-white bg-white/20 hover:bg-white/30 border border-white/40 shrink-0 font-medium">
-                      <Receipt className="mr-2 h-4 w-4" /> Boleto Disponível
-                    </Button>
-                  ) : (
-                    <Button variant="ghost" disabled className="text-white/40 border border-white/10 shrink-0 cursor-default">
-                      <Receipt className="mr-2 h-4 w-4" /> Boleto
-                    </Button>
-                  )
+                  <Button
+                    variant="ghost"
+                    onClick={() => setBoletoSelectorOpen(true)}
+                    className={temBoletoMesAtual
+                      ? "text-white hover:text-white bg-white/20 hover:bg-white/30 border border-white/40 shrink-0 font-medium"
+                      : "text-white/80 hover:text-white hover:bg-white/10 border border-white/20 shrink-0"
+                    }
+                  >
+                    <Receipt className="mr-2 h-4 w-4" />
+                    {temBoletoMesAtual ? 'Boleto Disponível' : 'Boleto'}
+                  </Button>
                 )}
                 <Button variant="ghost" onClick={() => { setImportStep('upload'); setImportedRows([]); setIsImportOpen(true); }} className="text-white/80 hover:text-white hover:bg-white/10 border border-white/20 shrink-0">
                   <Upload className="mr-2 h-4 w-4" /> Importar Beneficiários
@@ -1861,6 +1872,53 @@ const ClientDashboard = () => {
             )}
           </DialogContent>
         </Dialog>
+
+      {/* Modal Seletor de Mês — Boleto cliente */}
+      <Dialog open={boletoSelectorOpen} onOpenChange={setBoletoSelectorOpen}>
+        <DialogContent className="w-[95vw] max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Receipt className="h-5 w-5 text-[#003580]" /> Selecionar Mês
+            </DialogTitle>
+            <DialogDescription>Escolha o mês para visualizar o boleto.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            {MES_OPTS_CLIENTE.map(({ val, label }) => {
+              const boleto = boletos.find(b => b.mes_referencia === val);
+              return (
+                <button
+                  key={val}
+                  onClick={async () => {
+                    setBoletoSelectorOpen(false);
+                    if (!boleto) {
+                      toast({ title: 'Boleto não disponível', description: `Nenhum boleto cadastrado para ${label}.` });
+                      return;
+                    }
+                    setLoadingBoletoPreview(true);
+                    setBoletoPreviewCliente({ url: null, mes: val });
+                    try {
+                      const url = await boletosService.getSignedUrl(boleto.arquivo_url);
+                      setBoletoPreviewCliente({ url, mes: val });
+                    } catch { setBoletoPreviewCliente({ url: boleto.arquivo_url, mes: val }); }
+                    finally { setLoadingBoletoPreview(false); }
+                  }}
+                  className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left ${
+                    boleto
+                      ? 'border-[#003580]/20 bg-blue-50 hover:bg-blue-100'
+                      : 'border-gray-100 bg-gray-50 opacity-60'
+                  }`}
+                >
+                  <span className="font-medium text-gray-800">{label}</span>
+                  {boleto
+                    ? <span className="text-xs font-medium text-[#003580] bg-blue-100 px-2 py-0.5 rounded-full">Disponível</span>
+                    : <span className="text-xs text-gray-400">Não disponível</span>
+                  }
+                </button>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal Preview Boleto — cliente */}
       <Dialog open={!!boletoPreviewCliente} onOpenChange={(open) => { if (!open) setBoletoPreviewCliente(null); }}>
