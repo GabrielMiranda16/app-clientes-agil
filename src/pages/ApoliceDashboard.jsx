@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -8,16 +8,21 @@ import { apolicesService, SEGMENTOS } from '@/services/apolicesService';
 import { beneficiariosService } from '@/services/beneficiariosService';
 import { solicitacoesService } from '@/services/solicitacoesService';
 import { coparticipacaoService } from '@/services/coparticipacaoService';
+import { boletosService } from '@/services/boletosService';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useToast } from '@/components/ui/use-toast';
 import { motion } from 'framer-motion';
 import {
-  ArrowLeft, FileText, CalendarDays, Building, DollarSign,
+  FileText, CalendarDays, Building, DollarSign,
   Download, AlertTriangle, CheckCircle, Clock, Loader2,
   Car, Plane, Home, PawPrint, Building2, HeartPulse,
   Users, ClipboardList, ChevronRight, Package, Monitor,
+  Receipt, Upload, Trash2, Edit, X,
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { format } from 'date-fns';
@@ -49,11 +54,24 @@ const STATUS_SOL_COLORS = {
   'REJEITADA':         'bg-red-100 text-red-800',
 };
 
+const MES_OPTS = (() => {
+  const opts = [];
+  const now = new Date();
+  for (let i = 0; i < 3; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const label = format(d, 'MMMM yyyy', { locale: ptBR });
+    opts.push({ val, label: label.charAt(0).toUpperCase() + label.slice(1) });
+  }
+  return opts;
+})();
+
 const ApoliceDashboard = () => {
   const { apoliceId } = useParams();
   const { user } = useAuth();
   const { setSelectedCompanyId } = useCompany();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const isAdmin = user?.perfil === 'CEO' || user?.perfil === 'ADM';
   const isCliente = user?.perfil === 'CLIENTE';
@@ -71,6 +89,18 @@ const ApoliceDashboard = () => {
   const [loadingBen, setLoadingBen] = useState(false);
   const [loadingSol, setLoadingSol] = useState(false);
   const [loadingCopat, setLoadingCopat] = useState(false);
+
+  // Boletos
+  const [boletos, setBoletos] = useState([]);
+  const [loadingBoletos, setLoadingBoletos] = useState(false);
+  const [isBoletoUploadOpen, setIsBoletoUploadOpen] = useState(false);
+  const [boletoEditando, setBoletoEditando] = useState(null); // boleto sendo editado
+  const [boletoMes, setBoletoMes] = useState(MES_OPTS[0]?.val || '');
+  const [boletoFile, setBoletoFile] = useState(null);
+  const [isSavingBoleto, setIsSavingBoleto] = useState(false);
+  const [boletoPreview, setBoletoPreview] = useState(null); // { url, mes }
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const boletoInputRef = useRef(null);
 
   useEffect(() => {
     apolicesService.getApolice(apoliceId)
@@ -93,6 +123,11 @@ const ApoliceDashboard = () => {
           setLoadingSol(false);
           setLoadingCopat(false);
         }
+        // Carrega boletos para SVD
+        if (ap?.segmento === 'SAUDE_VIDA_ODONTO') {
+          setLoadingBoletos(true);
+          boletosService.getBoletosByApolice(apoliceId).then(setBoletos).catch(() => {}).finally(() => setLoadingBoletos(false));
+        }
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -107,6 +142,71 @@ const ApoliceDashboard = () => {
     if (!v) return '—';
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
   };
+
+  const openBoletoUpload = (boleto = null) => {
+    setBoletoEditando(boleto);
+    setBoletoMes(boleto?.mes_referencia || MES_OPTS[0]?.val || '');
+    setBoletoFile(null);
+    setIsBoletoUploadOpen(true);
+  };
+
+  const handleSaveBoleto = async () => {
+    if (!boletoFile) return toast({ variant: 'destructive', title: 'Selecione um PDF.' });
+    setIsSavingBoleto(true);
+    try {
+      let saved;
+      if (boletoEditando) {
+        saved = await boletosService.replaceBoleto(boletoEditando, boletoFile);
+        setBoletos(prev => prev.map(b => b.id === saved.id ? saved : b));
+      } else {
+        saved = await boletosService.uploadBoleto(boletoFile, apoliceId, boletoMes);
+        setBoletos(prev => {
+          const sem = prev.filter(b => b.mes_referencia !== boletoMes);
+          return [saved, ...sem].sort((a, b) => b.mes_referencia.localeCompare(a.mes_referencia));
+        });
+      }
+      toast({ title: boletoEditando ? 'Boleto atualizado.' : 'Boleto enviado.' });
+      setIsBoletoUploadOpen(false);
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro', description: err.message });
+    } finally {
+      setIsSavingBoleto(false);
+    }
+  };
+
+  const handleDeleteBoleto = async (boleto) => {
+    try {
+      await boletosService.deleteBoleto(boleto);
+      setBoletos(prev => prev.filter(b => b.id !== boleto.id));
+      toast({ title: 'Boleto removido.' });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro', description: err.message });
+    }
+  };
+
+  const openBoletoPreview = async (boleto) => {
+    setLoadingPreview(true);
+    setBoletoPreview({ url: null, mes: boleto.mes_referencia });
+    try {
+      const url = await boletosService.getSignedUrl(boleto.arquivo_url);
+      setBoletoPreview({ url, mes: boleto.mes_referencia });
+    } catch {
+      setBoletoPreview({ url: boleto.arquivo_url, mes: boleto.mes_referencia });
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
+
+  const mesLabel = (mesStr) => {
+    try {
+      const [y, m] = mesStr.split('-');
+      const d = new Date(Number(y), Number(m) - 1, 1);
+      const l = format(d, 'MMMM yyyy', { locale: ptBR });
+      return l.charAt(0).toUpperCase() + l.slice(1);
+    } catch { return mesStr; }
+  };
+
+  const boletoAtual = boletos[0] || null; // mais recente
 
   const goToCoparticipacao = () => {
     setSelectedCompanyId(Number(apolice.empresa_id));
@@ -483,6 +583,81 @@ const ApoliceDashboard = () => {
                     </Card>
                   )}
 
+                  {/* Card Boleto — apenas SVD */}
+                  {isSVD && (
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between pb-3">
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <Receipt className="h-4 w-4" /> Boleto de Pagamento
+                        </CardTitle>
+                        {isAdmin && (
+                          <Button size="sm" variant="ghost" className="text-[#003580] hover:bg-[#003580]/10" onClick={() => openBoletoUpload()}>
+                            <Upload className="h-4 w-4 mr-1.5" /> Enviar Boleto
+                          </Button>
+                        )}
+                      </CardHeader>
+                      <CardContent>
+                        {loadingBoletos ? (
+                          <div className="flex items-center justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-gray-400" /></div>
+                        ) : boletos.length === 0 ? (
+                          <div className="text-center py-6 text-gray-400">
+                            <Receipt className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                            <p className="text-sm">{isAdmin ? 'Nenhum boleto enviado. Clique em "Enviar Boleto" para adicionar.' : 'Nenhum boleto disponível no momento.'}</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {boletos.map(b => (
+                              <div key={b.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                                <div className="flex items-center gap-2.5">
+                                  <Receipt className="h-4 w-4 text-[#003580] shrink-0" />
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-800">{mesLabel(b.mes_referencia)}</p>
+                                    <p className="text-xs text-gray-400">Enviado em {format(new Date(b.created_at), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white" onClick={() => openBoletoPreview(b)}>
+                                    <FileText className="h-3.5 w-3.5 mr-1.5" /> Visualizar
+                                  </Button>
+                                  {isAdmin && (
+                                    <>
+                                      <Button variant="outline" size="icon" className="h-8 w-8" title="Substituir PDF" onClick={() => openBoletoUpload(b)}>
+                                        <Edit className="h-3.5 w-3.5" />
+                                      </Button>
+                                      <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                          <Button variant="outline" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700">
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                          </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader><AlertDialogTitle>Remover boleto?</AlertDialogTitle></AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDeleteBoleto(b)} className="bg-red-600 hover:bg-red-700 text-white">Remover</AlertDialogAction>
+                                          </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Botão para o cliente — aparece fora da lista para facilitar */}
+                        {isCliente && boletoAtual && (
+                          <div className="mt-3 pt-3 border-t">
+                            <Button className="w-full bg-[#003580] hover:bg-[#002060] text-white" onClick={() => openBoletoPreview(boletoAtual)}>
+                              <Receipt className="h-4 w-4 mr-2" /> Boleto Disponível — {mesLabel(boletoAtual.mes_referencia)}
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+
                 </div>
               </TabsContent>
 
@@ -635,6 +810,86 @@ const ApoliceDashboard = () => {
             </Tabs>
           </motion.div>
         </div>
+        {/* Modal Upload Boleto (ADM) */}
+        <Dialog open={isBoletoUploadOpen} onOpenChange={setIsBoletoUploadOpen}>
+          <DialogContent className="w-[95vw] max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Receipt className="h-5 w-5 text-[#003580]" />
+                {boletoEditando ? 'Substituir Boleto' : 'Enviar Boleto'}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              {!boletoEditando && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-1.5">Mês de referência</p>
+                  <select
+                    value={boletoMes}
+                    onChange={e => setBoletoMes(e.target.value)}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#003580]/30"
+                  >
+                    {MES_OPTS.map(o => <option key={o.val} value={o.val}>{o.label}</option>)}
+                  </select>
+                </div>
+              )}
+              {boletoEditando && (
+                <p className="text-sm text-gray-500">Substituindo boleto de <strong>{mesLabel(boletoEditando.mes_referencia)}</strong>.</p>
+              )}
+              <div>
+                <p className="text-sm font-medium text-gray-700 mb-1.5">Arquivo PDF</p>
+                <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 rounded-xl p-8 cursor-pointer hover:border-[#003580] hover:bg-blue-50/40 transition-colors">
+                  <Receipt className="h-8 w-8 text-gray-300" />
+                  {boletoFile ? (
+                    <p className="text-sm font-medium text-[#003580]">{boletoFile.name}</p>
+                  ) : (
+                    <p className="text-sm text-gray-500">Clique ou arraste o PDF do boleto aqui</p>
+                  )}
+                  <input ref={boletoInputRef} type="file" accept=".pdf" className="hidden" onChange={e => e.target.files?.[0] && setBoletoFile(e.target.files[0])} />
+                </label>
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <Button variant="outline" onClick={() => setIsBoletoUploadOpen(false)}>Cancelar</Button>
+                <Button className="bg-[#003580] hover:bg-[#002060] text-white" disabled={!boletoFile || isSavingBoleto} onClick={handleSaveBoleto}>
+                  {isSavingBoleto ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
+                  {boletoEditando ? 'Substituir' : 'Enviar'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal Preview Boleto (cliente + ADM) */}
+        <Dialog open={!!boletoPreview} onOpenChange={(open) => { if (!open) setBoletoPreview(null); }}>
+          <DialogContent className="w-[95vw] max-w-4xl h-[90vh] p-0 flex flex-col overflow-hidden">
+            <DialogHeader className="px-5 pt-4 pb-3 border-b flex flex-row items-center justify-between">
+              <DialogTitle className="flex items-center gap-2 text-base">
+                <Receipt className="h-5 w-5 text-[#003580]" />
+                Boleto — {boletoPreview ? mesLabel(boletoPreview.mes) : ''}
+              </DialogTitle>
+              {boletoPreview?.url && (
+                <a href={boletoPreview.url} download target="_blank" rel="noopener noreferrer">
+                  <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white">
+                    <Download className="h-4 w-4 mr-1.5" /> Baixar PDF
+                  </Button>
+                </a>
+              )}
+            </DialogHeader>
+            <div className="flex-1 overflow-hidden bg-gray-100">
+              {loadingPreview || !boletoPreview?.url ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="h-8 w-8 animate-spin text-[#003580]" />
+                </div>
+              ) : (
+                <iframe
+                  src={boletoPreview.url}
+                  className="w-full h-full border-0"
+                  title="Boleto PDF"
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
       </DashboardLayout>
     </>
   );
