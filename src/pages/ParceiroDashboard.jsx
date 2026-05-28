@@ -84,7 +84,12 @@ const SEGMENTO_CAMPOS = {
 
 const FUNIL = ['SOLICITACAO', 'ORCAMENTO', 'DOCUMENTOS', 'ASSINATURA', 'CONCLUIDO', 'COMISSAO'];
 
-const FORM_VAZIO = { segmento: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', cliente_cpf: '', observacoes: '', extras: {} };
+const FORM_VAZIO = { segmento: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', cliente_cpf: '', cliente_data_nascimento: '', observacoes: '', extras: {} };
+
+const validarCpfCnpj = (val) => {
+  const digits = (val || '').replace(/\D/g, '');
+  return digits.length === 11 || digits.length === 14;
+};
 
 const fmtData = (iso) => {
   if (!iso) return '—';
@@ -137,6 +142,10 @@ const ParceiroDashboard = () => {
     if (!form.segmento) return toast({ variant: 'destructive', title: 'Selecione o segmento.' });
     if (!form.cliente_nome.trim()) return toast({ variant: 'destructive', title: 'Informe o nome do cliente.' });
     if (!form.cliente_telefone.trim()) return toast({ variant: 'destructive', title: 'Informe o telefone do cliente.' });
+    if (!form.cliente_email.trim()) return toast({ variant: 'destructive', title: 'Informe o e-mail do cliente.' });
+    if (!form.cliente_cpf.trim()) return toast({ variant: 'destructive', title: 'Informe o CPF ou CNPJ do cliente.' });
+    if (!validarCpfCnpj(form.cliente_cpf)) return toast({ variant: 'destructive', title: 'CPF ou CNPJ inválido.', description: 'CPF deve ter 11 dígitos e CNPJ 14 dígitos.' });
+    if (!form.cliente_data_nascimento) return toast({ variant: 'destructive', title: 'Informe a data de nascimento do cliente.' });
     if (!parceiro?.id) return toast({ variant: 'destructive', title: 'Perfil de parceiro não encontrado.' });
 
     setEnviando(true);
@@ -155,8 +164,9 @@ const ParceiroDashboard = () => {
         status: 'SOLICITACAO',
         cliente_nome: form.cliente_nome.trim(),
         cliente_telefone: form.cliente_telefone.trim(),
-        cliente_email: form.cliente_email.trim() || null,
-        cliente_cpf: form.cliente_cpf.trim() || null,
+        cliente_email: form.cliente_email.trim(),
+        cliente_cpf: form.cliente_cpf.replace(/\D/g, ''),
+        cliente_data_nascimento: form.cliente_data_nascimento || null,
         observacoes: obsTexto.trim() || null,
       });
 
@@ -266,7 +276,7 @@ const ParceiroDashboard = () => {
 
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold tracking-tight text-white">
-              Olá, {user?.name?.split(' ')[0] || 'Parceiro'} 👋
+              Olá, {user?.name?.split(' ')[0] || 'Parceiro'}
             </h1>
           </div>
 
@@ -614,17 +624,26 @@ const ParceiroDashboard = () => {
                       placeholder="(11) 99999-0000"
                       className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580]" />
                   </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-gray-700">E-mail <span className="text-red-500">*</span></Label>
+                    <input value={form.cliente_email} onChange={e => setField('cliente_email', e.target.value)}
+                      placeholder="email@exemplo.com" type="email"
+                      className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580]" />
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <Label className="text-sm font-medium text-gray-700">E-mail <span className="text-gray-400 font-normal">(opcional)</span></Label>
-                      <input value={form.cliente_email} onChange={e => setField('cliente_email', e.target.value)}
-                        placeholder="email@exemplo.com" type="email"
-                        className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580]" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-sm font-medium text-gray-700">CPF <span className="text-gray-400 font-normal">(opcional)</span></Label>
+                      <Label className="text-sm font-medium text-gray-700">CPF / CNPJ <span className="text-red-500">*</span></Label>
                       <input value={form.cliente_cpf} onChange={e => setField('cliente_cpf', e.target.value)}
                         placeholder="000.000.000-00"
+                        className={`w-full rounded-lg border bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#003580] ${form.cliente_cpf && !validarCpfCnpj(form.cliente_cpf) ? 'border-red-400 focus:border-red-400' : 'border-gray-200 focus:border-[#003580]'}`} />
+                      {form.cliente_cpf && !validarCpfCnpj(form.cliente_cpf) && (
+                        <p className="text-xs text-red-500 mt-0.5">CPF (11 dígitos) ou CNPJ (14 dígitos)</p>
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium text-gray-700">Data de nascimento <span className="text-red-500">*</span></Label>
+                      <input value={form.cliente_data_nascimento} onChange={e => setField('cliente_data_nascimento', e.target.value)}
+                        type="date"
                         className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580]" />
                     </div>
                   </div>
@@ -661,7 +680,7 @@ const ParceiroDashboard = () => {
                     Cancelar
                   </Button>
                   <Button onClick={handleSolicitar}
-                    disabled={enviando || !form.segmento || !form.cliente_nome.trim() || !form.cliente_telefone.trim()}
+                    disabled={enviando || !form.segmento || !form.cliente_nome.trim() || !form.cliente_telefone.trim() || !form.cliente_email.trim() || !validarCpfCnpj(form.cliente_cpf) || !form.cliente_data_nascimento}
                     className="flex-1 rounded-lg text-white font-semibold gap-2" style={{ background: '#003580' }}>
                     {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     {enviando ? 'Enviando...' : 'Solicitar'}
