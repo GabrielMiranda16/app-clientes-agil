@@ -92,6 +92,7 @@ const CEODashboard = () => {
     cpf_cnpj: '',
   });
   const [editingParceiro, setEditingParceiro] = useState(null);
+  const [isEditParceiroOpen, setIsEditParceiroOpen] = useState(false);
   const [isSubmittingEditParceiro, setIsSubmittingEditParceiro] = useState(false);
 
   const fetchData = async () => {
@@ -156,7 +157,8 @@ const CEODashboard = () => {
       const { error: userErr } = await sb.from('users').update({ ativo: editingParceiro.ativo }).eq('id', editingParceiro.user_id);
       if (userErr) throw new Error(userErr.message);
       toast({ title: 'Parceiro atualizado!' });
-      setEditingParceiro(null);
+      setIsEditParceiroOpen(false);
+      setTimeout(() => setEditingParceiro(null), 300);
       fetchData();
     } catch (err) {
       toast({ variant: 'destructive', title: 'Erro', description: err.message });
@@ -701,7 +703,7 @@ const CEODashboard = () => {
                         <Badge className={p.users?.ativo !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
                           {p.users?.ativo !== false ? 'Ativo' : 'Inativo'}
                         </Badge>
-                        <Button variant="ghost" size="icon" onClick={() => setEditingParceiro({ ...p, ativo: p.users?.ativo !== false })}>
+                        <Button variant="ghost" size="icon" onClick={() => { setEditingParceiro({ ...p, ativo: p.users?.ativo !== false }); setIsEditParceiroOpen(true); }}>
                           <Edit className="h-4 w-4 text-gray-500 hover:text-blue-600" />
                         </Button>
                         <AlertDialog>
@@ -862,7 +864,7 @@ const CEODashboard = () => {
         </Dialog>
 
         {/* Modal Editar Parceiro */}
-        <Dialog open={!!editingParceiro} onOpenChange={(v) => { if (!v) setEditingParceiro(null); }}>
+        <Dialog open={isEditParceiroOpen} onOpenChange={(v) => { if (!v) { setIsEditParceiroOpen(false); setTimeout(() => setEditingParceiro(null), 300); } }}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Editar Parceiro</DialogTitle>
@@ -895,16 +897,16 @@ const CEODashboard = () => {
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <Label>CPF / CNPJ</Label>
-                  <Input value={editingParceiro?.cpf_cnpj || ''} onChange={e => setEditingParceiro(p => ({...p, cpf_cnpj: e.target.value}))} />
+                  <Label>CPF / CNPJ *</Label>
+                  <Input value={editingParceiro?.cpf_cnpj || ''} onChange={e => setEditingParceiro(p => ({...p, cpf_cnpj: e.target.value}))} required />
                 </div>
                 <div className="space-y-1">
-                  <Label>Telefone</Label>
-                  <Input value={editingParceiro?.telefone || ''} onChange={e => setEditingParceiro(p => ({...p, telefone: e.target.value}))} />
+                  <Label>Telefone *</Label>
+                  <Input value={editingParceiro?.telefone || ''} onChange={e => setEditingParceiro(p => ({...p, telefone: e.target.value}))} required />
                 </div>
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setEditingParceiro(null)}>Cancelar</Button>
+                <Button type="button" variant="outline" onClick={() => { setIsEditParceiroOpen(false); setTimeout(() => setEditingParceiro(null), 300); }}>Cancelar</Button>
                 <Button type="submit" disabled={isSubmittingEditParceiro} className="bg-[#003580] hover:bg-[#002060] text-white">
                   {isSubmittingEditParceiro && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Salvar
