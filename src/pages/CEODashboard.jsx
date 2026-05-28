@@ -759,15 +759,15 @@ const CEODashboard = () => {
             }} className="space-y-4 py-2">
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2 space-y-1">
-                  <Label>Nome completo</Label>
+                  <Label>Nome completo *</Label>
                   <Input value={novoParceiro.nome_completo} onChange={e => setNovoParceiro(p => ({...p, nome_completo: e.target.value}))} required />
                 </div>
                 <div className="col-span-2 space-y-1">
-                  <Label>E-mail</Label>
+                  <Label>E-mail *</Label>
                   <Input type="email" value={novoParceiro.email} onChange={e => setNovoParceiro(p => ({...p, email: e.target.value}))} required />
                 </div>
                 <div className="space-y-1">
-                  <Label>Modalidade</Label>
+                  <Label>Modalidade *</Label>
                   <Select value={novoParceiro.modalidade} onValueChange={v => setNovoParceiro(p => ({...p, modalidade: v}))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -782,8 +782,8 @@ const CEODashboard = () => {
                   <Input value={novoParceiro.cpf_cnpj} onChange={e => setNovoParceiro(p => ({...p, cpf_cnpj: e.target.value}))} placeholder="000.000.000-00" required />
                 </div>
                 <div className="col-span-2 space-y-1">
-                  <Label>Telefone</Label>
-                  <Input value={novoParceiro.telefone} onChange={e => setNovoParceiro(p => ({...p, telefone: e.target.value}))} placeholder="(11) 99999-0000" />
+                  <Label>Telefone *</Label>
+                  <Input value={novoParceiro.telefone} onChange={e => setNovoParceiro(p => ({...p, telefone: e.target.value}))} placeholder="(11) 99999-0000" required />
                 </div>
               </div>
               <DialogFooter>
