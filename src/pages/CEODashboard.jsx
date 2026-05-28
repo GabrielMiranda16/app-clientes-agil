@@ -481,26 +481,6 @@ const CEODashboard = () => {
 
           <TabsContent value="dashboard" className="space-y-4">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-              <div className="space-y-3 mb-6">
-                {visibleAlerts.length > 0 && visibleAlerts.map((alert) => {
-                  const Icon = alert.icon;
-                  let className = "relative pr-10 ";
-                  if (alert.type === 'warning') className += "bg-red-50 border-red-200 text-red-800";
-                  if (alert.type === 'success') className += "bg-green-50 border-green-200 text-green-800";
-                  if (alert.type === 'info') className += "bg-blue-50 border-blue-200 text-blue-800";
-                  return (
-                    <Alert key={alert.id} className={className}>
-                      <Icon className="h-4 w-4" />
-                      <AlertTitle>{alert.title}</AlertTitle>
-                      <AlertDescription>{alert.description}</AlertDescription>
-                      <button onClick={() => handleCloseAlert(alert.id)} className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 transition-colors" aria-label="Fechar alerta">
-                         <svg className="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
-                      </button>
-                    </Alert>
-                  );
-                })}
-              </div>
-
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
                 {isLoading ? Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-[126px]" />) : metricItems.map((item, index) => (
                   <motion.div key={index} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 * (index + 1) }}>
