@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   LayoutDashboard, FileText, CheckCircle2, DollarSign,
-  Plus, TrendingUp, Clock, Copy, Check,
+  Plus, Minus, TrendingUp, Clock, Copy, Check,
   ArrowUpRight, X, Send, Loader2, Eye, Phone, Mail,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -52,7 +52,6 @@ const SEGMENTO_CAMPOS = {
   SAUDE: [
     { key: 'modalidade_plano', label: 'Modalidade do plano', type: 'select', options: ['Empresarial', 'Familiar', 'Sênior', 'Individual'] },
     { key: 'qtd_vidas',        label: 'Número de vidas',     type: 'number', placeholder: 'Ex: 3' },
-    { key: 'faixa_etaria',     label: 'Faixa etária (ex: 2 de 20-30, 1 de 40-50)', placeholder: 'Ex: 2 adultos 30 anos, 1 criança 5 anos' },
   ],
   RESIDENCIAL: [
     { key: 'tipo_imovel',     label: 'Tipo de imóvel',       type: 'select', options: ['Casa', 'Apartamento', 'Sobrado'] },
@@ -66,8 +65,7 @@ const SEGMENTO_CAMPOS = {
     { key: 'segmento_empresa', label: 'Segmento da empresa',  placeholder: 'Ex: Tecnologia, Varejo, Saúde' },
   ],
   ODONTOLOGICO: [
-    { key: 'qtd_vidas',    label: 'Número de vidas',  type: 'number', placeholder: 'Ex: 3' },
-    { key: 'faixa_etaria', label: 'Faixa etária',     placeholder: 'Ex: 2 adultos 30 anos, 1 criança 5 anos' },
+    { key: 'qtd_vidas', label: 'Número de vidas', type: 'number', placeholder: 'Ex: 3' },
   ],
   VIAGEM: [
     { key: 'destino',       label: 'Destino',                  placeholder: 'Ex: Europa, EUA, Nordeste' },
@@ -105,6 +103,21 @@ const SEGMENTO_CAMPOS = {
     { key: 'valor_equip',   label: 'Valor do equipamento (R$)', placeholder: 'Ex: 8000' },
   ],
 };
+
+const AGE_BRACKETS = [
+  { id: '0-18',  label: '0 a 18 anos' },
+  { id: '19-23', label: '19 a 23 anos' },
+  { id: '24-28', label: '24 a 28 anos' },
+  { id: '29-33', label: '29 a 33 anos' },
+  { id: '34-38', label: '34 a 38 anos' },
+  { id: '39-43', label: '39 a 43 anos' },
+  { id: '44-48', label: '44 a 48 anos' },
+  { id: '49-53', label: '49 a 53 anos' },
+  { id: '54-58', label: '54 a 58 anos' },
+  { id: '59+',   label: '59+ anos' },
+];
+
+const faixaKey = (id) => `faixa_${id.replace(/-/g, '_').replace('+', 'plus')}`;
 
 const FUNIL = ['SOLICITACAO', 'ORCAMENTO', 'DOCUMENTOS', 'ASSINATURA', 'CONCLUIDO', 'COMISSAO'];
 
@@ -178,8 +191,17 @@ const ParceiroDashboard = () => {
       let obsTexto = '';
       camposExtras.forEach(({ key, label }) => {
         const v = form.extras[key];
-        if (v?.trim()) obsTexto += `${label}: ${v.trim()}\n`;
+        if (v != null && String(v).trim()) obsTexto += `${label}: ${String(v).trim()}\n`;
       });
+      if (['SAUDE', 'ODONTOLOGICO'].includes(form.segmento)) {
+        const lines = AGE_BRACKETS
+          .map(({ id, label }) => {
+            const val = parseInt(form.extras[faixaKey(id)] || '0');
+            return val > 0 ? `  ${label}: ${val}` : null;
+          })
+          .filter(Boolean);
+        if (lines.length) obsTexto += `Distribuição por faixa etária:\n${lines.join('\n')}\n`;
+      }
       if (form.observacoes.trim()) obsTexto += `\nObservações: ${form.observacoes.trim()}`;
 
       const { error } = await supabase.from('orcamentos').insert({
@@ -291,6 +313,11 @@ const ParceiroDashboard = () => {
   };
 
   const camposDoSegmento = SEGMENTO_CAMPOS[form.segmento] || [];
+
+  const totalVidas = parseInt(form.extras.qtd_vidas || '0');
+  const distribuiVidas = AGE_BRACKETS.reduce((s, { id }) => s + parseInt(form.extras[faixaKey(id)] || '0'), 0);
+  const remainingLives = totalVidas - distribuiVidas;
+  const showAgeBrackets = ['SAUDE', 'ODONTOLOGICO'].includes(form.segmento) && totalVidas > 0;
 
   return (
     <>
@@ -696,6 +723,40 @@ const ParceiroDashboard = () => {
                         )}
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* Distribuição por faixa etária — Saúde e Odonto */}
+                {showAgeBrackets && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Distribuição por faixa etária</p>
+                      <span className={`text-xs font-bold ${remainingLives === 0 ? 'text-green-600' : 'text-red-500'}`}>
+                        {remainingLives === 0 ? 'Completo ✓' : `${remainingLives} restante(s)`}
+                      </span>
+                    </div>
+                    {AGE_BRACKETS.map(({ id, label }) => {
+                      const key = faixaKey(id);
+                      const val = parseInt(form.extras[key] || '0');
+                      return (
+                        <div key={id} className="flex items-center justify-between gap-3">
+                          <Label className="text-sm text-gray-600 flex-1">{label}</Label>
+                          <div className="flex items-center gap-2">
+                            <button type="button"
+                              onClick={() => setExtra(key, String(Math.max(0, val - 1)))}
+                              className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-100 active:scale-95">
+                              <Minus className="h-3 w-3 text-gray-600" />
+                            </button>
+                            <span className="w-6 text-center text-sm font-semibold text-gray-800">{val}</span>
+                            <button type="button"
+                              onClick={() => setExtra(key, String(val + 1))}
+                              className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-100 active:scale-95">
+                              <Plus className="h-3 w-3 text-gray-600" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
