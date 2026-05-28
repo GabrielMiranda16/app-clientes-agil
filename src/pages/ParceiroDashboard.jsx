@@ -41,44 +41,48 @@ const SEGMENTO_LABEL = Object.fromEntries(SEGMENTOS.map(s => [s.value, s.label])
 
 const SEGMENTO_CAMPOS = {
   SAUDE_VIDA_ODONTO: [
-    { key: 'data_nascimento',  label: 'Data de nascimento',         placeholder: 'DD/MM/AAAA' },
-    { key: 'tipo_cobertura',   label: 'Tipo de cobertura desejada', placeholder: 'Ex: individual, familiar, empresarial' },
-    { key: 'qtd_vidas',        label: 'Quantidade de vidas',        placeholder: 'Ex: 1, 5, 20' },
+    { key: 'modalidade_plano', label: 'Modalidade do plano',       type: 'select', options: ['Empresarial', 'Familiar', 'Sênior', 'Individual'] },
+    { key: 'qtd_vidas',        label: 'Quantidade de vidas',       type: 'number', placeholder: 'Ex: 3' },
+    { key: 'faixa_etaria',     label: 'Faixa etária principal',    placeholder: 'Ex: 30 a 45 anos' },
   ],
   AUTO_FROTA: [
-    { key: 'modelo_veiculo',   label: 'Modelo do veículo',          placeholder: 'Ex: Honda Civic 2023' },
-    { key: 'placa',            label: 'Placa (opcional)',            placeholder: 'Ex: ABC-1D23' },
-    { key: 'ano_fabricacao',   label: 'Ano de fabricação',          placeholder: 'Ex: 2022' },
+    { key: 'modelo_veiculo',   label: 'Modelo do veículo',         placeholder: 'Ex: Honda Civic 2023' },
+    { key: 'placa',            label: 'Placa do veículo',          placeholder: 'Ex: ABC-1D23' },
+    { key: 'ano_fabricacao',   label: 'Ano de fabricação',         type: 'number', placeholder: 'Ex: 2022' },
   ],
   VIAGEM: [
-    { key: 'destino',          label: 'Destino da viagem',          placeholder: 'Ex: Europa, EUA, Nordeste' },
-    { key: 'periodo_viagem',   label: 'Período / Duração',          placeholder: 'Ex: 15/06 a 30/06 (15 dias)' },
-    { key: 'qtd_viajantes',    label: 'Quantidade de viajantes',    placeholder: 'Ex: 2' },
+    { key: 'destino',          label: 'Destino da viagem',         placeholder: 'Ex: Europa, EUA, Nordeste' },
+    { key: 'data_inicio',      label: 'Data de início',            type: 'date' },
+    { key: 'data_fim',         label: 'Data de fim',               type: 'date' },
+    { key: 'qtd_viajantes',    label: 'Quantidade de viajantes',   type: 'number', placeholder: 'Ex: 2' },
   ],
   RESIDENCIAL: [
-    { key: 'endereco_imovel',  label: 'Endereço do imóvel',         placeholder: 'Rua, número, bairro, cidade' },
-    { key: 'tipo_imovel',      label: 'Tipo de imóvel',             placeholder: 'Casa ou apartamento' },
-    { key: 'valor_imovel',     label: 'Valor aproximado do imóvel', placeholder: 'Ex: R$ 350.000' },
+    { key: 'tipo_imovel',      label: 'Tipo de imóvel',            type: 'select', options: ['Casa', 'Apartamento', 'Sobrado'] },
+    { key: 'endereco_imovel',  label: 'Endereço do imóvel',        placeholder: 'Rua, número, bairro, cidade' },
+    { key: 'valor_imovel',     label: 'Valor aproximado (R$)',      placeholder: 'Ex: 350000' },
   ],
   PET_SAUDE: [
-    { key: 'nome_pet',         label: 'Nome do pet',                placeholder: 'Ex: Rex' },
-    { key: 'especie_raca',     label: 'Espécie e raça',             placeholder: 'Ex: Cachorro — Golden Retriever' },
-    { key: 'idade_pet',        label: 'Idade do pet',               placeholder: 'Ex: 3 anos' },
+    { key: 'nome_pet',         label: 'Nome do pet',               placeholder: 'Ex: Rex' },
+    { key: 'especie_raca',     label: 'Espécie e raça',            placeholder: 'Ex: Cachorro — Golden Retriever' },
+    { key: 'idade_pet',        label: 'Idade do pet',              placeholder: 'Ex: 3 anos' },
   ],
   EMPRESARIAL: [
-    { key: 'cnpj_empresa',     label: 'CNPJ da empresa',            placeholder: 'Ex: 00.000.000/0001-00' },
-    { key: 'qtd_funcionarios', label: 'Nº de funcionários',         placeholder: 'Ex: 25' },
-    { key: 'segmento_empresa', label: 'Segmento da empresa',        placeholder: 'Ex: Tecnologia, Varejo, Saúde' },
+    { key: 'nome_empresa',     label: 'Nome da empresa',           placeholder: 'Ex: Empresa ABC Ltda' },
+    { key: 'cnpj_empresa',     label: 'CNPJ da empresa',           placeholder: 'Ex: 00.000.000/0001-00' },
+    { key: 'qtd_funcionarios', label: 'Nº de funcionários',        type: 'number', placeholder: 'Ex: 25' },
+    { key: 'segmento_empresa', label: 'Segmento da empresa',       placeholder: 'Ex: Tecnologia, Varejo, Saúde' },
   ],
   CARGAS: [
-    { key: 'tipo_mercadoria',  label: 'Tipo de mercadoria',         placeholder: 'Ex: Eletrônicos, Alimentos' },
-    { key: 'trajeto',          label: 'Trajeto (origem → destino)', placeholder: 'Ex: São Paulo → Rio de Janeiro' },
-    { key: 'valor_carga',      label: 'Valor aproximado da carga',  placeholder: 'Ex: R$ 50.000' },
+    { key: 'nome_empresa',     label: 'Nome da empresa',           placeholder: 'Ex: Transportadora ABC' },
+    { key: 'tipo_mercadoria',  label: 'Tipo de mercadoria',        placeholder: 'Ex: Eletrônicos, Alimentos' },
+    { key: 'trajeto',          label: 'Trajeto (origem → destino)',placeholder: 'Ex: São Paulo → Rio de Janeiro' },
+    { key: 'valor_carga',      label: 'Valor da carga (R$)',        placeholder: 'Ex: 50000' },
   ],
   EQUIPAMENTOS: [
-    { key: 'descricao_equip',  label: 'Descrição do equipamento',   placeholder: 'Ex: Notebook Dell XPS 15' },
-    { key: 'valor_equip',      label: 'Valor do equipamento',       placeholder: 'Ex: R$ 8.000' },
-    { key: 'uso_equip',        label: 'Uso principal',              placeholder: 'Ex: Trabalho remoto, Fotografia' },
+    { key: 'tipo_equip',       label: 'Tipo de equipamento',       placeholder: 'Ex: Notebook, Câmera, Drone' },
+    { key: 'descricao_equip',  label: 'Descrição do equipamento',  placeholder: 'Ex: MacBook Pro M3 14"' },
+    { key: 'valor_equip',      label: 'Valor do equipamento (R$)', placeholder: 'Ex: 8000' },
+    { key: 'uso_equip',        label: 'Uso principal',             placeholder: 'Ex: Trabalho remoto, Fotografia' },
   ],
 };
 
@@ -655,12 +659,21 @@ const ParceiroDashboard = () => {
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                       Informações do seguro ({SEGMENTO_LABEL[form.segmento]})
                     </p>
-                    {camposDoSegmento.map(({ key, label, placeholder }) => (
+                    {camposDoSegmento.map(({ key, label, placeholder, type, options }) => (
                       <div key={key} className="space-y-1.5">
                         <Label className="text-sm font-medium text-gray-700">{label}</Label>
-                        <input value={form.extras[key] || ''} onChange={e => setExtra(key, e.target.value)}
-                          placeholder={placeholder}
-                          className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580]" />
+                        {type === 'select' ? (
+                          <select value={form.extras[key] || ''}
+                            onChange={e => setExtra(key, e.target.value)}
+                            className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580]">
+                            <option value="">Selecione...</option>
+                            {(options || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                        ) : (
+                          <input value={form.extras[key] || ''} onChange={e => setExtra(key, e.target.value)}
+                            type={type || 'text'} placeholder={placeholder}
+                            className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580]" />
+                        )}
                       </div>
                     ))}
                   </div>
