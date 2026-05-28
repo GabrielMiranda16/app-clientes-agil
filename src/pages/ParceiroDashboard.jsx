@@ -128,6 +128,13 @@ const validarCpfCnpj = (val) => {
   return digits.length === 11 || digits.length === 14;
 };
 
+const validarTelefone = (val) => {
+  const digits = (val || '').replace(/\D/g, '');
+  return digits.length >= 10 && digits.length <= 11;
+};
+
+const validarEmail = (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((val || '').trim());
+
 const fmtData = (iso) => {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -179,7 +186,9 @@ const ParceiroDashboard = () => {
     if (!form.segmento) return toast({ variant: 'destructive', title: 'Selecione o segmento.' });
     if (!form.cliente_nome.trim()) return toast({ variant: 'destructive', title: 'Informe o nome do cliente.' });
     if (!form.cliente_telefone.trim()) return toast({ variant: 'destructive', title: 'Informe o telefone do cliente.' });
+    if (!validarTelefone(form.cliente_telefone)) return toast({ variant: 'destructive', title: 'Telefone inválido.', description: 'Informe um número com DDD (10 ou 11 dígitos).' });
     if (!form.cliente_email.trim()) return toast({ variant: 'destructive', title: 'Informe o e-mail do cliente.' });
+    if (!validarEmail(form.cliente_email)) return toast({ variant: 'destructive', title: 'E-mail inválido.', description: 'Informe um e-mail no formato correto.' });
     if (!form.cliente_cpf.trim()) return toast({ variant: 'destructive', title: 'Informe o CPF ou CNPJ do cliente.' });
     if (!validarCpfCnpj(form.cliente_cpf)) return toast({ variant: 'destructive', title: 'CPF ou CNPJ inválido.', description: 'CPF deve ter 11 dígitos e CNPJ 14 dígitos.' });
     if (!form.cliente_data_nascimento) return toast({ variant: 'destructive', title: 'Informe a data de nascimento do cliente.' });
@@ -673,13 +682,19 @@ const ParceiroDashboard = () => {
                     <Label className="text-sm font-medium text-gray-700">Telefone / WhatsApp <span className="text-red-500">*</span></Label>
                     <input value={form.cliente_telefone} onChange={e => setField('cliente_telefone', e.target.value)}
                       placeholder="(11) 99999-0000"
-                      className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580]" />
+                      className={`w-full rounded-lg border bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#003580] ${form.cliente_telefone && !validarTelefone(form.cliente_telefone) ? 'border-red-400 focus:border-red-400' : 'border-gray-200 focus:border-[#003580]'}`} />
+                    {form.cliente_telefone && !validarTelefone(form.cliente_telefone) && (
+                      <p className="text-xs text-red-500 mt-0.5">Informe um número com DDD (10 ou 11 dígitos)</p>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-gray-700">E-mail <span className="text-red-500">*</span></Label>
                     <input value={form.cliente_email} onChange={e => setField('cliente_email', e.target.value)}
                       placeholder="email@exemplo.com" type="email"
-                      className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580]" />
+                      className={`w-full rounded-lg border bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#003580] ${form.cliente_email && !validarEmail(form.cliente_email) ? 'border-red-400 focus:border-red-400' : 'border-gray-200 focus:border-[#003580]'}`} />
+                    {form.cliente_email && !validarEmail(form.cliente_email) && (
+                      <p className="text-xs text-red-500 mt-0.5">Informe um e-mail válido</p>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
@@ -774,7 +789,7 @@ const ParceiroDashboard = () => {
                     Cancelar
                   </Button>
                   <Button onClick={handleSolicitar}
-                    disabled={enviando || !form.segmento || !form.cliente_nome.trim() || !form.cliente_telefone.trim() || !form.cliente_email.trim() || !validarCpfCnpj(form.cliente_cpf) || !form.cliente_data_nascimento}
+                    disabled={enviando || !form.segmento || !form.cliente_nome.trim() || !validarTelefone(form.cliente_telefone) || !validarEmail(form.cliente_email) || !validarCpfCnpj(form.cliente_cpf) || !form.cliente_data_nascimento}
                     className="flex-1 rounded-lg text-white font-semibold gap-2" style={{ background: '#003580' }}>
                     {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     {enviando ? 'Enviando...' : 'Solicitar'}
