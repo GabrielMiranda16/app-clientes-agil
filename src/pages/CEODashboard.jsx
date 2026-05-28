@@ -89,7 +89,7 @@ const CEODashboard = () => {
   const [isSubmittingParceiro, setIsSubmittingParceiro] = useState(false);
   const [novoParceiro, setNovoParceiro] = useState({
     nome_completo: '', email: '', telefone: '', modalidade: 'PF',
-    cpf_cnpj: '', comissao_percentual: '50',
+    cpf_cnpj: '',
   });
 
   const fetchData = async () => {
@@ -652,7 +652,7 @@ const CEODashboard = () => {
                         </div>
                         <div>
                           <p className="font-semibold text-gray-800">{p.nome_completo}</p>
-                          <p className="text-xs text-gray-400">{p.users?.email} · {p.modalidade} · {p.comissao_percentual}% comissão</p>
+                          <p className="text-xs text-gray-400">{p.users?.email} · {p.modalidade}</p>
                           {p.telefone && <p className="text-xs text-gray-400">{p.telefone}</p>}
                         </div>
                       </div>
@@ -745,12 +745,11 @@ const CEODashboard = () => {
                   modalidade: novoParceiro.modalidade,
                   cpf_cnpj: novoParceiro.cpf_cnpj || null,
                   telefone: novoParceiro.telefone || null,
-                  comissao_percentual: parseFloat(novoParceiro.comissao_percentual) || 50,
                 }]);
                 await sendWelcomeEmail({ nomeCliente: novoParceiro.nome_completo, emailCliente: novoParceiro.email, senhaTemporaria: tempPassword });
                 toast({ title: 'Parceiro criado!', description: `Senha temporária enviada para ${novoParceiro.email}.`, className: 'bg-green-600 text-white border-green-700' });
                 setIsNovoParceiro(false);
-                setNovoParceiro({ nome_completo: '', email: '', telefone: '', modalidade: 'PF', cpf_cnpj: '', comissao_percentual: '50' });
+                setNovoParceiro({ nome_completo: '', email: '', telefone: '', modalidade: 'PF', cpf_cnpj: '' });
                 fetchData();
               } catch (err) {
                 toast({ variant: 'destructive', title: 'Erro', description: err.message });
@@ -779,16 +778,12 @@ const CEODashboard = () => {
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <Label>CPF / CNPJ</Label>
-                  <Input value={novoParceiro.cpf_cnpj} onChange={e => setNovoParceiro(p => ({...p, cpf_cnpj: e.target.value}))} placeholder="Opcional" />
+                  <Label>CPF / CNPJ *</Label>
+                  <Input value={novoParceiro.cpf_cnpj} onChange={e => setNovoParceiro(p => ({...p, cpf_cnpj: e.target.value}))} placeholder="000.000.000-00" required />
                 </div>
-                <div className="space-y-1">
+                <div className="col-span-2 space-y-1">
                   <Label>Telefone</Label>
                   <Input value={novoParceiro.telefone} onChange={e => setNovoParceiro(p => ({...p, telefone: e.target.value}))} placeholder="(11) 99999-0000" />
-                </div>
-                <div className="space-y-1">
-                  <Label>% Comissão padrão</Label>
-                  <Input type="number" min="0" max="100" step="0.5" value={novoParceiro.comissao_percentual} onChange={e => setNovoParceiro(p => ({...p, comissao_percentual: e.target.value}))} />
                 </div>
               </div>
               <DialogFooter>
