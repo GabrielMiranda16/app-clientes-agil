@@ -498,7 +498,7 @@ const ParceiroDashboard = () => {
               className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto">
               {/* Header */}
               <div className={`px-5 py-4 flex items-start justify-between rounded-t-2xl sticky top-0 z-10 ${
-                detalhe.status === 'SOLICITACAO' ? 'bg-gray-600' :
+                detalhe.status === 'SOLICITACAO' ? 'bg-[#003580]' :
                 detalhe.status === 'ORCAMENTO' ? 'bg-blue-600' :
                 detalhe.status === 'DOCUMENTOS' ? 'bg-yellow-600' :
                 detalhe.status === 'ASSINATURA' ? 'bg-purple-600' :
