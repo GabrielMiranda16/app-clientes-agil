@@ -91,6 +91,8 @@ const CEODashboard = () => {
     nome_completo: '', email: '', telefone: '', modalidade: 'PF',
     cpf_cnpj: '',
   });
+  const [editingParceiro, setEditingParceiro] = useState(null);
+  const [isSubmittingEditParceiro, setIsSubmittingEditParceiro] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -136,6 +138,45 @@ const CEODashboard = () => {
   const handleRefresh = () => {
     fetchData();
     toast({ title: "Atualizado", description: "Dados atualizados com sucesso." });
+  };
+
+  const handleEditParceiro = async (e) => {
+    e.preventDefault();
+    if (!editingParceiro) return;
+    setIsSubmittingEditParceiro(true);
+    try {
+      const { supabase: sb } = await import('@/lib/customSupabaseClient');
+      const { error } = await sb.from('parceiros').update({
+        nome_completo: editingParceiro.nome_completo,
+        modalidade: editingParceiro.modalidade,
+        cpf_cnpj: editingParceiro.cpf_cnpj || null,
+        telefone: editingParceiro.telefone || null,
+      }).eq('id', editingParceiro.id);
+      if (error) throw new Error(error.message);
+      const { error: userErr } = await sb.from('users').update({ ativo: editingParceiro.ativo }).eq('id', editingParceiro.user_id);
+      if (userErr) throw new Error(userErr.message);
+      toast({ title: 'Parceiro atualizado!' });
+      setEditingParceiro(null);
+      fetchData();
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro', description: err.message });
+    } finally {
+      setIsSubmittingEditParceiro(false);
+    }
+  };
+
+  const handleDeleteParceiro = async (p) => {
+    try {
+      const { supabase: sb } = await import('@/lib/customSupabaseClient');
+      const { error: parcErr } = await sb.from('parceiros').delete().eq('id', p.id);
+      if (parcErr) throw new Error(parcErr.message);
+      const { error: userErr } = await sb.from('users').delete().eq('id', p.user_id);
+      if (userErr) throw new Error(userErr.message);
+      toast({ title: 'Parceiro excluído.' });
+      fetchData();
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro', description: err.message });
+    }
   };
 
   // Reset pagination when filters change
@@ -656,9 +697,31 @@ const CEODashboard = () => {
                           {p.telefone && <p className="text-xs text-gray-400">{p.telefone}</p>}
                         </div>
                       </div>
-                      <Badge className={p.users?.ativo !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
-                        {p.users?.ativo !== false ? 'Ativo' : 'Inativo'}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className={p.users?.ativo !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+                          {p.users?.ativo !== false ? 'Ativo' : 'Inativo'}
+                        </Badge>
+                        <Button variant="ghost" size="icon" onClick={() => setEditingParceiro({ ...p, ativo: p.users?.ativo !== false })}>
+                          <Edit className="h-4 w-4 text-gray-500 hover:text-blue-600" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-600" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Excluir parceiro?</AlertDialogTitle>
+                              <AlertDialogDescription>Esta ação é permanente. O acesso de <strong>{p.nome_completo}</strong> será removido.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteParceiro(p)} className={buttonVariants({ variant: 'destructive' })}>Excluir</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </CardContent>
                   </Card>
                 ))
@@ -792,6 +855,59 @@ const CEODashboard = () => {
                 <Button type="submit" disabled={isSubmittingParceiro} className="bg-[#003580] hover:bg-[#002060] text-white">
                   {isSubmittingParceiro && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Criar parceiro
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal Editar Parceiro */}
+        <Dialog open={!!editingParceiro} onOpenChange={(v) => { if (!v) setEditingParceiro(null); }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Editar Parceiro</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleEditParceiro} className="space-y-4 py-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 space-y-1">
+                  <Label>Nome completo *</Label>
+                  <Input value={editingParceiro?.nome_completo || ''} onChange={e => setEditingParceiro(p => ({...p, nome_completo: e.target.value}))} required />
+                </div>
+                <div className="space-y-1">
+                  <Label>Modalidade</Label>
+                  <Select value={editingParceiro?.modalidade} onValueChange={v => setEditingParceiro(p => ({...p, modalidade: v}))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PF">Pessoa Física</SelectItem>
+                      <SelectItem value="CORRETOR">Corretor Autônomo</SelectItem>
+                      <SelectItem value="EMPRESA">Empresa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Status</Label>
+                  <Select value={editingParceiro?.ativo ? 'true' : 'false'} onValueChange={v => setEditingParceiro(p => ({...p, ativo: v === 'true'}))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="true">Ativo</SelectItem>
+                      <SelectItem value="false">Inativo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>CPF / CNPJ</Label>
+                  <Input value={editingParceiro?.cpf_cnpj || ''} onChange={e => setEditingParceiro(p => ({...p, cpf_cnpj: e.target.value}))} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Telefone</Label>
+                  <Input value={editingParceiro?.telefone || ''} onChange={e => setEditingParceiro(p => ({...p, telefone: e.target.value}))} />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setEditingParceiro(null)}>Cancelar</Button>
+                <Button type="submit" disabled={isSubmittingEditParceiro} className="bg-[#003580] hover:bg-[#002060] text-white">
+                  {isSubmittingEditParceiro && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Salvar
                 </Button>
               </DialogFooter>
             </form>
