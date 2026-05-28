@@ -739,13 +739,14 @@ const CEODashboard = () => {
                   must_change_password: true,
                 });
                 const { supabase: sb } = await import('@/lib/customSupabaseClient');
-                await (await import('@/lib/customSupabaseClient')).supabase.from('parceiros').insert([{
+                const { error: parcErr } = await sb.from('parceiros').insert([{
                   user_id: userCreated.id,
                   nome_completo: novoParceiro.nome_completo,
                   modalidade: novoParceiro.modalidade,
                   cpf_cnpj: novoParceiro.cpf_cnpj || null,
                   telefone: novoParceiro.telefone || null,
                 }]);
+                if (parcErr) throw new Error(parcErr.message);
                 await sendWelcomeEmail({ nomeCliente: novoParceiro.nome_completo, emailCliente: novoParceiro.email, senhaTemporaria: tempPassword });
                 toast({ title: 'Parceiro criado!', description: `Senha temporária enviada para ${novoParceiro.email}.`, className: 'bg-green-600 text-white border-green-700' });
                 setIsNovoParceiro(false);
