@@ -27,62 +27,82 @@ const STATUS_CONFIG = {
 };
 
 const SEGMENTOS = [
-  { value: 'SAUDE_VIDA_ODONTO', label: 'Saúde / Vida / Odonto' },
-  { value: 'AUTO_FROTA',        label: 'Auto / Frota' },
-  { value: 'VIAGEM',            label: 'Viagem' },
-  { value: 'RESIDENCIAL',       label: 'Residencial' },
-  { value: 'PET_SAUDE',         label: 'Pet Saúde' },
-  { value: 'EMPRESARIAL',       label: 'Empresarial' },
-  { value: 'CARGAS',            label: 'Cargas' },
-  { value: 'EQUIPAMENTOS',      label: 'Equipamentos Portáteis' },
+  { value: 'AUTO',          label: 'Seguro Auto' },
+  { value: 'SAUDE',         label: 'Plano de Saúde' },
+  { value: 'RESIDENCIAL',   label: 'Seguro Residencial' },
+  { value: 'EMPRESARIAL',   label: 'Seguro Empresarial' },
+  { value: 'ODONTOLOGICO',  label: 'Plano Odontológico' },
+  { value: 'VIAGEM',        label: 'Seguro Viagem' },
+  { value: 'PET_SAUDE',     label: 'Plano de Saúde Pet' },
+  { value: 'PET_SEGURO',    label: 'Seguro Pet' },
+  { value: 'VIDA',          label: 'Seguro de Vida' },
+  { value: 'FROTA',         label: 'Seguro Frota' },
+  { value: 'CARGAS',        label: 'Seguro de Cargas' },
+  { value: 'EQUIPAMENTOS',  label: 'Equipamentos Portáteis' },
 ];
 
 const SEGMENTO_LABEL = Object.fromEntries(SEGMENTOS.map(s => [s.value, s.label]));
 
 const SEGMENTO_CAMPOS = {
-  SAUDE_VIDA_ODONTO: [
-    { key: 'modalidade_plano', label: 'Modalidade do plano',       type: 'select', options: ['Empresarial', 'Familiar', 'Sênior', 'Individual'] },
-    { key: 'qtd_vidas',        label: 'Quantidade de vidas',       type: 'number', placeholder: 'Ex: 3' },
-    { key: 'faixa_etaria',     label: 'Faixa etária principal',    placeholder: 'Ex: 30 a 45 anos' },
+  AUTO: [
+    { key: 'placa',          label: 'Placa do veículo',    placeholder: 'Ex: ABC1D23' },
+    { key: 'modelo_veiculo', label: 'Modelo do veículo',   placeholder: 'Ex: Honda Civic 2023' },
+    { key: 'ano_fabricacao', label: 'Ano de fabricação',   type: 'number', placeholder: 'Ex: 2023' },
   ],
-  AUTO_FROTA: [
-    { key: 'modelo_veiculo',   label: 'Modelo do veículo',         placeholder: 'Ex: Honda Civic 2023' },
-    { key: 'placa',            label: 'Placa do veículo',          placeholder: 'Ex: ABC-1D23' },
-    { key: 'ano_fabricacao',   label: 'Ano de fabricação',         type: 'number', placeholder: 'Ex: 2022' },
-  ],
-  VIAGEM: [
-    { key: 'destino',          label: 'Destino da viagem',         placeholder: 'Ex: Europa, EUA, Nordeste' },
-    { key: 'data_inicio',      label: 'Data de início',            type: 'date' },
-    { key: 'data_fim',         label: 'Data de fim',               type: 'date' },
-    { key: 'qtd_viajantes',    label: 'Quantidade de viajantes',   type: 'number', placeholder: 'Ex: 2' },
+  SAUDE: [
+    { key: 'modalidade_plano', label: 'Modalidade do plano', type: 'select', options: ['Empresarial', 'Familiar', 'Sênior', 'Individual'] },
+    { key: 'qtd_vidas',        label: 'Número de vidas',     type: 'number', placeholder: 'Ex: 3' },
+    { key: 'faixa_etaria',     label: 'Faixa etária (ex: 2 de 20-30, 1 de 40-50)', placeholder: 'Ex: 2 adultos 30 anos, 1 criança 5 anos' },
   ],
   RESIDENCIAL: [
-    { key: 'tipo_imovel',      label: 'Tipo de imóvel',            type: 'select', options: ['Casa', 'Apartamento', 'Sobrado'] },
-    { key: 'endereco_imovel',  label: 'Endereço do imóvel',        placeholder: 'Rua, número, bairro, cidade' },
-    { key: 'valor_imovel',     label: 'Valor aproximado (R$)',      placeholder: 'Ex: 350000' },
-  ],
-  PET_SAUDE: [
-    { key: 'nome_pet',         label: 'Nome do pet',               placeholder: 'Ex: Rex' },
-    { key: 'especie_raca',     label: 'Espécie e raça',            placeholder: 'Ex: Cachorro — Golden Retriever' },
-    { key: 'idade_pet',        label: 'Idade do pet',              placeholder: 'Ex: 3 anos' },
+    { key: 'tipo_imovel',     label: 'Tipo de imóvel',       type: 'select', options: ['Casa', 'Apartamento', 'Sobrado'] },
+    { key: 'endereco_imovel', label: 'Endereço do imóvel',   placeholder: 'Rua, número, bairro, cidade' },
+    { key: 'valor_imovel',    label: 'Valor aproximado (R$)', placeholder: 'Ex: 350000' },
   ],
   EMPRESARIAL: [
-    { key: 'nome_empresa',     label: 'Nome da empresa',           placeholder: 'Ex: Empresa ABC Ltda' },
-    { key: 'cnpj_empresa',     label: 'CNPJ da empresa',           placeholder: 'Ex: 00.000.000/0001-00' },
-    { key: 'qtd_funcionarios', label: 'Nº de funcionários',        type: 'number', placeholder: 'Ex: 25' },
-    { key: 'segmento_empresa', label: 'Segmento da empresa',       placeholder: 'Ex: Tecnologia, Varejo, Saúde' },
+    { key: 'nome_empresa',     label: 'Nome da empresa',      placeholder: 'Ex: Empresa ABC Ltda' },
+    { key: 'cnpj_empresa',     label: 'CNPJ da empresa',      placeholder: 'Ex: 00.000.000/0001-00' },
+    { key: 'qtd_vidas',        label: 'Número de vidas',      type: 'number', placeholder: 'Ex: 10' },
+    { key: 'segmento_empresa', label: 'Segmento da empresa',  placeholder: 'Ex: Tecnologia, Varejo, Saúde' },
+  ],
+  ODONTOLOGICO: [
+    { key: 'qtd_vidas',    label: 'Número de vidas',  type: 'number', placeholder: 'Ex: 3' },
+    { key: 'faixa_etaria', label: 'Faixa etária',     placeholder: 'Ex: 2 adultos 30 anos, 1 criança 5 anos' },
+  ],
+  VIAGEM: [
+    { key: 'destino',       label: 'Destino',                  placeholder: 'Ex: Europa, EUA, Nordeste' },
+    { key: 'data_inicio',   label: 'Data de início',           type: 'date' },
+    { key: 'data_fim',      label: 'Data de fim',              type: 'date' },
+    { key: 'qtd_viajantes', label: 'Quantidade de viajantes',  type: 'number', placeholder: 'Ex: 2' },
+  ],
+  PET_SAUDE: [
+    { key: 'nome_pet',   label: 'Nome do pet',   placeholder: 'Ex: Rex' },
+    { key: 'raca_pet',   label: 'Raça do pet',   placeholder: 'Ex: Golden Retriever' },
+    { key: 'idade_pet',  label: 'Idade do pet',  placeholder: 'Ex: 3 anos' },
+  ],
+  PET_SEGURO: [
+    { key: 'nome_pet',   label: 'Nome do pet',   placeholder: 'Ex: Rex' },
+    { key: 'raca_pet',   label: 'Raça do pet',   placeholder: 'Ex: Golden Retriever' },
+    { key: 'idade_pet',  label: 'Idade do pet',  placeholder: 'Ex: 3 anos' },
+  ],
+  VIDA: [
+    { key: 'cobertura_desejada', label: 'Valor de cobertura desejado (R$)', placeholder: 'Ex: 100000' },
+  ],
+  FROTA: [
+    { key: 'nome_empresa',  label: 'Nome da empresa',      placeholder: 'Ex: Transportadora ABC' },
+    { key: 'qtd_veiculos',  label: 'Número de veículos',   type: 'number', placeholder: 'Ex: 5' },
+    { key: 'tipo_veiculos', label: 'Tipo de veículos',     placeholder: 'Ex: Caminhões, Vans, Carros' },
   ],
   CARGAS: [
-    { key: 'nome_empresa',     label: 'Nome da empresa',           placeholder: 'Ex: Transportadora ABC' },
-    { key: 'tipo_mercadoria',  label: 'Tipo de mercadoria',        placeholder: 'Ex: Eletrônicos, Alimentos' },
-    { key: 'trajeto',          label: 'Trajeto (origem → destino)',placeholder: 'Ex: São Paulo → Rio de Janeiro' },
-    { key: 'valor_carga',      label: 'Valor da carga (R$)',        placeholder: 'Ex: 50000' },
+    { key: 'nome_empresa',   label: 'Nome da empresa',              placeholder: 'Ex: Transportadora ABC' },
+    { key: 'tipo_mercadoria', label: 'Tipo de carga',               placeholder: 'Ex: Eletrônicos, Alimentos' },
+    { key: 'trajeto',        label: 'Trajeto (origem → destino)',   placeholder: 'Ex: São Paulo → Rio de Janeiro' },
+    { key: 'valor_carga',    label: 'Valor da carga (R$)',          placeholder: 'Ex: 50000' },
   ],
   EQUIPAMENTOS: [
-    { key: 'tipo_equip',       label: 'Tipo de equipamento',       placeholder: 'Ex: Notebook, Câmera, Drone' },
-    { key: 'descricao_equip',  label: 'Descrição do equipamento',  placeholder: 'Ex: MacBook Pro M3 14"' },
-    { key: 'valor_equip',      label: 'Valor do equipamento (R$)', placeholder: 'Ex: 8000' },
-    { key: 'uso_equip',        label: 'Uso principal',             placeholder: 'Ex: Trabalho remoto, Fotografia' },
+    { key: 'tipo_equip',    label: 'Tipo de equipamento',       placeholder: 'Ex: Notebook, Câmera, Drone' },
+    { key: 'descricao_equip', label: 'Descrição do equipamento', placeholder: 'Ex: MacBook Pro M3 14"' },
+    { key: 'valor_equip',   label: 'Valor do equipamento (R$)', placeholder: 'Ex: 8000' },
   ],
 };
 
