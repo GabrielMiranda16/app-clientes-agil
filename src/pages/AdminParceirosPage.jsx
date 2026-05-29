@@ -86,6 +86,7 @@ const AdminParceirosPage = () => {
   const [formC, setFormC] = useState({ valor_base: '', comissao_percentual: '' });
   // Editar proposta enviada
   const [editandoProposta, setEditandoProposta] = useState(false);
+  const [novaPropostaMode, setNovaPropostaMode] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -109,6 +110,8 @@ const AdminParceirosPage = () => {
   const openDetail = async (o) => {
     setSelected(o);
     setDocs([]);
+    setEditandoProposta(false);
+    setNovaPropostaMode(false);
     setFormR({
       valor: o.valor_mensalidade ? String(o.valor_mensalidade) : '',
       descricao: o.descricao_orcamento || '',
@@ -126,7 +129,7 @@ const AdminParceirosPage = () => {
     setDocs(docData || []);
   };
 
-  const closeDetail = () => { setSelected(null); setDocs([]); setEditandoProposta(false); };
+  const closeDetail = () => { setSelected(null); setDocs([]); setEditandoProposta(false); setNovaPropostaMode(false); };
 
   const refreshSelected = async (id) => {
     const [orcRes, docsRes] = await Promise.allSettled([
@@ -456,7 +459,41 @@ const AdminParceirosPage = () => {
           </div>
         )}
 
-        {!editandoProposta && <p className="text-xs text-gray-400 text-center">Aguardando o cliente aceitar a proposta...</p>}
+        {!editandoProposta && !novaPropostaMode && (
+          <>
+            <p className="text-xs text-gray-400 text-center">Aguardando o cliente aceitar a proposta...</p>
+            <Button variant="outline" size="sm" onClick={() => { setNovaPropostaMode(true); setEditandoProposta(false); setFormR(f => ({ ...f, valor: '', descricao: '' })); }}
+              className="w-full text-xs border-dashed border-gray-300 text-gray-500 hover:border-[#003580] hover:text-[#003580]">
+              + Nova proposta (gera novo link)
+            </Button>
+          </>
+        )}
+
+        {novaPropostaMode && (
+          <div className="space-y-3 border border-[#003580]/30 rounded-lg p-3 bg-[#f0f7ff]">
+            <p className="text-sm font-semibold text-[#003580] border-b border-[#003580]/20 pb-2">Nova proposta — novo link será gerado</p>
+            <div className="space-y-1.5">
+              <Label className="text-sm">Valor da mensalidade (R$) *</Label>
+              <Input value={formR.valor} onChange={e => setFormR(f => ({ ...f, valor: e.target.value }))}
+                placeholder="Ex: 420,00" className="border-gray-200 bg-white focus:border-[#003580]" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm">Descrição do orçamento *</Label>
+              <textarea value={formR.descricao} onChange={e => setFormR(f => ({ ...f, descricao: e.target.value }))}
+                rows={3} placeholder="Plano, operadora, coberturas, carência..."
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580] resize-none" />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setNovaPropostaMode(false)} disabled={enviando} className="flex-1 text-sm">
+                Cancelar
+              </Button>
+              <Button onClick={handleResponder} disabled={enviando} className="flex-1 text-sm text-white font-semibold gap-1.5" style={{ background: '#003580' }}>
+                {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                {enviando ? 'Enviando...' : 'Enviar nova proposta'}
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     );
 
