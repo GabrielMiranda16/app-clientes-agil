@@ -25,25 +25,39 @@ const STATUS_CONFIG = {
 };
 
 const SEGMENTO_LABEL = {
+  AUTO:         'Seguro Auto',
+  SAUDE:        'Plano de Saúde',
+  RESIDENCIAL:  'Seguro Residencial',
+  EMPRESARIAL:  'Seguro Empresarial',
+  ODONTOLOGICO: 'Plano Odontológico',
+  VIAGEM:       'Seguro Viagem',
+  PET_SAUDE:    'Plano de Saúde Pet',
+  PET_SEGURO:   'Seguro Pet',
+  VIDA:         'Seguro de Vida',
+  FROTA:        'Seguro Frota',
+  CARGAS:       'Seguro de Cargas',
+  EQUIPAMENTOS: 'Equipamentos Portáteis',
+  // legados
   SAUDE_VIDA_ODONTO: 'Saúde / Vida / Odonto',
   AUTO_FROTA: 'Auto / Frota',
-  VIAGEM: 'Viagem',
-  RESIDENCIAL: 'Residencial',
-  PET_SAUDE: 'Pet Saúde',
-  EMPRESARIAL: 'Empresarial',
-  CARGAS: 'Cargas',
-  EQUIPAMENTOS: 'Equipamentos Portáteis',
 };
 
 const DOCS_POR_SEGMENTO = {
+  AUTO:         ['CRLV', 'CNH', 'CPF'],
+  SAUDE:        ['RG', 'CPF', 'Comprovante de residência', 'Carteirinha anterior (se houver)'],
+  RESIDENCIAL:  ['RG', 'CPF', 'Comprovante de residência', 'Escritura ou contrato do imóvel'],
+  EMPRESARIAL:  ['CNPJ', 'Contrato Social', 'Comprovante de endereço da empresa'],
+  ODONTOLOGICO: ['RG', 'CPF', 'Carteirinha anterior (se houver)'],
+  VIAGEM:       ['RG ou Passaporte', 'CPF'],
+  PET_SAUDE:    ['CPF do titular', 'Cartão de vacinação do pet'],
+  PET_SEGURO:   ['CPF do titular', 'Cartão de vacinação do pet'],
+  VIDA:         ['RG', 'CPF', 'Comprovante de renda'],
+  FROTA:        ['CNPJ', 'CRLV de todos os veículos', 'CNH dos motoristas'],
+  CARGAS:       ['CPF ou CNPJ', 'Nota fiscal da carga'],
+  EQUIPAMENTOS: ['CPF ou CNPJ', 'Nota fiscal do equipamento'],
+  // legados
   SAUDE_VIDA_ODONTO: ['RG', 'CPF', 'Comprovante de residência', 'Carteirinha anterior (se houver)'],
   AUTO_FROTA: ['CRLV', 'CNH', 'CPF'],
-  VIAGEM: ['RG ou Passaporte', 'CPF'],
-  RESIDENCIAL: ['RG', 'CPF', 'Comprovante de residência', 'Escritura ou contrato do imóvel'],
-  PET_SAUDE: ['CPF do titular', 'Cartão de vacinação do pet'],
-  EMPRESARIAL: ['CNPJ', 'Contrato Social', 'Comprovante de endereço da empresa'],
-  CARGAS: ['CPF ou CNPJ', 'Nota fiscal da carga'],
-  EQUIPAMENTOS: ['CPF ou CNPJ', 'Nota fiscal do equipamento'],
 };
 
 const FUNIL = ['SOLICITACAO', 'ORCAMENTO', 'DOCUMENTOS', 'ASSINATURA', 'CONCLUIDO', 'COMISSAO'];
@@ -70,6 +84,8 @@ const AdminParceirosPage = () => {
   const [formR, setFormR] = useState({ valor: '', descricao: '', docsBase: [], docExtra: '', docsExtras: [] });
   // Form comissão
   const [formC, setFormC] = useState({ valor_base: '', comissao_percentual: '' });
+  // Editar proposta enviada
+  const [editandoProposta, setEditandoProposta] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -110,7 +126,7 @@ const AdminParceirosPage = () => {
     setDocs(docData || []);
   };
 
-  const closeDetail = () => { setSelected(null); setDocs([]); };
+  const closeDetail = () => { setSelected(null); setDocs([]); setEditandoProposta(false); };
 
   const refreshSelected = async (id) => {
     const [orcRes, docsRes] = await Promise.allSettled([
@@ -159,6 +175,27 @@ const AdminParceirosPage = () => {
         }).catch(() => {});
       }
 
+      await loadData();
+      await refreshSelected(selected.id);
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro.', description: err?.message });
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  const handleEditarProposta = async () => {
+    if (!formR.valor) return toast({ variant: 'destructive', title: 'Informe o valor da mensalidade.' });
+    if (!formR.descricao.trim()) return toast({ variant: 'destructive', title: 'Informe a descrição do orçamento.' });
+    setEnviando(true);
+    try {
+      const { error } = await supabase.from('orcamentos').update({
+        valor_mensalidade: parseFloat(formR.valor.replace(',', '.')),
+        descricao_orcamento: formR.descricao.trim(),
+      }).eq('id', selected.id);
+      if (error) throw error;
+      toast({ title: 'Proposta atualizada!', description: 'O link continua o mesmo.' });
+      setEditandoProposta(false);
       await loadData();
       await refreshSelected(selected.id);
     } catch (err) {
@@ -378,12 +415,48 @@ const AdminParceirosPage = () => {
           </div>
           <p className="text-xs text-blue-500 mt-1.5">Passe este link para o parceiro repassar ao cliente</p>
         </div>
-        <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
-          <p className="font-semibold text-gray-700 mb-1">Orçamento enviado</p>
-          <p>Mensalidade: <span className="font-semibold text-gray-800">R$ {Number(selected.valor_mensalidade).toFixed(2).replace('.', ',')}</span></p>
-          {selected.descricao_orcamento && <p className="mt-1 text-xs">{selected.descricao_orcamento}</p>}
-        </div>
-        <p className="text-xs text-gray-400 text-center">Aguardando o cliente aceitar a proposta...</p>
+
+        {editandoProposta ? (
+          <div className="space-y-3 border border-orange-200 rounded-lg p-3 bg-orange-50">
+            <p className="text-sm font-semibold text-orange-700 border-b border-orange-200 pb-2">Editar proposta</p>
+            <div className="space-y-1.5">
+              <Label className="text-sm">Novo valor da mensalidade (R$) *</Label>
+              <Input value={formR.valor} onChange={e => setFormR(f => ({ ...f, valor: e.target.value }))}
+                placeholder="Ex: 350,00" className="border-gray-200 bg-white focus:border-[#003580]" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm">Nova descrição *</Label>
+              <textarea value={formR.descricao} onChange={e => setFormR(f => ({ ...f, descricao: e.target.value }))}
+                rows={3} placeholder="Plano, operadora, coberturas, carência..."
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580] resize-none" />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setEditandoProposta(false)} disabled={enviando} className="flex-1 text-sm">
+                Cancelar
+              </Button>
+              <Button onClick={handleEditarProposta} disabled={enviando} className="flex-1 text-sm text-white font-semibold gap-1.5" style={{ background: '#003580' }}>
+                {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                {enviando ? 'Salvando...' : 'Salvar proposta'}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="font-semibold text-gray-700 mb-1">Proposta enviada</p>
+                <p>Mensalidade: <span className="font-semibold text-gray-800">R$ {Number(selected.valor_mensalidade).toFixed(2).replace('.', ',')}</span></p>
+                {selected.descricao_orcamento && <p className="mt-1 text-xs">{selected.descricao_orcamento}</p>}
+              </div>
+              <Button size="sm" variant="outline" onClick={() => setEditandoProposta(true)}
+                className="shrink-0 text-xs border-orange-200 text-orange-600 hover:bg-orange-50">
+                Editar
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {!editandoProposta && <p className="text-xs text-gray-400 text-center">Aguardando o cliente aceitar a proposta...</p>}
       </div>
     );
 
