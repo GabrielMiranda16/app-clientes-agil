@@ -9,11 +9,13 @@ import { Label } from '@/components/ui/label';
 import {
   HeartHandshake, FileText, Clock, CheckCircle2, DollarSign,
   X, Send, Loader2, ChevronRight, Copy, Check, ExternalLink,
-  Upload, Eye, Plus, Trash2, ArrowRight,
+  Upload, Eye, Plus, Trash2, ArrowRight, Star, Link as LinkIcon,
+  ChevronDown, ChevronUp, Shield,
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import DashboardLayout from '@/components/DashboardLayout';
+import { SEGURADORAS } from '@/data/seguradoras';
 
 const STATUS_CONFIG = {
   SOLICITACAO: { label: 'Solicitação',  color: 'bg-gray-100 text-gray-700',    border: 'border-l-gray-400' },
@@ -62,6 +64,13 @@ const DOCS_POR_SEGMENTO = {
 
 const FUNIL = ['SOLICITACAO', 'ORCAMENTO', 'DOCUMENTOS', 'ASSINATURA', 'CONCLUIDO', 'COMISSAO'];
 
+const propVazio = () => ({
+  operadora: '', logo_url: '', valor: '', descricao: '',
+  diferenciais: [], difInput: '',
+  coberturas: [], cobInput: '',
+  rede_url: '', destaque: false,
+});
+
 const generateSlug = () => {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
   return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
@@ -80,8 +89,12 @@ const AdminParceirosPage = () => {
   const [enviando, setEnviando] = useState(false);
   const [uploadingComp, setUploadingComp] = useState(false);
 
-  // Form responder
+  // Form responder (docs section)
   const [formR, setFormR] = useState({ valor: '', descricao: '', docsBase: [], docExtra: '', docsExtras: [] });
+  // Multi-proposta builder
+  const [cenarioAtual, setCenarioAtual] = useState('');
+  const [propostas, setPropostas] = useState([propVazio()]);
+  const [expandedProp, setExpandedProp] = useState(0);
   // Form comissão
   const [formC, setFormC] = useState({ valor_base: '', comissao_percentual: '' });
   // Editar proposta enviada
@@ -119,6 +132,13 @@ const AdminParceirosPage = () => {
       docExtra: '',
       docsExtras: o.docs_extras || [],
     });
+    setCenarioAtual(o.cenario_atual || '');
+    setPropostas(
+      o.propostas?.length > 0
+        ? o.propostas.map(p => ({ ...propVazio(), ...p, difInput: '', cobInput: '' }))
+        : [propVazio()]
+    );
+    setExpandedProp(0);
     setFormC({ valor_base: o.valor_mensalidade ? String(o.valor_mensalidade) : '', comissao_percentual: o.parceiros?.comissao_percentual ? String(o.parceiros.comissao_percentual) : '50' });
 
     const { data: docData } = await supabase
@@ -129,7 +149,11 @@ const AdminParceirosPage = () => {
     setDocs(docData || []);
   };
 
-  const closeDetail = () => { setSelected(null); setDocs([]); setEditandoProposta(false); setNovaPropostaMode(false); };
+  const closeDetail = () => {
+    setSelected(null); setDocs([]);
+    setEditandoProposta(false); setNovaPropostaMode(false);
+    setCenarioAtual(''); setPropostas([propVazio()]); setExpandedProp(0);
+  };
 
   const refreshSelected = async (id) => {
     const [orcRes, docsRes] = await Promise.allSettled([
@@ -145,16 +169,20 @@ const AdminParceirosPage = () => {
   };
 
   const handleResponder = async () => {
-    if (!formR.valor) return toast({ variant: 'destructive', title: 'Informe o valor da mensalidade.' });
-    if (!formR.descricao.trim()) return toast({ variant: 'destructive', title: 'Informe a descrição do orçamento.' });
+    const propostasValidas = propostas.filter(p => p.valor && p.descricao.trim());
+    if (propostasValidas.length === 0) return toast({ variant: 'destructive', title: 'Informe ao menos uma proposta com valor e descrição.' });
     setEnviando(true);
     try {
       const slug = generateSlug();
+      const destaque = propostasValidas.find(p => p.destaque) || propostasValidas[0];
+      const propostasToSave = propostasValidas.map(({ difInput, cobInput, ...p }) => p);
       const { error } = await supabase.from('orcamentos').update({
         status: 'ORCAMENTO',
         slug,
-        valor_mensalidade: parseFloat(formR.valor.replace(',', '.')),
-        descricao_orcamento: formR.descricao.trim(),
+        valor_mensalidade: parseFloat(String(destaque.valor).replace(',', '.')),
+        descricao_orcamento: destaque.descricao.trim(),
+        cenario_atual: cenarioAtual.trim() || null,
+        propostas: propostasToSave,
         lista_documentos: formR.docsBase,
         docs_extras: formR.docsExtras,
         data_orcamento: new Date().toISOString(),
@@ -344,6 +372,27 @@ const AdminParceirosPage = () => {
     }));
   };
 
+  const addProposta = () => { setPropostas(ps => [...ps, propVazio()]); setExpandedProp(propostas.length); };
+  const removeProposta = (i) => setPropostas(ps => ps.filter((_, idx) => idx !== i));
+  const updProposta = (i, field, val) => setPropostas(ps => ps.map((p, idx) => idx === i ? { ...p, [field]: val } : p));
+  const onSelectSeguradora = (i, nome) => {
+    const seg = SEGURADORAS.find(s => s.nome === nome);
+    setPropostas(ps => ps.map((p, idx) => idx === i ? { ...p, operadora: nome, logo_url: seg?.logo || '' } : p));
+  };
+  const toggleDestaque = (i) => setPropostas(ps => ps.map((p, idx) => ({ ...p, destaque: idx === i })));
+  const addDif = (i) => {
+    const p = propostas[i];
+    if (!p.difInput.trim()) return;
+    setPropostas(ps => ps.map((pp, idx) => idx === i ? { ...pp, diferenciais: [...pp.diferenciais, pp.difInput.trim()], difInput: '' } : pp));
+  };
+  const removeDif = (i, di) => setPropostas(ps => ps.map((p, idx) => idx === i ? { ...p, diferenciais: p.diferenciais.filter((_, j) => j !== di) } : p));
+  const addCob = (i) => {
+    const p = propostas[i];
+    if (!p.cobInput.trim()) return;
+    setPropostas(ps => ps.map((pp, idx) => idx === i ? { ...pp, coberturas: [...pp.coberturas, pp.cobInput.trim()], cobInput: '' } : pp));
+  };
+  const removeCob = (i, ci) => setPropostas(ps => ps.map((p, idx) => idx === i ? { ...p, coberturas: p.coberturas.filter((_, j) => j !== ci) } : p));
+
   const pendentes = orcamentos.filter(o => o.status === 'SOLICITACAO').length;
   const emAndamento = orcamentos.filter(o => !['CONCLUIDO', 'COMISSAO', 'SOLICITACAO'].includes(o.status)).length;
   const concluidos = orcamentos.filter(o => ['CONCLUIDO', 'COMISSAO'].includes(o.status)).length;
@@ -357,22 +406,158 @@ const AdminParceirosPage = () => {
 
     if (s === 'SOLICITACAO') return (
       <div className="space-y-4">
-        <p className="text-sm font-semibold text-gray-700 border-b pb-2">Responder com orçamento</p>
+        <p className="text-sm font-semibold text-gray-700 border-b pb-2">Montar orçamento</p>
+
+        {/* Cenário atual */}
         <div className="space-y-1.5">
-          <Label className="text-sm">Valor da mensalidade (R$) *</Label>
-          <Input value={formR.valor} onChange={e => setFormR(f => ({ ...f, valor: e.target.value }))}
-            placeholder="Ex: 350,00" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
+          <Label className="text-sm text-gray-600">Cenário atual do cliente (opcional)</Label>
+          <textarea value={cenarioAtual} onChange={e => setCenarioAtual(e.target.value)}
+            rows={2} placeholder="Ex: Plano Unimed com mensalidade R$ 520,00, cobertura básica, sem reembolso..."
+            className="w-full rounded-lg border border-gray-200 bg-amber-50 px-3 py-2 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-300 resize-none" />
         </div>
-        <div className="space-y-1.5">
-          <Label className="text-sm">Descrição do orçamento *</Label>
-          <textarea value={formR.descricao} onChange={e => setFormR(f => ({ ...f, descricao: e.target.value }))}
-            rows={3} placeholder="Plano, operadora, coberturas, carência..."
-            className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580] resize-none" />
+
+        {/* Propostas */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm text-gray-700">Propostas ({propostas.length})</Label>
+            <Button size="sm" variant="outline" onClick={addProposta}
+              className="text-xs h-7 border-dashed border-[#003580]/40 text-[#003580] hover:bg-[#f0f7ff]">
+              <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar proposta
+            </Button>
+          </div>
+
+          {propostas.map((p, i) => (
+            <div key={i} className={`border rounded-xl overflow-hidden transition-all ${p.destaque ? 'border-[#003580] shadow-sm' : 'border-gray-200'}`}>
+              {/* Header da proposta */}
+              <div
+                className={`flex items-center justify-between px-3 py-2 cursor-pointer ${p.destaque ? 'bg-[#003580] text-white' : 'bg-gray-50 text-gray-700'}`}
+                onClick={() => setExpandedProp(expandedProp === i ? -1 : i)}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  {p.logo_url ? (
+                    <img src={p.logo_url} alt={p.operadora} className="h-5 w-10 object-contain" />
+                  ) : (
+                    <Shield className={`h-4 w-4 ${p.destaque ? 'text-white/70' : 'text-gray-400'}`} />
+                  )}
+                  <span className="text-sm font-medium truncate">{p.operadora || `Proposta ${i + 1}`}</span>
+                  {p.destaque && <Star className="h-3.5 w-3.5 text-yellow-300 fill-yellow-300 shrink-0" />}
+                  {p.valor && <span className={`text-xs ml-1 ${p.destaque ? 'text-blue-200' : 'text-gray-500'}`}>R$ {p.valor}</span>}
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {propostas.length > 1 && (
+                    <button onClick={e => { e.stopPropagation(); removeProposta(i); }}
+                      className={`p-1 rounded hover:bg-red-100 ${p.destaque ? 'text-white/70 hover:text-red-500' : 'text-gray-400 hover:text-red-500'}`}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                  {expandedProp === i ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
+              </div>
+
+              {/* Corpo expandido */}
+              {expandedProp === i && (
+                <div className="p-3 space-y-3 bg-white">
+                  {/* Seguradora */}
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500">Seguradora / Operadora</Label>
+                    <div className="flex gap-2 items-center">
+                      <select
+                        value={p.operadora}
+                        onChange={e => onSelectSeguradora(i, e.target.value)}
+                        className="flex-1 rounded-lg border border-gray-200 bg-[#f0f7ff] px-2 py-1.5 text-sm focus:outline-none focus:border-[#003580]"
+                      >
+                        <option value="">Selecionar operadora...</option>
+                        {SEGURADORAS.map(s => (
+                          <option key={s.nome} value={s.nome}>{s.nome}</option>
+                        ))}
+                      </select>
+                      {p.logo_url && <img src={p.logo_url} alt={p.operadora} className="h-8 w-16 object-contain rounded border border-gray-100 p-1 bg-white" />}
+                    </div>
+                  </div>
+
+                  {/* Valor */}
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500">Valor mensal (R$) *</Label>
+                    <Input value={p.valor} onChange={e => updProposta(i, 'valor', e.target.value)}
+                      placeholder="Ex: 350,00" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-sm" />
+                  </div>
+
+                  {/* Descrição */}
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500">Descrição *</Label>
+                    <textarea value={p.descricao} onChange={e => updProposta(i, 'descricao', e.target.value)}
+                      rows={2} placeholder="Plano, cobertura, carência, diferenciais..."
+                      className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-1.5 text-sm focus:outline-none focus:border-[#003580] resize-none" />
+                  </div>
+
+                  {/* Diferenciais */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-gray-500">Diferenciais (tags)</Label>
+                    <div className="flex flex-wrap gap-1.5 mb-1">
+                      {p.diferenciais.map((d, di) => (
+                        <span key={di} className="flex items-center gap-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs px-2 py-0.5 rounded-full">
+                          {d}
+                          <button onClick={() => removeDif(i, di)} className="text-blue-400 hover:text-red-500"><X className="h-3 w-3" /></button>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex gap-1.5">
+                      <Input value={p.difInput} onChange={e => updProposta(i, 'difInput', e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addDif(i)}
+                        placeholder="Ex: Sem carência para urgências"
+                        className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-7 text-xs" />
+                      <Button size="sm" variant="outline" onClick={() => addDif(i)} className="h-7 px-2 shrink-0"><Plus className="h-3.5 w-3.5" /></Button>
+                    </div>
+                  </div>
+
+                  {/* Coberturas */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-gray-500">Coberturas (tags)</Label>
+                    <div className="flex flex-wrap gap-1.5 mb-1">
+                      {p.coberturas.map((c, ci) => (
+                        <span key={ci} className="flex items-center gap-1 bg-green-50 border border-green-200 text-green-700 text-xs px-2 py-0.5 rounded-full">
+                          {c}
+                          <button onClick={() => removeCob(i, ci)} className="text-green-400 hover:text-red-500"><X className="h-3 w-3" /></button>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex gap-1.5">
+                      <Input value={p.cobInput} onChange={e => updProposta(i, 'cobInput', e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addCob(i)}
+                        placeholder="Ex: Internação, UTI, Cirurgias"
+                        className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-7 text-xs" />
+                      <Button size="sm" variant="outline" onClick={() => addCob(i)} className="h-7 px-2 shrink-0"><Plus className="h-3.5 w-3.5" /></Button>
+                    </div>
+                  </div>
+
+                  {/* Rede credenciada */}
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500">Link de redes credenciadas (opcional)</Label>
+                    <div className="flex items-center gap-1.5">
+                      <LinkIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                      <Input value={p.rede_url} onChange={e => updProposta(i, 'rede_url', e.target.value)}
+                        placeholder="https://..."
+                        className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-7 text-xs" />
+                    </div>
+                  </div>
+
+                  {/* Destaque */}
+                  <button
+                    onClick={() => toggleDestaque(i)}
+                    className={`w-full flex items-center justify-center gap-2 py-1.5 rounded-lg border text-xs font-medium transition-colors ${p.destaque ? 'bg-[#003580] text-white border-[#003580]' : 'bg-white text-gray-600 border-gray-200 hover:border-[#003580] hover:text-[#003580]'}`}>
+                    <Star className={`h-3.5 w-3.5 ${p.destaque ? 'fill-yellow-300 text-yellow-300' : ''}`} />
+                    {p.destaque ? 'Melhor opção (destaque)' : 'Marcar como melhor opção'}
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
-        {/* Docs base */}
-        <div className="space-y-1.5">
-          <Label className="text-sm">Documentos necessários (pré-selecionados pelo segmento)</Label>
-          <div className="space-y-1.5 max-h-36 overflow-y-auto border border-gray-100 rounded-lg p-2">
+
+        {/* Documentos */}
+        <div className="space-y-1.5 border-t pt-3">
+          <Label className="text-sm text-gray-700">Documentos necessários</Label>
+          <div className="space-y-1.5 max-h-32 overflow-y-auto border border-gray-100 rounded-lg p-2">
             {(DOCS_POR_SEGMENTO[selected.segmento] || []).map(doc => (
               <label key={doc} className="flex items-center gap-2 text-sm cursor-pointer">
                 <input type="checkbox" checked={formR.docsBase.includes(doc)} onChange={() => toggleDocBase(doc)}
@@ -381,10 +566,6 @@ const AdminParceirosPage = () => {
               </label>
             ))}
           </div>
-        </div>
-        {/* Docs extras */}
-        <div className="space-y-1.5">
-          <Label className="text-sm">Documentos extras (opcional)</Label>
           {formR.docsExtras.map((d, i) => (
             <div key={i} className="flex items-center gap-2">
               <span className="text-xs text-gray-600 flex-1 bg-gray-50 px-2 py-1 rounded">{d}</span>
@@ -394,14 +575,15 @@ const AdminParceirosPage = () => {
           <div className="flex gap-2">
             <Input value={formR.docExtra} onChange={e => setFormR(f => ({ ...f, docExtra: e.target.value }))}
               onKeyDown={e => e.key === 'Enter' && addDocExtra()}
-              placeholder="Ex: Formulário médico preenchido"
+              placeholder="Documento extra (Enter para adicionar)"
               className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] text-sm" />
             <Button size="sm" variant="outline" onClick={addDocExtra} className="shrink-0"><Plus className="h-4 w-4" /></Button>
           </div>
         </div>
+
         <Button onClick={handleResponder} disabled={enviando} className="w-full rounded-lg text-white font-semibold gap-2" style={{ background: '#003580' }}>
           {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          {enviando ? 'Enviando...' : 'Responder e Gerar Link'}
+          {enviando ? 'Enviando...' : 'Enviar orçamento e gerar link'}
         </Button>
       </div>
     );
@@ -445,17 +627,36 @@ const AdminParceirosPage = () => {
           </div>
         ) : (
           <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="font-semibold text-gray-700 mb-1">Proposta enviada</p>
-                <p>Mensalidade: <span className="font-semibold text-gray-800">R$ {Number(selected.valor_mensalidade).toFixed(2).replace('.', ',')}</span></p>
-                {selected.descricao_orcamento && <p className="mt-1 text-xs">{selected.descricao_orcamento}</p>}
-              </div>
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <p className="font-semibold text-gray-700">Proposta enviada</p>
               <Button size="sm" variant="outline" onClick={() => setEditandoProposta(true)}
                 className="shrink-0 text-xs border-orange-200 text-orange-600 hover:bg-orange-50">
                 Editar
               </Button>
             </div>
+            {selected.propostas?.length > 0 ? (
+              <div className="space-y-2">
+                {selected.propostas.map((p, i) => (
+                  <div key={i} className={`flex items-center gap-2 p-2 rounded-lg border ${p.destaque ? 'border-[#003580]/30 bg-blue-50' : 'border-gray-200 bg-white'}`}>
+                    {p.logo_url ? (
+                      <img src={p.logo_url} alt={p.operadora} className="h-6 w-12 object-contain shrink-0" />
+                    ) : (
+                      <Shield className="h-4 w-4 text-gray-400 shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-gray-700 truncate">{p.operadora || `Opção ${i + 1}`}</p>
+                      <p className="text-xs text-gray-500">R$ {String(p.valor || 0)}/mês</p>
+                    </div>
+                    {p.destaque && <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-400 shrink-0" />}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                <p>Mensalidade: <span className="font-semibold text-gray-800">R$ {Number(selected.valor_mensalidade).toFixed(2).replace('.', ',')}</span></p>
+                {selected.descricao_orcamento && <p className="mt-1 text-xs">{selected.descricao_orcamento}</p>}
+              </>
+            )}
           </div>
         )}
 
