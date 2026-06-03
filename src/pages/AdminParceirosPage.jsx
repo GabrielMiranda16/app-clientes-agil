@@ -8,9 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   HeartHandshake, FileText, Clock, CheckCircle2, DollarSign,
-  X, Send, Loader2, ChevronRight, Copy, Check, ExternalLink,
-  Upload, Eye, Plus, Trash2, ArrowRight, Star, Link as LinkIcon,
-  ChevronDown, ChevronUp, Shield,
+  X, Send, Loader2, ChevronRight, Copy, Check,
+  Upload, Eye, Plus, Trash2, ArrowRight, Star,
+  Link as LinkIcon, ChevronDown, Shield, ArrowUp, ArrowDown,
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
@@ -39,7 +39,6 @@ const SEGMENTO_LABEL = {
   FROTA:        'Seguro Frota',
   CARGAS:       'Seguro de Cargas',
   EQUIPAMENTOS: 'Equipamentos Portáteis',
-  // legados
   SAUDE_VIDA_ODONTO: 'Saúde / Vida / Odonto',
   AUTO_FROTA: 'Auto / Frota',
 };
@@ -57,24 +56,44 @@ const DOCS_POR_SEGMENTO = {
   FROTA:        ['CNPJ', 'CRLV de todos os veículos', 'CNH dos motoristas'],
   CARGAS:       ['CPF ou CNPJ', 'Nota fiscal da carga'],
   EQUIPAMENTOS: ['CPF ou CNPJ', 'Nota fiscal do equipamento'],
-  // legados
   SAUDE_VIDA_ODONTO: ['RG', 'CPF', 'Comprovante de residência', 'Carteirinha anterior (se houver)'],
   AUTO_FROTA: ['CRLV', 'CNH', 'CPF'],
 };
 
 const FUNIL = ['SOLICITACAO', 'ORCAMENTO', 'DOCUMENTOS', 'ASSINATURA', 'CONCLUIDO', 'COMISSAO'];
 
+const planoVazio = () => ({ nome: '', valor: '' });
 const propVazio = () => ({
-  operadora: '', logo_url: '', valor: '', descricao: '',
-  diferenciais: [], difInput: '',
-  coberturas: [], cobInput: '',
-  rede_url: '', destaque: false,
+  operadora: '', logo_url: '',
+  planos: [planoVazio()],
+  abrangencia: '',
+  acomodacao: '',
+  coparticipacao: { tem: false, percentual: '', limitada: false },
+  carencia: false,
+  rede_url: '',
+  destaque: false,
 });
+const cenarioVazio = () => ({ tem_plano: false, operadora: '', valor: '' });
 
 const generateSlug = () => {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
   return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 };
+
+const ToggleBtn = ({ value, onChange, labelFalse = 'Não', labelTrue = 'Sim', color = '#003580' }) => (
+  <div className="flex rounded-lg overflow-hidden border border-gray-200 text-xs">
+    <button type="button" onClick={() => onChange(false)}
+      className={`px-3 py-1.5 transition-colors ${!value ? 'text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+      style={!value ? { background: color } : {}}>
+      {labelFalse}
+    </button>
+    <button type="button" onClick={() => onChange(true)}
+      className={`px-3 py-1.5 transition-colors ${value ? 'text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+      style={value ? { background: color } : {}}>
+      {labelTrue}
+    </button>
+  </div>
+);
 
 const AdminParceirosPage = () => {
   const { toast } = useToast();
@@ -83,21 +102,23 @@ const AdminParceirosPage = () => {
   const [orcamentos, setOrcamentos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState('TODOS');
+  const [expandedId, setExpandedId] = useState(null);
   const [selected, setSelected] = useState(null);
   const [docs, setDocs] = useState([]);
   const [copiedSlug, setCopiedSlug] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [uploadingComp, setUploadingComp] = useState(false);
 
-  // Form responder (docs section)
-  const [formR, setFormR] = useState({ valor: '', descricao: '', docsBase: [], docExtra: '', docsExtras: [] });
-  // Multi-proposta builder
-  const [cenarioAtual, setCenarioAtual] = useState('');
+  // Builder
+  const [cenarios, setCenarios] = useState([cenarioVazio()]);
   const [propostas, setPropostas] = useState([propVazio()]);
-  const [expandedProp, setExpandedProp] = useState(0);
-  // Form comissão
+  const [expandedPropIdx, setExpandedPropIdx] = useState(0);
+
+  // Docs form
+  const [formR, setFormR] = useState({ docsBase: [], docExtra: '', docsExtras: [] });
+  // Comissão
   const [formC, setFormC] = useState({ valor_base: '', comissao_percentual: '' });
-  // Editar proposta enviada
+  // ORCAMENTO edit modes
   const [editandoProposta, setEditandoProposta] = useState(false);
   const [novaPropostaMode, setNovaPropostaMode] = useState(false);
 
@@ -120,39 +141,43 @@ const AdminParceirosPage = () => {
     }
   };
 
-  const openDetail = async (o) => {
+  const toggleExpand = async (o) => {
+    if (expandedId === o.id) {
+      setExpandedId(null);
+      setSelected(null);
+      setDocs([]);
+      return;
+    }
+    setExpandedId(o.id);
     setSelected(o);
-    setDocs([]);
     setEditandoProposta(false);
     setNovaPropostaMode(false);
     setFormR({
-      valor: o.valor_mensalidade ? String(o.valor_mensalidade) : '',
-      descricao: o.descricao_orcamento || '',
       docsBase: o.lista_documentos || DOCS_POR_SEGMENTO[o.segmento] || [],
       docExtra: '',
       docsExtras: o.docs_extras || [],
     });
-    setCenarioAtual(o.cenario_atual || '');
+    setCenarios(
+      o.cenarios_atuais?.length > 0
+        ? o.cenarios_atuais.map(c => ({ ...cenarioVazio(), ...c }))
+        : [cenarioVazio()]
+    );
     setPropostas(
       o.propostas?.length > 0
-        ? o.propostas.map(p => ({ ...propVazio(), ...p, difInput: '', cobInput: '' }))
+        ? o.propostas.map(p => ({ ...propVazio(), ...p, planos: p.planos?.length > 0 ? p.planos : [planoVazio()] }))
         : [propVazio()]
     );
-    setExpandedProp(0);
-    setFormC({ valor_base: o.valor_mensalidade ? String(o.valor_mensalidade) : '', comissao_percentual: o.parceiros?.comissao_percentual ? String(o.parceiros.comissao_percentual) : '50' });
-
+    setExpandedPropIdx(0);
+    setFormC({
+      valor_base: o.valor_mensalidade ? String(o.valor_mensalidade) : '',
+      comissao_percentual: o.parceiros?.comissao_percentual ? String(o.parceiros.comissao_percentual) : '50',
+    });
     const { data: docData } = await supabase
       .from('orcamento_documentos')
       .select('*')
       .eq('orcamento_id', o.id)
       .order('enviado_em', { ascending: true });
     setDocs(docData || []);
-  };
-
-  const closeDetail = () => {
-    setSelected(null); setDocs([]);
-    setEditandoProposta(false); setNovaPropostaMode(false);
-    setCenarioAtual(''); setPropostas([propVazio()]); setExpandedProp(0);
   };
 
   const refreshSelected = async (id) => {
@@ -168,46 +193,82 @@ const AdminParceirosPage = () => {
     if (docsRes.status === 'fulfilled') setDocs(docsRes.value.data || []);
   };
 
+  // ── Cenários ──
+  const updCenario = (i, field, val) => setCenarios(cs => cs.map((c, idx) => idx === i ? { ...c, [field]: val } : c));
+  const addCenario = () => setCenarios(cs => [...cs, cenarioVazio()]);
+  const removeCenario = (i) => setCenarios(cs => cs.filter((_, idx) => idx !== i));
+
+  // ── Propostas ──
+  const addProposta = () => { setPropostas(ps => [...ps, propVazio()]); setExpandedPropIdx(propostas.length); };
+  const removeProposta = (i) => { setPropostas(ps => ps.filter((_, idx) => idx !== i)); setExpandedPropIdx(0); };
+  const updProposta = (i, field, val) => setPropostas(ps => ps.map((p, idx) => idx === i ? { ...p, [field]: val } : p));
+  const updCopart = (i, field, val) => setPropostas(ps => ps.map((p, idx) => idx === i ? { ...p, coparticipacao: { ...p.coparticipacao, [field]: val } } : p));
+  const onSelectSeg = (i, nome) => {
+    const seg = SEGURADORAS.find(s => s.nome === nome);
+    setPropostas(ps => ps.map((p, idx) => idx === i ? { ...p, operadora: nome, logo_url: seg?.logo || '' } : p));
+  };
+  const toggleDestaque = (i) => setPropostas(ps => ps.map((p, idx) => ({ ...p, destaque: idx === i })));
+  const moveProposta = (i, dir) => {
+    setPropostas(ps => {
+      const a = [...ps];
+      [a[i], a[i + dir]] = [a[i + dir], a[i]];
+      return a;
+    });
+    setExpandedPropIdx(i + dir);
+  };
+
+  // ── Planos dentro de proposta ──
+  const addPlano = (pi) => setPropostas(ps => ps.map((p, idx) => idx === pi ? { ...p, planos: [...p.planos, planoVazio()] } : p));
+  const removePlano = (pi, pli) => setPropostas(ps => ps.map((p, idx) => idx === pi ? { ...p, planos: p.planos.filter((_, j) => j !== pli) } : p));
+  const updPlano = (pi, pli, field, val) => setPropostas(ps => ps.map((p, idx) => idx === pi ? { ...p, planos: p.planos.map((pl, j) => j === pli ? { ...pl, [field]: val } : pl) } : p));
+
+  // ── Docs ──
+  const toggleDocBase = (doc) => setFormR(f => ({
+    ...f, docsBase: f.docsBase.includes(doc) ? f.docsBase.filter(d => d !== doc) : [...f.docsBase, doc],
+  }));
+  const addDocExtra = () => {
+    if (!formR.docExtra.trim()) return;
+    setFormR(f => ({ ...f, docsExtras: [...f.docsExtras, f.docExtra.trim()], docExtra: '' }));
+  };
+  const removeDocExtra = (i) => setFormR(f => ({ ...f, docsExtras: f.docsExtras.filter((_, idx) => idx !== i) }));
+
+  // ── Enviar orçamento ──
   const handleResponder = async () => {
-    const propostasValidas = propostas.filter(p => p.valor && p.descricao.trim());
-    if (propostasValidas.length === 0) return toast({ variant: 'destructive', title: 'Informe ao menos uma proposta com valor e descrição.' });
+    const valid = propostas.filter(p => p.operadora && p.planos.some(pl => pl.valor));
+    if (valid.length === 0) return toast({ variant: 'destructive', title: 'Informe ao menos uma proposta com operadora e valor.' });
     setEnviando(true);
     try {
       const slug = generateSlug();
-      const destaque = propostasValidas.find(p => p.destaque) || propostasValidas[0];
-      const propostasToSave = propostasValidas.map(({ difInput, cobInput, ...p }) => p);
+      const dest = valid.find(p => p.destaque) || valid[0];
+      const pl0 = dest.planos.find(pl => pl.valor) || dest.planos[0];
       const { error } = await supabase.from('orcamentos').update({
         status: 'ORCAMENTO',
         slug,
-        valor_mensalidade: parseFloat(String(destaque.valor).replace(',', '.')),
-        descricao_orcamento: destaque.descricao.trim(),
-        cenario_atual: cenarioAtual.trim() || null,
-        propostas: propostasToSave,
+        valor_mensalidade: parseFloat(String(pl0.valor).replace(',', '.')),
+        descricao_orcamento: `${dest.operadora}${pl0.nome ? ` — ${pl0.nome}` : ''}`,
+        cenarios_atuais: cenarios.filter(c => c.tem_plano),
+        propostas: valid,
         lista_documentos: formR.docsBase,
         docs_extras: formR.docsExtras,
         data_orcamento: new Date().toISOString(),
-      }).eq('id', selected.id);
+      }).eq('id', expandedId);
       if (error) throw error;
-      toast({ title: 'Orçamento enviado!', description: 'O link foi gerado. Informando o parceiro via WhatsApp...' });
+      toast({ title: 'Orçamento enviado!', description: 'Link gerado com sucesso.' });
 
-      // Notifica parceiro via WhatsApp
-      const parceiroTel = selected.parceiros?.telefone;
+      const parceiroTel = selected?.parceiros?.telefone;
       if (parceiroTel) {
         const segLabel = SEGMENTO_LABEL[selected.segmento] || selected.segmento;
         supabase.functions.invoke('send-whatsapp', {
           body: {
             phone: parceiroTel,
-            message:
-              `📋 *Orçamento pronto para envio!*\n\n` +
-              `Olá, ${selected.parceiros?.nome_completo?.split(' ')[0] || 'Parceiro'}! O orçamento para o cliente *${selected.cliente_nome}* (${segLabel}) já foi respondido.\n\n` +
-              `Acesse o portal da Ágil Seguros, copie o link e envie diretamente para o cliente:\n` +
-              `🔗 ${window.location.origin}/orcamento/${slug}`,
+            message: `📋 *Orçamento pronto!*\n\nOlá, ${selected.parceiros?.nome_completo?.split(' ')[0] || 'Parceiro'}! O orçamento para *${selected.cliente_nome}* (${segLabel}) está pronto.\n\n🔗 ${window.location.origin}/orcamento/${slug}`,
           },
         }).catch(() => {});
       }
 
       await loadData();
-      await refreshSelected(selected.id);
+      await refreshSelected(expandedId);
+      setNovaPropostaMode(false);
     } catch (err) {
       toast({ variant: 'destructive', title: 'Erro.', description: err?.message });
     } finally {
@@ -216,19 +277,23 @@ const AdminParceirosPage = () => {
   };
 
   const handleEditarProposta = async () => {
-    if (!formR.valor) return toast({ variant: 'destructive', title: 'Informe o valor da mensalidade.' });
-    if (!formR.descricao.trim()) return toast({ variant: 'destructive', title: 'Informe a descrição do orçamento.' });
+    const valid = propostas.filter(p => p.operadora && p.planos.some(pl => pl.valor));
+    if (valid.length === 0) return toast({ variant: 'destructive', title: 'Informe ao menos uma proposta com operadora e valor.' });
     setEnviando(true);
     try {
+      const dest = valid.find(p => p.destaque) || valid[0];
+      const pl0 = dest.planos.find(pl => pl.valor) || dest.planos[0];
       const { error } = await supabase.from('orcamentos').update({
-        valor_mensalidade: parseFloat(formR.valor.replace(',', '.')),
-        descricao_orcamento: formR.descricao.trim(),
-      }).eq('id', selected.id);
+        valor_mensalidade: parseFloat(String(pl0.valor).replace(',', '.')),
+        descricao_orcamento: `${dest.operadora}${pl0.nome ? ` — ${pl0.nome}` : ''}`,
+        cenarios_atuais: cenarios.filter(c => c.tem_plano),
+        propostas: valid,
+      }).eq('id', expandedId);
       if (error) throw error;
       toast({ title: 'Proposta atualizada!', description: 'O link continua o mesmo.' });
       setEditandoProposta(false);
       await loadData();
-      await refreshSelected(selected.id);
+      await refreshSelected(expandedId);
     } catch (err) {
       toast({ variant: 'destructive', title: 'Erro.', description: err?.message });
     } finally {
@@ -243,27 +308,22 @@ const AdminParceirosPage = () => {
       if (novoStatus === 'DOCUMENTOS') update.data_documentos = new Date().toISOString();
       if (novoStatus === 'ASSINATURA') update.data_assinatura = new Date().toISOString();
       if (novoStatus === 'CONCLUIDO') update.data_conclusao = new Date().toISOString();
-      const { error } = await supabase.from('orcamentos').update(update).eq('id', selected.id);
+      const { error } = await supabase.from('orcamentos').update(update).eq('id', expandedId);
       if (error) throw error;
       toast({ title: 'Status atualizado!' });
 
-      // Notifica parceiro via WhatsApp
-      const parceiroTel = selected.parceiros?.telefone;
+      const parceiroTel = selected?.parceiros?.telefone;
       if (parceiroTel) {
         const nome = selected.parceiros?.nome_completo?.split(' ')[0] || 'Parceiro';
         const msgs = {
-          ASSINATURA: `📄 *Processo avançou para assinatura!*\n\nOlá, ${nome}! Os documentos do cliente *${selected.cliente_nome}* foram recebidos e o processo avançou para assinatura. Quase lá! 🎯`,
-          CONCLUIDO: `🎉 *Proposta assinada! Contrato fechado!*\n\nOlá, ${nome}! O contrato do cliente *${selected.cliente_nome}* foi concluído com sucesso. A comissão será registrada em breve. 💰`,
+          ASSINATURA: `📄 *Processo avançou para assinatura!*\n\nOlá, ${nome}! Os documentos do cliente *${selected.cliente_nome}* foram recebidos. Quase lá! 🎯`,
+          CONCLUIDO: `🎉 *Contrato fechado!*\n\nOlá, ${nome}! O contrato de *${selected.cliente_nome}* foi concluído. A comissão será registrada em breve. 💰`,
         };
-        if (msgs[novoStatus]) {
-          supabase.functions.invoke('send-whatsapp', {
-            body: { phone: parceiroTel, message: msgs[novoStatus] },
-          }).catch(() => {});
-        }
+        if (msgs[novoStatus]) supabase.functions.invoke('send-whatsapp', { body: { phone: parceiroTel, message: msgs[novoStatus] } }).catch(() => {});
       }
 
       await loadData();
-      await refreshSelected(selected.id);
+      await refreshSelected(expandedId);
     } catch (err) {
       toast({ variant: 'destructive', title: 'Erro.', description: err?.message });
     } finally {
@@ -275,45 +335,30 @@ const AdminParceirosPage = () => {
     if (!formC.valor_base || !formC.comissao_percentual) return toast({ variant: 'destructive', title: 'Preencha valor e percentual.' });
     setEnviando(true);
     try {
-      const { data: existente } = await supabase.from('comissoes').select('id').eq('orcamento_id', selected.id).maybeSingle();
+      const { data: existente } = await supabase.from('comissoes').select('id').eq('orcamento_id', expandedId).maybeSingle();
+      const base = parseFloat(formC.valor_base.replace(',', '.'));
+      const pct = parseFloat(formC.comissao_percentual);
       if (existente) {
-        await supabase.from('comissoes').update({
-          valor_base: parseFloat(formC.valor_base.replace(',', '.')),
-          comissao_percentual: parseFloat(formC.comissao_percentual),
-          status: 'PENDENTE',
-        }).eq('id', existente.id);
+        await supabase.from('comissoes').update({ valor_base: base, comissao_percentual: pct, status: 'PENDENTE' }).eq('id', existente.id);
       } else {
-        await supabase.from('comissoes').insert({
-          orcamento_id: selected.id,
-          parceiro_id: selected.parceiro_id,
-          valor_base: parseFloat(formC.valor_base.replace(',', '.')),
-          comissao_percentual: parseFloat(formC.comissao_percentual),
-          status: 'PENDENTE',
-        });
+        await supabase.from('comissoes').insert({ orcamento_id: expandedId, parceiro_id: selected.parceiro_id, valor_base: base, comissao_percentual: pct, status: 'PENDENTE' });
       }
-      await supabase.from('orcamentos').update({ status: 'COMISSAO' }).eq('id', selected.id);
+      await supabase.from('orcamentos').update({ status: 'COMISSAO' }).eq('id', expandedId);
       toast({ title: 'Comissão registrada!' });
 
-      // Notifica parceiro via WhatsApp
-      const parceiroTel = selected.parceiros?.telefone;
+      const parceiroTel = selected?.parceiros?.telefone;
       if (parceiroTel) {
-        const base = parseFloat(formC.valor_base.replace(',', '.')) || 0;
-        const pct = parseFloat(formC.comissao_percentual) || 0;
         const comissao = base * (1 - 0.06) * (pct / 100);
         supabase.functions.invoke('send-whatsapp', {
           body: {
             phone: parceiroTel,
-            message:
-              `🎉 *Contrato fechado! Comissão registrada*\n\n` +
-              `Parabéns, ${selected.parceiros?.nome_completo?.split(' ')[0] || 'Parceiro'}! O contrato do cliente *${selected.cliente_nome}* foi concluído.\n\n` +
-              `💰 Sua comissão: *R$ ${comissao.toFixed(2).replace('.', ',')}*\n\n` +
-              `Acesse o portal para acompanhar o pagamento.`,
+            message: `🎉 *Comissão registrada*\n\nParabéns, ${selected.parceiros?.nome_completo?.split(' ')[0] || 'Parceiro'}! Contrato de *${selected.cliente_nome}* concluído.\n\n💰 Sua comissão: *R$ ${comissao.toFixed(2).replace('.', ',')}*`,
           },
         }).catch(() => {});
       }
 
       await loadData();
-      await refreshSelected(selected.id);
+      await refreshSelected(expandedId);
     } catch (err) {
       toast({ variant: 'destructive', title: 'Erro.', description: err?.message });
     } finally {
@@ -326,22 +371,15 @@ const AdminParceirosPage = () => {
     setUploadingComp(true);
     try {
       const ext = file.name.split('.').pop();
-      const path = `comissoes/${selected.id}/comprovante.${ext}`;
+      const path = `comissoes/${expandedId}/comprovante.${ext}`;
       const { error: upErr } = await supabase.storage.from('orcamento-documentos').upload(path, file, { upsert: true });
       if (upErr) throw upErr;
       const { data: { publicUrl } } = supabase.storage.from('orcamento-documentos').getPublicUrl(path);
-
-      const { data: com } = await supabase.from('comissoes').select('id').eq('orcamento_id', selected.id).maybeSingle();
-      if (com) {
-        await supabase.from('comissoes').update({
-          comprovante_path: publicUrl,
-          status: 'PAGO',
-          data_pagamento: new Date().toISOString(),
-        }).eq('id', com.id);
-      }
+      const { data: com } = await supabase.from('comissoes').select('id').eq('orcamento_id', expandedId).maybeSingle();
+      if (com) await supabase.from('comissoes').update({ comprovante_path: publicUrl, status: 'PAGO', data_pagamento: new Date().toISOString() }).eq('id', com.id);
       toast({ title: 'Comprovante enviado e comissão marcada como paga!' });
       await loadData();
-      await refreshSelected(selected.id);
+      await refreshSelected(expandedId);
     } catch (err) {
       toast({ variant: 'destructive', title: 'Erro no upload.', description: err?.message });
     } finally {
@@ -356,277 +394,297 @@ const AdminParceirosPage = () => {
     toast({ title: 'Link copiado!' });
   };
 
-  const addDocExtra = () => {
-    if (!formR.docExtra.trim()) return;
-    setFormR(f => ({ ...f, docsExtras: [...f.docsExtras, f.docExtra.trim()], docExtra: '' }));
-  };
+  // ── Builder (SOLICITACAO + editar + nova proposta) ──
+  const renderBuilder = (mode) => (
+    <div className="space-y-5">
+      {/* Cenários atuais */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-gray-700">Cenário atual do cliente</p>
+          <Button size="sm" variant="outline" onClick={addCenario} className="h-7 text-xs border-dashed border-amber-400 text-amber-600 hover:bg-amber-50">
+            <Plus className="h-3 w-3 mr-1" /> Adicionar
+          </Button>
+        </div>
+        {cenarios.map((c, ci) => (
+          <div key={ci} className="border border-amber-200 rounded-xl p-3 bg-amber-50 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-amber-800">{cenarios.length > 1 ? `Cenário ${ci + 1}` : 'Cenário atual'}</p>
+              {cenarios.length > 1 && (
+                <button type="button" onClick={() => removeCenario(ci)} className="text-gray-400 hover:text-red-500"><X className="h-3.5 w-3.5" /></button>
+              )}
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <Label className="text-xs text-amber-700 shrink-0">Possui plano ativo?</Label>
+              <ToggleBtn value={c.tem_plano} onChange={v => updCenario(ci, 'tem_plano', v)} color="#d97706" />
+            </div>
+            {c.tem_plano && (
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-500">Operadora atual</Label>
+                  <select value={c.operadora} onChange={e => updCenario(ci, 'operadora', e.target.value)}
+                    className="w-full rounded-lg border border-amber-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:border-amber-400">
+                    <option value="">Selecionar...</option>
+                    {SEGURADORAS.map(s => <option key={s.nome} value={s.nome}>{s.nome}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-500">Valor mensal (R$)</Label>
+                  <Input value={c.valor} onChange={e => updCenario(ci, 'valor', e.target.value)}
+                    placeholder="Ex: 520,00" className="border-amber-200 bg-white focus:border-amber-400 h-8 text-sm" />
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
 
-  const removeDocExtra = (i) => {
-    setFormR(f => ({ ...f, docsExtras: f.docsExtras.filter((_, idx) => idx !== i) }));
-  };
+      {/* Propostas */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-gray-700">Propostas ({propostas.length})</p>
+          <Button size="sm" variant="outline" onClick={addProposta} className="h-7 text-xs border-dashed border-[#003580]/40 text-[#003580] hover:bg-[#f0f7ff]">
+            <Plus className="h-3 w-3 mr-1" /> Adicionar
+          </Button>
+        </div>
 
-  const toggleDocBase = (doc) => {
-    setFormR(f => ({
-      ...f,
-      docsBase: f.docsBase.includes(doc) ? f.docsBase.filter(d => d !== doc) : [...f.docsBase, doc],
-    }));
-  };
+        {propostas.map((p, pi) => (
+          <div key={pi} className={`border rounded-xl overflow-hidden transition-all ${p.destaque ? 'border-[#003580] shadow-sm' : 'border-gray-200'}`}>
+            {/* Header da proposta */}
+            <div
+              className={`flex items-center justify-between px-3 py-2.5 cursor-pointer select-none ${p.destaque ? 'bg-[#003580] text-white' : 'bg-gray-50 text-gray-700'}`}
+              onClick={() => setExpandedPropIdx(expandedPropIdx === pi ? -1 : pi)}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                {p.logo_url
+                  ? <img src={p.logo_url} alt={p.operadora} className="h-5 w-10 object-contain shrink-0" />
+                  : <Shield className={`h-4 w-4 shrink-0 ${p.destaque ? 'text-white/60' : 'text-gray-400'}`} />
+                }
+                <span className="text-sm font-medium truncate">{p.operadora || `Proposta ${pi + 1}`}</span>
+                {p.destaque && <Star className="h-3.5 w-3.5 text-yellow-300 fill-yellow-300 shrink-0" />}
+                {propostas.length > 1 && (
+                  <span className={`text-xs ${p.destaque ? 'text-blue-200' : 'text-gray-400'}`}>
+                    {p.destaque ? '· Melhor opção' : `· ${pi + 1}ª opção`}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                {pi > 0 && (
+                  <button type="button" onClick={() => moveProposta(pi, -1)}
+                    className={`p-1 rounded hover:bg-black/10 ${p.destaque ? 'text-white/70' : 'text-gray-400'}`}>
+                    <ArrowUp className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                {pi < propostas.length - 1 && (
+                  <button type="button" onClick={() => moveProposta(pi, 1)}
+                    className={`p-1 rounded hover:bg-black/10 ${p.destaque ? 'text-white/70' : 'text-gray-400'}`}>
+                    <ArrowDown className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                {propostas.length > 1 && (
+                  <button type="button" onClick={() => removeProposta(pi)}
+                    className={`p-1 rounded ${p.destaque ? 'text-white/70 hover:text-red-300' : 'text-gray-400 hover:text-red-500'}`}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                <ChevronDown className={`h-4 w-4 transition-transform ${expandedPropIdx === pi ? 'rotate-180' : ''} ${p.destaque ? 'text-white/70' : 'text-gray-400'}`}
+                  onClick={() => setExpandedPropIdx(expandedPropIdx === pi ? -1 : pi)} />
+              </div>
+            </div>
 
-  const addProposta = () => { setPropostas(ps => [...ps, propVazio()]); setExpandedProp(propostas.length); };
-  const removeProposta = (i) => setPropostas(ps => ps.filter((_, idx) => idx !== i));
-  const updProposta = (i, field, val) => setPropostas(ps => ps.map((p, idx) => idx === i ? { ...p, [field]: val } : p));
-  const onSelectSeguradora = (i, nome) => {
-    const seg = SEGURADORAS.find(s => s.nome === nome);
-    setPropostas(ps => ps.map((p, idx) => idx === i ? { ...p, operadora: nome, logo_url: seg?.logo || '' } : p));
-  };
-  const toggleDestaque = (i) => setPropostas(ps => ps.map((p, idx) => ({ ...p, destaque: idx === i })));
-  const addDif = (i) => {
-    const p = propostas[i];
-    if (!p.difInput.trim()) return;
-    setPropostas(ps => ps.map((pp, idx) => idx === i ? { ...pp, diferenciais: [...pp.diferenciais, pp.difInput.trim()], difInput: '' } : pp));
-  };
-  const removeDif = (i, di) => setPropostas(ps => ps.map((p, idx) => idx === i ? { ...p, diferenciais: p.diferenciais.filter((_, j) => j !== di) } : p));
-  const addCob = (i) => {
-    const p = propostas[i];
-    if (!p.cobInput.trim()) return;
-    setPropostas(ps => ps.map((pp, idx) => idx === i ? { ...pp, coberturas: [...pp.coberturas, pp.cobInput.trim()], cobInput: '' } : pp));
-  };
-  const removeCob = (i, ci) => setPropostas(ps => ps.map((p, idx) => idx === i ? { ...p, coberturas: p.coberturas.filter((_, j) => j !== ci) } : p));
+            {/* Corpo da proposta */}
+            {expandedPropIdx === pi && (
+              <div className="p-3 space-y-3 bg-white border-t border-gray-100">
+                {/* Operadora */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-500">Seguradora / Operadora</Label>
+                  <div className="flex gap-2 items-center">
+                    <select value={p.operadora} onChange={e => onSelectSeg(pi, e.target.value)}
+                      className="flex-1 rounded-lg border border-gray-200 bg-[#f0f7ff] px-2 py-1.5 text-sm focus:outline-none focus:border-[#003580]">
+                      <option value="">Selecionar...</option>
+                      {SEGURADORAS.map(s => <option key={s.nome} value={s.nome}>{s.nome}</option>)}
+                    </select>
+                    {p.logo_url && (
+                      <img src={p.logo_url} alt={p.operadora} className="h-8 w-16 object-contain rounded border border-gray-100 p-1 bg-white shrink-0" />
+                    )}
+                  </div>
+                </div>
 
-  const pendentes = orcamentos.filter(o => o.status === 'SOLICITACAO').length;
-  const emAndamento = orcamentos.filter(o => !['CONCLUIDO', 'COMISSAO', 'SOLICITACAO'].includes(o.status)).length;
-  const concluidos = orcamentos.filter(o => ['CONCLUIDO', 'COMISSAO'].includes(o.status)).length;
+                {/* Planos */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs text-gray-500">Planos *</Label>
+                    <button type="button" onClick={() => addPlano(pi)} className="text-xs text-[#003580] hover:underline flex items-center gap-0.5">
+                      <Plus className="h-3 w-3" /> plano
+                    </button>
+                  </div>
+                  {p.planos.map((pl, pli) => (
+                    <div key={pli} className="flex gap-2 items-center">
+                      <Input value={pl.nome} onChange={e => updPlano(pi, pli, 'nome', e.target.value)}
+                        placeholder="Nome do plano (opcional)"
+                        className="flex-1 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
+                      <Input value={pl.valor} onChange={e => updPlano(pi, pli, 'valor', e.target.value)}
+                        placeholder="R$ valor *"
+                        className="w-24 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
+                      {p.planos.length > 1 && (
+                        <button type="button" onClick={() => removePlano(pi, pli)} className="text-gray-400 hover:text-red-500 shrink-0">
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
 
-  const FILTROS = ['TODOS', 'SOLICITACAO', 'ORCAMENTO', 'DOCUMENTOS', 'ASSINATURA', 'CONCLUIDO', 'COMISSAO'];
-  const orcamentosFiltrados = filtro === 'TODOS' ? orcamentos : orcamentos.filter(o => o.status === filtro);
+                {/* Abrangência + Acomodação */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500">Abrangência</Label>
+                    <select value={p.abrangencia} onChange={e => updProposta(pi, 'abrangencia', e.target.value)}
+                      className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-2 py-1.5 text-xs focus:outline-none focus:border-[#003580]">
+                      <option value="">Selecionar...</option>
+                      {['Nacional', 'Regional', 'Estadual', 'Municipal'].map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500">Acomodação</Label>
+                    <select value={p.acomodacao} onChange={e => updProposta(pi, 'acomodacao', e.target.value)}
+                      className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-2 py-1.5 text-xs focus:outline-none focus:border-[#003580]">
+                      <option value="">Selecionar...</option>
+                      {['Enfermaria', 'Apartamento'].map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Coparticipação */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <Label className="text-xs text-gray-500 shrink-0">Coparticipação</Label>
+                    <ToggleBtn value={p.coparticipacao.tem} onChange={v => updCopart(pi, 'tem', v)} />
+                  </div>
+                  {p.coparticipacao.tem && (
+                    <div className="flex items-center gap-3 pl-1 flex-wrap">
+                      <div className="flex items-center gap-1.5">
+                        <Label className="text-xs text-gray-500 shrink-0">%</Label>
+                        <Input value={p.coparticipacao.percentual} onChange={e => updCopart(pi, 'percentual', e.target.value)}
+                          placeholder="30" className="w-16 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-7 text-xs" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-gray-500 shrink-0">Limitada</Label>
+                        <ToggleBtn value={p.coparticipacao.limitada} onChange={v => updCopart(pi, 'limitada', v)} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Carência */}
+                <div className="flex items-center gap-3 flex-wrap">
+                  <Label className="text-xs text-gray-500 shrink-0">Carência</Label>
+                  <ToggleBtn value={p.carencia} onChange={v => updProposta(pi, 'carencia', v)} />
+                </div>
+
+                {/* Rede credenciada */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-500">Link de redes credenciadas (opcional)</Label>
+                  <div className="flex items-center gap-1.5">
+                    <LinkIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                    <Input value={p.rede_url} onChange={e => updProposta(pi, 'rede_url', e.target.value)}
+                      placeholder="https://..."
+                      className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-7 text-xs" />
+                  </div>
+                </div>
+
+                {/* Destaque */}
+                {propostas.length > 1 && (
+                  <button type="button" onClick={() => toggleDestaque(pi)}
+                    className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl border text-xs font-semibold transition-colors ${p.destaque ? 'text-white border-[#003580]' : 'bg-white text-gray-600 border-gray-200 hover:border-[#003580] hover:text-[#003580]'}`}
+                    style={p.destaque ? { background: '#003580' } : {}}>
+                    <Star className={`h-3.5 w-3.5 ${p.destaque ? 'fill-yellow-300 text-yellow-300' : ''}`} />
+                    {p.destaque ? 'Melhor opção (destaque ativo)' : 'Marcar como melhor opção'}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Documentos */}
+      <div className="space-y-1.5 border-t pt-4">
+        <Label className="text-sm font-semibold text-gray-700">Documentos necessários</Label>
+        <div className="space-y-1.5 max-h-32 overflow-y-auto border border-gray-100 rounded-lg p-2 bg-gray-50">
+          {(DOCS_POR_SEGMENTO[selected?.segmento] || []).map(doc => (
+            <label key={doc} className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" checked={formR.docsBase.includes(doc)} onChange={() => toggleDocBase(doc)}
+                className="h-3.5 w-3.5 rounded border-gray-300 text-[#003580]" />
+              {doc}
+            </label>
+          ))}
+        </div>
+        {formR.docsExtras.map((d, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <span className="text-xs text-gray-600 flex-1 bg-gray-50 px-2 py-1 rounded border border-gray-100">{d}</span>
+            <button type="button" onClick={() => removeDocExtra(i)} className="text-red-400 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
+          </div>
+        ))}
+        <div className="flex gap-2">
+          <Input value={formR.docExtra} onChange={e => setFormR(f => ({ ...f, docExtra: e.target.value }))}
+            onKeyDown={e => e.key === 'Enter' && addDocExtra()}
+            placeholder="Documento extra (Enter para adicionar)"
+            className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] text-sm" />
+          <Button size="sm" variant="outline" onClick={addDocExtra} className="shrink-0"><Plus className="h-4 w-4" /></Button>
+        </div>
+      </div>
+
+      {/* Botões de ação */}
+      {mode === 'responder' && (
+        <Button onClick={handleResponder} disabled={enviando} className="w-full rounded-xl text-white font-semibold gap-2 py-5" style={{ background: '#003580' }}>
+          {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          {enviando ? 'Enviando...' : 'Enviar orçamento e gerar link'}
+        </Button>
+      )}
+      {mode === 'editar' && (
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setEditandoProposta(false)} disabled={enviando} className="flex-1">Cancelar</Button>
+          <Button onClick={handleEditarProposta} disabled={enviando} className="flex-1 text-white gap-1.5" style={{ background: '#003580' }}>
+            {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            Salvar alterações
+          </Button>
+        </div>
+      )}
+      {mode === 'nova' && (
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setNovaPropostaMode(false)} disabled={enviando} className="flex-1">Cancelar</Button>
+          <Button onClick={handleResponder} disabled={enviando} className="flex-1 text-white gap-1.5" style={{ background: '#003580' }}>
+            {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            Enviar nova proposta
+          </Button>
+        </div>
+      )}
+    </div>
+  );
 
   const renderActionPanel = () => {
     if (!selected) return null;
     const s = selected.status;
 
-    if (s === 'SOLICITACAO') return (
-      <div className="space-y-4">
-        <p className="text-sm font-semibold text-gray-700 border-b pb-2">Montar orçamento</p>
+    if (s === 'SOLICITACAO') return renderBuilder('responder');
 
-        {/* Cenário atual */}
-        <div className="space-y-1.5">
-          <Label className="text-sm text-gray-600">Cenário atual do cliente (opcional)</Label>
-          <textarea value={cenarioAtual} onChange={e => setCenarioAtual(e.target.value)}
-            rows={2} placeholder="Ex: Plano Unimed com mensalidade R$ 520,00, cobertura básica, sem reembolso..."
-            className="w-full rounded-lg border border-gray-200 bg-amber-50 px-3 py-2 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-300 resize-none" />
-        </div>
-
-        {/* Propostas */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm text-gray-700">Propostas ({propostas.length})</Label>
-            <Button size="sm" variant="outline" onClick={addProposta}
-              className="text-xs h-7 border-dashed border-[#003580]/40 text-[#003580] hover:bg-[#f0f7ff]">
-              <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar proposta
-            </Button>
-          </div>
-
-          {propostas.map((p, i) => (
-            <div key={i} className={`border rounded-xl overflow-hidden transition-all ${p.destaque ? 'border-[#003580] shadow-sm' : 'border-gray-200'}`}>
-              {/* Header da proposta */}
-              <div
-                className={`flex items-center justify-between px-3 py-2 cursor-pointer ${p.destaque ? 'bg-[#003580] text-white' : 'bg-gray-50 text-gray-700'}`}
-                onClick={() => setExpandedProp(expandedProp === i ? -1 : i)}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  {p.logo_url ? (
-                    <img src={p.logo_url} alt={p.operadora} className="h-5 w-10 object-contain" />
-                  ) : (
-                    <Shield className={`h-4 w-4 ${p.destaque ? 'text-white/70' : 'text-gray-400'}`} />
-                  )}
-                  <span className="text-sm font-medium truncate">{p.operadora || `Proposta ${i + 1}`}</span>
-                  {p.destaque && <Star className="h-3.5 w-3.5 text-yellow-300 fill-yellow-300 shrink-0" />}
-                  {p.valor && <span className={`text-xs ml-1 ${p.destaque ? 'text-blue-200' : 'text-gray-500'}`}>R$ {p.valor}</span>}
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {propostas.length > 1 && (
-                    <button onClick={e => { e.stopPropagation(); removeProposta(i); }}
-                      className={`p-1 rounded hover:bg-red-100 ${p.destaque ? 'text-white/70 hover:text-red-500' : 'text-gray-400 hover:text-red-500'}`}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                  {expandedProp === i ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                </div>
-              </div>
-
-              {/* Corpo expandido */}
-              {expandedProp === i && (
-                <div className="p-3 space-y-3 bg-white">
-                  {/* Seguradora */}
-                  <div className="space-y-1">
-                    <Label className="text-xs text-gray-500">Seguradora / Operadora</Label>
-                    <div className="flex gap-2 items-center">
-                      <select
-                        value={p.operadora}
-                        onChange={e => onSelectSeguradora(i, e.target.value)}
-                        className="flex-1 rounded-lg border border-gray-200 bg-[#f0f7ff] px-2 py-1.5 text-sm focus:outline-none focus:border-[#003580]"
-                      >
-                        <option value="">Selecionar operadora...</option>
-                        {SEGURADORAS.map(s => (
-                          <option key={s.nome} value={s.nome}>{s.nome}</option>
-                        ))}
-                      </select>
-                      {p.logo_url && <img src={p.logo_url} alt={p.operadora} className="h-8 w-16 object-contain rounded border border-gray-100 p-1 bg-white" />}
-                    </div>
-                  </div>
-
-                  {/* Valor */}
-                  <div className="space-y-1">
-                    <Label className="text-xs text-gray-500">Valor mensal (R$) *</Label>
-                    <Input value={p.valor} onChange={e => updProposta(i, 'valor', e.target.value)}
-                      placeholder="Ex: 350,00" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-sm" />
-                  </div>
-
-                  {/* Descrição */}
-                  <div className="space-y-1">
-                    <Label className="text-xs text-gray-500">Descrição *</Label>
-                    <textarea value={p.descricao} onChange={e => updProposta(i, 'descricao', e.target.value)}
-                      rows={2} placeholder="Plano, cobertura, carência, diferenciais..."
-                      className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-1.5 text-sm focus:outline-none focus:border-[#003580] resize-none" />
-                  </div>
-
-                  {/* Diferenciais */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-gray-500">Diferenciais (tags)</Label>
-                    <div className="flex flex-wrap gap-1.5 mb-1">
-                      {p.diferenciais.map((d, di) => (
-                        <span key={di} className="flex items-center gap-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs px-2 py-0.5 rounded-full">
-                          {d}
-                          <button onClick={() => removeDif(i, di)} className="text-blue-400 hover:text-red-500"><X className="h-3 w-3" /></button>
-                        </span>
-                      ))}
-                    </div>
-                    <div className="flex gap-1.5">
-                      <Input value={p.difInput} onChange={e => updProposta(i, 'difInput', e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && addDif(i)}
-                        placeholder="Ex: Sem carência para urgências"
-                        className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-7 text-xs" />
-                      <Button size="sm" variant="outline" onClick={() => addDif(i)} className="h-7 px-2 shrink-0"><Plus className="h-3.5 w-3.5" /></Button>
-                    </div>
-                  </div>
-
-                  {/* Coberturas */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-gray-500">Coberturas (tags)</Label>
-                    <div className="flex flex-wrap gap-1.5 mb-1">
-                      {p.coberturas.map((c, ci) => (
-                        <span key={ci} className="flex items-center gap-1 bg-green-50 border border-green-200 text-green-700 text-xs px-2 py-0.5 rounded-full">
-                          {c}
-                          <button onClick={() => removeCob(i, ci)} className="text-green-400 hover:text-red-500"><X className="h-3 w-3" /></button>
-                        </span>
-                      ))}
-                    </div>
-                    <div className="flex gap-1.5">
-                      <Input value={p.cobInput} onChange={e => updProposta(i, 'cobInput', e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && addCob(i)}
-                        placeholder="Ex: Internação, UTI, Cirurgias"
-                        className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-7 text-xs" />
-                      <Button size="sm" variant="outline" onClick={() => addCob(i)} className="h-7 px-2 shrink-0"><Plus className="h-3.5 w-3.5" /></Button>
-                    </div>
-                  </div>
-
-                  {/* Rede credenciada */}
-                  <div className="space-y-1">
-                    <Label className="text-xs text-gray-500">Link de redes credenciadas (opcional)</Label>
-                    <div className="flex items-center gap-1.5">
-                      <LinkIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                      <Input value={p.rede_url} onChange={e => updProposta(i, 'rede_url', e.target.value)}
-                        placeholder="https://..."
-                        className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-7 text-xs" />
-                    </div>
-                  </div>
-
-                  {/* Destaque */}
-                  <button
-                    onClick={() => toggleDestaque(i)}
-                    className={`w-full flex items-center justify-center gap-2 py-1.5 rounded-lg border text-xs font-medium transition-colors ${p.destaque ? 'bg-[#003580] text-white border-[#003580]' : 'bg-white text-gray-600 border-gray-200 hover:border-[#003580] hover:text-[#003580]'}`}>
-                    <Star className={`h-3.5 w-3.5 ${p.destaque ? 'fill-yellow-300 text-yellow-300' : ''}`} />
-                    {p.destaque ? 'Melhor opção (destaque)' : 'Marcar como melhor opção'}
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Documentos */}
-        <div className="space-y-1.5 border-t pt-3">
-          <Label className="text-sm text-gray-700">Documentos necessários</Label>
-          <div className="space-y-1.5 max-h-32 overflow-y-auto border border-gray-100 rounded-lg p-2">
-            {(DOCS_POR_SEGMENTO[selected.segmento] || []).map(doc => (
-              <label key={doc} className="flex items-center gap-2 text-sm cursor-pointer">
-                <input type="checkbox" checked={formR.docsBase.includes(doc)} onChange={() => toggleDocBase(doc)}
-                  className="h-3.5 w-3.5 rounded border-gray-300 text-[#003580]" />
-                {doc}
-              </label>
-            ))}
-          </div>
-          {formR.docsExtras.map((d, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <span className="text-xs text-gray-600 flex-1 bg-gray-50 px-2 py-1 rounded">{d}</span>
-              <button onClick={() => removeDocExtra(i)} className="text-red-400 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
-            </div>
-          ))}
-          <div className="flex gap-2">
-            <Input value={formR.docExtra} onChange={e => setFormR(f => ({ ...f, docExtra: e.target.value }))}
-              onKeyDown={e => e.key === 'Enter' && addDocExtra()}
-              placeholder="Documento extra (Enter para adicionar)"
-              className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] text-sm" />
-            <Button size="sm" variant="outline" onClick={addDocExtra} className="shrink-0"><Plus className="h-4 w-4" /></Button>
-          </div>
-        </div>
-
-        <Button onClick={handleResponder} disabled={enviando} className="w-full rounded-lg text-white font-semibold gap-2" style={{ background: '#003580' }}>
-          {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          {enviando ? 'Enviando...' : 'Enviar orçamento e gerar link'}
-        </Button>
-      </div>
-    );
-
-    if (s === 'ORCAMENTO') return (
-      <div className="space-y-4">
-        <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
-          <p className="text-xs font-semibold text-blue-700 mb-1.5">Link público para o cliente</p>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-blue-600 truncate flex-1 font-mono">{window.location.origin}/orcamento/{selected.slug}</span>
-            <Button size="sm" variant="ghost" className="h-7 shrink-0" onClick={() => copyLink(selected.slug)}>
-              {copiedSlug === selected.slug ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
-            </Button>
-          </div>
-          <p className="text-xs text-blue-500 mt-1.5">Passe este link para o parceiro repassar ao cliente</p>
-        </div>
-
-        {editandoProposta ? (
-          <div className="space-y-3 border border-orange-200 rounded-lg p-3 bg-orange-50">
-            <p className="text-sm font-semibold text-orange-700 border-b border-orange-200 pb-2">Editar proposta</p>
-            <div className="space-y-1.5">
-              <Label className="text-sm">Novo valor da mensalidade (R$) *</Label>
-              <Input value={formR.valor} onChange={e => setFormR(f => ({ ...f, valor: e.target.value }))}
-                placeholder="Ex: 350,00" className="border-gray-200 bg-white focus:border-[#003580]" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm">Nova descrição *</Label>
-              <textarea value={formR.descricao} onChange={e => setFormR(f => ({ ...f, descricao: e.target.value }))}
-                rows={3} placeholder="Plano, operadora, coberturas, carência..."
-                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580] resize-none" />
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setEditandoProposta(false)} disabled={enviando} className="flex-1 text-sm">
-                Cancelar
-              </Button>
-              <Button onClick={handleEditarProposta} disabled={enviando} className="flex-1 text-sm text-white font-semibold gap-1.5" style={{ background: '#003580' }}>
-                {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                {enviando ? 'Salvando...' : 'Salvar proposta'}
+    if (s === 'ORCAMENTO') {
+      if (editandoProposta) return renderBuilder('editar');
+      if (novaPropostaMode) return renderBuilder('nova');
+      return (
+        <div className="space-y-4">
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
+            <p className="text-xs font-semibold text-blue-700 mb-1.5">Link público para o cliente</p>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-blue-600 truncate flex-1 font-mono">{window.location.origin}/orcamento/{selected.slug}</span>
+              <Button size="sm" variant="ghost" className="h-7 shrink-0" onClick={() => copyLink(selected.slug)}>
+                {copiedSlug === selected.slug ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
               </Button>
             </div>
+            <p className="text-xs text-blue-500 mt-1">Passe este link ao parceiro para repassar ao cliente</p>
           </div>
-        ) : (
-          <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
+
+          <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-600">
             <div className="flex items-start justify-between gap-2 mb-2">
               <p className="font-semibold text-gray-700">Proposta enviada</p>
               <Button size="sm" variant="outline" onClick={() => setEditandoProposta(true)}
@@ -638,14 +696,15 @@ const AdminParceirosPage = () => {
               <div className="space-y-2">
                 {selected.propostas.map((p, i) => (
                   <div key={i} className={`flex items-center gap-2 p-2 rounded-lg border ${p.destaque ? 'border-[#003580]/30 bg-blue-50' : 'border-gray-200 bg-white'}`}>
-                    {p.logo_url ? (
-                      <img src={p.logo_url} alt={p.operadora} className="h-6 w-12 object-contain shrink-0" />
-                    ) : (
-                      <Shield className="h-4 w-4 text-gray-400 shrink-0" />
-                    )}
+                    {p.logo_url
+                      ? <img src={p.logo_url} alt={p.operadora} className="h-6 w-12 object-contain shrink-0" />
+                      : <Shield className="h-4 w-4 text-gray-400 shrink-0" />
+                    }
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-gray-700 truncate">{p.operadora || `Opção ${i + 1}`}</p>
-                      <p className="text-xs text-gray-500">R$ {String(p.valor || 0)}/mês</p>
+                      <p className="text-xs text-gray-500">
+                        {p.planos?.length > 0 ? p.planos.map(pl => `R$ ${pl.valor}`).join(' / ') : `R$ ${p.valor || 0}`}/mês
+                      </p>
                     </div>
                     {p.destaque && <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-400 shrink-0" />}
                   </div>
@@ -653,50 +712,25 @@ const AdminParceirosPage = () => {
               </div>
             ) : (
               <>
-                <p>Mensalidade: <span className="font-semibold text-gray-800">R$ {Number(selected.valor_mensalidade).toFixed(2).replace('.', ',')}</span></p>
+                <p>Mensalidade: <span className="font-semibold text-gray-800">R$ {Number(selected.valor_mensalidade || 0).toFixed(2).replace('.', ',')}</span></p>
                 {selected.descricao_orcamento && <p className="mt-1 text-xs">{selected.descricao_orcamento}</p>}
               </>
             )}
           </div>
-        )}
 
-        {!editandoProposta && !novaPropostaMode && (
-          <>
-            <p className="text-xs text-gray-400 text-center">Aguardando o cliente aceitar a proposta...</p>
-            <Button variant="outline" size="sm" onClick={() => { setNovaPropostaMode(true); setEditandoProposta(false); setFormR(f => ({ ...f, valor: '', descricao: '' })); }}
-              className="w-full text-xs border-dashed border-gray-300 text-gray-500 hover:border-[#003580] hover:text-[#003580]">
-              + Nova proposta (gera novo link)
-            </Button>
-          </>
-        )}
-
-        {novaPropostaMode && (
-          <div className="space-y-3 border border-[#003580]/30 rounded-lg p-3 bg-[#f0f7ff]">
-            <p className="text-sm font-semibold text-[#003580] border-b border-[#003580]/20 pb-2">Nova proposta — novo link será gerado</p>
-            <div className="space-y-1.5">
-              <Label className="text-sm">Valor da mensalidade (R$) *</Label>
-              <Input value={formR.valor} onChange={e => setFormR(f => ({ ...f, valor: e.target.value }))}
-                placeholder="Ex: 420,00" className="border-gray-200 bg-white focus:border-[#003580]" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm">Descrição do orçamento *</Label>
-              <textarea value={formR.descricao} onChange={e => setFormR(f => ({ ...f, descricao: e.target.value }))}
-                rows={3} placeholder="Plano, operadora, coberturas, carência..."
-                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580] resize-none" />
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setNovaPropostaMode(false)} disabled={enviando} className="flex-1 text-sm">
-                Cancelar
-              </Button>
-              <Button onClick={handleResponder} disabled={enviando} className="flex-1 text-sm text-white font-semibold gap-1.5" style={{ background: '#003580' }}>
-                {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                {enviando ? 'Enviando...' : 'Enviar nova proposta'}
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
-    );
+          <p className="text-xs text-gray-400 text-center">Aguardando o cliente aceitar a proposta...</p>
+          <Button variant="outline" size="sm" onClick={() => {
+            setNovaPropostaMode(true);
+            setEditandoProposta(false);
+            setCenarios([cenarioVazio()]);
+            setPropostas([propVazio()]);
+            setExpandedPropIdx(0);
+          }} className="w-full text-xs border-dashed border-gray-300 text-gray-500 hover:border-[#003580] hover:text-[#003580]">
+            + Nova proposta (gera novo link)
+          </Button>
+        </div>
+      );
+    }
 
     if (s === 'DOCUMENTOS') return (
       <div className="space-y-3">
@@ -716,7 +750,7 @@ const AdminParceirosPage = () => {
             ))}
           </div>
         )}
-        <Button onClick={() => handleAvancar('ASSINATURA')} disabled={enviando} className="w-full rounded-lg text-white font-semibold gap-2" style={{ background: '#7c3aed' }}>
+        <Button onClick={() => handleAvancar('ASSINATURA')} disabled={enviando} className="w-full rounded-xl text-white font-semibold gap-2 bg-purple-600 hover:bg-purple-700">
           {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
           Avançar para Assinatura
         </Button>
@@ -738,7 +772,7 @@ const AdminParceirosPage = () => {
             ))}
           </div>
         )}
-        <Button onClick={() => handleAvancar('CONCLUIDO')} disabled={enviando} className="w-full rounded-lg text-white font-semibold gap-2 bg-green-600 hover:bg-green-700">
+        <Button onClick={() => handleAvancar('CONCLUIDO')} disabled={enviando} className="w-full rounded-xl text-white font-semibold gap-2 bg-green-600 hover:bg-green-700">
           {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
           Marcar como Assinado / Concluído
         </Button>
@@ -763,16 +797,16 @@ const AdminParceirosPage = () => {
         {formC.valor_base && formC.comissao_percentual && (() => {
           const base = parseFloat(formC.valor_base.replace(',', '.')) || 0;
           const pct = parseFloat(formC.comissao_percentual) || 0;
-          const aposImp = base * (1 - 6 / 100);
+          const aposImp = base * (1 - 0.06);
           const comissao = aposImp * (pct / 100);
           return (
-            <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 text-sm">
+            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-sm">
               <p className="text-xs text-gray-500">Base: R$ {base.toFixed(2).replace('.', ',')} → após 6% imposto: R$ {aposImp.toFixed(2).replace('.', ',')}</p>
               <p className="text-lg font-bold text-emerald-700 mt-1">Comissão: R$ {comissao.toFixed(2).replace('.', ',')}</p>
             </div>
           );
         })()}
-        <Button onClick={handleComissao} disabled={enviando} className="w-full rounded-lg text-white font-semibold gap-2 bg-emerald-600 hover:bg-emerald-700">
+        <Button onClick={handleComissao} disabled={enviando} className="w-full rounded-xl text-white font-semibold gap-2 bg-emerald-600 hover:bg-emerald-700">
           {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <DollarSign className="h-4 w-4" />}
           Registrar Comissão
         </Button>
@@ -782,14 +816,14 @@ const AdminParceirosPage = () => {
     if (s === 'COMISSAO') return (
       <div className="space-y-3">
         <p className="text-sm font-semibold text-gray-700 border-b pb-2">Comissão registrada</p>
-        <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3">
+        <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
           <p className="text-xs text-gray-500">Parceiro: {selected.parceiros?.nome_completo}</p>
           <p className="text-base font-bold text-emerald-700 mt-1">Contrato concluído ✅</p>
         </div>
         <div className="space-y-2">
           <p className="text-xs font-medium text-gray-600">Upload do comprovante de pagamento</p>
           <input ref={compInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleUploadComprovante(e.target.files?.[0])} />
-          <Button onClick={() => compInputRef.current?.click()} disabled={uploadingComp} variant="outline" className="w-full rounded-lg gap-2 text-sm border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+          <Button onClick={() => compInputRef.current?.click()} disabled={uploadingComp} variant="outline" className="w-full rounded-xl gap-2 text-sm border-emerald-200 text-emerald-700 hover:bg-emerald-50">
             {uploadingComp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
             {uploadingComp ? 'Enviando...' : 'Enviar comprovante e marcar como pago'}
           </Button>
@@ -799,6 +833,12 @@ const AdminParceirosPage = () => {
 
     return null;
   };
+
+  const pendentes = orcamentos.filter(o => o.status === 'SOLICITACAO').length;
+  const emAndamento = orcamentos.filter(o => !['CONCLUIDO', 'COMISSAO', 'SOLICITACAO'].includes(o.status)).length;
+  const concluidos = orcamentos.filter(o => ['CONCLUIDO', 'COMISSAO'].includes(o.status)).length;
+  const FILTROS = ['TODOS', 'SOLICITACAO', 'ORCAMENTO', 'DOCUMENTOS', 'ASSINATURA', 'CONCLUIDO', 'COMISSAO'];
+  const orcamentosFiltrados = filtro === 'TODOS' ? orcamentos : orcamentos.filter(o => o.status === filtro);
 
   return (
     <>
@@ -827,7 +867,7 @@ const AdminParceirosPage = () => {
             ))}
           </div>
 
-          {/* Filtro de status */}
+          {/* Filtros */}
           <div className="flex gap-2 flex-wrap">
             {FILTROS.map(f => (
               <button key={f} onClick={() => setFiltro(f)}
@@ -838,107 +878,95 @@ const AdminParceirosPage = () => {
             ))}
           </div>
 
-          {/* Layout: lista + painel detalhe */}
-          <div className={`flex gap-4 ${selected ? 'flex-col lg:flex-row' : ''}`}>
-            {/* Lista */}
-            <div className={`space-y-3 ${selected ? 'lg:w-1/2' : 'w-full'}`}>
-              {loading ? (
-                <p className="text-center text-gray-400 py-8">Carregando...</p>
-              ) : orcamentosFiltrados.length === 0 ? (
-                <Card className="border shadow-sm">
-                  <CardContent className="text-center py-16">
-                    <HeartHandshake className="h-10 w-10 mx-auto mb-3 text-gray-300" />
-                    <p className="text-gray-500 font-medium">Nenhum orçamento {filtro !== 'TODOS' ? `com status "${STATUS_CONFIG[filtro]?.label}"` : 'ainda'}</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                orcamentosFiltrados.map(o => {
-                  const cfg = STATUS_CONFIG[o.status] || STATUS_CONFIG.SOLICITACAO;
-                  const step = FUNIL.indexOf(o.status);
-                  const isSelected = selected?.id === o.id;
-                  return (
-                    <Card key={o.id}
-                      className={`relative border shadow-sm cursor-pointer transition-all border-l-4 ${cfg.border} ${isSelected ? 'ring-2 ring-[#003580]' : 'hover:shadow-md'}`}
-                      onClick={() => openDetail(o)}>
-                      {o.status === 'SOLICITACAO' && (
-                        <span className="absolute top-3 right-3 flex h-2.5 w-2.5">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
-                        </span>
-                      )}
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-gray-800 truncate">{o.cliente_nome || 'Cliente não informado'}</p>
-                            <p className="text-xs text-gray-400">{SEGMENTO_LABEL[o.segmento] || o.segmento}</p>
-                            <p className="text-xs text-gray-500 mt-0.5">Parceiro: <span className="font-medium">{o.parceiros?.nome_completo || '—'}</span></p>
-                            {o.valor_mensalidade && (
-                              <p className="text-xs text-gray-500 mt-0.5">R$ {Number(o.valor_mensalidade).toFixed(2).replace('.', ',')}/mês</p>
-                            )}
-                          </div>
-                          <div className="flex flex-col items-end gap-2 shrink-0">
-                            <Badge className={`text-xs ${cfg.color}`}>{cfg.label}</Badge>
-                            <ChevronRight className="h-4 w-4 text-gray-300" />
-                          </div>
+          {/* Lista de cards */}
+          <div className="space-y-3">
+            {loading ? (
+              <p className="text-center text-gray-400 py-8">Carregando...</p>
+            ) : orcamentosFiltrados.length === 0 ? (
+              <Card className="border shadow-sm">
+                <CardContent className="text-center py-16">
+                  <HeartHandshake className="h-10 w-10 mx-auto mb-3 text-gray-300" />
+                  <p className="text-gray-500 font-medium">
+                    Nenhum orçamento {filtro !== 'TODOS' ? `com status "${STATUS_CONFIG[filtro]?.label}"` : 'ainda'}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              orcamentosFiltrados.map(o => {
+                const cfg = STATUS_CONFIG[o.status] || STATUS_CONFIG.SOLICITACAO;
+                const step = FUNIL.indexOf(o.status);
+                const isExpanded = expandedId === o.id;
+                return (
+                  <Card key={o.id} className={`border shadow-sm border-l-4 ${cfg.border} transition-all`}>
+                    {/* Header do card */}
+                    <CardContent
+                      className="p-4 cursor-pointer select-none"
+                      onClick={() => toggleExpand(o)}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-800 truncate">{o.cliente_nome || 'Cliente não informado'}</p>
+                          <p className="text-xs text-gray-400">{SEGMENTO_LABEL[o.segmento] || o.segmento}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">Parceiro: <span className="font-medium">{o.parceiros?.nome_completo || '—'}</span></p>
+                          {o.valor_mensalidade && (
+                            <p className="text-xs text-gray-500 mt-0.5">R$ {Number(o.valor_mensalidade).toFixed(2).replace('.', ',')}/mês</p>
+                          )}
                         </div>
-                        <div className="mt-3 flex gap-1">
-                          {FUNIL.map((s, i) => (
-                            <div key={s} className={`h-1 flex-1 rounded-full ${i <= step ? 'bg-[#003580]' : 'bg-gray-200'}`} />
-                          ))}
+                        <div className="flex items-center gap-2 shrink-0">
+                          {o.status === 'SOLICITACAO' && (
+                            <span className="relative flex h-2.5 w-2.5">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                            </span>
+                          )}
+                          <Badge className={`text-xs ${cfg.color}`}>{cfg.label}</Badge>
+                          <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })
-              )}
-            </div>
-
-            {/* Painel de detalhe */}
-            <AnimatePresence>
-              {selected && (
-                <motion.div
-                  key="detalhe"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  className="lg:w-1/2 lg:sticky lg:top-4 lg:self-start"
-                >
-                  <Card className="border shadow-md">
-                    <CardContent className="p-5">
-                      {/* Header do painel */}
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <p className="font-bold text-gray-800 text-base">{selected.cliente_nome}</p>
-                          <p className="text-xs text-gray-400">{SEGMENTO_LABEL[selected.segmento]}</p>
-                          <Badge className={`text-xs mt-1 ${STATUS_CONFIG[selected.status]?.color}`}>{STATUS_CONFIG[selected.status]?.label}</Badge>
-                        </div>
-                        <button onClick={closeDetail} className="text-gray-400 hover:text-gray-600 p-1">
-                          <X className="h-5 w-5" />
-                        </button>
                       </div>
-
-                      {/* Dados do cliente */}
-                      <div className="bg-gray-50 rounded-lg p-3 mb-4 space-y-1 text-sm">
-                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Dados do cliente</p>
-                        {selected.cliente_telefone && <p><span className="text-gray-500">Tel:</span> {selected.cliente_telefone}</p>}
-                        {selected.cliente_email && <p><span className="text-gray-500">Email:</span> {selected.cliente_email}</p>}
-                        {selected.cliente_cpf && <p><span className="text-gray-500">CPF:</span> {selected.cliente_cpf}</p>}
-                        {selected.observacoes && (
-                          <div className="mt-2 pt-2 border-t border-gray-200">
-                            <p className="text-xs text-gray-500 font-medium mb-0.5">Dados da solicitação</p>
-                            <pre className="text-xs text-gray-600 whitespace-pre-wrap font-sans">{selected.observacoes}</pre>
-                          </div>
-                        )}
+                      <div className="mt-3 flex gap-1">
+                        {FUNIL.map((s, i) => (
+                          <div key={s} className={`h-1 flex-1 rounded-full transition-colors ${i <= step ? 'bg-[#003580]' : 'bg-gray-200'}`} />
+                        ))}
                       </div>
-
-                      {/* Ação específica por status */}
-                      {renderActionPanel()}
                     </CardContent>
+
+                    {/* Conteúdo expandido inline */}
+                    <AnimatePresence>
+                      {isExpanded && selected?.id === o.id && (
+                        <motion.div
+                          key="detail"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="border-t border-gray-100 p-5 space-y-4 bg-white">
+                            {/* Dados do cliente */}
+                            <div className="bg-gray-50 rounded-xl p-3 space-y-1 text-sm">
+                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Dados do cliente</p>
+                              {selected.cliente_telefone && <p><span className="text-gray-400">Tel:</span> {selected.cliente_telefone}</p>}
+                              {selected.cliente_email && <p><span className="text-gray-400">Email:</span> {selected.cliente_email}</p>}
+                              {selected.cliente_cpf && <p><span className="text-gray-400">CPF/CNPJ:</span> {selected.cliente_cpf}</p>}
+                              {selected.observacoes && (
+                                <div className="mt-2 pt-2 border-t border-gray-200">
+                                  <p className="text-xs text-gray-500 font-medium mb-0.5">Dados da solicitação</p>
+                                  <pre className="text-xs text-gray-600 whitespace-pre-wrap font-sans">{selected.observacoes}</pre>
+                                </div>
+                              )}
+                            </div>
+                            {/* Painel de ação por status */}
+                            {renderActionPanel()}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </Card>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                );
+              })
+            )}
           </div>
+
         </motion.div>
       </DashboardLayout>
     </>
