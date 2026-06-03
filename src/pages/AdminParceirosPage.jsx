@@ -121,6 +121,7 @@ const AdminParceirosPage = () => {
   // ORCAMENTO edit modes
   const [editandoProposta, setEditandoProposta] = useState(false);
   const [novaPropostaMode, setNovaPropostaMode] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -144,12 +145,14 @@ const AdminParceirosPage = () => {
       setExpandedId(null);
       setSelected(null);
       setDocs([]);
+      setConfirmDelete(false);
       return;
     }
     setExpandedId(o.id);
     setSelected(o);
     setEditandoProposta(false);
     setNovaPropostaMode(false);
+    setConfirmDelete(false);
     setFormR({
       docsBase: o.lista_documentos || DOCS_POR_SEGMENTO[o.segmento] || [],
       docExtra: '',
@@ -385,6 +388,26 @@ const AdminParceirosPage = () => {
       toast({ variant: 'destructive', title: 'Erro no upload.', description: err?.message });
     } finally {
       setUploadingComp(false);
+    }
+  };
+
+  const handleExcluir = async () => {
+    setEnviando(true);
+    try {
+      await supabase.from('comissoes').delete().eq('orcamento_id', expandedId);
+      await supabase.from('orcamento_documentos').delete().eq('orcamento_id', expandedId);
+      await supabase.from('orcamento_acessos').delete().eq('orcamento_id', expandedId);
+      const { error } = await supabase.from('orcamentos').delete().eq('id', expandedId);
+      if (error) throw error;
+      toast({ title: 'Orçamento excluído.' });
+      setExpandedId(null);
+      setSelected(null);
+      setConfirmDelete(false);
+      await loadData();
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro ao excluir.', description: err?.message });
+    } finally {
+      setEnviando(false);
     }
   };
 
@@ -704,7 +727,7 @@ const AdminParceirosPage = () => {
             <div className="flex items-start justify-between gap-2 mb-2">
               <p className="font-semibold text-gray-700">Proposta enviada</p>
               <Button size="sm" variant="outline" onClick={() => setEditandoProposta(true)}
-                className="shrink-0 text-xs border-orange-200 text-orange-600 hover:bg-orange-50">
+                className="shrink-0 text-xs border-[#003580]/30 text-[#003580] hover:bg-[#f0f7ff]">
                 Editar
               </Button>
             </div>
@@ -973,6 +996,38 @@ const AdminParceirosPage = () => {
                             </div>
                             {/* Painel de ação por status */}
                             {renderActionPanel()}
+
+                            {/* Excluir orçamento */}
+                            <div className="pt-2 border-t border-gray-100">
+                              {!confirmDelete ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmDelete(true)}
+                                  className="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" /> Excluir orçamento
+                                </button>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-red-600 font-medium">Confirmar exclusão?</span>
+                                  <button
+                                    type="button"
+                                    onClick={handleExcluir}
+                                    disabled={enviando}
+                                    className="text-xs bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
+                                  >
+                                    {enviando ? 'Excluindo...' : 'Sim, excluir'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setConfirmDelete(false)}
+                                    className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                                  >
+                                    Cancelar
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </motion.div>
                       )}
