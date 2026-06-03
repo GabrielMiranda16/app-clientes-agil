@@ -124,12 +124,10 @@ const AdminParceirosPage = () => {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(() => loadData(true), 60000);
-    return () => clearInterval(interval);
   }, []);
 
-  const loadData = async (silent = false) => {
-    if (!silent) setLoading(true);
+  const loadData = async () => {
+    setLoading(true);
     try {
       const { data } = await supabase
         .from('orcamentos')
@@ -137,7 +135,7 @@ const AdminParceirosPage = () => {
         .order('created_at', { ascending: false });
       setOrcamentos(data || []);
     } finally {
-      if (!silent) setLoading(false);
+      setLoading(false);
     }
   };
 
