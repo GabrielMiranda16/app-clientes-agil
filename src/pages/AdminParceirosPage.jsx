@@ -198,7 +198,10 @@ const AdminParceirosPage = () => {
 
   // ── Propostas ──
   const addProposta = () => { setPropostas(ps => [...ps, propVazio()]); setExpandedPropIdx(propostas.length); };
-  const removeProposta = (i) => { setPropostas(ps => ps.filter((_, idx) => idx !== i)); setExpandedPropIdx(0); };
+  const removeProposta = (i) => {
+    setPropostas(ps => ps.length === 1 ? [propVazio()] : ps.filter((_, idx) => idx !== i));
+    setExpandedPropIdx(0);
+  };
   const updProposta = (i, field, val) => setPropostas(ps => ps.map((p, idx) => idx === i ? { ...p, [field]: val } : p));
   const updCopart = (i, field, val) => setPropostas(ps => ps.map((p, idx) => idx === i ? { ...p, coparticipacao: { ...p.coparticipacao, [field]: val } } : p));
   const onSelectSeg = (i, nome) => {
@@ -495,12 +498,10 @@ const AdminParceirosPage = () => {
                     <ArrowDown className="h-3.5 w-3.5" />
                   </button>
                 )}
-                {propostas.length > 1 && (
-                  <button type="button" onClick={() => removeProposta(pi)}
-                    className={`p-1 rounded ${p.destaque ? 'text-white/70 hover:text-red-300' : 'text-gray-400 hover:text-red-500'}`}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                )}
+                <button type="button" onClick={() => removeProposta(pi)}
+                  className={`p-1 rounded ${p.destaque ? 'text-white/70 hover:text-red-300' : 'text-gray-400 hover:text-red-500'}`}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
                 <ChevronDown className={`h-4 w-4 transition-transform ${expandedPropIdx === pi ? 'rotate-180' : ''} ${p.destaque ? 'text-white/70' : 'text-gray-400'}`}
                   onClick={() => setExpandedPropIdx(expandedPropIdx === pi ? -1 : pi)} />
               </div>

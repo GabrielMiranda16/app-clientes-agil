@@ -4,6 +4,102 @@
 
 ---
 
+### [v4.0] — Multi-Proposta Builder + Página Pública Completa (2026-06-03)
+
+---
+
+#### SQL executado no Supabase (necessário antes de usar)
+
+```sql
+-- Coluna para múltiplos cenários atuais do cliente
+ALTER TABLE public.orcamentos ADD COLUMN IF NOT EXISTS cenarios_atuais JSONB;
+
+-- Slug não mais obrigatório (gerado só quando ADM envia proposta)
+ALTER TABLE public.orcamentos ALTER COLUMN slug DROP NOT NULL;
+```
+
+---
+
+#### AdminParceirosPage — reescrita completa
+
+**Commits:** `cfea517`, `ec990ec`, `60c827a`, `45cf3c1`, `2fab4aa`
+
+##### Layout — inline expansion (sem painel lateral)
+- Cards expandem **para baixo inline** usando `AnimatePresence` + `motion.div` com `height: 0 → auto`
+- Painel lateral completamente removido
+- `toggleExpand(o)` substitui o antigo `openDetail`/`closeDetail`
+- `ChevronDown` rotaciona 180° quando expandido
+
+##### Builder de propostas (multi-proposta)
+- `renderBuilder(mode)` reutilizado para `'responder'`, `'editar'` e `'nova'`
+- **Cenários atuais** (`cenarios_atuais` JSONB): múltiplos cenários com `+`, cada um com toggle `tem_plano`, select operadora, input valor
+- **Propostas** (`propostas` JSONB): múltiplas com `+` (add), `X` (remove), `↑↓` (ordenar)
+  - Cada proposta: select operadora (auto-carrega logo), planos `[{nome, valor}]` (múltiplos), abrangência, acomodação, coparticipação `{tem, percentual, limitada}`, carência, rede_url, destaque
+- `ToggleBtn` component: Não/Sim com cores customizáveis
+- Botão excluir proposta **sempre visível** (se única, reseta para proposta vazia em vez de remover)
+
+##### Estrutura de dados nova
+
+```js
+// Proposta
+{
+  operadora, logo_url,
+  planos: [{ nome, valor }],      // faixas etárias ou planos
+  abrangencia,                    // Nacional | Regional | Estadual | Municipal
+  acomodacao,                     // Apartamento | Enfermaria
+  coparticipacao: { tem, percentual, limitada },
+  carencia,
+  rede_url,
+  destaque,                       // true = melhor opção
+}
+
+// Cenário atual
+{ tem_plano, operadora, valor }
+```
+
+##### Auto-refresh removido
+- `setInterval` removido por completo
+- Lista só atualiza após ações do ADM (enviar, avançar status, etc.)
+- Preencher o formulário sem perder dados
+
+##### Visual dos cards
+- Card "Cenário atual": mesmo estilo dos cards de proposta (header cinza, border padrão, sem amber)
+- Botão "+ Adicionar" dos cenários: azul igual ao das propostas
+
+---
+
+#### seguradoras.js — diferenciais detalhados
+
+**Commit:** `01cce0f` (base) + sessão atual
+
+- **10 operadoras de saúde** com `diferenciais: [{titulo, descricao}]`
+- Cada diferencial tem título curto + descrição ampla (2-4 frases) com informações reais
+- Operadoras com diferenciais: Porto Seguro, Bradesco Seguros, SulAmérica, Amil, Omint, Unimed, São Cristóvão Saúde, Plena Saúde, Hapvida, Alice Saúde
+- Operadoras não-saúde têm `diferenciais: []`
+
+---
+
+#### OrcamentoPublicoPage — redesign completo para nova estrutura
+
+**Commit:** `0d05bd1`
+
+Seções em ordem (página do link enviado ao cliente):
+
+1. **Header** — segmento + nome cliente + badge de opções
+2. **Cenário Atual** — lê `cenarios_atuais[]`, logo da operadora + valor por item
+3. **Propostas** — cards com: planos colapsáveis, chips de características, botão "Quero este plano"
+4. **Comparação visual de custo** — barras CSS animadas (Framer Motion), atual em amarelo vs propostas em azul
+5. **Comparação de planos** — tabela: abrangência, acomodação, coparticipação, carência, recomendação (só 2+ propostas)
+6. **Tabela comparativa** — faixas lado a lado com todos os atributos (só 2+ propostas)
+7. **Perfil de vidas** — tabela por operadora faixa→valor (SAUDE, quando `planos.length > 1`)
+8. **Coparticipação** — só da proposta destaque: percentual + limitada/ilimitada + explicação
+9. **Diferenciais** — `SEGURADORAS.find(s => s.nome === propostaDestaque.operadora).diferenciais` com título + descrição
+10. **Rede credenciada** — link da proposta destaque + outras que tiverem `rede_url`
+11. **Documentos necessários** — lista
+12. **Botão flutuante** — fixo no rodapé, sempre visível, mostra operadora recomendada, aceita direto
+
+---
+
 ### [v3.0] — Sistema de Parceiros + Boletos (2026-05-25 / 2026-05-27)
 
 ---
