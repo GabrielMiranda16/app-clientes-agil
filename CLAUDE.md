@@ -205,3 +205,21 @@ git add <arquivos>
 git commit -m "mensagem"
 git push origin main # Vercel faz deploy automático (~2 min)
 ```
+
+---
+
+## Dispositivos e Git
+
+### Pastas por dispositivo
+- **Mac:** `~/iCloudDrive/Documentos - MacBook Air de Gabriel/Claude Code/app-clientes-agil/`
+- **Windows:** `C:\Users\gabri\Documents\app-clientes-agil\`
+
+### Regra obrigatória ao iniciar qualquer sessão
+Sempre que Gabriel mencionar este projeto, **fazer git pull antes de qualquer tarefa**:
+```bash
+git pull origin main
+```
+Garante que o código está sincronizado com o GitHub antes de editar.
+
+### Ao terminar alterações no Windows
+Commitar e push direto da pasta `C:\Users\gabri\Documents\app-clientes-agil\` — git funciona normalmente fora do iCloud. Nunca usar a pasta do iCloud para git no Windows.
