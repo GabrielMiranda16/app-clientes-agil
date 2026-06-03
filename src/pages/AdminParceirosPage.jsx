@@ -403,37 +403,54 @@ const AdminParceirosPage = () => {
             <Plus className="h-3 w-3 mr-1" /> Adicionar
           </Button>
         </div>
-        {cenarios.map((c, ci) => (
-          <div key={ci} className="border border-amber-200 rounded-xl p-3 bg-amber-50 space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-amber-800">{cenarios.length > 1 ? `Cenário ${ci + 1}` : 'Cenário atual'}</p>
-              {cenarios.length > 1 && (
-                <button type="button" onClick={() => removeCenario(ci)} className="text-gray-400 hover:text-red-500"><X className="h-3.5 w-3.5" /></button>
-              )}
-            </div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <Label className="text-xs text-amber-700 shrink-0">Possui plano ativo?</Label>
-              <ToggleBtn value={c.tem_plano} onChange={v => updCenario(ci, 'tem_plano', v)} color="#d97706" />
-            </div>
-            {c.tem_plano && (
-              <div className="grid grid-cols-2 gap-2 mt-1">
-                <div className="space-y-1">
-                  <Label className="text-xs text-gray-500">Operadora atual</Label>
-                  <select value={c.operadora} onChange={e => updCenario(ci, 'operadora', e.target.value)}
-                    className="w-full rounded-lg border border-amber-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:border-amber-400">
-                    <option value="">Selecionar...</option>
-                    {SEGURADORAS.map(s => <option key={s.nome} value={s.nome}>{s.nome}</option>)}
-                  </select>
+        {cenarios.map((c, ci) => {
+          const cenarioLogo = SEGURADORAS.find(s => s.nome === c.operadora)?.logo;
+          return (
+            <div key={ci} className="border border-gray-200 rounded-xl overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center justify-between px-3 py-2.5 bg-amber-50 border-b border-amber-100">
+                <div className="flex items-center gap-2 min-w-0">
+                  {cenarioLogo
+                    ? <img src={cenarioLogo} alt={c.operadora} className="h-5 w-10 object-contain shrink-0" />
+                    : <Shield className="h-4 w-4 text-amber-400 shrink-0" />}
+                  <span className="text-sm font-medium text-amber-800 truncate">
+                    {c.operadora || (cenarios.length > 1 ? `Cenário ${ci + 1}` : 'Cenário atual')}
+                  </span>
+                  {c.valor && <span className="text-xs text-amber-600 shrink-0">· R$ {c.valor}</span>}
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-gray-500">Valor mensal (R$)</Label>
-                  <Input value={c.valor} onChange={e => updCenario(ci, 'valor', e.target.value)}
-                    placeholder="Ex: 520,00" className="border-amber-200 bg-white focus:border-amber-400 h-8 text-sm" />
-                </div>
+                {cenarios.length > 1 && (
+                  <button type="button" onClick={() => removeCenario(ci)} className="text-gray-400 hover:text-red-500 shrink-0 ml-2">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
-            )}
-          </div>
-        ))}
+              {/* Corpo */}
+              <div className="p-3 space-y-3 bg-white">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <Label className="text-xs text-gray-500 shrink-0">Possui plano ativo?</Label>
+                  <ToggleBtn value={c.tem_plano} onChange={v => updCenario(ci, 'tem_plano', v)} color="#d97706" />
+                </div>
+                {c.tem_plano && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-gray-500">Operadora atual</Label>
+                      <select value={c.operadora} onChange={e => updCenario(ci, 'operadora', e.target.value)}
+                        className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-2 py-1.5 text-sm focus:outline-none focus:border-[#003580]">
+                        <option value="">Selecionar...</option>
+                        {SEGURADORAS.map(s => <option key={s.nome} value={s.nome}>{s.nome}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-gray-500">Valor mensal (R$)</Label>
+                      <Input value={c.valor} onChange={e => updCenario(ci, 'valor', e.target.value)}
+                        placeholder="Ex: 520,00" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-sm" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Propostas */}
