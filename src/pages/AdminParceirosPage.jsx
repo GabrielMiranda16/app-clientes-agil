@@ -399,7 +399,7 @@ const AdminParceirosPage = () => {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold text-gray-700">Cenário atual do cliente</p>
-          <Button size="sm" variant="outline" onClick={addCenario} className="h-7 text-xs border-dashed border-amber-400 text-amber-600 hover:bg-amber-50">
+          <Button size="sm" variant="outline" onClick={addCenario} className="h-7 text-xs border-dashed border-[#003580]/40 text-[#003580] hover:bg-[#f0f7ff]">
             <Plus className="h-3 w-3 mr-1" /> Adicionar
           </Button>
         </div>
@@ -408,15 +408,15 @@ const AdminParceirosPage = () => {
           return (
             <div key={ci} className="border border-gray-200 rounded-xl overflow-hidden">
               {/* Header */}
-              <div className="flex items-center justify-between px-3 py-2.5 bg-amber-50 border-b border-amber-100">
+              <div className="flex items-center justify-between px-3 py-2.5 bg-gray-50 border-b border-gray-100">
                 <div className="flex items-center gap-2 min-w-0">
                   {cenarioLogo
                     ? <img src={cenarioLogo} alt={c.operadora} className="h-5 w-10 object-contain shrink-0" />
-                    : <Shield className="h-4 w-4 text-amber-400 shrink-0" />}
-                  <span className="text-sm font-medium text-amber-800 truncate">
+                    : <Shield className="h-4 w-4 text-gray-400 shrink-0" />}
+                  <span className="text-sm font-medium text-gray-700 truncate">
                     {c.operadora || (cenarios.length > 1 ? `Cenário ${ci + 1}` : 'Cenário atual')}
                   </span>
-                  {c.valor && <span className="text-xs text-amber-600 shrink-0">· R$ {c.valor}</span>}
+                  {c.valor && <span className="text-xs text-gray-400 shrink-0">· R$ {c.valor}</span>}
                 </div>
                 {cenarios.length > 1 && (
                   <button type="button" onClick={() => removeCenario(ci)} className="text-gray-400 hover:text-red-500 shrink-0 ml-2">
@@ -428,7 +428,7 @@ const AdminParceirosPage = () => {
               <div className="p-3 space-y-3 bg-white">
                 <div className="flex items-center gap-3 flex-wrap">
                   <Label className="text-xs text-gray-500 shrink-0">Possui plano ativo?</Label>
-                  <ToggleBtn value={c.tem_plano} onChange={v => updCenario(ci, 'tem_plano', v)} color="#d97706" />
+                  <ToggleBtn value={c.tem_plano} onChange={v => updCenario(ci, 'tem_plano', v)} />
                 </div>
                 {c.tem_plano && (
                   <div className="grid grid-cols-2 gap-2">
