@@ -248,7 +248,7 @@ const OrcamentoPublicoPage = () => {
           )}
 
           {stage === 'verificacao' && (
-            <div className="w-full max-w-2xl mx-auto pb-16">
+            <div className="w-full max-w-2xl mx-auto mt-20 sm:mt-24 pb-16">
               <div className="rounded-[24px] overflow-hidden" style={cardBg}>
                 <div className="px-6 pt-7 pb-0 flex items-center gap-3">
                   <ShieldCheck className="h-7 w-7 text-white shrink-0" />
