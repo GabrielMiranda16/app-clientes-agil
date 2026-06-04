@@ -220,7 +220,7 @@ const OrcamentoPublicoPage = () => {
           </div>
 
           {stage === 'proposta' && (
-            <div className="w-full max-w-2xl mx-auto pb-48 sm:pb-64">
+            <div className="w-full max-w-2xl mx-auto mt-10 sm:mt-16 pb-48 sm:pb-64">
               <div className="flex items-start gap-5">
                 <div className="flex-shrink-0 bg-white/15 rounded-2xl w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
                   <SegIcon className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
