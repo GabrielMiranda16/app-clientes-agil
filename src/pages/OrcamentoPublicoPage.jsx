@@ -210,7 +210,7 @@ const OrcamentoPublicoPage = () => {
 
       {/* ── Hero ── */}
       <div
-        className="relative"
+        className="relative min-h-[520px] sm:min-h-[640px]"
         style={{ background: 'linear-gradient(180deg, #003580 0%, #1a5599 25%, #6b9fd4 52%, #c8e0f5 70%, #f0f7ff 84%, #ffffff 100%)' }}
       >
         <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(0,178,255,0.22) 0%, transparent 70%)' }} />
