@@ -983,7 +983,27 @@ const AdminParceirosPage = () => {
                           <div className="border-t border-gray-100 p-5 space-y-4 bg-white">
                             {/* Dados do cliente */}
                             <div className="bg-gray-50 rounded-xl p-3 space-y-1 text-sm">
-                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Dados do cliente</p>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Dados do cliente</p>
+                                {!confirmDelete ? (
+                                  <button type="button" onClick={() => setConfirmDelete(true)}
+                                    className="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1">
+                                    <Trash2 className="h-3.5 w-3.5" /> Excluir
+                                  </button>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-red-600 font-medium">Confirmar?</span>
+                                    <button type="button" onClick={handleExcluir} disabled={enviando}
+                                      className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors">
+                                      {enviando ? 'Excluindo...' : 'Sim'}
+                                    </button>
+                                    <button type="button" onClick={() => setConfirmDelete(false)}
+                                      className="text-xs text-gray-500 hover:text-gray-700 transition-colors">
+                                      Não
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                               {selected.cliente_telefone && <p><span className="text-gray-400">Tel:</span> {selected.cliente_telefone}</p>}
                               {selected.cliente_email && <p><span className="text-gray-400">Email:</span> {selected.cliente_email}</p>}
                               {selected.cliente_cpf && <p><span className="text-gray-400">CPF/CNPJ:</span> {selected.cliente_cpf}</p>}
@@ -997,37 +1017,6 @@ const AdminParceirosPage = () => {
                             {/* Painel de ação por status */}
                             {renderActionPanel()}
 
-                            {/* Excluir orçamento */}
-                            <div className="pt-2 border-t border-gray-100">
-                              {!confirmDelete ? (
-                                <button
-                                  type="button"
-                                  onClick={() => setConfirmDelete(true)}
-                                  className="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" /> Excluir orçamento
-                                </button>
-                              ) : (
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-red-600 font-medium">Confirmar exclusão?</span>
-                                  <button
-                                    type="button"
-                                    onClick={handleExcluir}
-                                    disabled={enviando}
-                                    className="text-xs bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
-                                  >
-                                    {enviando ? 'Excluindo...' : 'Sim, excluir'}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => setConfirmDelete(false)}
-                                    className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
-                                  >
-                                    Cancelar
-                                  </button>
-                                </div>
-                              )}
-                            </div>
                           </div>
                         </motion.div>
                       )}
