@@ -220,7 +220,7 @@ const OrcamentoPublicoPage = () => {
           </div>
 
           {stage === 'proposta' && (
-            <div className="w-full max-w-2xl mx-auto pb-28 sm:pb-40">
+            <div className="w-full max-w-2xl mx-auto pb-48 sm:pb-64">
               <div className="flex items-start gap-5">
                 <div className="flex-shrink-0 bg-white/15 rounded-xl w-14 h-14 flex items-center justify-center">
                   <SegIcon className="w-7 h-7 text-white" />
@@ -247,7 +247,7 @@ const OrcamentoPublicoPage = () => {
             </div>
           )}
 
-          {stage !== 'proposta' && <div className="pb-28 sm:pb-40" />}
+          {stage !== 'proposta' && <div className="pb-48 sm:pb-64" />}
         </div>
       </div>
 
