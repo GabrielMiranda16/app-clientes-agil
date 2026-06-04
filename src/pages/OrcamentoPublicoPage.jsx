@@ -209,40 +209,48 @@ const OrcamentoPublicoPage = () => {
       {/* Hero */}
       <div
         className="relative"
-        style={{ background: 'linear-gradient(180deg, #003580 0%, #1a5599 30%, #6b9fd4 58%, #c8e0f5 75%, #f0f7ff 88%, #ffffff 100%)' }}
+        style={{ background: 'linear-gradient(180deg, #003580 0%, #1a5599 25%, #6b9fd4 52%, #c8e0f5 70%, #f0f7ff 84%, #ffffff 100%)' }}
       >
-        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 10%, rgba(0,178,255,0.25))' }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(0,178,255,0.22) 0%, transparent 70%)' }} />
         <div className="relative container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center h-16 sm:h-24">
             <img src={logoUrl} alt="Ágil Seguros" className="h-12 sm:h-20 w-auto object-contain" />
           </div>
           {stage === 'proposta' && (
-            <div className="pb-12 sm:pb-16 max-w-xl">
-              <span className="inline-flex items-center gap-1.5 bg-[#22C55E] text-white text-xs font-semibold px-3 py-1.5 rounded-full">
-                <Check className="h-3.5 w-3.5" />
-                Proposta personalizada
-              </span>
-              <h1 className="text-white font-semibold text-3xl sm:text-5xl leading-tight mt-4">
-                {SEGMENTO_LABEL[segmento] || segmento}
-              </h1>
-              <p className="text-blue-100 mt-2 text-base">
-                Preparada para <strong className="text-white">{orcamento?.cliente_nome}</strong>
-              </p>
-              <div className="flex items-center flex-wrap gap-3 mt-3">
-                <div className="flex items-center gap-1.5">
-                  <ShieldCheck className="h-3.5 w-3.5 text-white/50" />
-                  <span className="text-white/50 text-xs">Ágil Seguros · SUSEP 252166308</span>
+            <div className="w-full max-w-2xl mx-auto pb-20 sm:pb-28">
+              <div
+                className="rounded-[24px] px-7 sm:px-10 py-8"
+                style={{ background: 'linear-gradient(to top right, #6b9fd4, #2a6db5, #003580)' }}
+              >
+                <div className="flex items-start gap-5">
+                  <div className="flex-shrink-0 bg-white/15 rounded-xl w-14 h-14 flex items-center justify-center">
+                    <SegIcon className="w-7 h-7 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-semibold text-blue-300 uppercase tracking-widest mb-2 block">Proposta personalizada</span>
+                    <p className="text-white font-semibold text-2xl sm:text-3xl leading-tight mb-1">
+                      {SEGMENTO_LABEL[segmento] || segmento}
+                    </p>
+                    <p className="text-white/60 text-base mb-3">
+                      Preparada para <strong className="text-white/80">{orcamento?.cliente_nome}</strong>
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="px-2.5 py-0.5 bg-white/15 text-white/75 rounded-full font-medium text-sm">
+                        SUSEP 252166308
+                      </span>
+                      {propostas.length > 0 && (
+                        <span className="px-2.5 py-0.5 bg-white/15 text-white/75 rounded-full font-medium text-sm">
+                          {propostas.length} opç{propostas.length > 1 ? 'ões' : 'ão'}
+                          {propostas.find(p => p.destaque) ? ' · ⭐ recomendada' : ''}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                {propostas.length > 0 && (
-                  <span className="text-xs bg-white/20 text-white border border-white/30 rounded-full px-3 py-1 font-medium">
-                    {propostas.length} opç{propostas.length > 1 ? 'ões' : 'ão'}
-                    {propostas.find(p => p.destaque) ? ' · ⭐ recomendada' : ''}
-                  </span>
-                )}
               </div>
             </div>
           )}
-          {stage !== 'proposta' && <div className="pb-6" />}
+          {stage !== 'proposta' && <div className="pb-10" />}
         </div>
       </div>
 
