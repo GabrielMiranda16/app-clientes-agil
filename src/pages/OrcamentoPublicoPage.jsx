@@ -10,7 +10,7 @@ import {
   Building2, Package, Laptop, Truck, HeartHandshake, Info,
 } from 'lucide-react';
 
-const logoUrl = 'https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/247eb5219c397bb2ed2bcac42f39a442.png';
+const logoUrl = 'https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/262d6e3b6ac0afa5edc49301643111e9.png';
 
 const SEGMENTO_LABEL = {
   AUTO: 'Seguro Auto', SAUDE: 'Plano de Saúde', RESIDENCIAL: 'Seguro Residencial',
@@ -200,14 +200,14 @@ const OrcamentoPublicoPage = () => {
       <CheckCircle2 className="h-12 w-12 text-green-400 mb-4" />
       <p className="text-white font-bold text-xl">Proposta em andamento</p>
       <p className="text-white/70 text-sm mt-2">Seus documentos foram recebidos e o processo está em andamento.<br />Em breve entraremos em contato.</p>
-      <img src={logoUrl} alt="Ágil Seguros" className="h-12 mt-8 opacity-70 object-contain" />
+      <img src={logoUrl} alt="Ágil Seguros" className="h-10 mt-8 opacity-70 object-contain" />
     </div>
   );
 
   return (
     <div className="min-h-screen bg-soft-gradient">
-      <div className="flex justify-center pt-8 pb-4 px-4">
-        <img src={logoUrl} alt="Ágil Seguros" className="h-14 w-auto object-contain" />
+      <div className="flex justify-start pt-8 pb-4 px-6 max-w-2xl mx-auto w-full">
+        <img src={logoUrl} alt="Ágil Seguros" className="h-10 w-auto object-contain" />
       </div>
 
       <div className="w-full max-w-2xl mx-auto px-4 pb-16">
