@@ -247,17 +247,8 @@ const OrcamentoPublicoPage = () => {
             </div>
           )}
 
-          {stage !== 'proposta' && <div className="pb-48 sm:pb-64" />}
-        </div>
-      </div>
-
-      {/* ── Content ── */}
-      <div className="w-full max-w-2xl mx-auto px-4 pt-6 pb-16">
-        <AnimatePresence mode="wait">
-
-          {/* Verificação CPF */}
           {stage === 'verificacao' && (
-            <motion.div key="verificacao" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="mt-16 sm:mt-24">
+            <div className="w-full max-w-2xl mx-auto pb-16">
               <div className="rounded-[24px] overflow-hidden" style={cardBg}>
                 <div className="px-6 pt-7 pb-0 flex items-center gap-3">
                   <ShieldCheck className="h-7 w-7 text-white shrink-0" />
@@ -284,8 +275,16 @@ const OrcamentoPublicoPage = () => {
                   </button>
                 </div>
               </div>
-            </motion.div>
+            </div>
           )}
+
+          {stage !== 'proposta' && stage !== 'verificacao' && <div className="pb-48 sm:pb-64" />}
+        </div>
+      </div>
+
+      {/* ── Content ── */}
+      <div className="w-full max-w-2xl mx-auto px-4 pt-6 pb-16">
+        <AnimatePresence mode="wait">
 
           {/* Proposta */}
           {stage === 'proposta' && (
