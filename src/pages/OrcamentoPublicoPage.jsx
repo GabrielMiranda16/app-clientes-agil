@@ -222,21 +222,21 @@ const OrcamentoPublicoPage = () => {
           {stage === 'proposta' && (
             <div className="w-full max-w-2xl mx-auto pb-48 sm:pb-64">
               <div className="flex items-start gap-5">
-                <div className="flex-shrink-0 bg-white/15 rounded-xl w-14 h-14 flex items-center justify-center">
-                  <SegIcon className="w-7 h-7 text-white" />
+                <div className="flex-shrink-0 bg-white/15 rounded-2xl w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+                  <SegIcon className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="text-xs font-semibold text-blue-300 uppercase tracking-widest mb-2 block">Proposta personalizada</span>
-                  <p className="text-white font-semibold text-2xl sm:text-4xl leading-tight mb-1">
+                  <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest mb-3 block">Proposta personalizada</span>
+                  <p className="text-white font-semibold text-3xl sm:text-5xl leading-tight mb-2">
                     {SEGMENTO_LABEL[segmento] || segmento}
                   </p>
-                  <p className="text-white/60 text-base mb-4">
+                  <p className="text-white/60 text-lg mb-5">
                     Preparada para <strong className="text-white/80">{orcamento?.cliente_nome}</strong>
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    <span className="px-2.5 py-0.5 bg-white/15 text-white/75 rounded-full font-medium text-sm">SUSEP 252166308</span>
+                    <span className="px-3 py-1 bg-white/15 text-white/75 rounded-full font-medium text-sm">SUSEP 252166308</span>
                     {propostas.length > 0 && (
-                      <span className="px-2.5 py-0.5 bg-white/15 text-white/75 rounded-full font-medium text-sm">
+                      <span className="px-3 py-1 bg-white/15 text-white/75 rounded-full font-medium text-sm">
                         {propostas.length} opç{propostas.length > 1 ? 'ões' : 'ão'}
                         {propostas.find(p => p.destaque) ? ' · ⭐ recomendada' : ''}
                       </span>
@@ -257,7 +257,7 @@ const OrcamentoPublicoPage = () => {
 
           {/* Verificação CPF */}
           {stage === 'verificacao' && (
-            <motion.div key="verificacao" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+            <motion.div key="verificacao" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="mt-16 sm:mt-24">
               <div className="rounded-[24px] overflow-hidden" style={cardBg}>
                 <div className="px-6 pt-7 pb-0 flex items-center gap-3">
                   <ShieldCheck className="h-7 w-7 text-white shrink-0" />
