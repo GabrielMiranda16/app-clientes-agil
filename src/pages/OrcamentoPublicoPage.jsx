@@ -205,14 +205,48 @@ const OrcamentoPublicoPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-soft-gradient">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center h-16 sm:h-24">
-          <img src={logoUrl} alt="Ágil Seguros" className="h-12 sm:h-20 w-auto object-contain" />
+    <div className="min-h-screen bg-white">
+      {/* Hero */}
+      <div
+        className="relative"
+        style={{ background: 'linear-gradient(180deg, #003580 0%, #1a5599 30%, #6b9fd4 58%, #c8e0f5 75%, #f0f7ff 88%, #ffffff 100%)' }}
+      >
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 10%, rgba(0,178,255,0.25))' }} />
+        <div className="relative container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center h-16 sm:h-24">
+            <img src={logoUrl} alt="Ágil Seguros" className="h-12 sm:h-20 w-auto object-contain" />
+          </div>
+          {stage === 'proposta' && (
+            <div className="pb-12 sm:pb-16 max-w-xl">
+              <span className="inline-flex items-center gap-1.5 bg-[#22C55E] text-white text-xs font-semibold px-3 py-1.5 rounded-full">
+                <Check className="h-3.5 w-3.5" />
+                Proposta personalizada
+              </span>
+              <h1 className="text-white font-semibold text-3xl sm:text-5xl leading-tight mt-4">
+                {SEGMENTO_LABEL[segmento] || segmento}
+              </h1>
+              <p className="text-blue-100 mt-2 text-base">
+                Preparada para <strong className="text-white">{orcamento?.cliente_nome}</strong>
+              </p>
+              <div className="flex items-center flex-wrap gap-3 mt-3">
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck className="h-3.5 w-3.5 text-white/50" />
+                  <span className="text-white/50 text-xs">Ágil Seguros · SUSEP 252166308</span>
+                </div>
+                {propostas.length > 0 && (
+                  <span className="text-xs bg-white/20 text-white border border-white/30 rounded-full px-3 py-1 font-medium">
+                    {propostas.length} opç{propostas.length > 1 ? 'ões' : 'ão'}
+                    {propostas.find(p => p.destaque) ? ' · ⭐ recomendada' : ''}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+          {stage !== 'proposta' && <div className="pb-6" />}
         </div>
       </div>
 
-      <div className="w-full max-w-2xl mx-auto px-4 pb-16">
+      <div className="w-full max-w-2xl mx-auto px-4 pt-6 pb-16">
         <AnimatePresence mode="wait">
 
           {/* ── Verificação CPF ── */}
@@ -251,35 +285,7 @@ const OrcamentoPublicoPage = () => {
           {stage === 'proposta' && (
             <motion.div key="proposta" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5 pb-32">
 
-              {/* 1. Header */}
-              <div className="bg-white/95 rounded-3xl shadow-xl overflow-hidden">
-                <div className="bg-gradient-to-r from-[#003580] to-[#0B7EC4] px-6 py-6">
-                  <div className="flex items-center gap-4">
-                    <div className="bg-white/20 rounded-2xl p-3 shrink-0">
-                      <SegIcon className="h-7 w-7 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-white/70 text-xs uppercase tracking-widest font-medium">Proposta personalizada</p>
-                      <h1 className="text-white font-bold text-xl mt-0.5">{SEGMENTO_LABEL[segmento] || segmento}</h1>
-                      <p className="text-white/80 text-sm mt-0.5">Preparada para <strong>{orcamento?.cliente_nome}</strong></p>
-                    </div>
-                  </div>
-                </div>
-                <div className="px-6 py-3 flex items-center justify-between border-b border-gray-100">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="h-3.5 w-3.5 text-[#003580]" />
-                    <p className="text-xs text-gray-400">Ágil Seguros · SUSEP 252166308</p>
-                  </div>
-                  {propostas.length > 0 && (
-                    <span className="text-xs bg-blue-50 text-blue-700 border border-blue-100 rounded-full px-3 py-1 font-medium">
-                      {propostas.length} opç{propostas.length > 1 ? 'ões' : 'ão'}
-                      {propostas.find(p => p.destaque) ? ' · ⭐ recomendada' : ''}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* 2. Cenário Atual */}
+              {/* 1. Cenário Atual */}
               {cenarios.length > 0 && (
                 <div className="bg-white/95 rounded-2xl shadow-sm overflow-hidden">
                   <div className="px-5 py-3 bg-amber-50 border-b border-amber-100">
@@ -314,7 +320,7 @@ const OrcamentoPublicoPage = () => {
               {propostas.length > 0 && (
                 <div className="space-y-4">
                   {propostas.length > 1 && (
-                    <p className="text-xs font-bold text-white/60 uppercase tracking-widest px-1">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">
                       {propostas.length} opções disponíveis
                     </p>
                   )}
@@ -572,7 +578,7 @@ const OrcamentoPublicoPage = () => {
               {/* 7. Perfil de vidas por faixa etária (SAUDE) */}
               {isSaude && propostas.some(p => p.planos?.length > 1) && (
                 <div className="space-y-3">
-                  <p className="text-xs font-bold text-white/60 uppercase tracking-widest px-1">Perfil de Vidas por Faixa Etária</p>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">Perfil de Vidas por Faixa Etária</p>
                   {propostas.filter(p => p.planos?.length > 0).map((p, i) => (
                     <div key={i} className="bg-white/95 rounded-2xl shadow-sm overflow-hidden">
                       <div className="px-5 py-3 bg-blue-50 border-b border-blue-100 flex items-center gap-3">
@@ -741,7 +747,7 @@ const OrcamentoPublicoPage = () => {
               )}
 
               <div ref={bottomRef} />
-              <p className="text-center text-white/40 text-xs">Ágil Seguros · SUSEP 252166308 · segurosagil.com.br</p>
+              <p className="text-center text-gray-300 text-xs">Ágil Seguros · SUSEP 252166308 · segurosagil.com.br</p>
             </motion.div>
           )}
 
@@ -791,7 +797,7 @@ const OrcamentoPublicoPage = () => {
                   )}
                 </div>
               </div>
-              <p className="text-center text-white/40 text-xs">Ágil Seguros · SUSEP 252166308 · segurosagil.com.br</p>
+              <p className="text-center text-gray-300 text-xs">Ágil Seguros · SUSEP 252166308 · segurosagil.com.br</p>
             </motion.div>
           )}
 
