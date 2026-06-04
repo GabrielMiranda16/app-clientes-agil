@@ -10,7 +10,7 @@ import {
   Building2, Package, Laptop, Truck, HeartHandshake, Info,
 } from 'lucide-react';
 
-const logoUrl = 'https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/262d6e3b6ac0afa5edc49301643111e9.png';
+const logoUrl = 'https://horizons-cdn.hostinger.com/2e9adf63-57d2-437e-87b2-25ae49f4c5b7/dc37b5512fc0e73a5c418dd52548e59c.png';
 
 const SEGMENTO_LABEL = {
   AUTO: 'Seguro Auto', SAUDE: 'Plano de Saúde', RESIDENCIAL: 'Seguro Residencial',
