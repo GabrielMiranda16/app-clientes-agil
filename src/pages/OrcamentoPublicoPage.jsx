@@ -206,8 +206,10 @@ const OrcamentoPublicoPage = () => {
 
   return (
     <div className="min-h-screen bg-soft-gradient">
-      <div className="flex justify-center pt-8 pb-4 px-4">
-        <img src={logoUrl} alt="Ágil Seguros" className="h-14 w-auto object-contain" />
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center h-16 sm:h-24">
+          <img src={logoUrl} alt="Ágil Seguros" className="h-12 sm:h-20 w-auto object-contain" />
+        </div>
       </div>
 
       <div className="w-full max-w-2xl mx-auto px-4 pb-16">
