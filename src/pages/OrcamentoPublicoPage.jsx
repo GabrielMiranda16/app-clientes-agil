@@ -217,34 +217,29 @@ const OrcamentoPublicoPage = () => {
             <img src={logoUrl} alt="Ágil Seguros" className="h-12 sm:h-20 w-auto object-contain" />
           </div>
           {stage === 'proposta' && (
-            <div className="w-full max-w-2xl mx-auto pb-20 sm:pb-28">
-              <div
-                className="rounded-[24px] px-7 sm:px-10 py-8"
-                style={{ background: 'linear-gradient(to top right, #6b9fd4, #2a6db5, #003580)' }}
-              >
-                <div className="flex items-start gap-5">
-                  <div className="flex-shrink-0 bg-white/15 rounded-xl w-14 h-14 flex items-center justify-center">
-                    <SegIcon className="w-7 h-7 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-xs font-semibold text-blue-300 uppercase tracking-widest mb-2 block">Proposta personalizada</span>
-                    <p className="text-white font-semibold text-2xl sm:text-3xl leading-tight mb-1">
-                      {SEGMENTO_LABEL[segmento] || segmento}
-                    </p>
-                    <p className="text-white/60 text-base mb-3">
-                      Preparada para <strong className="text-white/80">{orcamento?.cliente_nome}</strong>
-                    </p>
-                    <div className="flex flex-wrap gap-2">
+            <div className="w-full max-w-2xl mx-auto pb-28 sm:pb-40">
+              <div className="flex items-start gap-5">
+                <div className="flex-shrink-0 bg-white/15 rounded-xl w-14 h-14 flex items-center justify-center">
+                  <SegIcon className="w-7 h-7 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs font-semibold text-blue-300 uppercase tracking-widest mb-2 block">Proposta personalizada</span>
+                  <p className="text-white font-semibold text-2xl sm:text-4xl leading-tight mb-1">
+                    {SEGMENTO_LABEL[segmento] || segmento}
+                  </p>
+                  <p className="text-white/60 text-base mb-4">
+                    Preparada para <strong className="text-white/80">{orcamento?.cliente_nome}</strong>
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-2.5 py-0.5 bg-white/15 text-white/75 rounded-full font-medium text-sm">
+                      SUSEP 252166308
+                    </span>
+                    {propostas.length > 0 && (
                       <span className="px-2.5 py-0.5 bg-white/15 text-white/75 rounded-full font-medium text-sm">
-                        SUSEP 252166308
+                        {propostas.length} opç{propostas.length > 1 ? 'ões' : 'ão'}
+                        {propostas.find(p => p.destaque) ? ' · ⭐ recomendada' : ''}
                       </span>
-                      {propostas.length > 0 && (
-                        <span className="px-2.5 py-0.5 bg-white/15 text-white/75 rounded-full font-medium text-sm">
-                          {propostas.length} opç{propostas.length > 1 ? 'ões' : 'ão'}
-                          {propostas.find(p => p.destaque) ? ' · ⭐ recomendada' : ''}
-                        </span>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
