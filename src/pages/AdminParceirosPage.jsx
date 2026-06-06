@@ -134,7 +134,7 @@ const AdminParceirosPage = () => {
     supabase.from('parceiros').select('id, nome_completo').order('nome_completo').then(({ data }) => setParceiros(data || []));
   }, []);
 
-  const loadData = async () => {
+  const loadData = async (expandId = null) => {
     setLoading(true);
     try {
       const { data } = await supabase
@@ -142,6 +142,22 @@ const AdminParceirosPage = () => {
         .select('*, parceiros(nome_completo, modalidade, comissao_percentual, telefone)')
         .order('created_at', { ascending: false });
       setOrcamentos(data || []);
+      if (expandId && data) {
+        const o = data.find(x => x.id === expandId);
+        if (o) {
+          setExpandedId(o.id);
+          setSelected(o);
+          setEditandoProposta(false);
+          setNovaPropostaMode(false);
+          setConfirmDelete(false);
+          setCenarios([cenarioVazio()]);
+          setPropostas([propVazio()]);
+          setExpandedPropIdx(0);
+          setFormR({ docsBase: DOCS_POR_SEGMENTO[o.segmento] || [], docExtra: '', docsExtras: [] });
+          setFormC({ valor_base: '', comissao_percentual: '50' });
+          setDocs([]);
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -437,19 +453,9 @@ const AdminParceirosPage = () => {
       if (error) throw error;
       toast({ title: 'Orçamento criado!', description: 'Agora preencha as propostas.' });
       setCriarModal(false);
+      setFiltro('TODOS');
       setNovoForm({ parceiro_id: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', segmento: '', observacoes: '' });
-      await loadData();
-      setExpandedId(data.id);
-      setSelected(data);
-      setEditandoProposta(false);
-      setNovaPropostaMode(false);
-      setConfirmDelete(false);
-      setCenarios([cenarioVazio()]);
-      setPropostas([propVazio()]);
-      setExpandedPropIdx(0);
-      setFormR({ docsBase: DOCS_POR_SEGMENTO[data.segmento] || [], docExtra: '', docsExtras: [] });
-      setFormC({ valor_base: '', comissao_percentual: '50' });
-      setDocs([]);
+      await loadData(data.id);
     } catch (err) {
       toast({ variant: 'destructive', title: 'Erro ao criar.', description: err?.message });
     } finally {
