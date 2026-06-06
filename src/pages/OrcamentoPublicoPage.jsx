@@ -287,7 +287,7 @@ const OrcamentoPublicoPage = () => {
           {stage === 'proposta' && (
             <motion.div key="proposta" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full pb-32 lg:pb-8">
 
-              <p className="text-gray-900 font-bold text-2xl sm:text-3xl mb-4">Proposta personalizada</p>
+              <p className="text-gray-900 font-bold text-4xl sm:text-5xl text-center mb-6">Proposta personalizada</p>
 
               {/* ONE big card */}
               <div className="rounded-[24px]" style={{ ...cardBg, overflow: 'clip' }}>
