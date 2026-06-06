@@ -439,7 +439,17 @@ const AdminParceirosPage = () => {
       setCriarModal(false);
       setNovoForm({ parceiro_id: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', segmento: '', observacoes: '' });
       await loadData();
-      toggleExpand(data);
+      setExpandedId(data.id);
+      setSelected(data);
+      setEditandoProposta(false);
+      setNovaPropostaMode(false);
+      setConfirmDelete(false);
+      setCenarios([cenarioVazio()]);
+      setPropostas([propVazio()]);
+      setExpandedPropIdx(0);
+      setFormR({ docsBase: DOCS_POR_SEGMENTO[data.segmento] || [], docExtra: '', docsExtras: [] });
+      setFormC({ valor_base: '', comissao_percentual: '50' });
+      setDocs([]);
     } catch (err) {
       toast({ variant: 'destructive', title: 'Erro ao criar.', description: err?.message });
     } finally {
