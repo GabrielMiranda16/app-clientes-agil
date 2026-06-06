@@ -160,6 +160,8 @@ const propVazio = () => ({
 });
 const cenarioVazio = () => ({ tem_plano: false, operadora: '', valor: '' });
 
+const fmtBRL = (v) => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 const generateSlug = () => {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
   return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
@@ -467,7 +469,7 @@ const AdminParceirosPage = () => {
         supabase.functions.invoke('send-whatsapp', {
           body: {
             phone: parceiroTel,
-            message: `🎉 *Comissão registrada*\n\nParabéns, ${selected.parceiros?.nome_completo?.split(' ')[0] || 'Parceiro'}! Contrato de *${selected.cliente_nome}* concluído.\n\n💰 Sua comissão: *R$ ${comissao.toFixed(2).replace('.', ',')}*`,
+            message: `🎉 *Comissão registrada*\n\nParabéns, ${selected.parceiros?.nome_completo?.split(' ')[0] || 'Parceiro'}! Contrato de *${selected.cliente_nome}* concluído.\n\n💰 Sua comissão: *R$ ${fmtBRL(comissao)}*`,
           },
         }).catch(() => {});
       }
@@ -877,7 +879,7 @@ const AdminParceirosPage = () => {
               </div>
             ) : (
               <>
-                <p>Mensalidade: <span className="font-semibold text-gray-800">R$ {Number(selected.valor_mensalidade || 0).toFixed(2).replace('.', ',')}</span></p>
+                <p>Mensalidade: <span className="font-semibold text-gray-800">R$ {fmtBRL(selected.valor_mensalidade)}</span></p>
                 {selected.descricao_orcamento && <p className="mt-1 text-xs">{selected.descricao_orcamento}</p>}
               </>
             )}
@@ -966,8 +968,8 @@ const AdminParceirosPage = () => {
           const comissao = aposImp * (pct / 100);
           return (
             <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-sm">
-              <p className="text-xs text-gray-500">Base: R$ {base.toFixed(2).replace('.', ',')} → após 6% imposto: R$ {aposImp.toFixed(2).replace('.', ',')}</p>
-              <p className="text-lg font-bold text-emerald-700 mt-1">Comissão: R$ {comissao.toFixed(2).replace('.', ',')}</p>
+              <p className="text-xs text-gray-500">Base: R$ {fmtBRL(base)} → após 6% imposto: R$ {fmtBRL(aposImp)}</p>
+              <p className="text-lg font-bold text-emerald-700 mt-1">Comissão: R$ {fmtBRL(comissao)}</p>
             </div>
           );
         })()}
@@ -1079,7 +1081,7 @@ const AdminParceirosPage = () => {
                           <p className="text-xs text-gray-400">{SEGMENTO_LABEL[o.segmento] || o.segmento}</p>
                           <p className="text-xs text-gray-500 mt-0.5">Parceiro: <span className="font-medium">{o.parceiros?.nome_completo || '—'}</span></p>
                           {o.valor_mensalidade && (
-                            <p className="text-xs text-gray-500 mt-0.5">R$ {Number(o.valor_mensalidade).toFixed(2).replace('.', ',')}/mês</p>
+                            <p className="text-xs text-gray-500 mt-0.5">R$ {fmtBRL(o.valor_mensalidade)}/mês</p>
                           )}
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
