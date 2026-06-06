@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import {
   HeartHandshake, FileText, Clock, CheckCircle2, DollarSign,
   X, Send, Loader2, ChevronRight, Copy, Check,
-  Upload, Eye, Plus, Trash2, ArrowRight, Star,
+  Upload, Eye, Plus, Minus, Trash2, ArrowRight, Star,
   Link as LinkIcon, ChevronDown, Shield, ArrowUp, ArrowDown,
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -60,21 +60,32 @@ const DOCS_POR_SEGMENTO = {
   AUTO_FROTA: ['CRLV', 'CNH', 'CPF'],
 };
 
+const AGE_BRACKETS = [
+  { id: '0-18',  label: '0 a 18 anos' },
+  { id: '19-23', label: '19 a 23 anos' },
+  { id: '24-28', label: '24 a 28 anos' },
+  { id: '29-33', label: '29 a 33 anos' },
+  { id: '34-38', label: '34 a 38 anos' },
+  { id: '39-43', label: '39 a 43 anos' },
+  { id: '44-48', label: '44 a 48 anos' },
+  { id: '49-53', label: '49 a 53 anos' },
+  { id: '54-58', label: '54 a 58 anos' },
+  { id: '59+',   label: '59+ anos' },
+];
+const faixaKey = (id) => `faixa_${id.replace(/-/g, '_').replace('+', 'plus')}`;
+
 const CAMPOS_SEGMENTO = {
   SAUDE: [
     { key: 'tipo', label: 'Tipo de plano', type: 'select', options: ['Familiar', 'Empresarial', 'Individual', 'MEI', 'Adesão'] },
     { key: 'vidas', label: 'Nº de vidas', type: 'number', placeholder: 'Ex: 3' },
-    { key: 'faixas', label: 'Faixas etárias das vidas', type: 'faixas' },
   ],
   SAUDE_VIDA_ODONTO: [
     { key: 'tipo', label: 'Tipo de plano', type: 'select', options: ['Familiar', 'Empresarial', 'Individual', 'MEI'] },
     { key: 'vidas', label: 'Nº de vidas', type: 'number', placeholder: 'Ex: 3' },
-    { key: 'faixas', label: 'Faixas etárias das vidas', type: 'faixas' },
   ],
   ODONTOLOGICO: [
     { key: 'tipo', label: 'Tipo de plano', type: 'select', options: ['Individual', 'Familiar', 'Empresarial'] },
     { key: 'vidas', label: 'Nº de vidas', type: 'number', placeholder: 'Ex: 2' },
-    { key: 'faixas', label: 'Faixas etárias das vidas', type: 'faixas' },
   ],
   AUTO: [
     { key: 'veiculo', label: 'Veículo (marca/modelo)', type: 'text', placeholder: 'Ex: Honda Civic EX 2021' },
@@ -199,7 +210,6 @@ const AdminParceirosPage = () => {
   const [criando, setCriando] = useState(false);
   const [novoForm, setNovoForm] = useState({ parceiro_id: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', segmento: '', observacoes: '' });
   const [segData, setSegData] = useState({});
-  const [faixaTemp, setFaixaTemp] = useState({ de: '', ate: '' });
 
   useEffect(() => {
     loadData();
@@ -514,13 +524,18 @@ const AdminParceirosPage = () => {
     setCriando(true);
     try {
       const campos = CAMPOS_SEGMENTO[novoForm.segmento] || [];
-      const obsSegmento = campos
-        .filter(f => f.type === 'faixas' ? (segData.faixas || []).length > 0 : segData[f.key])
-        .map(f => f.type === 'faixas'
-          ? `${f.label}: ${(segData.faixas || []).map(x => `${x} anos`).join(', ')}`
-          : `${f.label}: ${segData[f.key]}`)
-        .join('\n');
-      const obsCompleto = [obsSegmento, novoForm.observacoes].filter(Boolean).join('\n\n');
+      const obsSegmento = campos.filter(f => segData[f.key]).map(f => `${f.label}: ${segData[f.key]}`).join('\n');
+      let obsFaixas = '';
+      if (['SAUDE', 'ODONTOLOGICO', 'SAUDE_VIDA_ODONTO'].includes(novoForm.segmento)) {
+        const lines = AGE_BRACKETS
+          .map(({ id, label }) => {
+            const val = parseInt(segData[faixaKey(id)] || '0');
+            return val > 0 ? `  ${label}: ${val}` : null;
+          })
+          .filter(Boolean);
+        if (lines.length) obsFaixas = `Distribuição por faixa etária:\n${lines.join('\n')}`;
+      }
+      const obsCompleto = [obsSegmento, obsFaixas, novoForm.observacoes].filter(Boolean).join('\n\n');
       const { data, error } = await supabase.from('orcamentos').insert({
         parceiro_id: novoForm.parceiro_id,
         cliente_nome: novoForm.cliente_nome,
@@ -536,7 +551,6 @@ const AdminParceirosPage = () => {
       setFiltro('TODOS');
       setNovoForm({ parceiro_id: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', segmento: '', observacoes: '' });
       setSegData({});
-      setFaixaTemp({ de: '', ate: '' });
       await loadData(data.id);
     } catch (err) {
       toast({ variant: 'destructive', title: 'Erro ao criar.', description: err?.message });
@@ -1180,7 +1194,7 @@ const AdminParceirosPage = () => {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-gray-500">Segmento *</Label>
-                <select value={novoForm.segmento} onChange={e => { setNovoForm(f => ({ ...f, segmento: e.target.value })); setSegData({}); setFaixaTemp({ de: '', ate: '' }); }}
+                <select value={novoForm.segmento} onChange={e => { setNovoForm(f => ({ ...f, segmento: e.target.value })); setSegData({}); }}
                   className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580]">
                   <option value="">Selecionar segmento...</option>
                   {Object.entries(SEGMENTO_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -1200,39 +1214,6 @@ const AdminParceirosPage = () => {
                           <option value="">Selecionar...</option>
                           {campo.options.map(o => <option key={o} value={o}>{o}</option>)}
                         </select>
-                      ) : campo.type === 'faixas' ? (
-                        <div className="space-y-2">
-                          {(segData.faixas || []).length > 0 && (
-                            <div className="flex flex-wrap gap-1.5">
-                              {(segData.faixas || []).map((f, i) => (
-                                <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#003580]/10 text-[#003580] text-xs font-medium">
-                                  {f} anos
-                                  <button type="button" onClick={() => setSegData(d => ({ ...d, faixas: d.faixas.filter((_, j) => j !== i) }))} className="hover:text-red-500">
-                                    <X className="h-3 w-3" />
-                                  </button>
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs text-gray-500 shrink-0">De</span>
-                            <Input value={faixaTemp.de} onChange={e => setFaixaTemp(t => ({ ...t, de: e.target.value }))}
-                              placeholder="0" type="number" className="border-gray-200 bg-white focus:border-[#003580] h-8 text-sm w-16" />
-                            <span className="text-xs text-gray-500 shrink-0">até</span>
-                            <Input value={faixaTemp.ate} onChange={e => setFaixaTemp(t => ({ ...t, ate: e.target.value }))}
-                              placeholder="18" type="number" className="border-gray-200 bg-white focus:border-[#003580] h-8 text-sm w-16" />
-                            <span className="text-xs text-gray-500 shrink-0">anos</span>
-                            <button type="button"
-                              onClick={() => {
-                                if (!faixaTemp.de || !faixaTemp.ate) return;
-                                setSegData(d => ({ ...d, faixas: [...(d.faixas || []), `${faixaTemp.de}-${faixaTemp.ate}`] }));
-                                setFaixaTemp({ de: '', ate: '' });
-                              }}
-                              className="shrink-0 px-2.5 py-1 rounded-lg bg-[#003580] text-white text-xs font-semibold hover:bg-[#002060] transition-colors">
-                              + Adicionar
-                            </button>
-                          </div>
-                        </div>
                       ) : (
                         <Input value={segData[campo.key] || ''} onChange={e => setSegData(d => ({ ...d, [campo.key]: e.target.value }))}
                           type={campo.type} placeholder={campo.placeholder}
@@ -1242,6 +1223,45 @@ const AdminParceirosPage = () => {
                   ))}
                 </div>
               )}
+
+              {/* Faixas etárias — igual ao formulário do parceiro */}
+              {['SAUDE', 'ODONTOLOGICO', 'SAUDE_VIDA_ODONTO'].includes(novoForm.segmento) && parseInt(segData.vidas || '0') > 0 && (() => {
+                const totalVidas = parseInt(segData.vidas || '0');
+                const distribuiVidas = AGE_BRACKETS.reduce((s, { id }) => s + parseInt(segData[faixaKey(id)] || '0'), 0);
+                const remaining = totalVidas - distribuiVidas;
+                return (
+                  <div className="space-y-2 border border-blue-100 rounded-xl p-3 bg-blue-50">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Distribuição por faixa etária</p>
+                      <span className={`text-xs font-bold ${remaining === 0 ? 'text-green-600' : 'text-amber-600'}`}>
+                        {remaining === 0 ? 'Completo ✓' : `${remaining} restante(s)`}
+                      </span>
+                    </div>
+                    {AGE_BRACKETS.map(({ id, label }) => {
+                      const key = faixaKey(id);
+                      const val = parseInt(segData[key] || '0');
+                      return (
+                        <div key={id} className="flex items-center justify-between gap-2">
+                          <span className="text-xs text-gray-700 flex-1">{label}</span>
+                          <div className="flex items-center gap-1.5">
+                            <button type="button"
+                              onClick={() => setSegData(d => ({ ...d, [key]: String(Math.max(0, val - 1)) }))}
+                              className="w-6 h-6 rounded-md border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-100">
+                              <Minus className="h-3 w-3 text-gray-600" />
+                            </button>
+                            <span className="w-5 text-center text-sm font-semibold text-gray-800">{val}</span>
+                            <button type="button"
+                              onClick={() => setSegData(d => ({ ...d, [key]: String(val + 1) }))}
+                              className="w-6 h-6 rounded-md border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-100">
+                              <Plus className="h-3 w-3 text-gray-600" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
 
               <div className="space-y-1">
                 <Label className="text-xs text-gray-500">Observações adicionais</Label>
