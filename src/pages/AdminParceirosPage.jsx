@@ -245,13 +245,14 @@ const AdminParceirosPage = () => {
       const slug = generateSlug();
       const dest = valid.find(p => p.destaque) || valid[0];
       const pl0 = dest.planos.find(pl => pl.valor) || dest.planos[0];
+      const validComDestaque = valid.map(p => ({ ...p, destaque: p === dest }));
       const { error } = await supabase.from('orcamentos').update({
         status: 'ORCAMENTO',
         slug,
         valor_mensalidade: parseFloat(String(pl0.valor).replace(',', '.')),
         descricao_orcamento: `${dest.operadora}${pl0.nome ? ` — ${pl0.nome}` : ''}`,
         cenarios_atuais: cenarios.filter(c => c.tem_plano),
-        propostas: valid,
+        propostas: validComDestaque,
         lista_documentos: formR.docsBase,
         docs_extras: formR.docsExtras,
         data_orcamento: new Date().toISOString(),
@@ -287,11 +288,12 @@ const AdminParceirosPage = () => {
     try {
       const dest = valid.find(p => p.destaque) || valid[0];
       const pl0 = dest.planos.find(pl => pl.valor) || dest.planos[0];
+      const validComDestaque = valid.map(p => ({ ...p, destaque: p === dest }));
       const { error } = await supabase.from('orcamentos').update({
         valor_mensalidade: parseFloat(String(pl0.valor).replace(',', '.')),
         descricao_orcamento: `${dest.operadora}${pl0.nome ? ` — ${pl0.nome}` : ''}`,
         cenarios_atuais: cenarios.filter(c => c.tem_plano),
-        propostas: valid,
+        propostas: validComDestaque,
       }).eq('id', expandedId);
       if (error) throw error;
       toast({ title: 'Proposta atualizada!', description: 'O link continua o mesmo.' });
@@ -646,32 +648,6 @@ const AdminParceirosPage = () => {
         ))}
       </div>
 
-      {/* Documentos */}
-      <div className="space-y-1.5 border-t pt-4">
-        <Label className="text-sm font-semibold text-gray-700">Documentos necessários</Label>
-        <div className="space-y-1.5 max-h-32 overflow-y-auto border border-gray-100 rounded-lg p-2 bg-gray-50">
-          {(DOCS_POR_SEGMENTO[selected?.segmento] || []).map(doc => (
-            <label key={doc} className="flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" checked={formR.docsBase.includes(doc)} onChange={() => toggleDocBase(doc)}
-                className="h-3.5 w-3.5 rounded border-gray-300 text-[#003580]" />
-              {doc}
-            </label>
-          ))}
-        </div>
-        {formR.docsExtras.map((d, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <span className="text-xs text-gray-600 flex-1 bg-gray-50 px-2 py-1 rounded border border-gray-100">{d}</span>
-            <button type="button" onClick={() => removeDocExtra(i)} className="text-red-400 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
-          </div>
-        ))}
-        <div className="flex gap-2">
-          <Input value={formR.docExtra} onChange={e => setFormR(f => ({ ...f, docExtra: e.target.value }))}
-            onKeyDown={e => e.key === 'Enter' && addDocExtra()}
-            placeholder="Documento extra (Enter para adicionar)"
-            className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] text-sm" />
-          <Button size="sm" variant="outline" onClick={addDocExtra} className="shrink-0"><Plus className="h-4 w-4" /></Button>
-        </div>
-      </div>
 
       {/* Botões de ação */}
       {mode === 'responder' && (

@@ -378,6 +378,18 @@ const OrcamentoPublicoPage = () => {
                               </div>
                             );
                           })}
+                          {cenarios.length > 1 && cenarios.some(c => c.valor) && (() => {
+                            const total = cenarios.reduce((acc, c) => acc + (parseFloat(String(c.valor || '0').replace(',', '.')) || 0), 0);
+                            return (
+                              <div className="flex items-center justify-between px-4 py-3 bg-white/5 rounded-xl border border-white/10">
+                                <span className="text-sm font-semibold text-white/70">Total atual</span>
+                                <div className="text-right">
+                                  <p className="font-bold text-white text-base">{fmtValor(total.toFixed(2).replace('.', ','))}</p>
+                                  <p className="text-xs text-white/50">/mês</p>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                     )}
@@ -769,20 +781,6 @@ const OrcamentoPublicoPage = () => {
                       </div>
                     )}
 
-                    {/* Documentos necessários */}
-                    {propostas.length > 0 && todosOsDocs.length > 0 && (
-                      <div className="px-6 sm:px-8 py-6">
-                        <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block mb-4">Documentos necessários</span>
-                        <div className="space-y-2">
-                          {todosOsDocs.map(doc => (
-                            <div key={doc} className="flex items-center gap-3 text-base text-white/80">
-                              <FileText className="h-4 w-4 text-blue-300 shrink-0" />{doc}
-                            </div>
-                          ))}
-                          <p className="text-sm text-white/40 mt-3">Você enviará estes documentos após escolher uma opção.</p>
-                        </div>
-                      </div>
-                    )}
 
                   </div>{/* end right column */}
                 </div>{/* end grid */}
