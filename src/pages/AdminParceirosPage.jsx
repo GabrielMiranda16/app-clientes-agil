@@ -60,6 +60,76 @@ const DOCS_POR_SEGMENTO = {
   AUTO_FROTA: ['CRLV', 'CNH', 'CPF'],
 };
 
+const CAMPOS_SEGMENTO = {
+  SAUDE: [
+    { key: 'tipo', label: 'Tipo de plano', type: 'select', options: ['Familiar', 'Empresarial', 'Individual', 'MEI', 'Adesão'] },
+    { key: 'vidas', label: 'Nº de vidas', type: 'number', placeholder: 'Ex: 3' },
+    { key: 'idades', label: 'Idades das vidas', type: 'text', placeholder: 'Ex: 35, 32, 8, 5' },
+  ],
+  SAUDE_VIDA_ODONTO: [
+    { key: 'tipo', label: 'Tipo de plano', type: 'select', options: ['Familiar', 'Empresarial', 'Individual', 'MEI'] },
+    { key: 'vidas', label: 'Nº de vidas', type: 'number', placeholder: 'Ex: 3' },
+    { key: 'idades', label: 'Idades das vidas', type: 'text', placeholder: 'Ex: 35, 32, 8, 5' },
+  ],
+  ODONTOLOGICO: [
+    { key: 'tipo', label: 'Tipo de plano', type: 'select', options: ['Individual', 'Familiar', 'Empresarial'] },
+    { key: 'vidas', label: 'Nº de vidas', type: 'number', placeholder: 'Ex: 2' },
+    { key: 'idades', label: 'Idades das vidas', type: 'text', placeholder: 'Ex: 35, 32' },
+  ],
+  AUTO: [
+    { key: 'veiculo', label: 'Veículo (marca/modelo)', type: 'text', placeholder: 'Ex: Honda Civic EX 2021' },
+    { key: 'ano', label: 'Ano', type: 'text', placeholder: 'Ex: 2021' },
+    { key: 'cep', label: 'CEP de pernoite', type: 'text', placeholder: 'Ex: 01310-100' },
+    { key: 'idade_condutor', label: 'Idade do principal condutor', type: 'number', placeholder: 'Ex: 35' },
+  ],
+  AUTO_FROTA: [
+    { key: 'quantidade', label: 'Nº de veículos', type: 'number', placeholder: 'Ex: 10' },
+    { key: 'tipo_veiculos', label: 'Tipo de veículos', type: 'text', placeholder: 'Ex: Caminhões, carros leves...' },
+  ],
+  RESIDENCIAL: [
+    { key: 'tipo_imovel', label: 'Tipo de imóvel', type: 'select', options: ['Casa', 'Apartamento', 'Comercial'] },
+    { key: 'valor_imovel', label: 'Valor do imóvel (R$)', type: 'text', placeholder: 'Ex: 350.000' },
+    { key: 'cep', label: 'CEP do imóvel', type: 'text', placeholder: 'Ex: 01310-100' },
+  ],
+  EMPRESARIAL: [
+    { key: 'atividade', label: 'Ramo de atividade', type: 'text', placeholder: 'Ex: Comércio varejista' },
+    { key: 'funcionarios', label: 'Nº de funcionários', type: 'number', placeholder: 'Ex: 20' },
+    { key: 'cnpj', label: 'CNPJ', type: 'text', placeholder: 'Ex: 00.000.000/0001-00' },
+  ],
+  VIDA: [
+    { key: 'idade', label: 'Idade do segurado', type: 'number', placeholder: 'Ex: 40' },
+    { key: 'capital', label: 'Capital segurado desejado (R$)', type: 'text', placeholder: 'Ex: 100.000' },
+    { key: 'fumante', label: 'Fumante?', type: 'select', options: ['Não', 'Sim'] },
+  ],
+  VIAGEM: [
+    { key: 'destino', label: 'Destino', type: 'text', placeholder: 'Ex: Europa, EUA, Brasil...' },
+    { key: 'periodo', label: 'Período da viagem', type: 'text', placeholder: 'Ex: 10/07 a 25/07/2025' },
+    { key: 'passageiros', label: 'Nº de passageiros', type: 'number', placeholder: 'Ex: 2' },
+  ],
+  PET_SAUDE: [
+    { key: 'especie', label: 'Espécie', type: 'select', options: ['Cão', 'Gato'] },
+    { key: 'raca', label: 'Raça', type: 'text', placeholder: 'Ex: Golden Retriever' },
+    { key: 'idade_pet', label: 'Idade do pet (anos)', type: 'number', placeholder: 'Ex: 3' },
+  ],
+  PET_SEGURO: [
+    { key: 'especie', label: 'Espécie', type: 'select', options: ['Cão', 'Gato'] },
+    { key: 'raca', label: 'Raça', type: 'text', placeholder: 'Ex: Golden Retriever' },
+    { key: 'idade_pet', label: 'Idade do pet (anos)', type: 'number', placeholder: 'Ex: 3' },
+  ],
+  FROTA: [
+    { key: 'quantidade', label: 'Nº de veículos', type: 'number', placeholder: 'Ex: 15' },
+    { key: 'tipo_veiculos', label: 'Tipo de veículos', type: 'text', placeholder: 'Ex: Caminhões, ônibus...' },
+  ],
+  CARGAS: [
+    { key: 'tipo_carga', label: 'Tipo de carga', type: 'text', placeholder: 'Ex: Eletrônicos, alimentos...' },
+    { key: 'valor_carga', label: 'Valor médio da carga (R$)', type: 'text', placeholder: 'Ex: 50.000' },
+  ],
+  EQUIPAMENTOS: [
+    { key: 'tipo_equip', label: 'Tipo de equipamento', type: 'text', placeholder: 'Ex: Notebook, câmera...' },
+    { key: 'valor_equip', label: 'Valor do equipamento (R$)', type: 'text', placeholder: 'Ex: 5.000' },
+  ],
+};
+
 const FUNIL = ['SOLICITACAO', 'ORCAMENTO', 'DOCUMENTOS', 'ASSINATURA', 'CONCLUIDO', 'COMISSAO'];
 
 const planoVazio = () => ({ nome: '', valor: '' });
@@ -128,6 +198,7 @@ const AdminParceirosPage = () => {
   const [criarModal, setCriarModal] = useState(false);
   const [criando, setCriando] = useState(false);
   const [novoForm, setNovoForm] = useState({ parceiro_id: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', segmento: '', observacoes: '' });
+  const [segData, setSegData] = useState({});
 
   useEffect(() => {
     loadData();
@@ -441,13 +512,16 @@ const AdminParceirosPage = () => {
       return toast({ variant: 'destructive', title: 'Preencha parceiro, nome do cliente e segmento.' });
     setCriando(true);
     try {
+      const campos = CAMPOS_SEGMENTO[novoForm.segmento] || [];
+      const obsSegmento = campos.filter(f => segData[f.key]).map(f => `${f.label}: ${segData[f.key]}`).join('\n');
+      const obsCompleto = [obsSegmento, novoForm.observacoes].filter(Boolean).join('\n\n');
       const { data, error } = await supabase.from('orcamentos').insert({
         parceiro_id: novoForm.parceiro_id,
         cliente_nome: novoForm.cliente_nome,
         cliente_telefone: novoForm.cliente_telefone,
         cliente_email: novoForm.cliente_email,
         segmento: novoForm.segmento,
-        observacoes: novoForm.observacoes,
+        observacoes: obsCompleto || null,
         status: 'SOLICITACAO',
       }).select('*, parceiros(nome_completo, modalidade, comissao_percentual, telefone)').single();
       if (error) throw error;
@@ -455,6 +529,7 @@ const AdminParceirosPage = () => {
       setCriarModal(false);
       setFiltro('TODOS');
       setNovoForm({ parceiro_id: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', segmento: '', observacoes: '' });
+      setSegData({});
       await loadData(data.id);
     } catch (err) {
       toast({ variant: 'destructive', title: 'Erro ao criar.', description: err?.message });
@@ -1098,16 +1173,40 @@ const AdminParceirosPage = () => {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-gray-500">Segmento *</Label>
-                <select value={novoForm.segmento} onChange={e => setNovoForm(f => ({ ...f, segmento: e.target.value }))}
+                <select value={novoForm.segmento} onChange={e => { setNovoForm(f => ({ ...f, segmento: e.target.value })); setSegData({}); }}
                   className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580]">
                   <option value="">Selecionar segmento...</option>
                   {Object.entries(SEGMENTO_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
               </div>
+
+              {/* Campos específicos do segmento */}
+              {novoForm.segmento && (CAMPOS_SEGMENTO[novoForm.segmento] || []).length > 0 && (
+                <div className="space-y-2 border border-blue-100 rounded-xl p-3 bg-blue-50">
+                  <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Dados do {SEGMENTO_LABEL[novoForm.segmento]}</p>
+                  {(CAMPOS_SEGMENTO[novoForm.segmento] || []).map(campo => (
+                    <div key={campo.key} className="space-y-1">
+                      <Label className="text-xs text-gray-600">{campo.label}</Label>
+                      {campo.type === 'select' ? (
+                        <select value={segData[campo.key] || ''} onChange={e => setSegData(d => ({ ...d, [campo.key]: e.target.value }))}
+                          className="w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:border-[#003580]">
+                          <option value="">Selecionar...</option>
+                          {campo.options.map(o => <option key={o} value={o}>{o}</option>)}
+                        </select>
+                      ) : (
+                        <Input value={segData[campo.key] || ''} onChange={e => setSegData(d => ({ ...d, [campo.key]: e.target.value }))}
+                          type={campo.type} placeholder={campo.placeholder}
+                          className="border-gray-200 bg-white focus:border-[#003580] h-8 text-sm" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="space-y-1">
-                <Label className="text-xs text-gray-500">Observações</Label>
+                <Label className="text-xs text-gray-500">Observações adicionais</Label>
                 <Input value={novoForm.observacoes} onChange={e => setNovoForm(f => ({ ...f, observacoes: e.target.value }))}
-                  placeholder="Observações opcionais" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
+                  placeholder="Informações extras (opcional)" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
               </div>
             </div>
 
