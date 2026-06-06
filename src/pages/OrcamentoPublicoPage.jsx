@@ -292,25 +292,29 @@ const OrcamentoPublicoPage = () => {
 
               {/* ONE big card */}
               <div className="rounded-[24px]" style={{ ...cardBg, overflow: 'clip' }}>
-                <div className={`grid grid-cols-1 ${propostas.length > 0 && propostaDestaque ? 'lg:grid-cols-[380px_1fr]' : ''}`}>
+                <div className={`grid grid-cols-1 ${propostas.length > 0 && propostaDestaque ? 'lg:grid-cols-[440px_1fr]' : ''}`}>
 
                   {/* Left sticky panel — desktop only */}
                   {propostas.length > 0 && propostaDestaque && (
                     <div className="hidden lg:block border-r border-white/15 p-10">
                       <div className="sticky top-8">
-                        <p className="text-xs font-semibold text-blue-300 uppercase tracking-widest mb-8">Opção recomendada</p>
-                        {propostaDestaque.logo_url && (
-                          <div className="bg-white/15 rounded-xl px-4 py-3 inline-flex mb-6">
-                            <img src={propostaDestaque.logo_url} alt={propostaDestaque.operadora} className="h-14 w-auto max-w-[180px] object-contain" />
+                        <p className="text-xs font-semibold text-blue-300 uppercase tracking-widest mb-6">Opção recomendada</p>
+                        <div className="flex items-center gap-4 mb-8">
+                          {propostaDestaque.logo_url && (
+                            <div className="bg-white/15 rounded-xl px-3 py-2.5 inline-flex items-center justify-center shrink-0">
+                              <img src={propostaDestaque.logo_url} alt={propostaDestaque.operadora} className="h-12 w-auto max-w-[140px] object-contain" />
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-white font-bold text-lg leading-tight truncate">{propostaDestaque.operadora}</p>
+                            {getPropostaValor(propostaDestaque) > 0 && (
+                              <div className="flex items-baseline gap-1.5 mt-1">
+                                <p className="text-3xl font-bold text-white">{fmtValor(getPropostaValor(propostaDestaque))}</p>
+                                <p className="text-sm text-white/50">/mês</p>
+                              </div>
+                            )}
                           </div>
-                        )}
-                        <p className="text-white font-bold text-xl mb-1">{propostaDestaque.operadora}</p>
-                        {getPropostaValor(propostaDestaque) > 0 && (
-                          <>
-                            <p className="text-3xl font-bold text-white">{fmtValor(getPropostaValor(propostaDestaque))}</p>
-                            <p className="text-sm text-white/50 mb-10">/mês</p>
-                          </>
-                        )}
+                        </div>
                         <button
                           onClick={() => handleAceitarProposta(propostaDestaque)}
                           disabled={aceitando}
@@ -328,7 +332,7 @@ const OrcamentoPublicoPage = () => {
 
                     {/* Cenário Atual */}
                     {cenarios.length > 0 && (
-                      <div className="px-8 sm:px-10 py-8">
+                      <div className="px-6 sm:px-8 py-6">
                         <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block">Cenário Atual</span>
                         <p className="text-white/60 text-sm mt-1 mb-5">O que você tem hoje</p>
                         <div className="space-y-3">
@@ -357,7 +361,7 @@ const OrcamentoPublicoPage = () => {
 
                     {/* Propostas */}
                     {propostas.length > 0 && (
-                      <div className="px-8 sm:px-10 py-8">
+                      <div className="px-6 sm:px-8 py-6">
                         {propostas.length > 1 && (
                           <p className="text-sm font-bold text-white/50 uppercase tracking-widest mb-5">
                             {propostas.length} opções disponíveis
@@ -374,7 +378,7 @@ const OrcamentoPublicoPage = () => {
 
                     {/* Backward compat: sem propostas array */}
                     {propostas.length === 0 && (
-                      <div className="px-8 sm:px-10 py-8 space-y-5">
+                      <div className="px-6 sm:px-8 py-6 space-y-5">
                         <div className="bg-white/10 rounded-2xl p-6 text-center border border-white/15">
                           <p className="text-sm text-white/50 uppercase tracking-wide">Mensalidade</p>
                           <p className="text-5xl font-bold text-white mt-1">{fmtValor(orcamento?.valor_mensalidade)}</p>
@@ -408,7 +412,7 @@ const OrcamentoPublicoPage = () => {
                       if (bars.length < 2) return null;
                       const max = Math.max(...bars.map(b => b.valor), 1);
                       return (
-                        <div className="px-8 sm:px-10 py-8">
+                        <div className="px-6 sm:px-8 py-6">
                           <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block">Comparação de Custo</span>
                           <p className="text-white/60 text-sm mt-1 mb-5">Mensalidade comparada entre planos</p>
                           <div className="space-y-4">
@@ -449,7 +453,7 @@ const OrcamentoPublicoPage = () => {
 
                     {/* Comparação de Planos */}
                     {propostas.length > 1 && (
-                      <div className="px-8 sm:px-10 py-8">
+                      <div className="px-6 sm:px-8 py-6">
                         <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block mb-4">Comparação de Planos</span>
                         <div className="overflow-x-auto">
                           <table className="w-full text-sm">
@@ -503,7 +507,7 @@ const OrcamentoPublicoPage = () => {
 
                     {/* Tabela Comparativa */}
                     {propostas.length > 1 && (
-                      <div className="px-8 sm:px-10 py-8">
+                      <div className="px-6 sm:px-8 py-6">
                         <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block">Tabela Comparativa</span>
                         <p className="text-white/60 text-sm mt-1 mb-4">Valores por plano/faixa etária</p>
                         <div className="overflow-x-auto">
@@ -592,7 +596,7 @@ const OrcamentoPublicoPage = () => {
 
                     {/* Perfil de Vidas */}
                     {isSaude && propostas.some(p => p.planos?.length > 1) && (
-                      <div className="px-8 sm:px-10 py-8">
+                      <div className="px-6 sm:px-8 py-6">
                         <p className="text-sm font-bold text-white/50 uppercase tracking-widest mb-5">Perfil de Vidas por Faixa Etária</p>
                         <div className="space-y-4">
                           {propostas.filter(p => p.planos?.length > 0).map((p, i) => (
@@ -632,7 +636,7 @@ const OrcamentoPublicoPage = () => {
 
                     {/* Coparticipação */}
                     {propostaDestaque?.coparticipacao?.tem && (
-                      <div className="px-8 sm:px-10 py-8">
+                      <div className="px-6 sm:px-8 py-6">
                         <div className="flex items-center gap-2 mb-4">
                           <Info className="h-5 w-5 text-amber-300 shrink-0" />
                           <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest">Coparticipação</span>
@@ -665,7 +669,7 @@ const OrcamentoPublicoPage = () => {
 
                     {/* Diferenciais */}
                     {diferenciais.length > 0 && (
-                      <div className="px-8 sm:px-10 py-8">
+                      <div className="px-6 sm:px-8 py-6">
                         <div className="flex items-center gap-3 mb-5">
                           {propostaDestaque?.logo_url && (
                             <div className="bg-white/15 rounded-lg px-3 py-1.5 shrink-0">
@@ -703,7 +707,7 @@ const OrcamentoPublicoPage = () => {
 
                     {/* Rede Credenciada */}
                     {propostaDestaque?.rede_url && (
-                      <div className="px-8 sm:px-10 py-8">
+                      <div className="px-6 sm:px-8 py-6">
                         <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block mb-3">Rede Credenciada</span>
                         <p className="text-sm text-white/60 mb-4">Consulte todos os hospitais, clínicas e laboratórios disponíveis na rede da {propostaDestaque.operadora}.</p>
                         <a href={propostaDestaque.rede_url} target="_blank" rel="noreferrer"
@@ -723,7 +727,7 @@ const OrcamentoPublicoPage = () => {
 
                     {/* Outras redes */}
                     {propostas.some((p, i) => i !== effectiveDestaqueIdx && p.rede_url) && (
-                      <div className="px-8 sm:px-10 py-8">
+                      <div className="px-6 sm:px-8 py-6">
                         <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block mb-3">Rede Credenciada — Outras Opções</span>
                         <div className="space-y-3">
                           {propostas.filter((p, i) => i !== effectiveDestaqueIdx && p.rede_url).map((p, i) => (
@@ -744,7 +748,7 @@ const OrcamentoPublicoPage = () => {
 
                     {/* Documentos necessários */}
                     {propostas.length > 0 && todosOsDocs.length > 0 && (
-                      <div className="px-8 sm:px-10 py-8">
+                      <div className="px-6 sm:px-8 py-6">
                         <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block mb-4">Documentos necessários</span>
                         <div className="space-y-2">
                           {todosOsDocs.map(doc => (
