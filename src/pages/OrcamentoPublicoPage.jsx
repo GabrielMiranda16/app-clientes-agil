@@ -232,7 +232,7 @@ const OrcamentoPublicoPage = () => {
                   </p>
                 </div>
               </div>
-              <p className="text-gray-900 font-semibold text-xl sm:text-2xl uppercase tracking-widest pb-16 sm:pb-24">
+              <p className="text-gray-900 font-bold text-4xl sm:text-5xl pb-16 sm:pb-24">
                 Preparada para <span className="text-[#003580]">{orcamento?.cliente_nome}</span>
               </p>
             </div>
