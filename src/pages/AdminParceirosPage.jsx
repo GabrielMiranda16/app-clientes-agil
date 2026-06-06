@@ -123,8 +123,15 @@ const AdminParceirosPage = () => {
   const [novaPropostaMode, setNovaPropostaMode] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  // Criar orçamento
+  const [parceiros, setParceiros] = useState([]);
+  const [criarModal, setCriarModal] = useState(false);
+  const [criando, setCriando] = useState(false);
+  const [novoForm, setNovoForm] = useState({ parceiro_id: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', segmento: '', observacoes: '' });
+
   useEffect(() => {
     loadData();
+    supabase.from('parceiros').select('id, nome_completo').order('nome_completo').then(({ data }) => setParceiros(data || []));
   }, []);
 
   const loadData = async () => {
@@ -410,6 +417,33 @@ const AdminParceirosPage = () => {
       toast({ variant: 'destructive', title: 'Erro ao excluir.', description: err?.message });
     } finally {
       setEnviando(false);
+    }
+  };
+
+  const handleCriarOrcamento = async () => {
+    if (!novoForm.parceiro_id || !novoForm.cliente_nome || !novoForm.segmento)
+      return toast({ variant: 'destructive', title: 'Preencha parceiro, nome do cliente e segmento.' });
+    setCriando(true);
+    try {
+      const { data, error } = await supabase.from('orcamentos').insert({
+        parceiro_id: novoForm.parceiro_id,
+        cliente_nome: novoForm.cliente_nome,
+        cliente_telefone: novoForm.cliente_telefone,
+        cliente_email: novoForm.cliente_email,
+        segmento: novoForm.segmento,
+        observacoes: novoForm.observacoes,
+        status: 'SOLICITACAO',
+      }).select('*, parceiros(nome_completo, modalidade, comissao_percentual, telefone)').single();
+      if (error) throw error;
+      toast({ title: 'Orçamento criado!', description: 'Agora preencha as propostas.' });
+      setCriarModal(false);
+      setNovoForm({ parceiro_id: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', segmento: '', observacoes: '' });
+      await loadData();
+      toggleExpand(data);
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro ao criar.', description: err?.message });
+    } finally {
+      setCriando(false);
     }
   };
 
@@ -861,7 +895,12 @@ const AdminParceirosPage = () => {
       <DashboardLayout>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="space-y-6">
 
-          <h1 className="text-2xl font-bold tracking-tight text-white">Orçamentos de Parceiros</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold tracking-tight text-white">Orçamentos de Parceiros</h1>
+            <Button onClick={() => setCriarModal(true)} className="gap-2 text-white font-semibold" style={{ background: '#003580' }}>
+              <Plus className="h-4 w-4" /> Novo orçamento
+            </Button>
+          </div>
 
           {/* Métricas */}
           <div className="grid grid-cols-3 gap-4">
@@ -1005,6 +1044,67 @@ const AdminParceirosPage = () => {
 
         </motion.div>
       </DashboardLayout>
+
+      {/* Modal — Novo orçamento */}
+      {criarModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => setCriarModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-900">Novo orçamento</h2>
+              <button onClick={() => setCriarModal(false)} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-500">Parceiro *</Label>
+                <select value={novoForm.parceiro_id} onChange={e => setNovoForm(f => ({ ...f, parceiro_id: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580]">
+                  <option value="">Selecionar parceiro...</option>
+                  {parceiros.map(p => <option key={p.id} value={p.id}>{p.nome_completo}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-500">Nome do cliente *</Label>
+                <Input value={novoForm.cliente_nome} onChange={e => setNovoForm(f => ({ ...f, cliente_nome: e.target.value }))}
+                  placeholder="Nome completo" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-500">Telefone</Label>
+                  <Input value={novoForm.cliente_telefone} onChange={e => setNovoForm(f => ({ ...f, cliente_telefone: e.target.value }))}
+                    placeholder="(11) 99999-9999" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-500">E-mail</Label>
+                  <Input value={novoForm.cliente_email} onChange={e => setNovoForm(f => ({ ...f, cliente_email: e.target.value }))}
+                    placeholder="email@exemplo.com" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-500">Segmento *</Label>
+                <select value={novoForm.segmento} onChange={e => setNovoForm(f => ({ ...f, segmento: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580]">
+                  <option value="">Selecionar segmento...</option>
+                  {Object.entries(SEGMENTO_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-500">Observações</Label>
+                <Input value={novoForm.observacoes} onChange={e => setNovoForm(f => ({ ...f, observacoes: e.target.value }))}
+                  placeholder="Observações opcionais" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button variant="outline" className="flex-1" onClick={() => setCriarModal(false)}>Cancelar</Button>
+              <Button onClick={handleCriarOrcamento} disabled={criando} className="flex-1 text-white font-semibold gap-2" style={{ background: '#003580' }}>
+                {criando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                {criando ? 'Criando...' : 'Criar orçamento'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

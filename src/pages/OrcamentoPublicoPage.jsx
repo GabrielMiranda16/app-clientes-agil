@@ -382,9 +382,9 @@ const OrcamentoPublicoPage = () => {
                             const total = cenarios.reduce((acc, c) => acc + (parseFloat(String(c.valor || '0').replace(',', '.')) || 0), 0);
                             return (
                               <div className="flex items-center justify-between px-4 py-3 bg-white/5 rounded-xl border border-white/10">
-                                <span className="text-sm font-semibold text-white/70">Total atual</span>
+                                <span className="text-base font-bold text-white">Total atual</span>
                                 <div className="text-right">
-                                  <p className="font-bold text-white text-base">{fmtValor(total.toFixed(2).replace('.', ','))}</p>
+                                  <p className="font-bold text-white text-base">{fmtValor(total)}</p>
                                   <p className="text-xs text-white/50">/mês</p>
                                 </div>
                               </div>
