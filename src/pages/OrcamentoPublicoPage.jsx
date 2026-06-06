@@ -216,14 +216,14 @@ const OrcamentoPublicoPage = () => {
         <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(0,178,255,0.22) 0%, transparent 70%)' }} />
         <div className="relative container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center h-16 sm:h-24">
-            <img src={logoUrl} alt="Ágil Seguros" className="h-12 sm:h-20 w-auto object-contain" />
+            <img src={logoUrl} alt="Ágil Seguros" className="h-16 sm:h-28 w-auto object-contain" />
           </div>
 
           {stage === 'proposta' && (
             <div className="w-full max-w-3xl mx-auto mt-10 sm:mt-16 pb-32 sm:pb-44 text-center">
               <div className="flex flex-col items-center gap-5">
-                <div className="bg-white/15 rounded-2xl w-28 h-28 sm:w-36 sm:h-36 flex items-center justify-center">
-                  <SegIcon className="w-14 h-14 sm:w-18 sm:h-18 text-white" />
+                <div className="bg-white/15 rounded-2xl w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center">
+                  <SegIcon className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
                 </div>
                 <p className="text-white font-semibold text-xl sm:text-2xl uppercase tracking-widest">Proposta personalizada</p>
                 <p className="text-white font-bold text-4xl sm:text-6xl leading-tight">
