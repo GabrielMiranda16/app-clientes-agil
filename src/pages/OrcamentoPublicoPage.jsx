@@ -640,7 +640,9 @@ const OrcamentoPublicoPage = () => {
                 <div className="rounded-[24px] overflow-hidden" style={cardBg}>
                   <div className="px-6 pt-6 pb-2 flex items-center gap-3">
                     {propostaDestaque?.logo_url && (
-                      <img src={propostaDestaque.logo_url} alt={propostaDestaque.operadora} className="h-6 w-auto max-w-[70px] object-contain brightness-0 invert" />
+                      <div className="bg-white rounded-lg px-2 py-1 shrink-0">
+                        <img src={propostaDestaque.logo_url} alt={propostaDestaque.operadora} className="h-5 w-auto max-w-[60px] object-contain" />
+                      </div>
                     )}
                     <div>
                       <span className="text-xs font-semibold text-blue-300 uppercase tracking-widest block">Diferenciais</span>
