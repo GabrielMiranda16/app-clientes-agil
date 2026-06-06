@@ -220,28 +220,25 @@ const OrcamentoPublicoPage = () => {
           </div>
 
           {stage === 'proposta' && (
-            <div className="w-full max-w-2xl mx-auto mt-10 sm:mt-16 pb-48 sm:pb-64">
-              <div className="flex items-start gap-5">
-                <div className="flex-shrink-0 bg-white/15 rounded-2xl w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
-                  <SegIcon className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+            <div className="w-full max-w-3xl mx-auto mt-10 sm:mt-16 pb-48 sm:pb-64 text-center">
+              <div className="flex flex-col items-center gap-5">
+                <div className="bg-white/15 rounded-2xl w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center">
+                  <SegIcon className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest mb-3 block">Proposta personalizada</span>
-                  <p className="text-white font-semibold text-3xl sm:text-5xl leading-tight mb-2">
-                    {SEGMENTO_LABEL[segmento] || segmento}
-                  </p>
-                  <p className="text-white/60 text-lg mb-5">
-                    Preparada para <strong className="text-white/80">{orcamento?.cliente_nome}</strong>
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-white/15 text-white/75 rounded-full font-medium text-sm">SUSEP 252166308</span>
-                    {propostas.length > 0 && (
-                      <span className="px-3 py-1 bg-white/15 text-white/75 rounded-full font-medium text-sm">
-                        {propostas.length} opç{propostas.length > 1 ? 'ões' : 'ão'}
-                        {propostas.find(p => p.destaque) ? ' · ⭐ recomendada' : ''}
-                      </span>
-                    )}
-                  </div>
+                <p className="text-white font-bold text-4xl sm:text-6xl leading-tight">
+                  {SEGMENTO_LABEL[segmento] || segmento}
+                </p>
+                <p className="text-white/70 text-2xl sm:text-3xl">
+                  Preparada para <strong className="text-white">{orcamento?.cliente_nome}</strong>
+                </p>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  <span className="px-3 py-1 bg-white/15 text-white/75 rounded-full font-medium text-sm">SUSEP 252166308</span>
+                  {propostas.length > 0 && (
+                    <span className="px-3 py-1 bg-white/15 text-white/75 rounded-full font-medium text-sm">
+                      {propostas.length} opç{propostas.length > 1 ? 'ões' : 'ão'}
+                      {propostas.find(p => p.destaque) ? ' · ⭐ recomendada' : ''}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -289,6 +286,8 @@ const OrcamentoPublicoPage = () => {
           {/* Proposta — big card layout */}
           {stage === 'proposta' && (
             <motion.div key="proposta" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full pb-32 lg:pb-8">
+
+              <p className="text-gray-900 font-bold text-2xl sm:text-3xl mb-4">Proposta personalizada</p>
 
               {/* ONE big card */}
               <div className="rounded-[24px]" style={{ ...cardBg, overflow: 'clip' }}>
