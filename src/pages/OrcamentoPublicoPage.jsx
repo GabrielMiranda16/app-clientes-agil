@@ -309,7 +309,7 @@ const OrcamentoPublicoPage = () => {
                         <button
                           onClick={() => handleAceitarProposta(propostaDestaque)}
                           disabled={aceitando}
-                          className="w-full py-4 rounded-2xl font-bold text-[#003580] bg-white text-base flex items-center justify-center gap-2 shadow-lg disabled:opacity-60 active:scale-[0.99] transition-all hover:bg-blue-50 hover:shadow-xl"
+                          className="w-full py-4 rounded-2xl font-bold text-[#003580] bg-white text-base flex items-center justify-center gap-2 shadow-lg disabled:opacity-60 active:scale-[0.99] transition-all hover:bg-blue-50 hover:shadow-xl hover:scale-[1.02]"
                         >
                           {aceitando ? <Loader2 className="h-5 w-5 animate-spin text-[#003580]" /> : <CheckCircle2 className="h-5 w-5" />}
                           {aceitando ? 'Processando...' : 'Aceitar proposta'}
@@ -826,7 +826,7 @@ const OrcamentoPublicoPage = () => {
                 </p>
               )}
               <button onClick={() => handleAceitarProposta(propostaDestaque)} disabled={aceitando}
-                className="w-full py-4 rounded-2xl font-bold text-white text-base flex items-center justify-center gap-2 shadow-lg disabled:opacity-60 active:scale-[0.99] transition-all hover:brightness-110 hover:shadow-xl"
+                className="w-full py-4 rounded-2xl font-bold text-white text-base flex items-center justify-center gap-2 shadow-lg disabled:opacity-60 active:scale-[0.99] transition-all hover:brightness-110 hover:shadow-xl hover:scale-[1.02]"
                 style={{ background: 'linear-gradient(135deg, #003580, #0B7EC4)' }}>
                 {aceitando ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
                 {aceitando ? 'Processando...' : 'Aceitar proposta'}
