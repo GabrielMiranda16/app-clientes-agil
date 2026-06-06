@@ -64,17 +64,17 @@ const CAMPOS_SEGMENTO = {
   SAUDE: [
     { key: 'tipo', label: 'Tipo de plano', type: 'select', options: ['Familiar', 'Empresarial', 'Individual', 'MEI', 'Adesão'] },
     { key: 'vidas', label: 'Nº de vidas', type: 'number', placeholder: 'Ex: 3' },
-    { key: 'idades', label: 'Idades das vidas', type: 'text', placeholder: 'Ex: 35, 32, 8, 5' },
+    { key: 'faixas', label: 'Faixas etárias das vidas', type: 'faixas' },
   ],
   SAUDE_VIDA_ODONTO: [
     { key: 'tipo', label: 'Tipo de plano', type: 'select', options: ['Familiar', 'Empresarial', 'Individual', 'MEI'] },
     { key: 'vidas', label: 'Nº de vidas', type: 'number', placeholder: 'Ex: 3' },
-    { key: 'idades', label: 'Idades das vidas', type: 'text', placeholder: 'Ex: 35, 32, 8, 5' },
+    { key: 'faixas', label: 'Faixas etárias das vidas', type: 'faixas' },
   ],
   ODONTOLOGICO: [
     { key: 'tipo', label: 'Tipo de plano', type: 'select', options: ['Individual', 'Familiar', 'Empresarial'] },
     { key: 'vidas', label: 'Nº de vidas', type: 'number', placeholder: 'Ex: 2' },
-    { key: 'idades', label: 'Idades das vidas', type: 'text', placeholder: 'Ex: 35, 32' },
+    { key: 'faixas', label: 'Faixas etárias das vidas', type: 'faixas' },
   ],
   AUTO: [
     { key: 'veiculo', label: 'Veículo (marca/modelo)', type: 'text', placeholder: 'Ex: Honda Civic EX 2021' },
@@ -199,6 +199,7 @@ const AdminParceirosPage = () => {
   const [criando, setCriando] = useState(false);
   const [novoForm, setNovoForm] = useState({ parceiro_id: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', segmento: '', observacoes: '' });
   const [segData, setSegData] = useState({});
+  const [faixaTemp, setFaixaTemp] = useState({ de: '', ate: '' });
 
   useEffect(() => {
     loadData();
@@ -513,7 +514,12 @@ const AdminParceirosPage = () => {
     setCriando(true);
     try {
       const campos = CAMPOS_SEGMENTO[novoForm.segmento] || [];
-      const obsSegmento = campos.filter(f => segData[f.key]).map(f => `${f.label}: ${segData[f.key]}`).join('\n');
+      const obsSegmento = campos
+        .filter(f => f.type === 'faixas' ? (segData.faixas || []).length > 0 : segData[f.key])
+        .map(f => f.type === 'faixas'
+          ? `${f.label}: ${(segData.faixas || []).map(x => `${x} anos`).join(', ')}`
+          : `${f.label}: ${segData[f.key]}`)
+        .join('\n');
       const obsCompleto = [obsSegmento, novoForm.observacoes].filter(Boolean).join('\n\n');
       const { data, error } = await supabase.from('orcamentos').insert({
         parceiro_id: novoForm.parceiro_id,
@@ -530,6 +536,7 @@ const AdminParceirosPage = () => {
       setFiltro('TODOS');
       setNovoForm({ parceiro_id: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', segmento: '', observacoes: '' });
       setSegData({});
+      setFaixaTemp({ de: '', ate: '' });
       await loadData(data.id);
     } catch (err) {
       toast({ variant: 'destructive', title: 'Erro ao criar.', description: err?.message });
@@ -1173,7 +1180,7 @@ const AdminParceirosPage = () => {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-gray-500">Segmento *</Label>
-                <select value={novoForm.segmento} onChange={e => { setNovoForm(f => ({ ...f, segmento: e.target.value })); setSegData({}); }}
+                <select value={novoForm.segmento} onChange={e => { setNovoForm(f => ({ ...f, segmento: e.target.value })); setSegData({}); setFaixaTemp({ de: '', ate: '' }); }}
                   className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580]">
                   <option value="">Selecionar segmento...</option>
                   {Object.entries(SEGMENTO_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -1193,6 +1200,39 @@ const AdminParceirosPage = () => {
                           <option value="">Selecionar...</option>
                           {campo.options.map(o => <option key={o} value={o}>{o}</option>)}
                         </select>
+                      ) : campo.type === 'faixas' ? (
+                        <div className="space-y-2">
+                          {(segData.faixas || []).length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {(segData.faixas || []).map((f, i) => (
+                                <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#003580]/10 text-[#003580] text-xs font-medium">
+                                  {f} anos
+                                  <button type="button" onClick={() => setSegData(d => ({ ...d, faixas: d.faixas.filter((_, j) => j !== i) }))} className="hover:text-red-500">
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-gray-500 shrink-0">De</span>
+                            <Input value={faixaTemp.de} onChange={e => setFaixaTemp(t => ({ ...t, de: e.target.value }))}
+                              placeholder="0" type="number" className="border-gray-200 bg-white focus:border-[#003580] h-8 text-sm w-16" />
+                            <span className="text-xs text-gray-500 shrink-0">até</span>
+                            <Input value={faixaTemp.ate} onChange={e => setFaixaTemp(t => ({ ...t, ate: e.target.value }))}
+                              placeholder="18" type="number" className="border-gray-200 bg-white focus:border-[#003580] h-8 text-sm w-16" />
+                            <span className="text-xs text-gray-500 shrink-0">anos</span>
+                            <button type="button"
+                              onClick={() => {
+                                if (!faixaTemp.de || !faixaTemp.ate) return;
+                                setSegData(d => ({ ...d, faixas: [...(d.faixas || []), `${faixaTemp.de}-${faixaTemp.ate}`] }));
+                                setFaixaTemp({ de: '', ate: '' });
+                              }}
+                              className="shrink-0 px-2.5 py-1 rounded-lg bg-[#003580] text-white text-xs font-semibold hover:bg-[#002060] transition-colors">
+                              + Adicionar
+                            </button>
+                          </div>
+                        </div>
                       ) : (
                         <Input value={segData[campo.key] || ''} onChange={e => setSegData(d => ({ ...d, [campo.key]: e.target.value }))}
                           type={campo.type} placeholder={campo.placeholder}
