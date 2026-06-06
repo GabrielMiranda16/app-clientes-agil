@@ -288,27 +288,27 @@ const OrcamentoPublicoPage = () => {
 
           {/* Proposta — big card layout */}
           {stage === 'proposta' && (
-            <motion.div key="proposta" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-6xl mx-auto pb-32 lg:pb-8">
+            <motion.div key="proposta" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-7xl mx-auto pb-32 lg:pb-8">
 
               {/* ONE big card */}
               <div className="rounded-[24px]" style={{ ...cardBg, overflow: 'clip' }}>
-                <div className={`grid grid-cols-1 ${propostas.length > 0 && propostaDestaque ? 'lg:grid-cols-[300px_1fr]' : ''}`}>
+                <div className={`grid grid-cols-1 ${propostas.length > 0 && propostaDestaque ? 'lg:grid-cols-[320px_1fr]' : ''}`}>
 
                   {/* Left sticky panel — desktop only */}
                   {propostas.length > 0 && propostaDestaque && (
                     <div className="hidden lg:block border-r border-white/15 p-8">
                       <div className="sticky top-8">
-                        <p className="text-xs font-semibold text-blue-300 uppercase tracking-widest mb-6">Opção recomendada</p>
+                        <p className="text-sm font-semibold text-blue-300 uppercase tracking-widest mb-6">Opção recomendada</p>
                         {propostaDestaque.logo_url && (
                           <div className="bg-white rounded-xl px-3 py-2 inline-flex mb-5">
-                            <img src={propostaDestaque.logo_url} alt={propostaDestaque.operadora} className="h-8 w-auto max-w-[120px] object-contain" />
+                            <img src={propostaDestaque.logo_url} alt={propostaDestaque.operadora} className="h-10 w-auto max-w-[140px] object-contain" />
                           </div>
                         )}
-                        <p className="text-white font-bold text-xl mb-1">{propostaDestaque.operadora}</p>
+                        <p className="text-white font-bold text-2xl mb-1">{propostaDestaque.operadora}</p>
                         {getPropostaValor(propostaDestaque) > 0 && (
                           <>
-                            <p className="text-4xl font-bold text-white">{fmtValor(getPropostaValor(propostaDestaque))}</p>
-                            <p className="text-xs text-white/50 mb-8">/mês</p>
+                            <p className="text-5xl font-bold text-white">{fmtValor(getPropostaValor(propostaDestaque))}</p>
+                            <p className="text-sm text-white/50 mb-8">/mês</p>
                           </>
                         )}
                         <button
@@ -328,24 +328,24 @@ const OrcamentoPublicoPage = () => {
 
                     {/* Cenário Atual */}
                     {cenarios.length > 0 && (
-                      <div className="px-6 sm:px-8 py-6">
-                        <span className="text-xs font-semibold text-blue-300 uppercase tracking-widest block">Cenário Atual</span>
-                        <p className="text-white/60 text-xs mt-0.5 mb-4">O que você tem hoje</p>
+                      <div className="px-8 sm:px-10 py-8">
+                        <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block">Cenário Atual</span>
+                        <p className="text-white/60 text-sm mt-1 mb-5">O que você tem hoje</p>
                         <div className="space-y-3">
                           {cenarios.map((c, i) => {
                             const segLogo = SEGURADORAS.find(s => s.nome === c.operadora)?.logo;
                             return (
-                              <div key={i} className="flex items-center justify-between p-3 bg-white/10 rounded-xl border border-white/15">
-                                <div className="flex items-center gap-3">
+                              <div key={i} className="flex items-center justify-between p-4 bg-white/10 rounded-xl border border-white/15">
+                                <div className="flex items-center gap-4">
                                   {segLogo
-                                    ? <img src={segLogo} alt={c.operadora} className="h-7 w-auto max-w-[80px] object-contain" />
-                                    : <Shield className="h-5 w-5 text-white/50" />}
-                                  <span className="text-sm font-medium text-white">{c.operadora || 'Plano atual'}</span>
+                                    ? <img src={segLogo} alt={c.operadora} className="h-9 w-auto max-w-[90px] object-contain" />
+                                    : <Shield className="h-6 w-6 text-white/50" />}
+                                  <span className="text-base font-medium text-white">{c.operadora || 'Plano atual'}</span>
                                 </div>
                                 {c.valor && (
                                   <div className="text-right">
-                                    <p className="font-bold text-white text-sm">{fmtValor(c.valor)}</p>
-                                    <p className="text-[10px] text-white/50">/mês</p>
+                                    <p className="font-bold text-white text-base">{fmtValor(c.valor)}</p>
+                                    <p className="text-xs text-white/50">/mês</p>
                                   </div>
                                 )}
                               </div>
@@ -357,9 +357,9 @@ const OrcamentoPublicoPage = () => {
 
                     {/* Propostas */}
                     {propostas.length > 0 && (
-                      <div className="px-6 sm:px-8 py-6">
+                      <div className="px-8 sm:px-10 py-8">
                         {propostas.length > 1 && (
-                          <p className="text-xs font-bold text-white/50 uppercase tracking-widest mb-4">
+                          <p className="text-sm font-bold text-white/50 uppercase tracking-widest mb-5">
                             {propostas.length} opções disponíveis
                           </p>
                         )}
@@ -374,14 +374,14 @@ const OrcamentoPublicoPage = () => {
 
                     {/* Backward compat: sem propostas array */}
                     {propostas.length === 0 && (
-                      <div className="px-6 sm:px-8 py-6 space-y-5">
-                        <div className="bg-white/10 rounded-2xl p-5 text-center border border-white/15">
-                          <p className="text-xs text-white/50 uppercase tracking-wide">Mensalidade</p>
-                          <p className="text-4xl font-bold text-white mt-1">{fmtValor(orcamento?.valor_mensalidade)}</p>
-                          <p className="text-xs text-white/40 mt-1">por mês</p>
+                      <div className="px-8 sm:px-10 py-8 space-y-5">
+                        <div className="bg-white/10 rounded-2xl p-6 text-center border border-white/15">
+                          <p className="text-sm text-white/50 uppercase tracking-wide">Mensalidade</p>
+                          <p className="text-5xl font-bold text-white mt-1">{fmtValor(orcamento?.valor_mensalidade)}</p>
+                          <p className="text-sm text-white/40 mt-1">por mês</p>
                         </div>
                         {orcamento?.descricao_orcamento && (
-                          <div className="bg-white/10 rounded-xl p-4 text-sm text-white/80 leading-relaxed whitespace-pre-wrap border border-white/15">
+                          <div className="bg-white/10 rounded-xl p-5 text-base text-white/80 leading-relaxed whitespace-pre-wrap border border-white/15">
                             {orcamento.descricao_orcamento}
                           </div>
                         )}
@@ -408,24 +408,24 @@ const OrcamentoPublicoPage = () => {
                       if (bars.length < 2) return null;
                       const max = Math.max(...bars.map(b => b.valor), 1);
                       return (
-                        <div className="px-6 sm:px-8 py-6">
-                          <span className="text-xs font-semibold text-blue-300 uppercase tracking-widest block">Comparação de Custo</span>
-                          <p className="text-white/60 text-[10px] mt-0.5 mb-4">Mensalidade comparada entre planos</p>
-                          <div className="space-y-3">
+                        <div className="px-8 sm:px-10 py-8">
+                          <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block">Comparação de Custo</span>
+                          <p className="text-white/60 text-sm mt-1 mb-5">Mensalidade comparada entre planos</p>
+                          <div className="space-y-4">
                             {bars.map((b, i) => (
-                              <div key={i} className="space-y-1">
+                              <div key={i} className="space-y-2">
                                 <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2 min-w-0">
+                                  <div className="flex items-center gap-3 min-w-0">
                                     {b.logo
-                                      ? <img src={b.logo} alt={b.label} className="h-5 w-auto max-w-[60px] object-contain shrink-0" />
-                                      : <div className={`w-2 h-2 rounded-full shrink-0 ${b.tipo === 'atual' ? 'bg-amber-300' : 'bg-white'}`} />}
-                                    <span className="text-xs text-white/80 truncate">{b.label}</span>
-                                    {b.tipo === 'atual' && <span className="text-[10px] bg-amber-400/20 text-amber-200 rounded px-1.5 shrink-0">atual</span>}
-                                    {b.destaque && <span className="text-[10px] bg-white/15 text-white rounded px-1.5 shrink-0">⭐ rec.</span>}
+                                      ? <img src={b.logo} alt={b.label} className="h-6 w-auto max-w-[70px] object-contain shrink-0" />
+                                      : <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${b.tipo === 'atual' ? 'bg-amber-300' : 'bg-white'}`} />}
+                                    <span className="text-sm text-white/80 truncate">{b.label}</span>
+                                    {b.tipo === 'atual' && <span className="text-xs bg-amber-400/20 text-amber-200 rounded px-2 py-0.5 shrink-0">atual</span>}
+                                    {b.destaque && <span className="text-xs bg-white/15 text-white rounded px-2 py-0.5 shrink-0">⭐ rec.</span>}
                                   </div>
-                                  <span className="text-xs font-bold text-white shrink-0 ml-2">{fmtValor(b.valor)}</span>
+                                  <span className="text-sm font-bold text-white shrink-0 ml-3">{fmtValor(b.valor)}</span>
                                 </div>
-                                <div className="h-3 bg-white/10 rounded-full overflow-hidden">
+                                <div className="h-3.5 bg-white/10 rounded-full overflow-hidden">
                                   <motion.div
                                     initial={{ width: 0 }}
                                     animate={{ width: `${(b.valor / max) * 100}%` }}
@@ -449,48 +449,48 @@ const OrcamentoPublicoPage = () => {
 
                     {/* Comparação de Planos */}
                     {propostas.length > 1 && (
-                      <div className="px-6 sm:px-8 py-6">
-                        <span className="text-xs font-semibold text-blue-300 uppercase tracking-widest block mb-3">Comparação de Planos</span>
+                      <div className="px-8 sm:px-10 py-8">
+                        <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block mb-4">Comparação de Planos</span>
                         <div className="overflow-x-auto">
-                          <table className="w-full text-xs">
+                          <table className="w-full text-sm">
                             <thead>
                               <tr className="bg-white/10">
-                                <th className="text-left px-4 py-2.5 text-white/60 font-medium">Operadora</th>
-                                {isSaude && <th className="text-center px-3 py-2.5 text-white/60 font-medium">Abrangência</th>}
-                                {isSaude && <th className="text-center px-3 py-2.5 text-white/60 font-medium">Acomodação</th>}
-                                <th className="text-center px-3 py-2.5 text-white/60 font-medium">Coparticipação</th>
-                                {isSaude && <th className="text-center px-3 py-2.5 text-white/60 font-medium">Carência</th>}
-                                <th className="text-center px-3 py-2.5 text-white/60 font-medium">Recomendação</th>
+                                <th className="text-left px-5 py-3 text-white/60 font-medium">Operadora</th>
+                                {isSaude && <th className="text-center px-4 py-3 text-white/60 font-medium">Abrangência</th>}
+                                {isSaude && <th className="text-center px-4 py-3 text-white/60 font-medium">Acomodação</th>}
+                                <th className="text-center px-4 py-3 text-white/60 font-medium">Coparticipação</th>
+                                {isSaude && <th className="text-center px-4 py-3 text-white/60 font-medium">Carência</th>}
+                                <th className="text-center px-4 py-3 text-white/60 font-medium">Recomendação</th>
                               </tr>
                             </thead>
                             <tbody>
                               {propostas.map((p, i) => (
                                 <tr key={i} className={`border-b border-white/10 ${p.destaque ? 'bg-white/10' : ''}`}>
-                                  <td className="px-4 py-3">
-                                    <div className="flex items-center gap-2">
+                                  <td className="px-5 py-3.5">
+                                    <div className="flex items-center gap-3">
                                       {p.logo_url
-                                        ? <img src={p.logo_url} alt={p.operadora} className="h-5 w-auto max-w-[60px] object-contain" />
-                                        : <Shield className="h-3.5 w-3.5 text-white/40" />}
+                                        ? <img src={p.logo_url} alt={p.operadora} className="h-6 w-auto max-w-[70px] object-contain" />
+                                        : <Shield className="h-4 w-4 text-white/40" />}
                                       <span className="font-medium text-white">{p.operadora}</span>
                                     </div>
                                   </td>
-                                  {isSaude && <td className="px-3 py-3 text-center text-white/70">{p.abrangencia || '—'}</td>}
-                                  {isSaude && <td className="px-3 py-3 text-center text-white/70">{p.acomodacao || '—'}</td>}
-                                  <td className="px-3 py-3 text-center">
+                                  {isSaude && <td className="px-4 py-3.5 text-center text-white/70">{p.abrangencia || '—'}</td>}
+                                  {isSaude && <td className="px-4 py-3.5 text-center text-white/70">{p.acomodacao || '—'}</td>}
+                                  <td className="px-4 py-3.5 text-center">
                                     {p.coparticipacao?.tem
                                       ? <span className="text-amber-300 font-medium">{p.coparticipacao.percentual ? `${p.coparticipacao.percentual}%` : 'Sim'}</span>
                                       : <span className="text-green-300 font-medium">Não</span>}
                                   </td>
                                   {isSaude && (
-                                    <td className="px-3 py-3 text-center">
+                                    <td className="px-4 py-3.5 text-center">
                                       {p.carencia
                                         ? <span className="text-amber-300 font-medium">Sim</span>
                                         : <span className="text-green-300 font-medium">Não</span>}
                                     </td>
                                   )}
-                                  <td className="px-3 py-3 text-center">
+                                  <td className="px-4 py-3.5 text-center">
                                     {p.destaque
-                                      ? <span className="inline-flex items-center gap-1 bg-white/20 text-white rounded-full px-2 py-0.5 text-[10px] font-bold"><Star className="h-2.5 w-2.5 fill-current" /> Melhor</span>
+                                      ? <span className="inline-flex items-center gap-1 bg-white/20 text-white rounded-full px-2.5 py-1 text-xs font-bold"><Star className="h-3 w-3 fill-current" /> Melhor</span>
                                       : <span className="text-white/30">—</span>}
                                   </td>
                                 </tr>
@@ -503,23 +503,23 @@ const OrcamentoPublicoPage = () => {
 
                     {/* Tabela Comparativa */}
                     {propostas.length > 1 && (
-                      <div className="px-6 sm:px-8 py-6">
-                        <span className="text-xs font-semibold text-blue-300 uppercase tracking-widest block">Tabela Comparativa</span>
-                        <p className="text-white/60 text-[10px] mt-0.5 mb-3">Valores por plano/faixa etária</p>
+                      <div className="px-8 sm:px-10 py-8">
+                        <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block">Tabela Comparativa</span>
+                        <p className="text-white/60 text-sm mt-1 mb-4">Valores por plano/faixa etária</p>
                         <div className="overflow-x-auto">
-                          <table className="w-full text-xs">
+                          <table className="w-full text-sm">
                             <thead>
                               <tr className="bg-white/10">
-                                <th className="text-left px-4 py-2.5 text-white/60 font-medium w-32">
+                                <th className="text-left px-5 py-3 text-white/60 font-medium w-36">
                                   {isSaude ? 'Faixa / Plano' : 'Item'}
                                 </th>
                                 {propostas.map((p, i) => (
-                                  <th key={i} className="text-center px-3 py-2.5 font-medium text-white/60">
-                                    <div className="flex flex-col items-center gap-1">
+                                  <th key={i} className="text-center px-4 py-3 font-medium text-white/60">
+                                    <div className="flex flex-col items-center gap-1.5">
                                       {p.logo_url
-                                        ? <img src={p.logo_url} alt={p.operadora} className="h-5 w-auto max-w-[60px] object-contain" />
+                                        ? <img src={p.logo_url} alt={p.operadora} className="h-6 w-auto max-w-[70px] object-contain" />
                                         : <span className="text-white">{p.operadora}</span>}
-                                      {p.destaque && <span className="text-[9px] bg-white/20 text-white rounded px-1.5">⭐ rec.</span>}
+                                      {p.destaque && <span className="text-xs bg-white/20 text-white rounded px-2 py-0.5">⭐ rec.</span>}
                                     </div>
                                   </th>
                                 ))}
@@ -531,11 +531,11 @@ const OrcamentoPublicoPage = () => {
                                 if (maxPlanos === 0) return null;
                                 return Array.from({ length: maxPlanos }, (_, pli) => (
                                   <tr key={pli} className="border-b border-white/10">
-                                    <td className="px-4 py-2.5 text-white/70">
+                                    <td className="px-5 py-3 text-white/70">
                                       {propostas.find(p => p.planos?.[pli]?.nome)?.planos?.[pli]?.nome || `Plano ${pli + 1}`}
                                     </td>
                                     {propostas.map((p, i) => (
-                                      <td key={i} className={`px-3 py-2.5 text-center ${p.destaque ? 'bg-white/5' : ''}`}>
+                                      <td key={i} className={`px-4 py-3 text-center ${p.destaque ? 'bg-white/5' : ''}`}>
                                         {p.planos?.[pli]?.valor
                                           ? <span className="font-bold text-white">{fmtValor(p.planos[pli].valor)}</span>
                                           : <span className="text-white/30">—</span>}
@@ -546,25 +546,25 @@ const OrcamentoPublicoPage = () => {
                               })()}
                               {isSaude && propostas.some(p => p.abrangencia) && (
                                 <tr className="border-b border-white/10 bg-white/5">
-                                  <td className="px-4 py-2.5 text-white/60 font-medium">Abrangência</td>
+                                  <td className="px-5 py-3 text-white/60 font-medium">Abrangência</td>
                                   {propostas.map((p, i) => (
-                                    <td key={i} className={`px-3 py-2.5 text-center text-white/70 ${p.destaque ? 'bg-white/5' : ''}`}>{p.abrangencia || '—'}</td>
+                                    <td key={i} className={`px-4 py-3 text-center text-white/70 ${p.destaque ? 'bg-white/5' : ''}`}>{p.abrangencia || '—'}</td>
                                   ))}
                                 </tr>
                               )}
                               {isSaude && propostas.some(p => p.acomodacao) && (
                                 <tr className="border-b border-white/10">
-                                  <td className="px-4 py-2.5 text-white/60 font-medium">Acomodação</td>
+                                  <td className="px-5 py-3 text-white/60 font-medium">Acomodação</td>
                                   {propostas.map((p, i) => (
-                                    <td key={i} className={`px-3 py-2.5 text-center text-white/70 ${p.destaque ? 'bg-white/5' : ''}`}>{p.acomodacao || '—'}</td>
+                                    <td key={i} className={`px-4 py-3 text-center text-white/70 ${p.destaque ? 'bg-white/5' : ''}`}>{p.acomodacao || '—'}</td>
                                   ))}
                                 </tr>
                               )}
                               {propostas.some(p => p.coparticipacao) && (
                                 <tr className="border-b border-white/10 bg-white/5">
-                                  <td className="px-4 py-2.5 text-white/60 font-medium">Copart.</td>
+                                  <td className="px-5 py-3 text-white/60 font-medium">Copart.</td>
                                   {propostas.map((p, i) => (
-                                    <td key={i} className={`px-3 py-2.5 text-center ${p.destaque ? 'bg-white/5' : ''}`}>
+                                    <td key={i} className={`px-4 py-3 text-center ${p.destaque ? 'bg-white/5' : ''}`}>
                                       {p.coparticipacao?.tem
                                         ? <span className="text-amber-300 font-medium">{p.coparticipacao.percentual ? `${p.coparticipacao.percentual}%` : 'Sim'}</span>
                                         : <span className="text-green-300">Não</span>}
@@ -574,9 +574,9 @@ const OrcamentoPublicoPage = () => {
                               )}
                               {isSaude && (
                                 <tr className="border-b border-white/10">
-                                  <td className="px-4 py-2.5 text-white/60 font-medium">Carência</td>
+                                  <td className="px-5 py-3 text-white/60 font-medium">Carência</td>
                                   {propostas.map((p, i) => (
-                                    <td key={i} className={`px-3 py-2.5 text-center ${p.destaque ? 'bg-white/5' : ''}`}>
+                                    <td key={i} className={`px-4 py-3 text-center ${p.destaque ? 'bg-white/5' : ''}`}>
                                       {p.carencia
                                         ? <span className="text-amber-300">Sim</span>
                                         : <span className="text-green-300">Não</span>}
@@ -592,31 +592,31 @@ const OrcamentoPublicoPage = () => {
 
                     {/* Perfil de Vidas */}
                     {isSaude && propostas.some(p => p.planos?.length > 1) && (
-                      <div className="px-6 sm:px-8 py-6">
-                        <p className="text-xs font-bold text-white/50 uppercase tracking-widest mb-4">Perfil de Vidas por Faixa Etária</p>
-                        <div className="space-y-3">
+                      <div className="px-8 sm:px-10 py-8">
+                        <p className="text-sm font-bold text-white/50 uppercase tracking-widest mb-5">Perfil de Vidas por Faixa Etária</p>
+                        <div className="space-y-4">
                           {propostas.filter(p => p.planos?.length > 0).map((p, i) => (
                             <div key={i} className="rounded-[20px] overflow-hidden bg-white/10 border border-white/15">
-                              <div className="px-5 py-4 flex items-center gap-3 border-b border-white/15">
+                              <div className="px-6 py-4 flex items-center gap-3 border-b border-white/15">
                                 {p.logo_url
-                                  ? <img src={p.logo_url} alt={p.operadora} className="h-6 w-auto max-w-[70px] object-contain" />
-                                  : <Shield className="h-4 w-4 text-white" />}
-                                <p className="text-sm font-bold text-white">{p.operadora}</p>
-                                {p.destaque && <span className="ml-auto text-[10px] bg-white/20 text-white rounded-full px-2 py-0.5">⭐ Melhor Opção</span>}
+                                  ? <img src={p.logo_url} alt={p.operadora} className="h-8 w-auto max-w-[80px] object-contain" />
+                                  : <Shield className="h-5 w-5 text-white" />}
+                                <p className="text-base font-bold text-white">{p.operadora}</p>
+                                {p.destaque && <span className="ml-auto text-xs bg-white/20 text-white rounded-full px-3 py-1">⭐ Melhor Opção</span>}
                               </div>
                               <div className="overflow-x-auto">
-                                <table className="w-full text-xs">
+                                <table className="w-full text-sm">
                                   <thead>
                                     <tr className="bg-white/10">
-                                      <th className="text-left px-4 py-2 text-white/60 font-medium">Faixa / Plano</th>
-                                      <th className="text-right px-4 py-2 text-white/60 font-medium">Mensalidade</th>
+                                      <th className="text-left px-5 py-3 text-white/60 font-medium">Faixa / Plano</th>
+                                      <th className="text-right px-5 py-3 text-white/60 font-medium">Mensalidade</th>
                                     </tr>
                                   </thead>
                                   <tbody>
                                     {p.planos.filter(pl => pl.nome || pl.valor).map((pl, pli) => (
                                       <tr key={pli} className="border-b border-white/10">
-                                        <td className="px-4 py-2.5 text-white/80">{pl.nome || `Plano ${pli + 1}`}</td>
-                                        <td className="px-4 py-2.5 text-right font-bold text-white">
+                                        <td className="px-5 py-3 text-white/80">{pl.nome || `Plano ${pli + 1}`}</td>
+                                        <td className="px-5 py-3 text-right font-bold text-white">
                                           {pl.valor ? fmtValor(pl.valor) : '—'}
                                         </td>
                                       </tr>
@@ -632,13 +632,13 @@ const OrcamentoPublicoPage = () => {
 
                     {/* Coparticipação */}
                     {propostaDestaque?.coparticipacao?.tem && (
-                      <div className="px-6 sm:px-8 py-6">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Info className="h-4 w-4 text-amber-300 shrink-0" />
-                          <span className="text-xs font-semibold text-blue-300 uppercase tracking-widest">Coparticipação</span>
+                      <div className="px-8 sm:px-10 py-8">
+                        <div className="flex items-center gap-2 mb-4">
+                          <Info className="h-5 w-5 text-amber-300 shrink-0" />
+                          <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest">Coparticipação</span>
                         </div>
-                        <div className="space-y-3">
-                          <p className="text-sm text-white/80">
+                        <div className="space-y-4">
+                          <p className="text-base text-white/80">
                             Este plano possui coparticipação de{' '}
                             <strong className="text-amber-300">
                               {propostaDestaque.coparticipacao.percentual
@@ -648,53 +648,53 @@ const OrcamentoPublicoPage = () => {
                             sobre os procedimentos utilizados.
                           </p>
                           <div className="flex items-center gap-3 flex-wrap">
-                            <div className="flex items-center gap-2 bg-white/10 rounded-xl px-3 py-2 border border-white/15">
-                              <div className={`w-2 h-2 rounded-full ${propostaDestaque.coparticipacao.limitada ? 'bg-green-400' : 'bg-amber-400'}`} />
-                              <span className="text-xs text-white/80">
+                            <div className="flex items-center gap-2 bg-white/10 rounded-xl px-4 py-2.5 border border-white/15">
+                              <div className={`w-2.5 h-2.5 rounded-full ${propostaDestaque.coparticipacao.limitada ? 'bg-green-400' : 'bg-amber-400'}`} />
+                              <span className="text-sm text-white/80">
                                 {propostaDestaque.coparticipacao.limitada ? 'Coparticipação limitada' : 'Coparticipação ilimitada'}
                               </span>
                             </div>
                             {propostaDestaque.coparticipacao.limitada && (
-                              <p className="text-xs text-white/60">O valor cobrado tem um teto mensal, protegendo contra gastos excessivos.</p>
+                              <p className="text-sm text-white/60">O valor cobrado tem um teto mensal, protegendo contra gastos excessivos.</p>
                             )}
                           </div>
-                          <p className="text-xs text-white/50">A coparticipação é cobrada apenas quando você utiliza o plano. Consultas, exames e procedimentos geram uma taxa proporcional ao serviço.</p>
+                          <p className="text-sm text-white/50">A coparticipação é cobrada apenas quando você utiliza o plano. Consultas, exames e procedimentos geram uma taxa proporcional ao serviço.</p>
                         </div>
                       </div>
                     )}
 
                     {/* Diferenciais */}
                     {diferenciais.length > 0 && (
-                      <div className="px-6 sm:px-8 py-6">
-                        <div className="flex items-center gap-3 mb-4">
+                      <div className="px-8 sm:px-10 py-8">
+                        <div className="flex items-center gap-3 mb-5">
                           {propostaDestaque?.logo_url && (
-                            <div className="bg-white rounded-lg px-2 py-1 shrink-0">
-                              <img src={propostaDestaque.logo_url} alt={propostaDestaque.operadora} className="h-5 w-auto max-w-[60px] object-contain" />
+                            <div className="bg-white rounded-lg px-3 py-1.5 shrink-0">
+                              <img src={propostaDestaque.logo_url} alt={propostaDestaque.operadora} className="h-6 w-auto max-w-[70px] object-contain" />
                             </div>
                           )}
                           <div>
-                            <span className="text-xs font-semibold text-blue-300 uppercase tracking-widest block">Diferenciais</span>
-                            <p className="text-white/60 text-[10px]">{propostaDestaque?.operadora}</p>
+                            <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block">Diferenciais</span>
+                            <p className="text-white/60 text-sm">{propostaDestaque?.operadora}</p>
                           </div>
                         </div>
                         <div className="space-y-3">
                           {diferenciais.slice(0, expandedDifs ? undefined : 3).map((d, i) => (
-                            <div key={i} className="flex items-start gap-3 p-3 bg-white/10 rounded-xl border border-white/15">
-                              <div className="bg-white/20 rounded-lg p-1.5 shrink-0 mt-0.5">
-                                <Check className="h-3 w-3 text-white" />
+                            <div key={i} className="flex items-start gap-4 p-4 bg-white/10 rounded-xl border border-white/15">
+                              <div className="bg-white/20 rounded-lg p-2 shrink-0 mt-0.5">
+                                <Check className="h-4 w-4 text-white" />
                               </div>
                               <div>
-                                <p className="text-xs font-bold text-white">{d.titulo}</p>
-                                <p className="text-xs text-white/60 mt-0.5 leading-relaxed">{d.descricao}</p>
+                                <p className="text-sm font-bold text-white">{d.titulo}</p>
+                                <p className="text-sm text-white/60 mt-1 leading-relaxed">{d.descricao}</p>
                               </div>
                             </div>
                           ))}
                           {diferenciais.length > 3 && (
                             <button onClick={() => setExpandedDifs(v => !v)}
-                              className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-blue-300 font-medium hover:bg-white/10 rounded-xl transition-colors">
+                              className="w-full flex items-center justify-center gap-2 py-3 text-sm text-blue-300 font-medium hover:bg-white/10 rounded-xl transition-colors">
                               {expandedDifs
-                                ? <><ChevronUp className="h-3.5 w-3.5" /> Ver menos</>
-                                : <><ChevronDown className="h-3.5 w-3.5" /> Ver mais {diferenciais.length - 3} diferenciais</>}
+                                ? <><ChevronUp className="h-4 w-4" /> Ver menos</>
+                                : <><ChevronDown className="h-4 w-4" /> Ver mais {diferenciais.length - 3} diferenciais</>}
                             </button>
                           )}
                         </div>
@@ -703,19 +703,19 @@ const OrcamentoPublicoPage = () => {
 
                     {/* Rede Credenciada */}
                     {propostaDestaque?.rede_url && (
-                      <div className="px-6 sm:px-8 py-6">
-                        <span className="text-xs font-semibold text-blue-300 uppercase tracking-widest block mb-3">Rede Credenciada</span>
-                        <p className="text-xs text-white/60 mb-3">Consulte todos os hospitais, clínicas e laboratórios disponíveis na rede da {propostaDestaque.operadora}.</p>
+                      <div className="px-8 sm:px-10 py-8">
+                        <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block mb-3">Rede Credenciada</span>
+                        <p className="text-sm text-white/60 mb-4">Consulte todos os hospitais, clínicas e laboratórios disponíveis na rede da {propostaDestaque.operadora}.</p>
                         <a href={propostaDestaque.rede_url} target="_blank" rel="noreferrer"
-                          className="flex items-center justify-between p-3 rounded-xl border border-white/15 bg-white/10 hover:bg-white/20 transition-colors group">
-                          <div className="flex items-center gap-3">
+                          className="flex items-center justify-between p-4 rounded-xl border border-white/15 bg-white/10 hover:bg-white/20 transition-colors group">
+                          <div className="flex items-center gap-4">
                             {propostaDestaque.logo_url && (
-                              <img src={propostaDestaque.logo_url} alt={propostaDestaque.operadora} className="h-6 w-auto max-w-[70px] object-contain" />
+                              <img src={propostaDestaque.logo_url} alt={propostaDestaque.operadora} className="h-8 w-auto max-w-[90px] object-contain" />
                             )}
-                            <span className="text-sm text-white font-medium">{propostaDestaque.operadora}</span>
+                            <span className="text-base text-white font-medium">{propostaDestaque.operadora}</span>
                           </div>
-                          <span className="text-xs text-blue-300 flex items-center gap-1 font-medium">
-                            Ver rede <ExternalLink className="h-3 w-3" />
+                          <span className="text-sm text-blue-300 flex items-center gap-1.5 font-medium">
+                            Ver rede <ExternalLink className="h-4 w-4" />
                           </span>
                         </a>
                       </div>
@@ -723,18 +723,18 @@ const OrcamentoPublicoPage = () => {
 
                     {/* Outras redes */}
                     {propostas.some((p, i) => i !== effectiveDestaqueIdx && p.rede_url) && (
-                      <div className="px-6 sm:px-8 py-6">
-                        <span className="text-xs font-semibold text-blue-300 uppercase tracking-widest block mb-3">Rede Credenciada — Outras Opções</span>
-                        <div className="space-y-2">
+                      <div className="px-8 sm:px-10 py-8">
+                        <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block mb-3">Rede Credenciada — Outras Opções</span>
+                        <div className="space-y-3">
                           {propostas.filter((p, i) => i !== effectiveDestaqueIdx && p.rede_url).map((p, i) => (
                             <a key={i} href={p.rede_url} target="_blank" rel="noreferrer"
-                              className="flex items-center justify-between p-3 rounded-xl border border-white/15 bg-white/10 hover:bg-white/20 transition-colors group">
-                              <div className="flex items-center gap-3">
-                                {p.logo_url && <img src={p.logo_url} alt={p.operadora} className="h-5 w-auto max-w-[60px] object-contain" />}
-                                <span className="text-sm text-white">{p.operadora}</span>
+                              className="flex items-center justify-between p-4 rounded-xl border border-white/15 bg-white/10 hover:bg-white/20 transition-colors group">
+                              <div className="flex items-center gap-4">
+                                {p.logo_url && <img src={p.logo_url} alt={p.operadora} className="h-7 w-auto max-w-[70px] object-contain" />}
+                                <span className="text-base text-white">{p.operadora}</span>
                               </div>
-                              <span className="text-xs text-blue-300 flex items-center gap-1">
-                                Ver rede <ExternalLink className="h-3 w-3" />
+                              <span className="text-sm text-blue-300 flex items-center gap-1.5">
+                                Ver rede <ExternalLink className="h-4 w-4" />
                               </span>
                             </a>
                           ))}
@@ -744,15 +744,15 @@ const OrcamentoPublicoPage = () => {
 
                     {/* Documentos necessários */}
                     {propostas.length > 0 && todosOsDocs.length > 0 && (
-                      <div className="px-6 sm:px-8 py-6">
-                        <span className="text-xs font-semibold text-blue-300 uppercase tracking-widest block mb-3">Documentos necessários</span>
-                        <div className="space-y-1.5">
+                      <div className="px-8 sm:px-10 py-8">
+                        <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block mb-4">Documentos necessários</span>
+                        <div className="space-y-2">
                           {todosOsDocs.map(doc => (
-                            <div key={doc} className="flex items-center gap-2 text-sm text-white/80">
-                              <FileText className="h-3.5 w-3.5 text-blue-300 shrink-0" />{doc}
+                            <div key={doc} className="flex items-center gap-3 text-base text-white/80">
+                              <FileText className="h-4 w-4 text-blue-300 shrink-0" />{doc}
                             </div>
                           ))}
-                          <p className="text-xs text-white/40 mt-2">Você enviará estes documentos após escolher uma opção.</p>
+                          <p className="text-sm text-white/40 mt-3">Você enviará estes documentos após escolher uma opção.</p>
                         </div>
                       </div>
                     )}
@@ -854,38 +854,38 @@ const PropostaCard = ({ proposta, isSaude, onEscolher, aceitando }) => {
       className="rounded-[20px] overflow-hidden bg-white/10 border border-white/15">
 
       {/* Header */}
-      <div className="px-5 py-4 flex items-center justify-between border-b border-white/15">
-        <div className="flex items-center gap-3">
-          <div className="rounded-xl p-2 bg-white/15 flex items-center justify-center">
+      <div className="px-6 py-5 flex items-center justify-between border-b border-white/15">
+        <div className="flex items-center gap-4">
+          <div className="rounded-xl p-2.5 bg-white/15 flex items-center justify-center">
             {proposta.logo_url
-              ? <img src={proposta.logo_url} alt={proposta.operadora} className="h-8 w-auto max-w-[90px] object-contain" />
-              : <Shield className="h-6 w-6 text-white" />}
+              ? <img src={proposta.logo_url} alt={proposta.operadora} className="h-10 w-auto max-w-[110px] object-contain" />
+              : <Shield className="h-7 w-7 text-white" />}
           </div>
           <div>
-            <p className="font-bold text-sm text-white">{proposta.operadora || 'Seguradora'}</p>
+            <p className="font-bold text-base text-white">{proposta.operadora || 'Seguradora'}</p>
             {isSaude && proposta.abrangencia && (
-              <p className="text-xs mt-0.5 text-white/60">{proposta.abrangencia} · {proposta.acomodacao || 'Sem acomodação'}</p>
+              <p className="text-sm mt-0.5 text-white/60">{proposta.abrangencia} · {proposta.acomodacao || 'Sem acomodação'}</p>
             )}
           </div>
         </div>
         {proposta.destaque && (
-          <span className="bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
-            <Star className="h-3 w-3 fill-current" /> Melhor Opção
+          <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shrink-0">
+            <Star className="h-3.5 w-3.5 fill-current" /> Melhor Opção
           </span>
         )}
       </div>
 
       {/* Preço */}
-      <div className="px-5 py-5 text-center border-b border-white/15">
+      <div className="px-6 py-6 text-center border-b border-white/15">
         {primeiroValor ? (
           <>
-            {temMultiplosPlanos && <p className="text-[10px] text-white/50 uppercase tracking-wide mb-1">a partir de</p>}
-            {!temMultiplosPlanos && <p className="text-xs text-white/50 uppercase tracking-wide">Mensalidade</p>}
-            <p className="font-bold mt-0.5 text-4xl text-white">{fmtValor(primeiroValor)}</p>
-            <p className="text-xs text-white/50 mt-0.5">por mês</p>
+            {temMultiplosPlanos && <p className="text-xs text-white/50 uppercase tracking-wide mb-1">a partir de</p>}
+            {!temMultiplosPlanos && <p className="text-sm text-white/50 uppercase tracking-wide">Mensalidade</p>}
+            <p className="font-bold mt-1 text-5xl text-white">{fmtValor(primeiroValor)}</p>
+            <p className="text-sm text-white/50 mt-1">por mês</p>
           </>
         ) : (
-          <p className="text-sm text-white/50 italic">Valores sob consulta</p>
+          <p className="text-base text-white/50 italic">Valores sob consulta</p>
         )}
       </div>
 
@@ -899,10 +899,10 @@ const PropostaCard = ({ proposta, isSaude, onEscolher, aceitando }) => {
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 className="overflow-hidden border-b border-white/15">
-                <div className="px-5 py-3 space-y-1.5">
-                  <p className="text-[10px] font-bold text-white/50 uppercase tracking-wide mb-2">Valores por faixa</p>
+                <div className="px-6 py-4 space-y-2">
+                  <p className="text-xs font-bold text-white/50 uppercase tracking-wide mb-3">Valores por faixa</p>
                   {proposta.planos.filter(pl => pl.nome || pl.valor).map((pl, i) => (
-                    <div key={i} className="flex items-center justify-between text-xs py-1 border-b border-white/10 last:border-0">
+                    <div key={i} className="flex items-center justify-between text-sm py-1.5 border-b border-white/10 last:border-0">
                       <span className="text-white/70">{pl.nome || `Plano ${i + 1}`}</span>
                       <span className="font-bold text-white">{pl.valor ? fmtValor(pl.valor) : '—'}</span>
                     </div>
@@ -912,30 +912,30 @@ const PropostaCard = ({ proposta, isSaude, onEscolher, aceitando }) => {
             )}
           </AnimatePresence>
           <button onClick={() => setExpanded(v => !v)}
-            className="w-full flex items-center justify-center gap-1 py-2.5 text-xs text-blue-300 font-medium border-b border-white/15 hover:bg-white/10 transition-colors">
-            {expanded ? <><ChevronUp className="h-3.5 w-3.5" /> Ocultar faixas</> : <><ChevronDown className="h-3.5 w-3.5" /> Ver todos os valores</>}
+            className="w-full flex items-center justify-center gap-1.5 py-3 text-sm text-blue-300 font-medium border-b border-white/15 hover:bg-white/10 transition-colors">
+            {expanded ? <><ChevronUp className="h-4 w-4" /> Ocultar faixas</> : <><ChevronDown className="h-4 w-4" /> Ver todos os valores</>}
           </button>
         </>
       )}
 
       {/* Chips */}
       {isSaude && (
-        <div className="px-5 py-3 flex flex-wrap gap-2 border-b border-white/15">
+        <div className="px-6 py-4 flex flex-wrap gap-2 border-b border-white/15">
           {proposta.abrangencia && (
-            <span className="text-[11px] bg-white/15 text-white/80 rounded-full px-2.5 py-1">{proposta.abrangencia}</span>
+            <span className="text-sm bg-white/15 text-white/80 rounded-full px-3 py-1">{proposta.abrangencia}</span>
           )}
           {proposta.acomodacao && (
-            <span className="text-[11px] bg-white/15 text-white/80 rounded-full px-2.5 py-1">{proposta.acomodacao}</span>
+            <span className="text-sm bg-white/15 text-white/80 rounded-full px-3 py-1">{proposta.acomodacao}</span>
           )}
           {proposta.coparticipacao?.tem ? (
-            <span className="text-[11px] bg-amber-400/20 text-amber-200 rounded-full px-2.5 py-1">
+            <span className="text-sm bg-amber-400/20 text-amber-200 rounded-full px-3 py-1">
               Copart. {proposta.coparticipacao.percentual ? `${proposta.coparticipacao.percentual}%` : 'sim'}
             </span>
           ) : (
-            <span className="text-[11px] bg-green-400/20 text-green-200 rounded-full px-2.5 py-1">Sem coparticipação</span>
+            <span className="text-sm bg-green-400/20 text-green-200 rounded-full px-3 py-1">Sem coparticipação</span>
           )}
           {proposta.carencia !== undefined && (
-            <span className={`text-[11px] rounded-full px-2.5 py-1 ${proposta.carencia ? 'bg-amber-400/20 text-amber-200' : 'bg-green-400/20 text-green-200'}`}>
+            <span className={`text-sm rounded-full px-3 py-1 ${proposta.carencia ? 'bg-amber-400/20 text-amber-200' : 'bg-green-400/20 text-green-200'}`}>
               {proposta.carencia ? 'Com carência' : 'Sem carência'}
             </span>
           )}
@@ -943,14 +943,14 @@ const PropostaCard = ({ proposta, isSaude, onEscolher, aceitando }) => {
       )}
 
       {/* CTA */}
-      <div className="px-5 py-4">
+      <div className="px-6 py-5">
         <button onClick={onEscolher} disabled={aceitando}
-          className={`w-full py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-60 ${
+          className={`w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-2 transition-all disabled:opacity-60 ${
             proposta.destaque
               ? 'bg-white text-[#003580] hover:bg-white/90 shadow-lg hover:scale-[1.01] active:scale-[0.99]'
               : 'bg-white/15 text-white hover:bg-white/25'
           }`}>
-          {aceitando ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+          {aceitando ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
           {aceitando ? 'Processando...' : 'Quero este plano'}
         </button>
       </div>
