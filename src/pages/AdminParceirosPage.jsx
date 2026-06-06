@@ -870,7 +870,7 @@ const AdminParceirosPage = () => {
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-gray-700 truncate">{p.operadora || `Opção ${i + 1}`}</p>
                       <p className="text-xs text-gray-500">
-                        {p.planos?.length > 0 ? p.planos.map(pl => `R$ ${pl.valor}`).join(' / ') : `R$ ${p.valor || 0}`}/mês
+                        {p.planos?.length > 0 ? p.planos.map(pl => `R$ ${fmtBRL(parseFloat(String(pl.valor).replace(',', '.')))}`).join(' / ') : `R$ ${fmtBRL(p.valor)}`}/mês
                       </p>
                     </div>
                     {p.destaque && <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-400 shrink-0" />}
