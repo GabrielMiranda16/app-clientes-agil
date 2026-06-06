@@ -230,8 +230,8 @@ const OrcamentoPublicoPage = () => {
                   {SEGMENTO_LABEL[segmento] || segmento}
                 </p>
               </div>
-              <p className="font-bold text-4xl sm:text-5xl pb-16 sm:pb-24" style={{ color: '#003580' }}>
-                Preparada para <span className="text-gray-900">{orcamento?.cliente_nome}</span>
+              <p className="text-white font-semibold text-xl sm:text-2xl uppercase tracking-widest pb-16 sm:pb-24">
+                Preparada para {orcamento?.cliente_nome}
               </p>
             </div>
           )}
