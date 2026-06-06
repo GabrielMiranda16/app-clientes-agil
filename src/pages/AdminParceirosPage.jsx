@@ -523,8 +523,8 @@ const AdminParceirosPage = () => {
   };
 
   const handleCriarOrcamento = async () => {
-    if (!novoForm.parceiro_id || !novoForm.cliente_nome || !novoForm.segmento)
-      return toast({ variant: 'destructive', title: 'Preencha parceiro, nome do cliente e segmento.' });
+    if (!novoForm.cliente_nome || !novoForm.cliente_telefone || !novoForm.cliente_email || !novoForm.segmento)
+      return toast({ variant: 'destructive', title: 'Preencha nome do cliente, telefone, e-mail e segmento.' });
     setCriando(true);
     try {
       const campos = CAMPOS_SEGMENTO[novoForm.segmento] || [];
@@ -1172,7 +1172,7 @@ const AdminParceirosPage = () => {
 
             <div className="space-y-3">
               <div className="space-y-1">
-                <Label className="text-xs text-gray-500">Parceiro *</Label>
+                <Label className="text-xs text-gray-500">Parceiro</Label>
                 <select value={novoForm.parceiro_id} onChange={e => setNovoForm(f => ({ ...f, parceiro_id: e.target.value }))}
                   className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580]">
                   <option value="">Selecionar parceiro...</option>
@@ -1186,12 +1186,12 @@ const AdminParceirosPage = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs text-gray-500">Telefone</Label>
+                  <Label className="text-xs text-gray-500">Telefone *</Label>
                   <Input value={novoForm.cliente_telefone} onChange={e => setNovoForm(f => ({ ...f, cliente_telefone: e.target.value }))}
                     placeholder="(11) 99999-9999" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-gray-500">E-mail</Label>
+                  <Label className="text-xs text-gray-500">E-mail *</Label>
                   <Input value={novoForm.cliente_email} onChange={e => setNovoForm(f => ({ ...f, cliente_email: e.target.value }))}
                     placeholder="email@exemplo.com" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
                 </div>
