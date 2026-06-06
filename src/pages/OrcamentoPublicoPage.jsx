@@ -216,7 +216,7 @@ const OrcamentoPublicoPage = () => {
         <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(0,178,255,0.22) 0%, transparent 70%)' }} />
         <div className="relative container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center h-16 sm:h-24">
-            <img src={logoUrl} alt="Ágil Seguros" className="h-16 sm:h-28 w-auto object-contain" />
+            <img src={logoUrl} alt="Ágil Seguros" className="h-20 sm:h-28 w-auto object-contain" />
           </div>
 
           {stage === 'proposta' && (
