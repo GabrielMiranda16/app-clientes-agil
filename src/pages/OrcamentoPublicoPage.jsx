@@ -220,7 +220,7 @@ const OrcamentoPublicoPage = () => {
           </div>
 
           {stage === 'proposta' && (
-            <div className="w-full max-w-3xl mx-auto mt-10 sm:mt-16 pb-48 sm:pb-64 text-center">
+            <div className="w-full max-w-3xl mx-auto mt-10 sm:mt-16 pb-32 sm:pb-44 text-center">
               <div className="flex flex-col items-center gap-5">
                 <div className="bg-white/15 rounded-2xl w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center">
                   <SegIcon className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
@@ -229,15 +229,6 @@ const OrcamentoPublicoPage = () => {
                 <p className="text-white font-bold text-4xl sm:text-6xl leading-tight">
                   {SEGMENTO_LABEL[segmento] || segmento}
                 </p>
-                <div className="flex flex-wrap gap-2 justify-center">
-                  <span className="px-3 py-1 bg-white/15 text-white/75 rounded-full font-medium text-sm">SUSEP 252166308</span>
-                  {propostas.length > 0 && (
-                    <span className="px-3 py-1 bg-white/15 text-white/75 rounded-full font-medium text-sm">
-                      {propostas.length} opç{propostas.length > 1 ? 'ões' : 'ão'}
-                      {propostas.find(p => p.destaque) ? ' · ⭐ recomendada' : ''}
-                    </span>
-                  )}
-                </div>
               </div>
             </div>
           )}
