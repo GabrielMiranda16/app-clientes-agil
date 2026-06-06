@@ -222,10 +222,10 @@ const OrcamentoPublicoPage = () => {
           {stage === 'proposta' && (
             <div className="w-full max-w-3xl mx-auto mt-10 sm:mt-16 pb-48 sm:pb-64 text-center">
               <div className="flex flex-col items-center gap-5">
-                <p className="text-white font-semibold text-xl sm:text-2xl uppercase tracking-widest">Proposta personalizada</p>
                 <div className="bg-white/15 rounded-2xl w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center">
                   <SegIcon className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
                 </div>
+                <p className="text-white font-semibold text-xl sm:text-2xl uppercase tracking-widest">Proposta personalizada</p>
                 <p className="text-white font-bold text-4xl sm:text-6xl leading-tight">
                   {SEGMENTO_LABEL[segmento] || segmento}
                 </p>
