@@ -220,15 +220,17 @@ const OrcamentoPublicoPage = () => {
           </div>
 
           {stage === 'proposta' && (
-            <div className="w-full max-w-3xl mx-auto mt-10 sm:mt-16 text-center">
-              <div className="flex flex-col items-center gap-5 pb-10 sm:pb-14">
-                <div className="bg-white/15 rounded-2xl w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center">
+            <div className="w-full max-w-3xl mx-auto mt-10 sm:mt-16">
+              <div className="flex items-center gap-6 pb-10 sm:pb-14">
+                <div className="bg-white/15 rounded-2xl w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center shrink-0">
                   <SegIcon className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
                 </div>
-                <p className="text-white font-semibold text-xl sm:text-2xl uppercase tracking-widest">Proposta personalizada</p>
-                <p className="text-white font-bold text-4xl sm:text-6xl leading-tight">
-                  {SEGMENTO_LABEL[segmento] || segmento}
-                </p>
+                <div className="text-left">
+                  <p className="text-white font-semibold text-xl sm:text-2xl uppercase tracking-widest">Proposta personalizada</p>
+                  <p className="text-white font-bold text-4xl sm:text-6xl leading-tight">
+                    {SEGMENTO_LABEL[segmento] || segmento}
+                  </p>
+                </div>
               </div>
               <p className="text-gray-900 font-bold text-4xl sm:text-5xl pb-16 sm:pb-24">
                 Preparada para <span className="text-[#003580]">{orcamento?.cliente_nome}</span>
