@@ -541,7 +541,7 @@ const AdminParceirosPage = () => {
       }
       const obsCompleto = [obsSegmento, obsFaixas, novoForm.observacoes].filter(Boolean).join('\n\n');
       const { data, error } = await supabase.from('orcamentos').insert({
-        parceiro_id: novoForm.parceiro_id,
+        parceiro_id: novoForm.parceiro_id || null,
         cliente_nome: novoForm.cliente_nome,
         cliente_telefone: novoForm.cliente_telefone,
         cliente_email: novoForm.cliente_email,
