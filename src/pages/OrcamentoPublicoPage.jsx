@@ -314,6 +314,38 @@ const OrcamentoPublicoPage = () => {
                           {aceitando ? <Loader2 className="h-5 w-5 animate-spin text-[#003580]" /> : <CheckCircle2 className="h-5 w-5" />}
                           {aceitando ? 'Processando...' : 'Aceitar proposta'}
                         </button>
+
+                        {propostas.filter(p => !p.destaque).length > 0 && (
+                          <>
+                            <div className="border-t border-white/15 mt-8 pt-8">
+                              <p className="text-sm font-semibold text-blue-300 uppercase tracking-widest mb-4">Outras opções</p>
+                              <div className="flex flex-col gap-3">
+                                {propostas.filter(p => !p.destaque).map((p, i) => (
+                                  <div key={i} className="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-3">
+                                    {p.logo_url && (
+                                      <div className="bg-white/15 rounded-lg px-2 py-1.5 inline-flex items-center justify-center shrink-0">
+                                        <img src={p.logo_url} alt={p.operadora} className="h-8 w-auto max-w-[80px] object-contain" />
+                                      </div>
+                                    )}
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-white font-semibold text-sm leading-tight truncate">{p.operadora}</p>
+                                      {getPropostaValor(p) > 0 && (
+                                        <p className="text-white/70 text-sm font-bold">{fmtValor(getPropostaValor(p))}<span className="text-white/40 font-normal">/mês</span></p>
+                                      )}
+                                    </div>
+                                    <button
+                                      onClick={() => handleAceitarProposta(p)}
+                                      disabled={aceitando}
+                                      className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold text-[#003580] bg-white/90 hover:bg-white hover:scale-[1.03] transition-all disabled:opacity-50"
+                                    >
+                                      Escolher
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   )}
