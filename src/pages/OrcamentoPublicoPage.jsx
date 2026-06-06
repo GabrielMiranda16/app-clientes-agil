@@ -220,8 +220,8 @@ const OrcamentoPublicoPage = () => {
           </div>
 
           {stage === 'proposta' && (
-            <div className="w-full max-w-3xl mx-auto mt-10 sm:mt-16 pb-32 sm:pb-44 text-center">
-              <div className="flex flex-col items-center gap-5">
+            <div className="w-full max-w-3xl mx-auto mt-10 sm:mt-16 text-center">
+              <div className="flex flex-col items-center gap-5 pb-10 sm:pb-14">
                 <div className="bg-white/15 rounded-2xl w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center">
                   <SegIcon className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
                 </div>
@@ -230,6 +230,9 @@ const OrcamentoPublicoPage = () => {
                   {SEGMENTO_LABEL[segmento] || segmento}
                 </p>
               </div>
+              <p className="font-bold text-4xl sm:text-5xl pb-16 sm:pb-24" style={{ color: '#003580' }}>
+                Preparada para <span className="text-gray-900">{orcamento?.cliente_nome}</span>
+              </p>
             </div>
           )}
 
@@ -275,10 +278,6 @@ const OrcamentoPublicoPage = () => {
           {/* Proposta — big card layout */}
           {stage === 'proposta' && (
             <motion.div key="proposta" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full pb-32 lg:pb-8">
-
-              <p className="text-gray-900 font-bold text-4xl sm:text-5xl text-center mb-6">
-                Preparada para <span className="text-[#003580]">{orcamento?.cliente_nome}</span>
-              </p>
 
               {/* ONE big card */}
               <div className="rounded-[24px]" style={{ ...cardBg, overflow: 'clip' }}>
