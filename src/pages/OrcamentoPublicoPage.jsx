@@ -301,7 +301,7 @@ const OrcamentoPublicoPage = () => {
                         <p className="text-xs font-semibold text-blue-300 uppercase tracking-widest mb-8">Opção recomendada</p>
                         {propostaDestaque.logo_url && (
                           <div className="bg-white rounded-xl px-4 py-3 inline-flex mb-6">
-                            <img src={propostaDestaque.logo_url} alt={propostaDestaque.operadora} className="h-10 w-auto max-w-[160px] object-contain" />
+                            <img src={propostaDestaque.logo_url} alt={propostaDestaque.operadora} className="h-14 w-auto max-w-[180px] object-contain" />
                           </div>
                         )}
                         <p className="text-white font-bold text-xl mb-1">{propostaDestaque.operadora}</p>
@@ -338,7 +338,7 @@ const OrcamentoPublicoPage = () => {
                               <div key={i} className="flex items-center justify-between p-4 bg-white/10 rounded-xl border border-white/15">
                                 <div className="flex items-center gap-4">
                                   {segLogo
-                                    ? <div className="bg-white rounded-xl px-2 py-1.5 inline-flex items-center justify-center shrink-0"><img src={segLogo} alt={c.operadora} className="h-8 w-auto max-w-[90px] object-contain" /></div>
+                                    ? <div className="bg-white rounded-xl px-3 py-2 inline-flex items-center justify-center shrink-0"><img src={segLogo} alt={c.operadora} className="h-12 w-auto max-w-[110px] object-contain" /></div>
                                     : <Shield className="h-6 w-6 text-white/50" />}
                                   <span className="text-base font-medium text-white">{c.operadora || 'Plano atual'}</span>
                                 </div>
@@ -417,7 +417,7 @@ const OrcamentoPublicoPage = () => {
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-3 min-w-0">
                                     {b.logo
-                                      ? <div className="bg-white rounded-lg px-1.5 py-1 inline-flex items-center justify-center shrink-0"><img src={b.logo} alt={b.label} className="h-5 w-auto max-w-[60px] object-contain" /></div>
+                                      ? <div className="bg-white rounded-lg px-2 py-1.5 inline-flex items-center justify-center shrink-0"><img src={b.logo} alt={b.label} className="h-8 w-auto max-w-[80px] object-contain" /></div>
                                       : <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${b.tipo === 'atual' ? 'bg-amber-300' : 'bg-white'}`} />}
                                     <span className="text-sm text-white/80 truncate">{b.label}</span>
                                     {b.tipo === 'atual' && <span className="text-xs bg-amber-400/20 text-amber-200 rounded px-2 py-0.5 shrink-0">atual</span>}
@@ -469,7 +469,7 @@ const OrcamentoPublicoPage = () => {
                                   <td className="px-5 py-3.5">
                                     <div className="flex items-center gap-3">
                                       {p.logo_url
-                                        ? <div className="bg-white rounded-lg px-1.5 py-1 inline-flex items-center justify-center shrink-0"><img src={p.logo_url} alt={p.operadora} className="h-5 w-auto max-w-[60px] object-contain" /></div>
+                                        ? <div className="bg-white rounded-lg px-2 py-1.5 inline-flex items-center justify-center shrink-0"><img src={p.logo_url} alt={p.operadora} className="h-8 w-auto max-w-[80px] object-contain" /></div>
                                         : <Shield className="h-4 w-4 text-white/40" />}
                                       <span className="font-medium text-white">{p.operadora}</span>
                                     </div>
@@ -517,7 +517,7 @@ const OrcamentoPublicoPage = () => {
                                   <th key={i} className="text-center px-4 py-3 font-medium text-white/60">
                                     <div className="flex flex-col items-center gap-1.5">
                                       {p.logo_url
-                                        ? <div className="bg-white rounded-lg px-2 py-1 inline-flex items-center justify-center"><img src={p.logo_url} alt={p.operadora} className="h-5 w-auto max-w-[65px] object-contain" /></div>
+                                        ? <div className="bg-white rounded-lg px-2 py-1.5 inline-flex items-center justify-center"><img src={p.logo_url} alt={p.operadora} className="h-8 w-auto max-w-[80px] object-contain" /></div>
                                         : <span className="text-white">{p.operadora}</span>}
                                       {p.destaque && <span className="text-xs bg-white/20 text-white rounded px-2 py-0.5">⭐ rec.</span>}
                                     </div>
@@ -599,7 +599,7 @@ const OrcamentoPublicoPage = () => {
                             <div key={i} className="rounded-[20px] overflow-hidden bg-white/10 border border-white/15">
                               <div className="px-6 py-4 flex items-center gap-3 border-b border-white/15">
                                 {p.logo_url
-                                  ? <div className="bg-white rounded-xl px-2 py-1.5 inline-flex items-center justify-center shrink-0"><img src={p.logo_url} alt={p.operadora} className="h-7 w-auto max-w-[80px] object-contain" /></div>
+                                  ? <div className="bg-white rounded-xl px-3 py-2 inline-flex items-center justify-center shrink-0"><img src={p.logo_url} alt={p.operadora} className="h-10 w-auto max-w-[100px] object-contain" /></div>
                                   : <Shield className="h-5 w-5 text-white" />}
                                 <p className="text-base font-bold text-white">{p.operadora}</p>
                                 {p.destaque && <span className="ml-auto text-xs bg-white/20 text-white rounded-full px-3 py-1">⭐ Melhor Opção</span>}
@@ -669,7 +669,7 @@ const OrcamentoPublicoPage = () => {
                         <div className="flex items-center gap-3 mb-5">
                           {propostaDestaque?.logo_url && (
                             <div className="bg-white rounded-lg px-3 py-1.5 shrink-0">
-                              <img src={propostaDestaque.logo_url} alt={propostaDestaque.operadora} className="h-6 w-auto max-w-[70px] object-contain" />
+                              <img src={propostaDestaque.logo_url} alt={propostaDestaque.operadora} className="h-9 w-auto max-w-[90px] object-contain" />
                             </div>
                           )}
                           <div>
@@ -710,7 +710,7 @@ const OrcamentoPublicoPage = () => {
                           className="flex items-center justify-between p-4 rounded-xl border border-white/15 bg-white/10 hover:bg-white/20 transition-colors group">
                           <div className="flex items-center gap-4">
                             {propostaDestaque.logo_url && (
-                              <div className="bg-white rounded-xl px-2 py-1.5 inline-flex items-center justify-center shrink-0"><img src={propostaDestaque.logo_url} alt={propostaDestaque.operadora} className="h-7 w-auto max-w-[90px] object-contain" /></div>
+                              <div className="bg-white rounded-xl px-3 py-2 inline-flex items-center justify-center shrink-0"><img src={propostaDestaque.logo_url} alt={propostaDestaque.operadora} className="h-10 w-auto max-w-[120px] object-contain" /></div>
                             )}
                             <span className="text-base text-white font-medium">{propostaDestaque.operadora}</span>
                           </div>
@@ -730,7 +730,7 @@ const OrcamentoPublicoPage = () => {
                             <a key={i} href={p.rede_url} target="_blank" rel="noreferrer"
                               className="flex items-center justify-between p-4 rounded-xl border border-white/15 bg-white/10 hover:bg-white/20 transition-colors group">
                               <div className="flex items-center gap-4">
-                                {p.logo_url && <div className="bg-white rounded-xl px-2 py-1.5 inline-flex items-center justify-center shrink-0"><img src={p.logo_url} alt={p.operadora} className="h-6 w-auto max-w-[70px] object-contain" /></div>}
+                                {p.logo_url && <div className="bg-white rounded-xl px-3 py-2 inline-flex items-center justify-center shrink-0"><img src={p.logo_url} alt={p.operadora} className="h-10 w-auto max-w-[110px] object-contain" /></div>}
                                 <span className="text-base text-white">{p.operadora}</span>
                               </div>
                               <span className="text-sm text-blue-300 flex items-center gap-1.5">
@@ -858,7 +858,7 @@ const PropostaCard = ({ proposta, isSaude, onEscolher, aceitando }) => {
         <div className="flex items-center gap-4">
           <div className="rounded-xl p-2.5 bg-white/15 flex items-center justify-center">
             {proposta.logo_url
-              ? <img src={proposta.logo_url} alt={proposta.operadora} className="h-10 w-auto max-w-[110px] object-contain" />
+              ? <img src={proposta.logo_url} alt={proposta.operadora} className="h-14 w-auto max-w-[140px] object-contain" />
               : <Shield className="h-7 w-7 text-white" />}
           </div>
           <div>
