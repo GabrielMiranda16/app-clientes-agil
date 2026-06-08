@@ -407,7 +407,11 @@ const OrcamentoPublicoPage = () => {
                           </p>
                         )}
                         <div className="space-y-4">
-                          {propostas.map((p, i) => (
+                          {[...propostas].sort((a, b) => {
+                            if (a.destaque && !b.destaque) return -1;
+                            if (!a.destaque && b.destaque) return 1;
+                            return getPropostaValor(a) - getPropostaValor(b);
+                          }).map((p, i) => (
                             <PropostaCard key={i} proposta={p} isSaude={isSaude}
                               onEscolher={() => handleAceitarProposta(p)} aceitando={aceitando} />
                           ))}
@@ -877,44 +881,45 @@ const PropostaCard = ({ proposta, isSaude, onEscolher, aceitando }) => {
   const [expanded, setExpanded] = useState(false);
   const primeiroValor = proposta.planos?.find(pl => pl.valor)?.valor;
   const temMultiplosPlanos = proposta.planos?.filter(pl => pl.nome || pl.valor).length > 1;
+  const d = proposta.destaque;
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-      className="rounded-[20px] overflow-hidden bg-white/10 border border-white/15">
+      className={`rounded-[20px] overflow-hidden border ${d ? 'bg-white border-white shadow-2xl' : 'bg-white/10 border-white/15'}`}>
 
       {/* Header */}
-      <div className="px-6 py-5 flex items-center justify-between border-b border-white/15">
+      <div className={`px-6 py-5 flex items-center justify-between border-b ${d ? 'border-gray-100' : 'border-white/15'}`}>
         <div className="flex items-center gap-4">
-          <div className="rounded-xl p-2.5 bg-white/15 flex items-center justify-center">
+          <div className={`rounded-xl p-2.5 flex items-center justify-center ${d ? 'bg-gray-50' : 'bg-white/15'}`}>
             {proposta.logo_url
               ? <img src={proposta.logo_url} alt={proposta.operadora} className="h-11 w-28 object-contain" />
-              : <Shield className="h-7 w-7 text-white" />}
+              : <Shield className={`h-7 w-7 ${d ? 'text-[#003580]' : 'text-white'}`} />}
           </div>
           <div>
-            <p className="font-bold text-base text-white">{proposta.operadora || 'Seguradora'}</p>
+            <p className={`font-bold text-base ${d ? 'text-[#003580]' : 'text-white'}`}>{proposta.operadora || 'Seguradora'}</p>
             {isSaude && proposta.abrangencia && (
-              <p className="text-sm mt-0.5 text-white/60">{proposta.abrangencia} · {proposta.acomodacao || 'Sem acomodação'}</p>
+              <p className={`text-sm mt-0.5 ${d ? 'text-[#003580]/60' : 'text-white/60'}`}>{proposta.abrangencia} · {proposta.acomodacao || 'Sem acomodação'}</p>
             )}
           </div>
         </div>
-        {proposta.destaque && (
-          <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shrink-0">
+        {d && (
+          <span className="bg-[#003580] text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shrink-0">
             <Star className="h-3.5 w-3.5 fill-current" /> Melhor Opção
           </span>
         )}
       </div>
 
       {/* Preço */}
-      <div className="px-6 py-6 text-center border-b border-white/15">
+      <div className={`px-6 py-6 text-center border-b ${d ? 'border-gray-100' : 'border-white/15'}`}>
         {primeiroValor ? (
           <>
-            {temMultiplosPlanos && <p className="text-xs text-white/50 uppercase tracking-wide mb-1">a partir de</p>}
-            {!temMultiplosPlanos && <p className="text-sm text-white/50 uppercase tracking-wide">Mensalidade</p>}
-            <p className="font-bold mt-1 text-5xl text-white">{fmtValor(primeiroValor)}</p>
-            <p className="text-sm text-white/50 mt-1">por mês</p>
+            {temMultiplosPlanos && <p className={`text-xs uppercase tracking-wide mb-1 ${d ? 'text-[#003580]/50' : 'text-white/50'}`}>a partir de</p>}
+            {!temMultiplosPlanos && <p className={`text-sm uppercase tracking-wide ${d ? 'text-[#003580]/50' : 'text-white/50'}`}>Mensalidade</p>}
+            <p className={`font-bold mt-1 text-5xl ${d ? 'text-[#003580]' : 'text-white'}`}>{fmtValor(primeiroValor)}</p>
+            <p className={`text-sm mt-1 ${d ? 'text-[#003580]/50' : 'text-white/50'}`}>por mês</p>
           </>
         ) : (
-          <p className="text-base text-white/50 italic">Valores sob consulta</p>
+          <p className={`text-base italic ${d ? 'text-[#003580]/50' : 'text-white/50'}`}>Valores sob consulta</p>
         )}
       </div>
 
@@ -927,13 +932,13 @@ const PropostaCard = ({ proposta, isSaude, onEscolher, aceitando }) => {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden border-b border-white/15">
+                className={`overflow-hidden border-b ${d ? 'border-gray-100' : 'border-white/15'}`}>
                 <div className="px-6 py-4 space-y-2">
-                  <p className="text-xs font-bold text-white/50 uppercase tracking-wide mb-3">Valores por faixa</p>
+                  <p className={`text-xs font-bold uppercase tracking-wide mb-3 ${d ? 'text-[#003580]/50' : 'text-white/50'}`}>Valores por faixa</p>
                   {proposta.planos.filter(pl => pl.nome || pl.valor).map((pl, i) => (
-                    <div key={i} className="flex items-center justify-between text-sm py-1.5 border-b border-white/10 last:border-0">
-                      <span className="text-white/70">{pl.nome || `Plano ${i + 1}`}</span>
-                      <span className="font-bold text-white">{pl.valor ? fmtValor(pl.valor) : '—'}</span>
+                    <div key={i} className={`flex items-center justify-between text-sm py-1.5 border-b last:border-0 ${d ? 'border-gray-100' : 'border-white/10'}`}>
+                      <span className={d ? 'text-[#003580]/70' : 'text-white/70'}>{pl.nome || `Plano ${i + 1}`}</span>
+                      <span className={`font-bold ${d ? 'text-[#003580]' : 'text-white'}`}>{pl.valor ? fmtValor(pl.valor) : '—'}</span>
                     </div>
                   ))}
                 </div>
@@ -941,7 +946,7 @@ const PropostaCard = ({ proposta, isSaude, onEscolher, aceitando }) => {
             )}
           </AnimatePresence>
           <button onClick={() => setExpanded(v => !v)}
-            className="w-full flex items-center justify-center gap-1.5 py-3 text-sm text-blue-300 font-medium border-b border-white/15 hover:bg-white/10 transition-colors">
+            className={`w-full flex items-center justify-center gap-1.5 py-3 text-sm font-medium border-b transition-colors ${d ? 'text-[#003580] border-gray-100 hover:bg-gray-50' : 'text-blue-300 border-white/15 hover:bg-white/10'}`}>
             {expanded ? <><ChevronUp className="h-4 w-4" /> Ocultar faixas</> : <><ChevronDown className="h-4 w-4" /> Ver todos os valores</>}
           </button>
         </>
@@ -949,22 +954,22 @@ const PropostaCard = ({ proposta, isSaude, onEscolher, aceitando }) => {
 
       {/* Chips */}
       {isSaude && (
-        <div className="px-6 py-4 flex flex-wrap gap-2 border-b border-white/15">
+        <div className={`px-6 py-4 flex flex-wrap gap-2 border-b ${d ? 'border-gray-100' : 'border-white/15'}`}>
           {proposta.abrangencia && (
-            <span className="text-sm bg-white/15 text-white/80 rounded-full px-3 py-1">{proposta.abrangencia}</span>
+            <span className={`text-sm rounded-full px-3 py-1 ${d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80'}`}>{proposta.abrangencia}</span>
           )}
           {proposta.acomodacao && (
-            <span className="text-sm bg-white/15 text-white/80 rounded-full px-3 py-1">{proposta.acomodacao}</span>
+            <span className={`text-sm rounded-full px-3 py-1 ${d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80'}`}>{proposta.acomodacao}</span>
           )}
           {proposta.coparticipacao?.tem ? (
-            <span className="text-sm bg-amber-400/20 text-amber-200 rounded-full px-3 py-1">
+            <span className={`text-sm rounded-full px-3 py-1 ${d ? 'bg-amber-50 text-amber-700' : 'bg-amber-400/20 text-amber-200'}`}>
               Copart. {proposta.coparticipacao.percentual ? `${proposta.coparticipacao.percentual}%` : 'sim'}
             </span>
           ) : (
-            <span className="text-sm bg-green-400/20 text-green-200 rounded-full px-3 py-1">Sem coparticipação</span>
+            <span className={`text-sm rounded-full px-3 py-1 ${d ? 'bg-green-50 text-green-700' : 'bg-green-400/20 text-green-200'}`}>Sem coparticipação</span>
           )}
           {proposta.carencia !== undefined && (
-            <span className={`text-sm rounded-full px-3 py-1 ${proposta.carencia ? 'bg-amber-400/20 text-amber-200' : 'bg-green-400/20 text-green-200'}`}>
+            <span className={`text-sm rounded-full px-3 py-1 ${proposta.carencia ? (d ? 'bg-amber-50 text-amber-700' : 'bg-amber-400/20 text-amber-200') : (d ? 'bg-green-50 text-green-700' : 'bg-green-400/20 text-green-200')}`}>
               {proposta.carencia ? 'Com carência' : 'Sem carência'}
             </span>
           )}
@@ -975,8 +980,8 @@ const PropostaCard = ({ proposta, isSaude, onEscolher, aceitando }) => {
       <div className="px-6 py-5">
         <button onClick={onEscolher} disabled={aceitando}
           className={`w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-2 transition-all disabled:opacity-60 ${
-            proposta.destaque
-              ? 'bg-white text-[#003580] hover:bg-white/90 shadow-lg hover:scale-[1.01] active:scale-[0.99]'
+            d
+              ? 'bg-[#003580] text-white hover:bg-[#002560] shadow-lg hover:scale-[1.01] active:scale-[0.99]'
               : 'bg-white/15 text-white hover:bg-white/25'
           }`}>
           {aceitando ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
