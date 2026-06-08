@@ -96,17 +96,33 @@ const OrcamentoPublicoPage = () => {
             observer.unobserve(entry.target);
           }
         });
-      }, { threshold: 0.05, rootMargin: '0px 0px -30px 0px' });
+      }, { threshold: 0.05, rootMargin: '0px 0px -100px 0px' });
       sections.forEach((sec, i) => {
-        sec.style.transition = `opacity 0.45s ease ${i * 0.06}s, transform 0.45s ease ${i * 0.06}s`;
+        sec.style.transition = `opacity 0.5s ease ${i * 0.06}s, transform 0.5s ease ${i * 0.06}s`;
         const rect = sec.getBoundingClientRect();
-        if (rect.top < window.innerHeight - 20) {
+        if (rect.top < window.innerHeight - 100) {
           sec.style.opacity = '1';
           sec.style.transform = 'translateX(0)';
         } else {
           sec.style.opacity = '0';
-          sec.style.transform = 'translateX(-24px)';
+          sec.style.transform = 'translateX(24px)';
           observer.observe(sec);
+        }
+      });
+      const allItems = Array.from(container.querySelectorAll('.reveal-item'));
+      allItems.forEach((item) => {
+        const parent = item.parentElement;
+        const siblings = Array.from(parent.querySelectorAll(':scope > .reveal-item'));
+        const idx = siblings.indexOf(item);
+        item.style.transition = `opacity 0.4s ease ${idx * 0.13}s, transform 0.4s ease ${idx * 0.13}s`;
+        const rect = item.getBoundingClientRect();
+        if (rect.top < window.innerHeight - 100) {
+          item.style.opacity = '1';
+          item.style.transform = 'translateX(0)';
+        } else {
+          item.style.opacity = '0';
+          item.style.transform = 'translateX(24px)';
+          observer.observe(item);
         }
       });
       cleanup = () => observer.disconnect();
@@ -349,14 +365,14 @@ const OrcamentoPublicoPage = () => {
                             {destaqueCombinarCom.length > 0 && (
                               <div className="mt-2.5 pt-2.5 border-t border-white/15 space-y-1.5">
                                 {destaqueCombinarCom.map((c, i) => (
-                                  <div key={i} className="flex items-center justify-between text-xs">
-                                    <span className="text-white/60">+ {c.operadora} <span className="text-white/40">(mantida)</span></span>
-                                    <span className="text-white/80 font-semibold">{fmtValor(parseValor(c.valor))}</span>
+                                  <div key={i} className="flex items-center justify-between text-xs gap-2">
+                                    <span className="text-white/60 truncate">+ {c.operadora} <span className="text-white/40">(mantida)</span></span>
+                                    <span className="text-white/80 font-semibold whitespace-nowrap shrink-0">{fmtValor(parseValor(c.valor))}</span>
                                   </div>
                                 ))}
-                                <div className="flex items-center justify-between text-sm font-bold pt-1.5 border-t border-white/20 mt-1">
+                                <div className="flex items-center justify-between text-sm font-bold pt-1.5 border-t border-white/20 mt-1 gap-2">
                                   <span className="text-white/80">Total/mês</span>
-                                  <span className="text-white">{fmtValor(destaqueTotalComCombinados)}</span>
+                                  <span className="text-white whitespace-nowrap shrink-0">{fmtValor(destaqueTotalComCombinados)}</span>
                                 </div>
                               </div>
                             )}
@@ -444,7 +460,7 @@ const OrcamentoPublicoPage = () => {
                           {cenarios.map((c, i) => {
                             const segLogo = SEGURADORAS.find(s => s.nome === c.operadora)?.logo;
                             return (
-                              <div key={i} className="flex items-center justify-between p-4 bg-white/10 rounded-xl border border-white/15">
+                              <div key={i} className="flex items-center justify-between p-4 bg-white/10 rounded-xl border border-white/15 reveal-item">
                                 <div className="flex items-center gap-4">
                                   {segLogo
                                     ? <div className="bg-white/15 rounded-xl px-3 py-2 inline-flex items-center justify-center shrink-0"><img src={segLogo} alt={c.operadora} className="h-11 w-28 object-contain" /></div>
@@ -463,7 +479,7 @@ const OrcamentoPublicoPage = () => {
                           {cenarios.length > 1 && cenarios.some(c => c.valor) && (() => {
                             const total = cenarios.reduce((acc, c) => acc + (parseFloat(String(c.valor || '0').replace(',', '.')) || 0), 0);
                             return (
-                              <div className="flex items-center justify-between px-4 py-4 bg-white/5 rounded-xl border border-white/10">
+                              <div className="flex items-center justify-between px-4 py-4 bg-white/5 rounded-xl border border-white/10 reveal-item">
                                 <span className="text-base font-bold text-white">Total atual</span>
                                 <div className="text-right">
                                   <p className="font-black text-white text-2xl">{fmtValor(total)}</p>
@@ -538,7 +554,7 @@ const OrcamentoPublicoPage = () => {
                           <p className="text-white/60 text-sm mt-1 mb-5">Mensalidade comparada entre planos</p>
                           <div className="space-y-4">
                             {bars.map((b, i) => (
-                              <div key={i} className="space-y-2">
+                              <div key={i} className="space-y-2 reveal-item">
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-3 min-w-0">
                                     {b.logo
