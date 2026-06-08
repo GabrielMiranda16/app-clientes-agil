@@ -412,7 +412,7 @@ const OrcamentoPublicoPage = () => {
                             if (!a.destaque && b.destaque) return 1;
                             return getPropostaValor(a) - getPropostaValor(b);
                           }).map((p, i) => (
-                            <PropostaCard key={i} proposta={p} isSaude={isSaude}
+                            <PropostaCard key={i} proposta={p} isSaude={isSaude} cenarios={cenarios}
                               onEscolher={() => handleAceitarProposta(p)} aceitando={aceitando} />
                           ))}
                         </div>
@@ -877,11 +877,24 @@ const OrcamentoPublicoPage = () => {
   );
 };
 
-const PropostaCard = ({ proposta, isSaude, onEscolher, aceitando }) => {
+const PropostaCard = ({ proposta, isSaude, cenarios = [], onEscolher, aceitando }) => {
   const [expanded, setExpanded] = useState(false);
   const primeiroValor = proposta.planos?.find(pl => pl.valor)?.valor;
-  const temMultiplosPlanos = proposta.planos?.filter(pl => pl.nome || pl.valor).length > 1;
+  const planosValidos = proposta.planos?.filter(pl => pl.nome || pl.valor) || [];
+  const temMultiplosPlanos = planosValidos.length > 1;
+  const nomePlano = !temMultiplosPlanos && planosValidos[0]?.nome ? planosValidos[0].nome : null;
   const d = proposta.destaque;
+
+  const combinarCom = proposta.combinar_com || [];
+  const totalAtual = cenarios.reduce((sum, c) => sum + parseValor(c.valor), 0);
+  const valorProposta = (proposta.planos || []).reduce((sum, pl) => sum + parseValor(pl.valor), 0);
+  const valorCombinados = combinarCom.reduce((sum, c) => sum + parseValor(c.valor), 0);
+  const totalComCombinados = valorProposta + valorCombinados;
+  const baseComparacao = totalAtual > 0 ? totalAtual : 0;
+  const economiaMensal = baseComparacao > 0 ? baseComparacao - totalComCombinados : 0;
+  const economiaAnual = economiaMensal * 12;
+  const economiaPct = baseComparacao > 0 ? (economiaMensal / baseComparacao) * 100 : 0;
+  const temEconomia = economiaMensal > 0 && baseComparacao > 0;
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
@@ -897,6 +910,9 @@ const PropostaCard = ({ proposta, isSaude, onEscolher, aceitando }) => {
           </div>
           <div>
             <p className={`font-bold text-base ${d ? 'text-[#003580]' : 'text-white'}`}>{proposta.operadora || 'Seguradora'}</p>
+            {nomePlano && (
+              <p className={`text-sm font-medium mt-0.5 ${d ? 'text-[#003580]/70' : 'text-white/70'}`}>{nomePlano}</p>
+            )}
             {isSaude && proposta.abrangencia && (
               <p className={`text-sm mt-0.5 ${d ? 'text-[#003580]/60' : 'text-white/60'}`}>{proposta.abrangencia} · {proposta.acomodacao || 'Sem acomodação'}</p>
             )}
@@ -917,11 +933,52 @@ const PropostaCard = ({ proposta, isSaude, onEscolher, aceitando }) => {
             {!temMultiplosPlanos && <p className={`text-sm uppercase tracking-wide ${d ? 'text-[#003580]/50' : 'text-white/50'}`}>Mensalidade</p>}
             <p className={`font-bold mt-1 text-5xl ${d ? 'text-[#003580]' : 'text-white'}`}>{fmtValor(primeiroValor)}</p>
             <p className={`text-sm mt-1 ${d ? 'text-[#003580]/50' : 'text-white/50'}`}>por mês</p>
+            {combinarCom.length > 0 && (
+              <div className={`mt-4 rounded-xl p-3 text-left space-y-2 ${d ? 'bg-gray-50' : 'bg-white/5'}`}>
+                {combinarCom.map((c, i) => (
+                  <div key={i} className="flex items-center justify-between text-sm">
+                    <span className={d ? 'text-[#003580]/70' : 'text-white/60'}>
+                      + {c.operadora} <span className={`text-xs ${d ? 'text-[#003580]/40' : 'text-white/40'}`}>(mantida)</span>
+                    </span>
+                    <span className={`font-semibold ${d ? 'text-[#003580]' : 'text-white'}`}>{fmtValor(parseValor(c.valor))}</span>
+                  </div>
+                ))}
+                <div className={`flex items-center justify-between text-sm font-bold pt-2 border-t ${d ? 'border-gray-200 text-[#003580]' : 'border-white/20 text-white'}`}>
+                  <span>Total/mês</span>
+                  <span>{fmtValor(totalComCombinados)}</span>
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <p className={`text-base italic ${d ? 'text-[#003580]/50' : 'text-white/50'}`}>Valores sob consulta</p>
         )}
       </div>
+
+      {/* Economia */}
+      {temEconomia && (
+        <div className={`px-6 py-4 border-b ${d ? 'border-gray-100' : 'border-white/15'}`}>
+          <div className={`rounded-xl p-4 ${d ? 'bg-green-50 border border-green-100' : 'bg-green-400/10 border border-green-400/20'}`}>
+            <p className={`text-xs font-bold uppercase tracking-wider mb-3 ${d ? 'text-green-700' : 'text-green-300'}`}>Economia</p>
+            <div className="flex justify-around gap-2">
+              <div className="text-center">
+                <p className={`text-base font-black leading-tight ${d ? 'text-green-700' : 'text-green-300'}`}>{fmtValor(economiaMensal)}</p>
+                <p className={`text-xs mt-0.5 ${d ? 'text-green-600' : 'text-green-400'}`}>por mês</p>
+              </div>
+              <div className={`w-px ${d ? 'bg-green-200' : 'bg-green-400/20'}`} />
+              <div className="text-center">
+                <p className={`text-base font-black leading-tight ${d ? 'text-green-700' : 'text-green-300'}`}>{fmtValor(economiaAnual)}</p>
+                <p className={`text-xs mt-0.5 ${d ? 'text-green-600' : 'text-green-400'}`}>por ano</p>
+              </div>
+              <div className={`w-px ${d ? 'bg-green-200' : 'bg-green-400/20'}`} />
+              <div className="text-center">
+                <p className={`text-base font-black leading-tight ${d ? 'text-green-700' : 'text-green-300'}`}>{Math.round(economiaPct)}%</p>
+                <p className={`text-xs mt-0.5 ${d ? 'text-green-600' : 'text-green-400'}`}>de economia</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Faixas colapsável */}
       {temMultiplosPlanos && (
@@ -935,7 +992,7 @@ const PropostaCard = ({ proposta, isSaude, onEscolher, aceitando }) => {
                 className={`overflow-hidden border-b ${d ? 'border-gray-100' : 'border-white/15'}`}>
                 <div className="px-6 py-4 space-y-2">
                   <p className={`text-xs font-bold uppercase tracking-wide mb-3 ${d ? 'text-[#003580]/50' : 'text-white/50'}`}>Valores por faixa</p>
-                  {proposta.planos.filter(pl => pl.nome || pl.valor).map((pl, i) => (
+                  {planosValidos.map((pl, i) => (
                     <div key={i} className={`flex items-center justify-between text-sm py-1.5 border-b last:border-0 ${d ? 'border-gray-100' : 'border-white/10'}`}>
                       <span className={d ? 'text-[#003580]/70' : 'text-white/70'}>{pl.nome || `Plano ${i + 1}`}</span>
                       <span className={`font-bold ${d ? 'text-[#003580]' : 'text-white'}`}>{pl.valor ? fmtValor(pl.valor) : '—'}</span>

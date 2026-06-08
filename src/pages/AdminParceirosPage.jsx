@@ -157,6 +157,7 @@ const propVazio = () => ({
   carencia: false,
   rede_url: '',
   destaque: false,
+  combinar_com: [],
 });
 const cenarioVazio = () => ({ tem_plano: false, operadora: '', valor: '' });
 
@@ -330,6 +331,17 @@ const AdminParceirosPage = () => {
       return a;
     });
     setExpandedPropIdx(i + dir);
+  };
+
+  const toggleCombinarCom = (pi, cenario) => {
+    setPropostas(ps => ps.map((p, idx) => {
+      if (idx !== pi) return p;
+      const exists = (p.combinar_com || []).some(c => c.operadora === cenario.operadora);
+      const combinar_com = exists
+        ? (p.combinar_com || []).filter(c => c.operadora !== cenario.operadora)
+        : [...(p.combinar_com || []), { operadora: cenario.operadora, valor: cenario.valor }];
+      return { ...p, combinar_com };
+    }));
   };
 
   // ── Planos dentro de proposta ──
@@ -793,6 +805,31 @@ const AdminParceirosPage = () => {
                     <Star className={`h-3.5 w-3.5 ${p.destaque ? 'fill-yellow-300 text-yellow-300' : ''}`} />
                     {p.destaque ? 'Melhor opção (destaque ativo)' : 'Marcar como melhor opção'}
                   </button>
+                )}
+
+                {/* Combinar com cenário atual */}
+                {cenarios.filter(c => c.tem_plano && c.operadora).length > 1 && (
+                  <div className="space-y-2 pt-1 border-t border-gray-100">
+                    <Label className="text-xs text-gray-500">Combinar com cenário atual (opcional)</Label>
+                    <p className="text-xs text-gray-400">Selecione qual plano atual será mantido junto com esta proposta</p>
+                    <div className="space-y-1.5">
+                      {cenarios.filter(c => c.tem_plano && c.operadora).map((c, ci) => {
+                        const isChecked = (p.combinar_com || []).some(x => x.operadora === c.operadora);
+                        return (
+                          <label key={ci} className={`flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded-lg border transition-colors ${isChecked ? 'bg-[#f0f7ff] border-[#003580]/30' : 'bg-white border-gray-200 hover:border-gray-300'}`}>
+                            <input type="checkbox" checked={isChecked}
+                              onChange={() => toggleCombinarCom(pi, c)}
+                              className="rounded border-gray-300 text-[#003580] focus:ring-[#003580]" />
+                            <span className="text-xs text-gray-600 flex-1">
+                              {c.operadora}
+                              {c.valor && <span className="text-gray-400"> — R$ {c.valor}</span>}
+                            </span>
+                            <span className="text-xs text-gray-400">(mantida)</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
                 )}
               </div>
             )}
