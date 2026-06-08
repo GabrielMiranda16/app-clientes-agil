@@ -338,12 +338,12 @@ const OrcamentoPublicoPage = () => {
                               <img src={propostaDestaque.logo_url} alt={propostaDestaque.operadora} className="h-11 w-28 object-contain" />
                             </div>
                           )}
-                          <div className="min-w-0">
+                          <div className="flex-1 min-w-0">
                             <p className="text-white font-bold text-lg leading-tight truncate">{propostaDestaque.operadora}</p>
                             {getPropostaValor(propostaDestaque) > 0 && (
-                              <div className="flex items-baseline gap-1.5 mt-1">
+                              <div className="flex items-baseline gap-1 mt-1 flex-wrap">
                                 <p className="text-xl font-bold text-white whitespace-nowrap">{fmtValor(getPropostaValor(propostaDestaque))}</p>
-                                <p className="text-sm text-white/50">/mês</p>
+                                <p className="text-sm text-white/50 whitespace-nowrap">/mês</p>
                               </div>
                             )}
                             {destaqueCombinarCom.length > 0 && (
@@ -376,28 +376,51 @@ const OrcamentoPublicoPage = () => {
                             <div className="border-t border-white/15 mt-8 pt-8">
                               <p className="text-sm font-semibold text-blue-300 uppercase tracking-widest mb-4">Outras opções</p>
                               <div className="flex flex-col gap-3">
-                                {propostas.filter(p => !p.destaque).map((p, i) => (
-                                  <div key={i} className="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-3">
-                                    {p.logo_url && (
-                                      <div className="bg-white/15 rounded-lg px-2 py-1.5 inline-flex items-center justify-center shrink-0">
-                                        <img src={p.logo_url} alt={p.operadora} className="h-9 w-24 object-contain" />
-                                      </div>
-                                    )}
-                                    <div className="min-w-0 flex-1">
-                                      <p className="text-white font-semibold text-sm leading-tight truncate">{p.operadora}</p>
-                                      {getPropostaValor(p) > 0 && (
-                                        <p className="text-white/70 text-xs font-bold">{fmtValor(getPropostaValor(p))}<span className="text-white/40 font-normal">/mês</span></p>
+                                {propostas.filter(p => !p.destaque).map((p, i) => {
+                                  const pCombinarCom = p.combinar_com || [];
+                                  const pValorProposta = (p.planos || []).reduce((sum, pl) => sum + parseValor(pl.valor), 0);
+                                  const pValorCombinados = pCombinarCom.reduce((sum, c) => sum + parseValor(c.valor), 0);
+                                  const pTotalComCombinados = pValorProposta + pValorCombinados;
+                                  return (
+                                    <div key={i} className="flex items-start gap-3 bg-white/10 rounded-xl px-4 py-3">
+                                      {p.logo_url && (
+                                        <div className="bg-white/15 rounded-lg px-2 py-1.5 inline-flex items-center justify-center shrink-0 mt-0.5">
+                                          <img src={p.logo_url} alt={p.operadora} className="h-9 w-24 object-contain" />
+                                        </div>
                                       )}
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-white font-semibold text-sm leading-tight truncate">{p.operadora}</p>
+                                        {getPropostaValor(p) > 0 && (
+                                          <div className="flex items-baseline gap-1 flex-wrap">
+                                            <p className="text-white/70 text-xs font-bold whitespace-nowrap">{fmtValor(getPropostaValor(p))}</p>
+                                            <p className="text-white/40 text-xs whitespace-nowrap">/mês</p>
+                                          </div>
+                                        )}
+                                        {pCombinarCom.length > 0 && (
+                                          <div className="mt-1.5 pt-1.5 border-t border-white/15 space-y-1">
+                                            {pCombinarCom.map((c, ci) => (
+                                              <div key={ci} className="flex items-center justify-between text-xs">
+                                                <span className="text-white/50 truncate">+ {c.operadora} <span className="text-white/35">(mantida)</span></span>
+                                                <span className="text-white/70 font-semibold shrink-0 ml-1">{fmtValor(parseValor(c.valor))}</span>
+                                              </div>
+                                            ))}
+                                            <div className="flex items-center justify-between text-xs font-bold pt-1 border-t border-white/20">
+                                              <span className="text-white/60">Total/mês</span>
+                                              <span className="text-white/90">{fmtValor(pTotalComCombinados)}</span>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                      <button
+                                        onClick={() => handleAceitarProposta(p)}
+                                        disabled={aceitando}
+                                        className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold text-[#003580] bg-white/90 hover:bg-white hover:scale-[1.03] transition-all disabled:opacity-50 mt-0.5"
+                                      >
+                                        Escolher
+                                      </button>
                                     </div>
-                                    <button
-                                      onClick={() => handleAceitarProposta(p)}
-                                      disabled={aceitando}
-                                      className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold text-[#003580] bg-white/90 hover:bg-white hover:scale-[1.03] transition-all disabled:opacity-50"
-                                    >
-                                      Escolher
-                                    </button>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             </div>
                           </>
