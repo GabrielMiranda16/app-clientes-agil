@@ -81,6 +81,39 @@ const OrcamentoPublicoPage = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (stage !== 'proposta') return;
+    let cleanup = null;
+    const timer = setTimeout(() => {
+      const container = document.querySelector('.right-col-sections');
+      if (!container) return;
+      const sections = Array.from(container.children);
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.style.opacity = '1';
+            entry.target.style.transform = 'translateY(0)';
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.05, rootMargin: '0px 0px -30px 0px' });
+      sections.forEach((sec, i) => {
+        sec.style.transition = `opacity 0.45s ease ${i * 0.06}s, transform 0.45s ease ${i * 0.06}s`;
+        const rect = sec.getBoundingClientRect();
+        if (rect.top < window.innerHeight - 20) {
+          sec.style.opacity = '1';
+          sec.style.transform = 'translateY(0)';
+        } else {
+          sec.style.opacity = '0';
+          sec.style.transform = 'translateY(16px)';
+          observer.observe(sec);
+        }
+      });
+      cleanup = () => observer.disconnect();
+    }, 200);
+    return () => { clearTimeout(timer); if (cleanup) cleanup(); };
+  }, [stage]);
+
   const loadOrcamento = async () => {
     const { data, error } = await supabase.from('orcamentos').select('*').eq('slug', slug).maybeSingle();
     if (error || !data) { setStage('erro'); return; }
@@ -185,6 +218,11 @@ const OrcamentoPublicoPage = () => {
 
   const segData = propostaDestaque ? SEGURADORAS.find(s => s.nome === propostaDestaque.operadora) : null;
   const diferenciais = segData?.diferenciais || [];
+
+  const destaqueCombinarCom = propostaDestaque?.combinar_com || [];
+  const destaqueValorProposta = (propostaDestaque?.planos || []).reduce((sum, pl) => sum + parseValor(pl.valor), 0);
+  const destaqueValorCombinados = destaqueCombinarCom.reduce((sum, c) => sum + parseValor(c.valor), 0);
+  const destaqueTotalComCombinados = destaqueValorProposta + destaqueValorCombinados;
 
   if (stage === 'loading') return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(180deg, #003580 0%, #1a5599 25%, #6b9fd4 52%, #c8e0f5 70%, #f0f7ff 84%, #ffffff 100%)' }}>
@@ -308,6 +346,20 @@ const OrcamentoPublicoPage = () => {
                                 <p className="text-sm text-white/50">/mês</p>
                               </div>
                             )}
+                            {destaqueCombinarCom.length > 0 && (
+                              <div className="mt-2.5 pt-2.5 border-t border-white/15 space-y-1.5">
+                                {destaqueCombinarCom.map((c, i) => (
+                                  <div key={i} className="flex items-center justify-between text-xs">
+                                    <span className="text-white/60">+ {c.operadora} <span className="text-white/40">(mantida)</span></span>
+                                    <span className="text-white/80 font-semibold">{fmtValor(parseValor(c.valor))}</span>
+                                  </div>
+                                ))}
+                                <div className="flex items-center justify-between text-sm font-bold pt-1.5 border-t border-white/20 mt-1">
+                                  <span className="text-white/80">Total/mês</span>
+                                  <span className="text-white">{fmtValor(destaqueTotalComCombinados)}</span>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                         <button
@@ -355,7 +407,7 @@ const OrcamentoPublicoPage = () => {
                   )}
 
                   {/* Right column — all sections */}
-                  <div className="divide-y divide-white/15">
+                  <div className="divide-y divide-white/15 right-col-sections">
 
                     {/* Cenário Atual */}
                     {cenarios.length > 0 && (
@@ -877,10 +929,10 @@ const OrcamentoPublicoPage = () => {
   );
 };
 
-const useCountUp = (target, duration = 1200) => {
+const useCountUp = (target, shouldStart = false, duration = 1200) => {
   const [value, setValue] = useState(0);
   useEffect(() => {
-    if (!target) { setValue(0); return; }
+    if (!shouldStart || !target) { setValue(0); return; }
     let rafId;
     let start = null;
     const step = (ts) => {
@@ -893,12 +945,14 @@ const useCountUp = (target, duration = 1200) => {
     };
     rafId = requestAnimationFrame(step);
     return () => cancelAnimationFrame(rafId);
-  }, [target, duration]);
+  }, [shouldStart, target, duration]);
   return value;
 };
 
 const PropostaCard = ({ proposta, isSaude, cenarios = [], onEscolher, aceitando }) => {
   const [expanded, setExpanded] = useState(false);
+  const economiaRef = useRef(null);
+  const [economiaVisible, setEconomiaVisible] = useState(false);
   const primeiroValor = proposta.planos?.find(pl => pl.valor)?.valor;
   const planosValidos = proposta.planos?.filter(pl => pl.nome || pl.valor) || [];
   const temMultiplosPlanos = planosValidos.length > 1;
@@ -916,12 +970,23 @@ const PropostaCard = ({ proposta, isSaude, cenarios = [], onEscolher, aceitando 
   const economiaPct = baseComparacao > 0 ? (economiaMensal / baseComparacao) * 100 : 0;
   const temEconomia = economiaMensal > 0 && baseComparacao > 0;
 
-  const animMensal = useCountUp(temEconomia ? economiaMensal : 0);
-  const animAnual = useCountUp(temEconomia ? economiaAnual : 0);
-  const animPct = useCountUp(temEconomia ? economiaPct : 0);
+  useEffect(() => {
+    const el = economiaRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setEconomiaVisible(true); },
+      { threshold: 0.2 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const animMensal = useCountUp(temEconomia ? economiaMensal : 0, economiaVisible);
+  const animAnual = useCountUp(temEconomia ? economiaAnual : 0, economiaVisible);
+  const animPct = useCountUp(temEconomia ? economiaPct : 0, economiaVisible);
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+    <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-20px' }}
       className={`rounded-[20px] overflow-hidden border ${d ? 'bg-white border-white shadow-2xl' : 'bg-white/10 border-white/15'}`}>
 
       {/* Header */}
@@ -990,6 +1055,7 @@ const PropostaCard = ({ proposta, isSaude, cenarios = [], onEscolher, aceitando 
       {temEconomia && (
         <div className={`px-6 py-4 border-b ${d ? 'border-gray-100' : 'border-white/15'}`}>
           <div
+            ref={economiaRef}
             className="rounded-xl p-4"
             style={d ? {
               background: 'linear-gradient(135deg, #16a34a 0%, #059669 100%)',
