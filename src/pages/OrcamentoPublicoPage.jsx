@@ -385,10 +385,10 @@ const OrcamentoPublicoPage = () => {
                           {cenarios.length > 1 && cenarios.some(c => c.valor) && (() => {
                             const total = cenarios.reduce((acc, c) => acc + (parseFloat(String(c.valor || '0').replace(',', '.')) || 0), 0);
                             return (
-                              <div className="flex items-center justify-between px-4 py-3 bg-white/5 rounded-xl border border-white/10">
+                              <div className="flex items-center justify-between px-4 py-4 bg-white/5 rounded-xl border border-white/10">
                                 <span className="text-base font-bold text-white">Total atual</span>
                                 <div className="text-right">
-                                  <p className="font-bold text-white text-base">{fmtValor(total)}</p>
+                                  <p className="font-black text-white text-2xl">{fmtValor(total)}</p>
                                   <p className="text-xs text-white/50">/mês</p>
                                 </div>
                               </div>
