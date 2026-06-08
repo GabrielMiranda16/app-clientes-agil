@@ -877,6 +877,26 @@ const OrcamentoPublicoPage = () => {
   );
 };
 
+const useCountUp = (target, duration = 1200) => {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    if (!target) { setValue(0); return; }
+    let rafId;
+    let start = null;
+    const step = (ts) => {
+      if (!start) start = ts;
+      const progress = Math.min((ts - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(target * eased);
+      if (progress < 1) rafId = requestAnimationFrame(step);
+      else setValue(target);
+    };
+    rafId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(rafId);
+  }, [target, duration]);
+  return value;
+};
+
 const PropostaCard = ({ proposta, isSaude, cenarios = [], onEscolher, aceitando }) => {
   const [expanded, setExpanded] = useState(false);
   const primeiroValor = proposta.planos?.find(pl => pl.valor)?.valor;
@@ -896,33 +916,44 @@ const PropostaCard = ({ proposta, isSaude, cenarios = [], onEscolher, aceitando 
   const economiaPct = baseComparacao > 0 ? (economiaMensal / baseComparacao) * 100 : 0;
   const temEconomia = economiaMensal > 0 && baseComparacao > 0;
 
+  const animMensal = useCountUp(temEconomia ? economiaMensal : 0);
+  const animAnual = useCountUp(temEconomia ? economiaAnual : 0);
+  const animPct = useCountUp(temEconomia ? economiaPct : 0);
+
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
       className={`rounded-[20px] overflow-hidden border ${d ? 'bg-white border-white shadow-2xl' : 'bg-white/10 border-white/15'}`}>
 
       {/* Header */}
       <div className={`px-6 py-5 flex items-center justify-between border-b ${d ? 'border-gray-100' : 'border-white/15'}`}>
-        <div className="flex items-center gap-4">
-          <div className={`rounded-xl p-2.5 flex items-center justify-center ${d ? 'bg-gray-50' : 'bg-white/15'}`}>
+        <div className="flex items-center gap-4 min-w-0">
+          <div className={`rounded-xl p-2.5 flex items-center justify-center shrink-0 ${d ? 'bg-gray-50' : 'bg-white/15'}`}>
             {proposta.logo_url
               ? <img src={proposta.logo_url} alt={proposta.operadora} className="h-11 w-28 object-contain" />
               : <Shield className={`h-7 w-7 ${d ? 'text-[#003580]' : 'text-white'}`} />}
           </div>
-          <div>
+          <div className="min-w-0">
             <p className={`font-bold text-base ${d ? 'text-[#003580]' : 'text-white'}`}>{proposta.operadora || 'Seguradora'}</p>
             {nomePlano && (
-              <p className={`text-sm font-medium mt-0.5 ${d ? 'text-[#003580]/70' : 'text-white/70'}`}>{nomePlano}</p>
+              <p className={`text-sm font-medium mt-0.5 ${d ? 'text-[#003580]/70' : 'text-white/70'}`}>Plano: {nomePlano}</p>
             )}
             {isSaude && proposta.abrangencia && (
               <p className={`text-sm mt-0.5 ${d ? 'text-[#003580]/60' : 'text-white/60'}`}>{proposta.abrangencia} · {proposta.acomodacao || 'Sem acomodação'}</p>
             )}
           </div>
         </div>
-        {d && (
-          <span className="bg-[#003580] text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shrink-0">
-            <Star className="h-3.5 w-3.5 fill-current" /> Melhor Opção
-          </span>
-        )}
+        <div className="flex flex-col items-end gap-1.5 shrink-0 ml-3">
+          {d && (
+            <span className="bg-[#003580] text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1">
+              <Star className="h-3.5 w-3.5 fill-current" /> Melhor Opção
+            </span>
+          )}
+          {temEconomia && (
+            <span className={`text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap ${d ? 'bg-green-100 text-green-700' : 'bg-green-400/20 text-green-300'}`}>
+              Você economiza {Math.round(economiaPct)}%
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Preço */}
@@ -958,22 +989,30 @@ const PropostaCard = ({ proposta, isSaude, cenarios = [], onEscolher, aceitando 
       {/* Economia */}
       {temEconomia && (
         <div className={`px-6 py-4 border-b ${d ? 'border-gray-100' : 'border-white/15'}`}>
-          <div className={`rounded-xl p-4 ${d ? 'bg-green-50 border border-green-100' : 'bg-green-400/10 border border-green-400/20'}`}>
-            <p className={`text-xs font-bold uppercase tracking-wider mb-3 ${d ? 'text-green-700' : 'text-green-300'}`}>Economia</p>
-            <div className="flex justify-around gap-2">
+          <div
+            className="rounded-xl p-4"
+            style={d ? {
+              background: 'linear-gradient(135deg, #16a34a 0%, #059669 100%)',
+              boxShadow: '0 4px 20px rgba(22, 163, 74, 0.35)',
+            } : {
+              background: 'rgba(34, 197, 94, 0.10)',
+              border: '1px solid rgba(34, 197, 94, 0.25)',
+            }}>
+            <p className={`text-xs font-bold uppercase tracking-wider mb-3 ${d ? 'text-green-100' : 'text-green-300'}`}>Economia</p>
+            <div className="flex justify-around gap-2 items-center">
               <div className="text-center">
-                <p className={`text-base font-black leading-tight ${d ? 'text-green-700' : 'text-green-300'}`}>{fmtValor(economiaMensal)}</p>
-                <p className={`text-xs mt-0.5 ${d ? 'text-green-600' : 'text-green-400'}`}>por mês</p>
+                <p className={`text-base font-black leading-tight ${d ? 'text-white' : 'text-green-300'}`}>{fmtValor(animMensal)}</p>
+                <p className={`text-xs mt-0.5 ${d ? 'text-green-100' : 'text-green-400'}`}>por mês</p>
               </div>
-              <div className={`w-px ${d ? 'bg-green-200' : 'bg-green-400/20'}`} />
+              <div className={`w-px h-8 ${d ? 'bg-green-300/40' : 'bg-green-400/30'}`} />
               <div className="text-center">
-                <p className={`text-base font-black leading-tight ${d ? 'text-green-700' : 'text-green-300'}`}>{fmtValor(economiaAnual)}</p>
-                <p className={`text-xs mt-0.5 ${d ? 'text-green-600' : 'text-green-400'}`}>por ano</p>
+                <p className={`text-base font-black leading-tight ${d ? 'text-white' : 'text-green-300'}`}>{fmtValor(animAnual)}</p>
+                <p className={`text-xs mt-0.5 ${d ? 'text-green-100' : 'text-green-400'}`}>por ano</p>
               </div>
-              <div className={`w-px ${d ? 'bg-green-200' : 'bg-green-400/20'}`} />
+              <div className={`w-px h-8 ${d ? 'bg-green-300/40' : 'bg-green-400/30'}`} />
               <div className="text-center">
-                <p className={`text-base font-black leading-tight ${d ? 'text-green-700' : 'text-green-300'}`}>{Math.round(economiaPct)}%</p>
-                <p className={`text-xs mt-0.5 ${d ? 'text-green-600' : 'text-green-400'}`}>de economia</p>
+                <p className={`text-3xl font-black leading-tight ${d ? 'text-white' : 'text-green-300'}`}>{Math.round(animPct)}%</p>
+                <p className={`text-xs mt-0.5 ${d ? 'text-green-100' : 'text-green-400'}`}>de economia</p>
               </div>
             </div>
           </div>
@@ -1023,10 +1062,14 @@ const PropostaCard = ({ proposta, isSaude, cenarios = [], onEscolher, aceitando 
               Copart. {proposta.coparticipacao.percentual ? `${proposta.coparticipacao.percentual}%` : 'sim'}
             </span>
           ) : (
-            <span className={`text-sm rounded-full px-3 py-1 ${d ? 'bg-green-50 text-green-700' : 'bg-green-400/20 text-green-200'}`}>Sem coparticipação</span>
+            <span className={`text-sm rounded-full px-3 py-1 ${d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80'}`}>Sem coparticipação</span>
           )}
           {proposta.carencia !== undefined && (
-            <span className={`text-sm rounded-full px-3 py-1 ${proposta.carencia ? (d ? 'bg-amber-50 text-amber-700' : 'bg-amber-400/20 text-amber-200') : (d ? 'bg-green-50 text-green-700' : 'bg-green-400/20 text-green-200')}`}>
+            <span className={`text-sm rounded-full px-3 py-1 ${
+              proposta.carencia
+                ? (d ? 'bg-amber-50 text-amber-700' : 'bg-amber-400/20 text-amber-200')
+                : (d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80')
+            }`}>
               {proposta.carencia ? 'Com carência' : 'Sem carência'}
             </span>
           )}
