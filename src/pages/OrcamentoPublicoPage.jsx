@@ -334,7 +334,7 @@ const OrcamentoPublicoPage = () => {
                                     <div className="min-w-0 flex-1">
                                       <p className="text-white font-semibold text-sm leading-tight truncate">{p.operadora}</p>
                                       {getPropostaValor(p) > 0 && (
-                                        <p className="text-white/70 text-sm font-bold whitespace-nowrap">{fmtValor(getPropostaValor(p))}<span className="text-white/40 font-normal">/mês</span></p>
+                                        <p className="text-white/70 text-xs font-bold">{fmtValor(getPropostaValor(p))}<span className="text-white/40 font-normal">/mês</span></p>
                                       )}
                                     </div>
                                     <button
