@@ -304,7 +304,7 @@ const OrcamentoPublicoPage = () => {
                             <p className="text-white font-bold text-lg leading-tight truncate">{propostaDestaque.operadora}</p>
                             {getPropostaValor(propostaDestaque) > 0 && (
                               <div className="flex items-baseline gap-1.5 mt-1">
-                                <p className="text-3xl font-bold text-white">{fmtValor(getPropostaValor(propostaDestaque))}</p>
+                                <p className="text-xl font-bold text-white whitespace-nowrap">{fmtValor(getPropostaValor(propostaDestaque))}</p>
                                 <p className="text-sm text-white/50">/mês</p>
                               </div>
                             )}
@@ -334,7 +334,7 @@ const OrcamentoPublicoPage = () => {
                                     <div className="min-w-0 flex-1">
                                       <p className="text-white font-semibold text-sm leading-tight truncate">{p.operadora}</p>
                                       {getPropostaValor(p) > 0 && (
-                                        <p className="text-white/70 text-sm font-bold">{fmtValor(getPropostaValor(p))}<span className="text-white/40 font-normal">/mês</span></p>
+                                        <p className="text-white/70 text-sm font-bold whitespace-nowrap">{fmtValor(getPropostaValor(p))}<span className="text-white/40 font-normal">/mês</span></p>
                                       )}
                                     </div>
                                     <button
