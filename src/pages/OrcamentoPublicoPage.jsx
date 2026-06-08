@@ -92,7 +92,7 @@ const OrcamentoPublicoPage = () => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
             entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
+            entry.target.style.transform = 'translateX(0)';
             observer.unobserve(entry.target);
           }
         });
@@ -102,10 +102,10 @@ const OrcamentoPublicoPage = () => {
         const rect = sec.getBoundingClientRect();
         if (rect.top < window.innerHeight - 20) {
           sec.style.opacity = '1';
-          sec.style.transform = 'translateY(0)';
+          sec.style.transform = 'translateX(0)';
         } else {
           sec.style.opacity = '0';
-          sec.style.transform = 'translateY(16px)';
+          sec.style.transform = 'translateX(-24px)';
           observer.observe(sec);
         }
       });
@@ -382,25 +382,35 @@ const OrcamentoPublicoPage = () => {
                                   const pValorCombinados = pCombinarCom.reduce((sum, c) => sum + parseValor(c.valor), 0);
                                   const pTotalComCombinados = pValorProposta + pValorCombinados;
                                   return (
-                                    <div key={i} className="flex items-start gap-3 bg-white/10 rounded-xl px-4 py-3">
-                                      {p.logo_url && (
-                                        <div className="bg-white/15 rounded-lg px-2 py-1.5 inline-flex items-center justify-center shrink-0 mt-0.5">
-                                          <img src={p.logo_url} alt={p.operadora} className="h-9 w-24 object-contain" />
-                                        </div>
-                                      )}
-                                      <div className="min-w-0 flex-1">
-                                        <p className="text-white font-semibold text-sm leading-tight truncate">{p.operadora}</p>
+                                    <div key={i} className="bg-white/10 rounded-xl px-4 py-3 flex flex-col gap-2">
+                                      <div className="flex items-center justify-between gap-3">
+                                        {p.logo_url
+                                          ? <div className="bg-white/15 rounded-lg px-2 py-1.5 inline-flex items-center justify-center">
+                                              <img src={p.logo_url} alt={p.operadora} className="h-8 w-24 object-contain" />
+                                            </div>
+                                          : <p className="text-white font-semibold text-sm leading-tight">{p.operadora}</p>
+                                        }
+                                        <button
+                                          onClick={() => handleAceitarProposta(p)}
+                                          disabled={aceitando}
+                                          className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold text-[#003580] bg-white/90 hover:bg-white hover:scale-[1.03] transition-all disabled:opacity-50"
+                                        >
+                                          Escolher
+                                        </button>
+                                      </div>
+                                      <div>
+                                        {p.logo_url && <p className="text-white font-semibold text-sm leading-tight truncate mb-0.5">{p.operadora}</p>}
                                         {getPropostaValor(p) > 0 && (
-                                          <div className="flex items-baseline gap-1 flex-wrap">
-                                            <p className="text-white/70 text-xs font-bold whitespace-nowrap">{fmtValor(getPropostaValor(p))}</p>
-                                            <p className="text-white/40 text-xs whitespace-nowrap">/mês</p>
+                                          <div className="flex items-baseline gap-1">
+                                            <p className="text-white/70 text-xs font-bold">{fmtValor(getPropostaValor(p))}</p>
+                                            <p className="text-white/40 text-xs">/mês</p>
                                           </div>
                                         )}
                                         {pCombinarCom.length > 0 && (
                                           <div className="mt-1.5 pt-1.5 border-t border-white/15 space-y-1">
                                             {pCombinarCom.map((c, ci) => (
                                               <div key={ci} className="flex items-center justify-between text-xs">
-                                                <span className="text-white/50 truncate">+ {c.operadora} <span className="text-white/35">(mantida)</span></span>
+                                                <span className="text-white/50">+ {c.operadora} <span className="text-white/35">(mantida)</span></span>
                                                 <span className="text-white/70 font-semibold shrink-0 ml-1">{fmtValor(parseValor(c.valor))}</span>
                                               </div>
                                             ))}
@@ -411,13 +421,6 @@ const OrcamentoPublicoPage = () => {
                                           </div>
                                         )}
                                       </div>
-                                      <button
-                                        onClick={() => handleAceitarProposta(p)}
-                                        disabled={aceitando}
-                                        className="shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold text-[#003580] bg-white/90 hover:bg-white hover:scale-[1.03] transition-all disabled:opacity-50 mt-0.5"
-                                      >
-                                        Escolher
-                                      </button>
                                     </div>
                                   );
                                 })}
