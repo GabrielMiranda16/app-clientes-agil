@@ -724,23 +724,26 @@ const ParceiroDashboard = () => {
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                       Informações do seguro ({SEGMENTO_LABEL[form.segmento]})
                     </p>
-                    {camposDoSegmento.map(({ key, label, placeholder, type, options }) => (
-                      <div key={key} className="space-y-1.5">
-                        <Label className="text-sm font-medium text-gray-700">{label}</Label>
-                        {type === 'select' ? (
-                          <select value={form.extras[key] || ''}
-                            onChange={e => setExtra(key, e.target.value)}
-                            className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580]">
-                            <option value="">Selecione...</option>
-                            {(options || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                          </select>
-                        ) : (
-                          <input value={form.extras[key] || ''} onChange={e => setExtra(key, e.target.value)}
-                            type={type || 'text'} placeholder={placeholder}
-                            className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580]" />
-                        )}
-                      </div>
-                    ))}
+                    {camposDoSegmento.map(({ key, label, placeholder, type, options }) => {
+                      const vazio = !String(form.extras[key] || '').trim();
+                      return (
+                        <div key={key} className="space-y-1.5">
+                          <Label className="text-sm font-medium text-gray-700">{label} <span className="text-red-500">*</span></Label>
+                          {type === 'select' ? (
+                            <select value={form.extras[key] || ''}
+                              onChange={e => setExtra(key, e.target.value)}
+                              className={`w-full rounded-lg border bg-[#f0f7ff] px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580] ${vazio ? 'border-red-300' : 'border-gray-200'}`}>
+                              <option value="">Selecione...</option>
+                              {(options || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                            </select>
+                          ) : (
+                            <input value={form.extras[key] || ''} onChange={e => setExtra(key, e.target.value)}
+                              type={type || 'text'} placeholder={placeholder}
+                              className={`w-full rounded-lg border bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580] ${vazio ? 'border-red-300' : 'border-gray-200'}`} />
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 

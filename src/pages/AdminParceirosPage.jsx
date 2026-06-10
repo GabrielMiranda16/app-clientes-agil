@@ -1430,22 +1430,25 @@ const AdminParceirosPage = () => {
               {novoForm.segmento && (CAMPOS_SEGMENTO[novoForm.segmento] || []).length > 0 && (
                 <div className="space-y-2 border border-blue-100 rounded-xl p-3 bg-blue-50">
                   <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Dados do {SEGMENTO_LABEL[novoForm.segmento]}</p>
-                  {(CAMPOS_SEGMENTO[novoForm.segmento] || []).map(campo => (
-                    <div key={campo.key} className="space-y-1">
-                      <Label className="text-xs text-gray-600">{campo.label}</Label>
-                      {campo.type === 'select' ? (
-                        <select value={segData[campo.key] || ''} onChange={e => setSegData(d => ({ ...d, [campo.key]: e.target.value }))}
-                          className="w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:border-[#003580]">
-                          <option value="">Selecionar...</option>
-                          {campo.options.map(o => <option key={o} value={o}>{o}</option>)}
-                        </select>
-                      ) : (
-                        <Input value={segData[campo.key] || ''} onChange={e => setSegData(d => ({ ...d, [campo.key]: e.target.value }))}
-                          type={campo.type} placeholder={campo.placeholder}
-                          className="border-gray-200 bg-white focus:border-[#003580] h-8 text-sm" />
-                      )}
-                    </div>
-                  ))}
+                  {(CAMPOS_SEGMENTO[novoForm.segmento] || []).map(campo => {
+                    const vazio = !String(segData[campo.key] || '').trim();
+                    return (
+                      <div key={campo.key} className="space-y-1">
+                        <Label className="text-xs text-gray-600">{campo.label} <span className="text-red-500">*</span></Label>
+                        {campo.type === 'select' ? (
+                          <select value={segData[campo.key] || ''} onChange={e => setSegData(d => ({ ...d, [campo.key]: e.target.value }))}
+                            className={`w-full rounded-lg border bg-white px-2 py-1.5 text-sm focus:outline-none focus:border-[#003580] ${vazio ? 'border-red-300' : 'border-gray-200'}`}>
+                            <option value="">Selecionar...</option>
+                            {campo.options.map(o => <option key={o} value={o}>{o}</option>)}
+                          </select>
+                        ) : (
+                          <Input value={segData[campo.key] || ''} onChange={e => setSegData(d => ({ ...d, [campo.key]: e.target.value }))}
+                            type={campo.type} placeholder={campo.placeholder}
+                            className={`bg-white focus:border-[#003580] h-8 text-sm ${vazio ? 'border-red-300' : 'border-gray-200'}`} />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
