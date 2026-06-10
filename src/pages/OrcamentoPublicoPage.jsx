@@ -591,7 +591,7 @@ const OrcamentoPublicoPage = () => {
                                   </div>
                                 </div>
                                 {b.tipo !== 'atual' && (
-                                  <div className="h-9 bg-white/10 rounded-full overflow-hidden">
+                                  <div className="h-5 bg-white/10 rounded-full overflow-hidden">
                                     <motion.div
                                       initial={{ width: 0 }}
                                       animate={{ width: `${(b.valor / max) * 100}%` }}
