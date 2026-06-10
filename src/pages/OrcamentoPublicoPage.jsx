@@ -573,7 +573,7 @@ const OrcamentoPublicoPage = () => {
                                       : <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${b.destaque ? 'bg-yellow-300' : 'bg-white/60'}`} />}
                                     <div className="min-w-0">
                                       <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-sm text-white/90 font-medium truncate">{b.mainLabel}</span>
+                                        <span className={`font-medium truncate ${b.tipo === 'atual' ? 'text-base text-white' : 'text-sm text-white/90'}`}>{b.mainLabel}</span>
                                         {b.tipo === 'atual' && <span className="text-xs bg-white/15 text-white/60 rounded px-2 py-0.5 shrink-0">atual</span>}
                                         {b.destaque && <span className="text-xs bg-yellow-400/25 text-yellow-200 rounded px-2 py-0.5 shrink-0">⭐ rec.</span>}
                                       </div>
@@ -584,7 +584,7 @@ const OrcamentoPublicoPage = () => {
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2 shrink-0">
-                                    <span className="text-sm font-bold text-white whitespace-nowrap">{fmtValor(b.valor)}</span>
+                                    <span className={`font-bold text-white whitespace-nowrap ${b.tipo === 'atual' ? 'text-lg' : 'text-sm'}`}>{fmtValor(b.valor)}</span>
                                     {b.economiaPct > 0 && (
                                       <span className="text-xs font-bold text-green-300 whitespace-nowrap">-{Math.round(b.economiaPct)}%</span>
                                     )}
@@ -600,7 +600,7 @@ const OrcamentoPublicoPage = () => {
                                       style={{
                                         background: b.destaque
                                           ? 'linear-gradient(90deg, #facc15, #eab308)'
-                                          : 'rgba(255,255,255,0.40)',
+                                          : 'rgba(255,255,255,1)',
                                       }}
                                     >
                                       {b.economia > 0 && (
