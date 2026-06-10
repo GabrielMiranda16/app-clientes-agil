@@ -542,7 +542,9 @@ const OrcamentoPublicoPage = () => {
                         .map(p => {
                           const cc = p.combinar_com || [];
                           const totalValor = getPropostaValor(p) + cc.reduce((sum, c) => sum + parseValor(c.valor), 0);
-                          return { mainLabel: p.operadora, valor: totalValor, tipo: 'proposta', destaque: p.destaque, logo: p.logo_url, combinarCom: cc };
+                          const economia = totalAtualValor > 0 ? totalAtualValor - totalValor : 0;
+                          const economiaPct = totalAtualValor > 0 && economia > 0 ? (economia / totalAtualValor) * 100 : 0;
+                          return { mainLabel: p.operadora, valor: totalValor, tipo: 'proposta', destaque: p.destaque, logo: p.logo_url, combinarCom: cc, economia, economiaPct };
                         })
                         .sort((a, b) => a.valor - b.valor);
                       const bars = [
@@ -551,19 +553,20 @@ const OrcamentoPublicoPage = () => {
                           subLabel: cenarios.length > 1 ? cenarios.map(c => c.operadora).filter(Boolean).join(' + ') : null,
                           valor: totalAtualValor, tipo: 'atual', combinarCom: [],
                           logo: cenarios.length === 1 ? SEGURADORAS.find(s => s.nome === cenarios[0].operadora)?.logo : null,
+                          economia: 0, economiaPct: 0,
                         }] : []),
                         ...proposalBars,
                       ];
                       if (bars.length < 2) return null;
-                      const max = Math.max(...bars.map(b => b.valor), 1);
+                      const max = Math.max(...bars.filter(b => b.tipo !== 'atual').map(b => b.valor), 1);
                       return (
                         <div className="px-6 sm:px-8 py-6">
                           <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block">Comparação de Custo</span>
                           <p className="text-white/60 text-sm mt-1 mb-5">Mensalidade total comparada</p>
                           <div className="space-y-5">
                             {bars.map((b, i) => (
-                              <div key={i} className="space-y-2 reveal-item">
-                                <div className="flex items-center justify-between gap-3">
+                              <div key={i} className="reveal-item">
+                                <div className="flex items-center justify-between gap-3 mb-2">
                                   <div className="flex items-center gap-3 min-w-0">
                                     {b.logo
                                       ? <div className="bg-white/15 rounded-lg px-2 py-1.5 inline-flex items-center justify-center shrink-0"><img src={b.logo} alt={b.mainLabel} className="h-8 w-20 object-contain" /></div>
@@ -580,21 +583,34 @@ const OrcamentoPublicoPage = () => {
                                       )}
                                     </div>
                                   </div>
-                                  <span className="text-sm font-bold text-white shrink-0 whitespace-nowrap">{fmtValor(b.valor)}</span>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <span className="text-sm font-bold text-white whitespace-nowrap">{fmtValor(b.valor)}</span>
+                                    {b.economiaPct > 0 && (
+                                      <span className="text-xs font-bold text-green-300 whitespace-nowrap">-{Math.round(b.economiaPct)}%</span>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="h-3.5 bg-white/10 rounded-full overflow-hidden">
-                                  <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${(b.valor / max) * 100}%` }}
-                                    transition={{ duration: 0.7, delay: i * 0.12 }}
-                                    className="h-full rounded-full"
-                                    style={{
-                                      background: b.destaque
-                                        ? 'linear-gradient(90deg, #facc15, #eab308)'
-                                        : 'rgba(255,255,255,0.40)',
-                                    }}
-                                  />
-                                </div>
+                                {b.tipo !== 'atual' && (
+                                  <div className="h-9 bg-white/10 rounded-full overflow-hidden">
+                                    <motion.div
+                                      initial={{ width: 0 }}
+                                      animate={{ width: `${(b.valor / max) * 100}%` }}
+                                      transition={{ duration: 0.7, delay: i * 0.12 }}
+                                      className="h-full rounded-full flex items-center px-4 overflow-hidden"
+                                      style={{
+                                        background: b.destaque
+                                          ? 'linear-gradient(90deg, #facc15, #eab308)'
+                                          : 'rgba(255,255,255,0.40)',
+                                      }}
+                                    >
+                                      {b.economia > 0 && (
+                                        <span className="text-xs font-bold whitespace-nowrap" style={{ color: '#003580' }}>
+                                          Economiza {fmtValor(b.economia)}/mês
+                                        </span>
+                                      )}
+                                    </motion.div>
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>
