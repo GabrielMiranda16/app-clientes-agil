@@ -649,21 +649,26 @@ const AdminParceirosPage = () => {
                     {cenarios.length > 1 && selected?.perfil_vidas?.length > 0 && (
                       <div className="space-y-1.5 pt-2 border-t border-gray-100">
                         <p className="text-xs font-semibold text-gray-600">Vidas por faixa etária</p>
-                        {selected.perfil_vidas.map(({ id, label }) => {
+                        {selected.perfil_vidas.map(({ id, label, vidas: meta }) => {
                           const val = parseInt((c.vidas || {})[id] || 0);
+                          const totalFaixa = cenarios.filter(c2 => c2.tem_plano).reduce((s, c2) => s + parseInt((c2.vidas || {})[id] || 0), 0);
+                          const atingiuLimite = totalFaixa >= meta;
                           return (
                             <div key={id} className="flex items-center gap-2">
                               <span className="text-xs text-gray-600 flex-1 min-w-0 truncate">{label}</span>
+                              <span className="text-xs text-gray-300 shrink-0">{totalFaixa}/{meta}</span>
                               <div className="flex items-center gap-1 shrink-0">
                                 <button type="button"
                                   onClick={() => updCenarioVidasFaixa(ci, id, Math.max(0, val - 1))}
-                                  className="w-5 h-5 rounded border border-gray-200 bg-gray-50 flex items-center justify-center hover:bg-gray-100 text-xs font-bold text-gray-600">
+                                  disabled={val === 0}
+                                  className="w-5 h-5 rounded border border-gray-200 bg-gray-50 flex items-center justify-center text-xs font-bold text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-100">
                                   −
                                 </button>
                                 <span className="w-6 text-center text-xs font-semibold text-gray-800">{val}</span>
                                 <button type="button"
-                                  onClick={() => updCenarioVidasFaixa(ci, id, val + 1)}
-                                  className="w-5 h-5 rounded border border-gray-200 bg-gray-50 flex items-center justify-center hover:bg-gray-100 text-xs font-bold text-gray-600">
+                                  onClick={() => { if (!atingiuLimite) updCenarioVidasFaixa(ci, id, val + 1); }}
+                                  disabled={atingiuLimite}
+                                  className="w-5 h-5 rounded border border-gray-200 bg-gray-50 flex items-center justify-center text-xs font-bold text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-100">
                                   +
                                 </button>
                               </div>
@@ -1377,19 +1382,22 @@ const AdminParceirosPage = () => {
                     {AGE_BRACKETS.map(({ id, label }) => {
                       const key = faixaKey(id);
                       const val = parseInt(segData[key] || '0');
+                      const atingiuTotal = distribuiVidas >= totalVidas;
                       return (
                         <div key={id} className="flex items-center justify-between gap-2">
                           <span className="text-xs text-gray-700 flex-1">{label}</span>
                           <div className="flex items-center gap-1.5">
                             <button type="button"
                               onClick={() => setSegData(d => ({ ...d, [key]: String(Math.max(0, val - 1)) }))}
-                              className="w-6 h-6 rounded-md border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-100">
+                              disabled={val === 0}
+                              className="w-6 h-6 rounded-md border border-gray-200 bg-white flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-100">
                               <Minus className="h-3 w-3 text-gray-600" />
                             </button>
                             <span className="w-5 text-center text-sm font-semibold text-gray-800">{val}</span>
                             <button type="button"
-                              onClick={() => setSegData(d => ({ ...d, [key]: String(val + 1) }))}
-                              className="w-6 h-6 rounded-md border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-100">
+                              onClick={() => { if (!atingiuTotal) setSegData(d => ({ ...d, [key]: String(val + 1) })); }}
+                              disabled={atingiuTotal}
+                              className="w-6 h-6 rounded-md border border-gray-200 bg-white flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-100">
                               <Plus className="h-3 w-3 text-gray-600" />
                             </button>
                           </div>
