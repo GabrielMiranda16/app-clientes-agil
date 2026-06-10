@@ -590,6 +590,9 @@ const OrcamentoPublicoPage = () => {
                                     )}
                                   </div>
                                 </div>
+                                {b.tipo === 'atual' && i < bars.length - 1 && (
+                                  <div className="border-t border-white/15 mt-3" />
+                                )}
                                 {b.tipo !== 'atual' && (
                                   <div className="h-5 bg-white/10 rounded-full overflow-hidden">
                                     <motion.div
