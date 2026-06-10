@@ -469,7 +469,7 @@ const OrcamentoPublicoPage = () => {
                                     : <Shield className="h-6 w-6 text-white/50" />}
                                   <div>
                                     <span className="text-base font-medium text-white block">{c.operadora || 'Plano atual'}</span>
-                                    {c.vidas && <span className="text-xs text-white/50">{c.vidas} vidas</span>}
+                                    {(() => { const tv = c.vidas && typeof c.vidas === 'object' ? Object.values(c.vidas).reduce((s,v)=>s+parseInt(v||0),0) : parseInt(c.vidas||0); return tv > 0 && <span className="text-xs text-white/50">{tv} vidas</span>; })()}
                                   </div>
                                 </div>
                                 {c.valor && (
