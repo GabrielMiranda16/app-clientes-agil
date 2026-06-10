@@ -123,44 +123,9 @@ const FUNIL = ['SOLICITACAO', 'ORCAMENTO', 'DOCUMENTOS', 'ASSINATURA', 'CONCLUID
 
 const FORM_VAZIO = { segmento: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', cliente_cpf: '', cliente_data_nascimento: '', observacoes: '', extras: {} };
 
-const formatPhone = (v) => {
-  const d = v.replace(/\D/g, '').slice(0, 11);
-  if (d.length <= 10) return d.replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{4})(\d)/, '$1-$2');
-  return d.replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2');
-};
-
-const formatCpfCnpj = (v) => {
-  const d = v.replace(/\D/g, '');
-  if (d.length <= 11) {
-    return d.slice(0, 11)
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
-      .replace(/(\d{3})\.(\d{3})\.(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
-  }
-  return d.slice(0, 14)
-    .replace(/(\d{2})(\d)/, '$1.$2')
-    .replace(/(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-    .replace(/(\d{2})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3/$4')
-    .replace(/(\d{2})\.(\d{3})\.(\d{3})\/(\d{4})(\d{1,2})/, '$1.$2.$3/$4-$5');
-};
-
-const validarCpfDigitos = (cpf) => {
-  const d = cpf.replace(/\D/g, '');
-  if (d.length !== 11 || /^(\d)\1+$/.test(d)) return false;
-  let s = 0;
-  for (let i = 0; i < 9; i++) s += +d[i] * (10 - i);
-  let r = (s * 10) % 11; if (r >= 10) r = 0;
-  if (r !== +d[9]) return false;
-  s = 0;
-  for (let i = 0; i < 10; i++) s += +d[i] * (11 - i);
-  r = (s * 10) % 11; if (r >= 10) r = 0;
-  return r === +d[10];
-};
-
 const validarCpfCnpj = (val) => {
   const digits = (val || '').replace(/\D/g, '');
-  if (digits.length === 11) return validarCpfDigitos(val);
-  return digits.length === 14;
+  return digits.length === 11 || digits.length === 14;
 };
 
 const validarTelefone = (val) => {
@@ -715,7 +680,7 @@ const ParceiroDashboard = () => {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-gray-700">Telefone / WhatsApp <span className="text-red-500">*</span></Label>
-                    <input value={form.cliente_telefone} onChange={e => setField('cliente_telefone', formatPhone(e.target.value))}
+                    <input value={form.cliente_telefone} onChange={e => setField('cliente_telefone', e.target.value)}
                       placeholder="(11) 99999-0000"
                       className={`w-full rounded-lg border bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#003580] ${form.cliente_telefone && !validarTelefone(form.cliente_telefone) ? 'border-red-400 focus:border-red-400' : 'border-gray-200 focus:border-[#003580]'}`} />
                     {form.cliente_telefone && !validarTelefone(form.cliente_telefone) && (
@@ -734,7 +699,7 @@ const ParceiroDashboard = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label className="text-sm font-medium text-gray-700">CPF / CNPJ <span className="text-red-500">*</span></Label>
-                      <input value={form.cliente_cpf} onChange={e => setField('cliente_cpf', formatCpfCnpj(e.target.value))}
+                      <input value={form.cliente_cpf} onChange={e => setField('cliente_cpf', e.target.value)}
                         placeholder="000.000.000-00"
                         className={`w-full rounded-lg border bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#003580] ${form.cliente_cpf && !validarCpfCnpj(form.cliente_cpf) ? 'border-red-400 focus:border-red-400' : 'border-gray-200 focus:border-[#003580]'}`} />
                       {form.cliente_cpf && !validarCpfCnpj(form.cliente_cpf) && (

@@ -163,21 +163,28 @@ const cenarioVazio = () => ({ tem_plano: false, operadora: '', valor: '', vidas:
 
 const fmtBRL = (v) => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-const formatCPF = (v) => {
-  const d = v.replace(/\D/g, '').slice(0, 11);
-  return d
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
-    .replace(/(\d{3})\.(\d{3})\.(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
-};
-
 const formatPhone = (v) => {
   const d = v.replace(/\D/g, '').slice(0, 11);
   if (d.length <= 10) return d.replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{4})(\d)/, '$1-$2');
   return d.replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2');
 };
 
-const validarCPF = (cpf) => {
+const formatCpfCnpj = (v) => {
+  const d = v.replace(/\D/g, '');
+  if (d.length <= 11) {
+    return d.slice(0, 11)
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+      .replace(/(\d{3})\.(\d{3})\.(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+  }
+  return d.slice(0, 14)
+    .replace(/(\d{2})(\d)/, '$1.$2')
+    .replace(/(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/(\d{2})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3/$4')
+    .replace(/(\d{2})\.(\d{3})\.(\d{3})\/(\d{4})(\d{1,2})/, '$1.$2.$3/$4-$5');
+};
+
+const validarCpfDigitos = (cpf) => {
   const d = cpf.replace(/\D/g, '');
   if (d.length !== 11 || /^(\d)\1+$/.test(d)) return false;
   let s = 0;
@@ -190,10 +197,18 @@ const validarCPF = (cpf) => {
   return r === +d[10];
 };
 
+const validarCpfCnpj = (val) => {
+  const d = (val || '').replace(/\D/g, '');
+  if (d.length === 11) return validarCpfDigitos(val);
+  return d.length === 14;
+};
+
 const validarTelefone = (tel) => {
   const d = tel.replace(/\D/g, '');
   return d.length >= 10 && d.length <= 11;
 };
+
+const validarEmail = (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((val || '').trim());
 
 const generateSlug = () => {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -247,7 +262,7 @@ const AdminParceirosPage = () => {
   const [parceiros, setParceiros] = useState([]);
   const [criarModal, setCriarModal] = useState(false);
   const [criando, setCriando] = useState(false);
-  const [novoForm, setNovoForm] = useState({ parceiro_id: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', cliente_cpf: '', segmento: '', observacoes: '' });
+  const [novoForm, setNovoForm] = useState({ parceiro_id: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', cliente_cpf: '', cliente_data_nascimento: '', segmento: '', observacoes: '' });
   const [segData, setSegData] = useState({});
 
   useEffect(() => {
@@ -570,12 +585,14 @@ const AdminParceirosPage = () => {
   };
 
   const handleCriarOrcamento = async () => {
-    if (!novoForm.cliente_nome || !novoForm.cliente_telefone || !novoForm.cliente_email || !novoForm.cliente_cpf || !novoForm.segmento)
-      return toast({ variant: 'destructive', title: 'Preencha nome, telefone, e-mail, CPF e segmento.' });
-    if (!validarCPF(novoForm.cliente_cpf))
-      return toast({ variant: 'destructive', title: 'CPF inválido.', description: 'Verifique o número digitado.' });
+    if (!novoForm.cliente_nome || !novoForm.cliente_telefone || !novoForm.cliente_email || !novoForm.cliente_cpf || !novoForm.cliente_data_nascimento || !novoForm.segmento)
+      return toast({ variant: 'destructive', title: 'Preencha todos os campos obrigatórios.' });
     if (!validarTelefone(novoForm.cliente_telefone))
-      return toast({ variant: 'destructive', title: 'Telefone inválido.', description: 'Informe um número com DDD (ex: (11) 99999-9999).' });
+      return toast({ variant: 'destructive', title: 'Telefone inválido.', description: 'Informe um número com DDD.' });
+    if (!validarEmail(novoForm.cliente_email))
+      return toast({ variant: 'destructive', title: 'E-mail inválido.' });
+    if (!validarCpfCnpj(novoForm.cliente_cpf))
+      return toast({ variant: 'destructive', title: 'CPF ou CNPJ inválido.', description: 'Verifique o número digitado.' });
     setCriando(true);
     try {
       const campos = CAMPOS_SEGMENTO[novoForm.segmento] || [];
@@ -602,6 +619,7 @@ const AdminParceirosPage = () => {
         cliente_telefone: novoForm.cliente_telefone,
         cliente_email: novoForm.cliente_email,
         cliente_cpf: novoForm.cliente_cpf || null,
+        cliente_data_nascimento: novoForm.cliente_data_nascimento || null,
         segmento: novoForm.segmento,
         observacoes: obsCompleto || null,
         status: 'SOLICITACAO',
@@ -611,7 +629,7 @@ const AdminParceirosPage = () => {
       toast({ title: 'Orçamento criado!', description: 'Agora preencha as propostas.' });
       setCriarModal(false);
       setFiltro('TODOS');
-      setNovoForm({ parceiro_id: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', cliente_cpf: '', segmento: '', observacoes: '' });
+      setNovoForm({ parceiro_id: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', cliente_cpf: '', cliente_data_nascimento: '', segmento: '', observacoes: '' });
       setSegData({});
       await loadData(data.id);
     } catch (err) {
@@ -1347,6 +1365,14 @@ const AdminParceirosPage = () => {
 
             <div className="space-y-3">
               <div className="space-y-1">
+                <Label className="text-xs text-gray-500">Segmento *</Label>
+                <select value={novoForm.segmento} onChange={e => { setNovoForm(f => ({ ...f, segmento: e.target.value })); setSegData({}); }}
+                  className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580]">
+                  <option value="">Selecionar segmento...</option>
+                  {Object.entries(SEGMENTO_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1">
                 <Label className="text-xs text-gray-500">Parceiro</Label>
                 <select value={novoForm.parceiro_id} onChange={e => setNovoForm(f => ({ ...f, parceiro_id: e.target.value }))}
                   className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580]">
@@ -1355,34 +1381,43 @@ const AdminParceirosPage = () => {
                 </select>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs text-gray-500">Nome do cliente *</Label>
+                <Label className="text-xs text-gray-500">Nome completo *</Label>
                 <Input value={novoForm.cliente_nome} onChange={e => setNovoForm(f => ({ ...f, cliente_nome: e.target.value }))}
                   placeholder="Nome completo" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
               </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-500">Telefone / WhatsApp *</Label>
+                <Input value={novoForm.cliente_telefone} onChange={e => setNovoForm(f => ({ ...f, cliente_telefone: formatPhone(e.target.value) }))}
+                  placeholder="(11) 99999-9999"
+                  className={`border bg-[#f0f7ff] focus:border-[#003580] ${novoForm.cliente_telefone && !validarTelefone(novoForm.cliente_telefone) ? 'border-red-400' : 'border-gray-200'}`} />
+                {novoForm.cliente_telefone && !validarTelefone(novoForm.cliente_telefone) && (
+                  <p className="text-xs text-red-500 mt-0.5">Informe um número com DDD</p>
+                )}
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-500">E-mail *</Label>
+                <Input value={novoForm.cliente_email} onChange={e => setNovoForm(f => ({ ...f, cliente_email: e.target.value }))}
+                  placeholder="email@exemplo.com"
+                  className={`border bg-[#f0f7ff] focus:border-[#003580] ${novoForm.cliente_email && !validarEmail(novoForm.cliente_email) ? 'border-red-400' : 'border-gray-200'}`} />
+                {novoForm.cliente_email && !validarEmail(novoForm.cliente_email) && (
+                  <p className="text-xs text-red-500 mt-0.5">Informe um e-mail válido</p>
+                )}
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs text-gray-500">Telefone *</Label>
-                  <Input value={novoForm.cliente_telefone} onChange={e => setNovoForm(f => ({ ...f, cliente_telefone: formatPhone(e.target.value) }))}
-                    placeholder="(11) 99999-9999" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
+                  <Label className="text-xs text-gray-500">CPF / CNPJ *</Label>
+                  <Input value={novoForm.cliente_cpf} onChange={e => setNovoForm(f => ({ ...f, cliente_cpf: formatCpfCnpj(e.target.value) }))}
+                    placeholder="000.000.000-00"
+                    className={`border bg-[#f0f7ff] focus:border-[#003580] ${novoForm.cliente_cpf && !validarCpfCnpj(novoForm.cliente_cpf) ? 'border-red-400' : 'border-gray-200'}`} />
+                  {novoForm.cliente_cpf && !validarCpfCnpj(novoForm.cliente_cpf) && (
+                    <p className="text-xs text-red-500 mt-0.5">CPF ou CNPJ inválido</p>
+                  )}
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-gray-500">E-mail *</Label>
-                  <Input value={novoForm.cliente_email} onChange={e => setNovoForm(f => ({ ...f, cliente_email: e.target.value }))}
-                    placeholder="email@exemplo.com" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
+                  <Label className="text-xs text-gray-500">Data de nascimento *</Label>
+                  <Input type="date" value={novoForm.cliente_data_nascimento} onChange={e => setNovoForm(f => ({ ...f, cliente_data_nascimento: e.target.value }))}
+                    className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
                 </div>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs text-gray-500">CPF do cliente * <span className="text-gray-400">(necessário para acessar o link)</span></Label>
-                <Input value={novoForm.cliente_cpf} onChange={e => setNovoForm(f => ({ ...f, cliente_cpf: formatCPF(e.target.value) }))}
-                  placeholder="000.000.000-00" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs text-gray-500">Segmento *</Label>
-                <select value={novoForm.segmento} onChange={e => { setNovoForm(f => ({ ...f, segmento: e.target.value })); setSegData({}); }}
-                  className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580]">
-                  <option value="">Selecionar segmento...</option>
-                  {Object.entries(SEGMENTO_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                </select>
               </div>
 
               {/* Campos específicos do segmento */}
