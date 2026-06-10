@@ -682,56 +682,33 @@ const OrcamentoPublicoPage = () => {
                     )}
 
                     {/* Tabela de Perfil */}
-                    {isSaude && propostas.some(p => p.planos?.some(pl => pl.nome || pl.vidas)) && (
+                    {orcamento?.perfil_vidas?.length > 0 && (
                       <div className="px-6 sm:px-8 py-6">
                         <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block">Tabela de Perfil</span>
                         <p className="text-white/60 text-sm mt-1 mb-5">Composição por faixa etária</p>
-                        <div className="space-y-4">
-                          {propostas.filter(p => p.planos?.some(pl => pl.nome || pl.vidas)).map((p, i) => {
-                            const planosFiltrados = p.planos.filter(pl => pl.nome || pl.valor);
-                            const temVidas = planosFiltrados.some(pl => pl.vidas);
-                            const totalVidas = temVidas ? planosFiltrados.reduce((s, pl) => s + (parseInt(pl.vidas) || 0), 0) : 0;
-                            const totalValor = planosFiltrados.reduce((s, pl) => {
-                              const vidas = parseInt(pl.vidas) || 1;
-                              return s + parseValor(pl.valor) * (temVidas ? vidas : 1);
-                            }, 0);
-                            return (
-                              <div key={i} className="rounded-2xl overflow-hidden bg-white/10 border border-white/15 reveal-item">
-                                <div className="px-5 py-4 flex items-center gap-3 border-b border-white/10">
-                                  {p.logo_url
-                                    ? <div className="bg-white/15 rounded-lg px-2 py-1.5 inline-flex items-center justify-center shrink-0"><img src={p.logo_url} alt={p.operadora} className="h-9 w-24 object-contain" /></div>
-                                    : <Shield className="h-5 w-5 text-white" />}
-                                  <span className="font-semibold text-white flex-1">{p.operadora}</span>
-                                  {p.destaque && <span className="text-xs bg-white/20 text-white rounded-full px-3 py-1 shrink-0">⭐ Melhor Opção</span>}
-                                </div>
-                                <table className="w-full text-sm">
-                                  <thead>
-                                    <tr className="bg-white/5">
-                                      <th className="text-left px-5 py-2.5 text-white/50 font-medium">Faixa Etária</th>
-                                      {temVidas && <th className="text-center px-4 py-2.5 text-white/50 font-medium">Vidas</th>}
-                                      <th className="text-right px-5 py-2.5 text-white/50 font-medium">Mensalidade/vida</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {planosFiltrados.map((pl, pli) => (
-                                      <tr key={pli} className="border-t border-white/10">
-                                        <td className="px-5 py-3 text-white/80">{pl.nome || `Faixa ${pli + 1}`}</td>
-                                        {temVidas && <td className="px-4 py-3 text-center font-bold text-white">{pl.vidas || '—'}</td>}
-                                        <td className="px-5 py-3 text-right font-bold text-white">{pl.valor ? fmtValor(pl.valor) : '—'}</td>
-                                      </tr>
-                                    ))}
-                                    {(temVidas || planosFiltrados.length > 1) && (
-                                      <tr className="border-t border-white/20 bg-white/5">
-                                        <td className="px-5 py-3 font-bold text-white">Total</td>
-                                        {temVidas && <td className="px-4 py-3 text-center font-bold text-white">{totalVidas}</td>}
-                                        <td className="px-5 py-3 text-right font-black text-white">{fmtValor(totalValor)}/mês</td>
-                                      </tr>
-                                    )}
-                                  </tbody>
-                                </table>
-                              </div>
-                            );
-                          })}
+                        <div className="rounded-2xl overflow-hidden bg-white/10 border border-white/15">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="bg-white/5">
+                                <th className="text-left px-5 py-3 text-white/50 font-medium">Faixa Etária</th>
+                                <th className="text-right px-5 py-3 text-white/50 font-medium">Nº de Vidas</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {orcamento.perfil_vidas.map((f, i) => (
+                                <tr key={i} className="border-t border-white/10 reveal-item">
+                                  <td className="px-5 py-3 text-white/80">{f.label}</td>
+                                  <td className="px-5 py-3 text-right font-bold text-white">{f.vidas}</td>
+                                </tr>
+                              ))}
+                              <tr className="border-t border-white/20 bg-white/5">
+                                <td className="px-5 py-3 font-bold text-white">Total</td>
+                                <td className="px-5 py-3 text-right font-black text-white">
+                                  {orcamento.perfil_vidas.reduce((s, f) => s + f.vidas, 0)}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
                         </div>
                       </div>
                     )}
