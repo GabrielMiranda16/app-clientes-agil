@@ -845,7 +845,11 @@ const OrcamentoPublicoPage = () => {
                     {propostaDestaque?.rede_url && (
                       <div className="px-6 sm:px-8 py-6">
                         <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block mb-3">Rede Credenciada</span>
-                        <p className="text-sm text-white/60 mb-4">Consulte todos os hospitais, clínicas e laboratórios disponíveis na rede da {propostaDestaque.operadora}.</p>
+                        <p className="text-sm text-white/60 mb-4">
+                          {segmento === 'ODONTOLOGICO'
+                            ? `Consulte todos os dentistas e clínicas odontológicas disponíveis na rede da ${propostaDestaque.operadora}.`
+                            : `Consulte todos os hospitais, clínicas e laboratórios disponíveis na rede da ${propostaDestaque.operadora}.`}
+                        </p>
                         <a href={propostaDestaque.rede_url} target="_blank" rel="noreferrer"
                           className="flex items-center justify-between p-4 rounded-xl border border-white/15 bg-white/10 hover:bg-white/20 transition-colors group">
                           <div className="flex items-center gap-4">
