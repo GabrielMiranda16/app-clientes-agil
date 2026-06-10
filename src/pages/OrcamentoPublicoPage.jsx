@@ -687,10 +687,10 @@ const OrcamentoPublicoPage = () => {
                     )}
 
                     {/* Tabela de Perfil */}
-                    {orcamento?.perfil_vidas?.length > 0 && (
-                      <div className="px-6 sm:px-8 py-6">
-                        <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block">Tabela de Perfil</span>
-                        <p className="text-white/60 text-sm mt-1 mb-5">Composição por faixa etária</p>
+                    {orcamento?.perfil_vidas?.length > 0 && (() => {
+                      const perfil = orcamento.perfil_vidas;
+                      const cenariosComDist = cenarios.filter(c => c.vidas && typeof c.vidas === 'object' && Object.keys(c.vidas).length > 0);
+                      const tabelaTotal = (
                         <div className="rounded-2xl overflow-hidden bg-white/10 border border-white/15">
                           <table className="w-full text-sm">
                             <thead>
@@ -700,7 +700,7 @@ const OrcamentoPublicoPage = () => {
                               </tr>
                             </thead>
                             <tbody>
-                              {orcamento.perfil_vidas.map((f, i) => (
+                              {perfil.map((f, i) => (
                                 <tr key={i} className="border-t border-white/10 reveal-item">
                                   <td className="px-5 py-3 text-white/80">{f.label}</td>
                                   <td className="px-5 py-3 text-right font-bold text-white">{f.vidas}</td>
@@ -708,15 +708,61 @@ const OrcamentoPublicoPage = () => {
                               ))}
                               <tr className="border-t border-white/20 bg-white/5">
                                 <td className="px-5 py-3 font-bold text-white">Total</td>
-                                <td className="px-5 py-3 text-right font-black text-white">
-                                  {orcamento.perfil_vidas.reduce((s, f) => s + f.vidas, 0)}
-                                </td>
+                                <td className="px-5 py-3 text-right font-black text-white">{perfil.reduce((s, f) => s + f.vidas, 0)}</td>
                               </tr>
                             </tbody>
                           </table>
                         </div>
-                      </div>
-                    )}
+                      );
+                      return (
+                        <div className="px-6 sm:px-8 py-6">
+                          <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block">Tabela de Perfil</span>
+                          <p className="text-white/60 text-sm mt-1 mb-5">Composição por faixa etária</p>
+                          {cenariosComDist.length > 1 ? (
+                            <div className="space-y-5">
+                              {cenariosComDist.map((c, ci) => {
+                                const totalC = Object.values(c.vidas).reduce((s, v) => s + parseInt(v || 0), 0);
+                                return (
+                                  <div key={ci}>
+                                    <p className="text-sm font-semibold text-white/80 mb-2">{c.operadora || `Cenário ${ci + 1}`}</p>
+                                    <div className="rounded-2xl overflow-hidden bg-white/10 border border-white/15">
+                                      <table className="w-full text-sm">
+                                        <thead>
+                                          <tr className="bg-white/5">
+                                            <th className="text-left px-5 py-3 text-white/50 font-medium">Faixa Etária</th>
+                                            <th className="text-right px-5 py-3 text-white/50 font-medium">Nº de Vidas</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {perfil.map(({ id, label }) => {
+                                            const val = parseInt((c.vidas || {})[id] || 0);
+                                            if (val === 0) return null;
+                                            return (
+                                              <tr key={id} className="border-t border-white/10 reveal-item">
+                                                <td className="px-5 py-3 text-white/80">{label}</td>
+                                                <td className="px-5 py-3 text-right font-bold text-white">{val}</td>
+                                              </tr>
+                                            );
+                                          })}
+                                          <tr className="border-t border-white/20 bg-white/5">
+                                            <td className="px-5 py-3 font-bold text-white">Total</td>
+                                            <td className="px-5 py-3 text-right font-black text-white">{totalC}</td>
+                                          </tr>
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                              <div>
+                                <p className="text-sm font-semibold text-white/80 mb-2">Total combinado</p>
+                                {tabelaTotal}
+                              </div>
+                            </div>
+                          ) : tabelaTotal}
+                        </div>
+                      );
+                    })()}
 
                     {/* Coparticipação */}
                     {propostaDestaque?.coparticipacao?.tem && (
