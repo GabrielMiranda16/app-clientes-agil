@@ -147,7 +147,7 @@ const CAMPOS_SEGMENTO = {
 
 const FUNIL = ['SOLICITACAO', 'ORCAMENTO', 'DOCUMENTOS', 'ASSINATURA', 'CONCLUIDO', 'COMISSAO'];
 
-const planoVazio = () => ({ nome: '', valor: '' });
+const planoVazio = () => ({ nome: '', valor: '', vidas: '' });
 const propVazio = () => ({
   operadora: '', logo_url: '',
   planos: [planoVazio()],
@@ -725,8 +725,11 @@ const AdminParceirosPage = () => {
                   {p.planos.map((pl, pli) => (
                     <div key={pli} className="flex gap-2 items-center">
                       <Input value={pl.nome} onChange={e => updPlano(pi, pli, 'nome', e.target.value)}
-                        placeholder="Nome do plano (opcional)"
+                        placeholder="Faixa etária (ex: 0-18 anos)"
                         className="flex-1 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
+                      <Input value={pl.vidas ?? ''} onChange={e => updPlano(pi, pli, 'vidas', e.target.value)}
+                        placeholder="Vidas"
+                        className="w-16 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
                       <Input value={pl.valor} onChange={e => updPlano(pi, pli, 'valor', e.target.value)}
                         placeholder="R$ valor *"
                         className="w-24 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
