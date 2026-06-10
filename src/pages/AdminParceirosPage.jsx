@@ -159,7 +159,7 @@ const propVazio = () => ({
   destaque: false,
   combinar_com: [],
 });
-const cenarioVazio = () => ({ tem_plano: false, operadora: '', valor: '', vidas: '' });
+const cenarioVazio = () => ({ tem_plano: false, operadora: '', valor: '', vidas: {} });
 
 const fmtBRL = (v) => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -272,7 +272,7 @@ const AdminParceirosPage = () => {
     });
     setCenarios(
       o.cenarios_atuais?.length > 0
-        ? o.cenarios_atuais.map(c => ({ ...cenarioVazio(), ...c }))
+        ? o.cenarios_atuais.map(c => ({ ...cenarioVazio(), ...c, vidas: (c.vidas && typeof c.vidas === 'object' && !Array.isArray(c.vidas)) ? c.vidas : {} }))
         : [cenarioVazio()]
     );
     setPropostas(
@@ -308,6 +308,7 @@ const AdminParceirosPage = () => {
 
   // ── Cenários ──
   const updCenario = (i, field, val) => setCenarios(cs => cs.map((c, idx) => idx === i ? { ...c, [field]: val } : c));
+  const updCenarioVidasFaixa = (ci, id, val) => setCenarios(cs => cs.map((c, idx) => idx === ci ? { ...c, vidas: { ...(c.vidas || {}), [id]: val } } : c));
   const addCenario = () => setCenarios(cs => [...cs, cenarioVazio()]);
   const removeCenario = (i) => setCenarios(cs => cs.filter((_, idx) => idx !== i));
 
@@ -629,70 +630,107 @@ const AdminParceirosPage = () => {
                   <ToggleBtn value={c.tem_plano} onChange={v => updCenario(ci, 'tem_plano', v)} />
                 </div>
                 {c.tem_plano && (
-                  <div className={`grid gap-2 ${cenarios.filter(c2 => c2.tem_plano).length > 1 ? 'grid-cols-3' : 'grid-cols-2'}`}>
-                    <div className="space-y-1 col-span-1">
-                      <Label className="text-xs text-gray-500">Operadora atual</Label>
-                      <select value={c.operadora} onChange={e => updCenario(ci, 'operadora', e.target.value)}
-                        className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-2 py-1.5 text-sm focus:outline-none focus:border-[#003580]">
-                        <option value="">Selecionar...</option>
-                        {SEGURADORAS.map(s => <option key={s.nome} value={s.nome}>{s.nome}</option>)}
-                      </select>
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-gray-500">Valor mensal (R$)</Label>
-                      <Input value={c.valor} onChange={e => updCenario(ci, 'valor', e.target.value)}
-                        placeholder="Ex: 520,00" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-sm" />
-                    </div>
-                    {cenarios.filter(c2 => c2.tem_plano).length > 1 && (
+                  <>
+                    <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
-                        <Label className="text-xs text-gray-500">Nº de vidas</Label>
-                        <Input value={c.vidas ?? ''} onChange={e => updCenario(ci, 'vidas', e.target.value)}
-                          placeholder="Ex: 30" type="number" min="0"
-                          className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-sm" />
+                        <Label className="text-xs text-gray-500">Operadora atual</Label>
+                        <select value={c.operadora} onChange={e => updCenario(ci, 'operadora', e.target.value)}
+                          className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-2 py-1.5 text-sm focus:outline-none focus:border-[#003580]">
+                          <option value="">Selecionar...</option>
+                          {SEGURADORAS.map(s => <option key={s.nome} value={s.nome}>{s.nome}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-gray-500">Valor mensal (R$)</Label>
+                        <Input value={c.valor} onChange={e => updCenario(ci, 'valor', e.target.value)}
+                          placeholder="Ex: 520,00" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-sm" />
+                      </div>
+                    </div>
+                    {cenarios.length > 1 && selected?.perfil_vidas?.length > 0 && (
+                      <div className="space-y-1.5 pt-2 border-t border-gray-100">
+                        <p className="text-xs font-semibold text-gray-600">Vidas por faixa etária</p>
+                        {selected.perfil_vidas.map(({ id, label }) => {
+                          const val = parseInt((c.vidas || {})[id] || 0);
+                          return (
+                            <div key={id} className="flex items-center gap-2">
+                              <span className="text-xs text-gray-600 flex-1 min-w-0 truncate">{label}</span>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button type="button"
+                                  onClick={() => updCenarioVidasFaixa(ci, id, Math.max(0, val - 1))}
+                                  className="w-5 h-5 rounded border border-gray-200 bg-gray-50 flex items-center justify-center hover:bg-gray-100 text-xs font-bold text-gray-600">
+                                  −
+                                </button>
+                                <span className="w-6 text-center text-xs font-semibold text-gray-800">{val}</span>
+                                <button type="button"
+                                  onClick={() => updCenarioVidasFaixa(ci, id, val + 1)}
+                                  className="w-5 h-5 rounded border border-gray-200 bg-gray-50 flex items-center justify-center hover:bg-gray-100 text-xs font-bold text-gray-600">
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        <div className="flex justify-between pt-1.5 border-t border-gray-100">
+                          <span className="text-xs font-semibold text-gray-600">Total deste cenário</span>
+                          <span className="text-xs font-bold text-gray-800">
+                            {(selected.perfil_vidas || []).reduce((s, { id }) => s + parseInt((c.vidas || {})[id] || 0), 0)}
+                          </span>
+                        </div>
                       </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
             </div>
           );
         })}
 
-        {/* Tabela perfil + contador — só quando 2+ cenários com plano e há perfil_vidas */}
-        {(() => {
-          const perfil = selected?.perfil_vidas;
-          const totalVidas = perfil?.reduce((s, f) => s + (f.vidas || 0), 0) || 0;
+        {/* Painel de distribuição — aparece quando 2+ cenários e perfil_vidas existe */}
+        {cenarios.length > 1 && selected?.perfil_vidas?.length > 0 && (() => {
+          const perfil = selected.perfil_vidas;
           const cenAtivos = cenarios.filter(c => c.tem_plano);
-          if (cenAtivos.length < 2 || totalVidas === 0) return null;
-          const distribuidas = cenAtivos.reduce((s, c) => s + (parseInt(c.vidas) || 0), 0);
-          const faltam = totalVidas - distribuidas;
-          const excede = faltam < 0;
-          const completo = faltam === 0;
+          const porFaixa = perfil.map(f => {
+            const dist = cenAtivos.reduce((s, c) => s + parseInt((c.vidas || {})[f.id] || 0), 0);
+            return { ...f, distribuido: dist, faltam: f.vidas - dist };
+          });
+          const totalMeta = perfil.reduce((s, f) => s + (f.vidas || 0), 0);
+          const totalDist = porFaixa.reduce((s, f) => s + f.distribuido, 0);
+          const totalFaltam = totalMeta - totalDist;
+          const completo = totalFaltam === 0 && totalMeta > 0;
+          const excede = totalFaltam < 0;
           return (
             <div className="border border-gray-200 rounded-xl overflow-hidden">
               <div className={`flex items-center justify-between px-4 py-2.5 border-b ${completo ? 'bg-green-50 border-green-200' : excede ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
                 <span className={`text-sm font-semibold ${completo ? 'text-green-700' : excede ? 'text-red-600' : 'text-amber-700'}`}>
-                  {completo ? '✓ Todas as vidas distribuídas' : excede ? `Excede em ${Math.abs(faltam)} vidas` : `${faltam} vidas para distribuir`}
+                  {completo ? '✓ Todas as vidas distribuídas' : excede ? `Excede em ${Math.abs(totalFaltam)} vidas` : `${totalFaltam} vidas para distribuir`}
                 </span>
-                <span className="text-xs text-gray-400">{distribuidas}/{totalVidas}</span>
+                <span className="text-xs text-gray-400">{totalDist}/{totalMeta}</span>
               </div>
               <table className="w-full text-xs">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
                     <th className="text-left px-4 py-2 text-gray-500 font-medium">Faixa Etária</th>
-                    <th className="text-right px-4 py-2 text-gray-500 font-medium">Vidas</th>
+                    <th className="text-right px-4 py-2 text-gray-500 font-medium">Meta</th>
+                    <th className="text-right px-4 py-2 text-gray-500 font-medium">Distribuído</th>
+                    <th className="text-right px-4 py-2 text-gray-500 font-medium">Faltam</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {perfil.map((f, i) => (
-                    <tr key={i} className="border-b border-gray-100">
+                  {porFaixa.map((f, i) => (
+                    <tr key={i} className={`border-b border-gray-100 ${f.faltam === 0 ? 'bg-green-50/40' : f.faltam < 0 ? 'bg-red-50/40' : ''}`}>
                       <td className="px-4 py-1.5 text-gray-700">{f.label}</td>
-                      <td className="px-4 py-1.5 text-right font-semibold text-gray-800">{f.vidas}</td>
+                      <td className="px-4 py-1.5 text-right text-gray-400">{f.vidas}</td>
+                      <td className="px-4 py-1.5 text-right font-semibold text-gray-800">{f.distribuido}</td>
+                      <td className={`px-4 py-1.5 text-right font-semibold ${f.faltam === 0 ? 'text-green-600' : f.faltam < 0 ? 'text-red-500' : 'text-amber-600'}`}>
+                        {f.faltam === 0 ? '✓' : f.faltam}
+                      </td>
                     </tr>
                   ))}
                   <tr className="bg-gray-50">
                     <td className="px-4 py-2 font-bold text-gray-700">Total</td>
-                    <td className="px-4 py-2 text-right font-black text-gray-800">{totalVidas}</td>
+                    <td className="px-4 py-2 text-right font-semibold text-gray-400">{totalMeta}</td>
+                    <td className="px-4 py-2 text-right font-black text-gray-800">{totalDist}</td>
+                    <td className={`px-4 py-2 text-right font-black ${completo ? 'text-green-600' : 'text-amber-600'}`}>{completo ? '✓' : totalFaltam}</td>
                   </tr>
                 </tbody>
               </table>
