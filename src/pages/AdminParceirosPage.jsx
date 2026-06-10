@@ -147,7 +147,7 @@ const CAMPOS_SEGMENTO = {
 
 const FUNIL = ['SOLICITACAO', 'ORCAMENTO', 'DOCUMENTOS', 'ASSINATURA', 'CONCLUIDO', 'COMISSAO'];
 
-const planoVazio = () => ({ nome: '', valor: '', vidas: '' });
+const planoVazio = () => ({ nome: '', valor: '' });
 const propVazio = () => ({
   operadora: '', logo_url: '',
   planos: [planoVazio()],
@@ -554,6 +554,11 @@ const AdminParceirosPage = () => {
         if (lines.length) obsFaixas = `Distribuição por faixa etária:\n${lines.join('\n')}`;
       }
       const obsCompleto = [obsSegmento, obsFaixas, novoForm.observacoes].filter(Boolean).join('\n\n');
+      const perfilVidas = ['SAUDE', 'ODONTOLOGICO', 'SAUDE_VIDA_ODONTO'].includes(novoForm.segmento)
+        ? AGE_BRACKETS
+            .map(({ id, label }) => ({ id, label, vidas: parseInt(segData[faixaKey(id)] || '0') }))
+            .filter(b => b.vidas > 0)
+        : [];
       const { data, error } = await supabase.from('orcamentos').insert({
         parceiro_id: novoForm.parceiro_id || null,
         cliente_nome: novoForm.cliente_nome,
@@ -562,6 +567,7 @@ const AdminParceirosPage = () => {
         segmento: novoForm.segmento,
         observacoes: obsCompleto || null,
         status: 'SOLICITACAO',
+        perfil_vidas: perfilVidas.length > 0 ? perfilVidas : null,
       }).select('*, parceiros(nome_completo, modalidade, comissao_percentual, telefone)').single();
       if (error) throw error;
       toast({ title: 'Orçamento criado!', description: 'Agora preencha as propostas.' });
@@ -725,11 +731,8 @@ const AdminParceirosPage = () => {
                   {p.planos.map((pl, pli) => (
                     <div key={pli} className="flex gap-2 items-center">
                       <Input value={pl.nome} onChange={e => updPlano(pi, pli, 'nome', e.target.value)}
-                        placeholder="Faixa etária (ex: 0-18 anos)"
+                        placeholder="Nome do plano (opcional)"
                         className="flex-1 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
-                      <Input value={pl.vidas ?? ''} onChange={e => updPlano(pi, pli, 'vidas', e.target.value)}
-                        placeholder="Vidas"
-                        className="w-16 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
                       <Input value={pl.valor} onChange={e => updPlano(pi, pli, 'valor', e.target.value)}
                         placeholder="R$ valor *"
                         className="w-24 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
