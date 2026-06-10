@@ -657,6 +657,32 @@ const AdminParceirosPage = () => {
             </div>
           );
         })}
+
+        {/* Contador de vidas — só quando 2+ cenários com plano e há perfil_vidas */}
+        {(() => {
+          const totalVidas = selected?.perfil_vidas?.reduce((s, f) => s + (f.vidas || 0), 0) || 0;
+          const cenArivos = cenarios.filter(c => c.tem_plano);
+          if (cenArivos.length < 2 || totalVidas === 0) return null;
+          const distribuidas = cenArivos.reduce((s, c) => s + (parseInt(c.vidas) || 0), 0);
+          const faltam = totalVidas - distribuidas;
+          const completo = faltam === 0;
+          return (
+            <div className={`rounded-xl px-4 py-3 flex items-center justify-between text-sm border ${completo ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
+              <div>
+                <span className={`font-semibold ${completo ? 'text-green-700' : 'text-amber-700'}`}>
+                  {distribuidas} de {totalVidas} vidas distribuídas
+                </span>
+                {!completo && faltam > 0 && (
+                  <span className="text-amber-500 ml-2 text-xs">— faltam {faltam}</span>
+                )}
+                {!completo && faltam < 0 && (
+                  <span className="text-red-500 ml-2 text-xs">— excede em {Math.abs(faltam)}</span>
+                )}
+              </div>
+              {completo && <span className="text-green-600 font-bold text-base">✓</span>}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Propostas */}
