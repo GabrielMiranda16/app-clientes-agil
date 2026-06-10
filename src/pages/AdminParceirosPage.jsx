@@ -1365,19 +1365,19 @@ const AdminParceirosPage = () => {
 
             <div className="space-y-3">
               <div className="space-y-1">
-                <Label className="text-xs text-gray-500">Segmento *</Label>
-                <select value={novoForm.segmento} onChange={e => { setNovoForm(f => ({ ...f, segmento: e.target.value })); setSegData({}); }}
-                  className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580]">
-                  <option value="">Selecionar segmento...</option>
-                  {Object.entries(SEGMENTO_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                </select>
-              </div>
-              <div className="space-y-1">
                 <Label className="text-xs text-gray-500">Parceiro</Label>
                 <select value={novoForm.parceiro_id} onChange={e => setNovoForm(f => ({ ...f, parceiro_id: e.target.value }))}
                   className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580]">
                   <option value="">Selecionar parceiro...</option>
                   {parceiros.map(p => <option key={p.id} value={p.id}>{p.nome_completo}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-500">Segmento *</Label>
+                <select value={novoForm.segmento} onChange={e => { setNovoForm(f => ({ ...f, segmento: e.target.value })); setSegData({}); }}
+                  className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580]">
+                  <option value="">Selecionar segmento...</option>
+                  {Object.entries(SEGMENTO_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
               </div>
               <div className="space-y-1">
