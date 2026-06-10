@@ -625,52 +625,50 @@ const OrcamentoPublicoPage = () => {
                     {propostas.length > 1 && (
                       <div className="px-6 sm:px-8 py-6">
                         <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block mb-4">Comparação de Planos</span>
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="bg-white/10">
-                                <th className="text-left px-5 py-3 text-white/60 font-medium">Operadora</th>
-                                {isSaude && <th className="text-center px-4 py-3 text-white/60 font-medium">Abrangência</th>}
-                                {isSaude && <th className="text-center px-4 py-3 text-white/60 font-medium">Acomodação</th>}
-                                <th className="text-center px-4 py-3 text-white/60 font-medium">Coparticipação</th>
-                                {isSaude && <th className="text-center px-4 py-3 text-white/60 font-medium">Carência</th>}
-                                <th className="text-center px-4 py-3 text-white/60 font-medium">Recomendação</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {propostas.map((p, i) => (
-                                <tr key={i} className={`border-b border-white/10 ${p.destaque ? 'bg-white/10' : ''}`}>
-                                  <td className="px-5 py-3.5">
-                                    <div className="flex items-center gap-3">
-                                      {p.logo_url
-                                        ? <div className="bg-white/15 rounded-lg px-2 py-1.5 inline-flex items-center justify-center shrink-0"><img src={p.logo_url} alt={p.operadora} className="h-9 w-24 object-contain" /></div>
-                                        : <Shield className="h-4 w-4 text-white/40" />}
-                                      <span className="font-medium text-white">{p.operadora}</span>
-                                    </div>
-                                  </td>
-                                  {isSaude && <td className="px-4 py-3.5 text-center text-white/70">{p.abrangencia || '—'}</td>}
-                                  {isSaude && <td className="px-4 py-3.5 text-center text-white/70">{p.acomodacao || '—'}</td>}
-                                  <td className="px-4 py-3.5 text-center">
-                                    {p.coparticipacao?.tem
-                                      ? <span className="text-amber-300 font-medium">{p.coparticipacao.percentual ? `${p.coparticipacao.percentual}%` : 'Sim'}</span>
-                                      : <span className="text-green-300 font-medium">Não</span>}
-                                  </td>
-                                  {isSaude && (
-                                    <td className="px-4 py-3.5 text-center">
-                                      {p.carencia
-                                        ? <span className="text-amber-300 font-medium">Sim</span>
-                                        : <span className="text-green-300 font-medium">Não</span>}
-                                    </td>
-                                  )}
-                                  <td className="px-4 py-3.5 text-center">
-                                    {p.destaque
-                                      ? <span className="inline-flex items-center gap-1 bg-white/20 text-white rounded-full px-2.5 py-1 text-xs font-bold"><Star className="h-3 w-3 fill-current" /> Melhor</span>
-                                      : <span className="text-white/30">—</span>}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                        <div className="flex flex-col gap-3">
+                          {propostas.map((p, i) => (
+                            <div key={i} className={`rounded-2xl border overflow-hidden reveal-item ${p.destaque ? 'border-white/30 bg-white/10' : 'border-white/15 bg-white/5'}`}>
+                              <div className="flex items-center gap-3 px-5 py-4 border-b border-white/10">
+                                {p.logo_url
+                                  ? <div className="bg-white/15 rounded-lg px-2 py-1.5 inline-flex items-center justify-center shrink-0"><img src={p.logo_url} alt={p.operadora} className="h-9 w-24 object-contain" /></div>
+                                  : <Shield className="h-5 w-5 text-white/40" />}
+                                <span className="font-semibold text-white flex-1 truncate">{p.operadora}</span>
+                                {p.destaque && (
+                                  <span className="inline-flex items-center gap-1 bg-white/20 text-white rounded-full px-3 py-1 text-xs font-bold shrink-0">
+                                    <Star className="h-3 w-3 fill-current" /> Melhor opção
+                                  </span>
+                                )}
+                              </div>
+                              <div className="divide-y divide-white/10">
+                                {isSaude && (
+                                  <div className="flex items-center justify-between px-5 py-3">
+                                    <span className="text-sm text-white/60">Abrangência</span>
+                                    <span className="text-sm font-medium text-white">{p.abrangencia || '—'}</span>
+                                  </div>
+                                )}
+                                {isSaude && (
+                                  <div className="flex items-center justify-between px-5 py-3">
+                                    <span className="text-sm text-white/60">Acomodação</span>
+                                    <span className="text-sm font-medium text-white">{p.acomodacao || '—'}</span>
+                                  </div>
+                                )}
+                                <div className="flex items-center justify-between px-5 py-3">
+                                  <span className="text-sm text-white/60">Coparticipação</span>
+                                  {p.coparticipacao?.tem
+                                    ? <span className="text-sm font-medium text-amber-300">{p.coparticipacao.percentual ? `${p.coparticipacao.percentual}%` : 'Sim'}</span>
+                                    : <span className="text-sm font-medium text-green-300">Não</span>}
+                                </div>
+                                {isSaude && (
+                                  <div className="flex items-center justify-between px-5 py-3">
+                                    <span className="text-sm text-white/60">Carência</span>
+                                    {p.carencia
+                                      ? <span className="text-sm font-medium text-amber-300">Sim</span>
+                                      : <span className="text-sm font-medium text-green-300">Não</span>}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
