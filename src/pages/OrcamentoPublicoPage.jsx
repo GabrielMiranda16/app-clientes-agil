@@ -567,7 +567,7 @@ const OrcamentoPublicoPage = () => {
                                   <div className="flex items-center gap-3 min-w-0">
                                     {b.logo
                                       ? <div className="bg-white/15 rounded-lg px-2 py-1.5 inline-flex items-center justify-center shrink-0"><img src={b.logo} alt={b.mainLabel} className="h-8 w-20 object-contain" /></div>
-                                      : <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${b.tipo === 'atual' ? 'bg-amber-300' : b.destaque ? 'bg-yellow-300' : 'bg-white/60'}`} />}
+                                      : <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${b.destaque ? 'bg-yellow-300' : 'bg-white/60'}`} />}
                                     <div className="min-w-0">
                                       <div className="flex items-center gap-2 flex-wrap">
                                         <span className="text-sm text-white/90 font-medium truncate">{b.mainLabel}</span>
@@ -589,11 +589,9 @@ const OrcamentoPublicoPage = () => {
                                     transition={{ duration: 0.7, delay: i * 0.12 }}
                                     className="h-full rounded-full"
                                     style={{
-                                      background: b.tipo === 'atual'
-                                        ? 'linear-gradient(90deg, #fbbf24, #f59e0b)'
-                                        : b.destaque
-                                          ? 'linear-gradient(90deg, #facc15, #eab308)'
-                                          : 'rgba(255,255,255,0.40)',
+                                      background: b.destaque
+                                        ? 'linear-gradient(90deg, #facc15, #eab308)'
+                                        : 'rgba(255,255,255,0.40)',
                                     }}
                                   />
                                 </div>
