@@ -192,6 +192,8 @@ const ParceiroDashboard = () => {
     if (!form.cliente_cpf.trim()) return toast({ variant: 'destructive', title: 'Informe o CPF ou CNPJ do cliente.' });
     if (!validarCpfCnpj(form.cliente_cpf)) return toast({ variant: 'destructive', title: 'CPF ou CNPJ inválido.', description: 'CPF deve ter 11 dígitos e CNPJ 14 dígitos.' });
     if (!form.cliente_data_nascimento) return toast({ variant: 'destructive', title: 'Informe a data de nascimento do cliente.' });
+    const campoFaltando = camposDoSegmento.find(c => !String(form.extras[c.key] || '').trim());
+    if (campoFaltando) return toast({ variant: 'destructive', title: `Informe: ${campoFaltando.label}.` });
     if (showAgeBrackets && remainingLives !== 0) return toast({ variant: 'destructive', title: 'Distribua todas as vidas por faixa etária.', description: `Faltam ${remainingLives} vida(s) para distribuir.` });
     if (!parceiro?.id) return toast({ variant: 'destructive', title: 'Perfil de parceiro não encontrado.' });
 
@@ -793,7 +795,7 @@ const ParceiroDashboard = () => {
                     Cancelar
                   </Button>
                   <Button onClick={handleSolicitar}
-                    disabled={enviando || !form.segmento || !form.cliente_nome.trim() || !validarTelefone(form.cliente_telefone) || !validarEmail(form.cliente_email) || !validarCpfCnpj(form.cliente_cpf) || !form.cliente_data_nascimento || (showAgeBrackets && remainingLives !== 0)}
+                    disabled={enviando || !form.segmento || !form.cliente_nome.trim() || !validarTelefone(form.cliente_telefone) || !validarEmail(form.cliente_email) || !validarCpfCnpj(form.cliente_cpf) || !form.cliente_data_nascimento || camposDoSegmento.some(c => !String(form.extras[c.key] || '').trim()) || (showAgeBrackets && remainingLives !== 0)}
                     className="flex-1 rounded-lg text-white font-semibold gap-2" style={{ background: '#003580' }}>
                     {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     {enviando ? 'Enviando...' : 'Solicitar'}
