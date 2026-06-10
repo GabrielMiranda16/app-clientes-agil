@@ -57,6 +57,8 @@ const OrcamentoPublicoPage = () => {
   const [docsEnviados, setDocsEnviados] = useState([]);
   const [expandedDifs, setExpandedDifs] = useState(false);
 
+  const docTipo = orcamento?.cliente_cpf?.replace(/\D/g, '').length === 14 ? 'CNPJ' : 'CPF';
+
   useEffect(() => { loadOrcamento(); }, [slug]);
 
   useEffect(() => {
@@ -149,14 +151,14 @@ const OrcamentoPublicoPage = () => {
 
   const handleVerificarCpf = async () => {
     const digits = cpfInput.replace(/\D/g, '');
-    if (digits.length < 3) { setCpfError('Digite os 3 primeiros dígitos do seu CPF.'); return; }
+    if (digits.length < 3) { setCpfError(`Digite os 3 primeiros dígitos do seu ${docTipo}.`); return; }
     const primeiros3 = digits.slice(0, 3);
     setVerificando(true);
     setCpfError('');
     try {
       const cpfCadastrado = orcamento.cliente_cpf;
       if (cpfCadastrado && !cpfCadastrado.replace(/\D/g, '').startsWith(primeiros3)) {
-        setCpfError('CPF incorreto. Verifique os primeiros 3 dígitos.');
+        setCpfError(`${docTipo} incorreto. Verifique os primeiros 3 dígitos.`);
         setVerificando(false);
         return;
       }
@@ -303,13 +305,13 @@ const OrcamentoPublicoPage = () => {
                   <ShieldCheck className="h-7 w-7 text-white shrink-0" />
                   <div>
                     <h1 className="text-white font-bold text-lg">Verificação de identidade</h1>
-                    <p className="text-white/60 text-xs mt-0.5">Para sua segurança, confirme os 3 primeiros dígitos do seu CPF</p>
+                    <p className="text-white/60 text-xs mt-0.5">Para sua segurança, confirme os 3 primeiros dígitos do seu {docTipo}</p>
                   </div>
                 </div>
                 <div className="px-6 py-6 space-y-4">
                   <p className="text-white/70 text-sm">Olá, <strong className="text-white">{orcamento?.cliente_nome}</strong>! Uma proposta foi preparada para você pela <strong className="text-white">Ágil Seguros</strong>.</p>
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-white/80">Primeiros 3 dígitos do seu CPF</label>
+                    <label className="text-sm font-medium text-white/80">Primeiros 3 dígitos do seu {docTipo}</label>
                     <input type="tel" maxLength={3} value={cpfInput}
                       onChange={e => { setCpfInput(e.target.value.replace(/\D/g, '')); setCpfError(''); }}
                       onKeyDown={e => e.key === 'Enter' && handleVerificarCpf()}
