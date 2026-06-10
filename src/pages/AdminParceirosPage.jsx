@@ -658,28 +658,44 @@ const AdminParceirosPage = () => {
           );
         })}
 
-        {/* Contador de vidas — só quando 2+ cenários com plano e há perfil_vidas */}
+        {/* Tabela perfil + contador — só quando 2+ cenários com plano e há perfil_vidas */}
         {(() => {
-          const totalVidas = selected?.perfil_vidas?.reduce((s, f) => s + (f.vidas || 0), 0) || 0;
-          const cenArivos = cenarios.filter(c => c.tem_plano);
-          if (cenArivos.length < 2 || totalVidas === 0) return null;
-          const distribuidas = cenArivos.reduce((s, c) => s + (parseInt(c.vidas) || 0), 0);
+          const perfil = selected?.perfil_vidas;
+          const totalVidas = perfil?.reduce((s, f) => s + (f.vidas || 0), 0) || 0;
+          const cenAtivos = cenarios.filter(c => c.tem_plano);
+          if (cenAtivos.length < 2 || totalVidas === 0) return null;
+          const distribuidas = cenAtivos.reduce((s, c) => s + (parseInt(c.vidas) || 0), 0);
           const faltam = totalVidas - distribuidas;
+          const excede = faltam < 0;
           const completo = faltam === 0;
           return (
-            <div className={`rounded-xl px-4 py-3 flex items-center justify-between text-sm border ${completo ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
-              <div>
-                <span className={`font-semibold ${completo ? 'text-green-700' : 'text-amber-700'}`}>
-                  {distribuidas} de {totalVidas} vidas distribuídas
+            <div className="border border-gray-200 rounded-xl overflow-hidden">
+              <div className={`flex items-center justify-between px-4 py-2.5 border-b ${completo ? 'bg-green-50 border-green-200' : excede ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
+                <span className={`text-sm font-semibold ${completo ? 'text-green-700' : excede ? 'text-red-600' : 'text-amber-700'}`}>
+                  {completo ? '✓ Todas as vidas distribuídas' : excede ? `Excede em ${Math.abs(faltam)} vidas` : `${faltam} vidas para distribuir`}
                 </span>
-                {!completo && faltam > 0 && (
-                  <span className="text-amber-500 ml-2 text-xs">— faltam {faltam}</span>
-                )}
-                {!completo && faltam < 0 && (
-                  <span className="text-red-500 ml-2 text-xs">— excede em {Math.abs(faltam)}</span>
-                )}
+                <span className="text-xs text-gray-400">{distribuidas}/{totalVidas}</span>
               </div>
-              {completo && <span className="text-green-600 font-bold text-base">✓</span>}
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-100">
+                    <th className="text-left px-4 py-2 text-gray-500 font-medium">Faixa Etária</th>
+                    <th className="text-right px-4 py-2 text-gray-500 font-medium">Vidas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {perfil.map((f, i) => (
+                    <tr key={i} className="border-b border-gray-100">
+                      <td className="px-4 py-1.5 text-gray-700">{f.label}</td>
+                      <td className="px-4 py-1.5 text-right font-semibold text-gray-800">{f.vidas}</td>
+                    </tr>
+                  ))}
+                  <tr className="bg-gray-50">
+                    <td className="px-4 py-2 font-bold text-gray-700">Total</td>
+                    <td className="px-4 py-2 text-right font-black text-gray-800">{totalVidas}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           );
         })()}
