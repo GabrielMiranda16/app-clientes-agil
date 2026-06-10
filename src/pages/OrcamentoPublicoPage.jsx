@@ -536,48 +536,64 @@ const OrcamentoPublicoPage = () => {
 
                     {/* Comparação de Custo */}
                     {(() => {
+                      const totalAtualValor = cenarios.reduce((sum, c) => sum + parseValor(c.valor), 0);
+                      const proposalBars = propostas
+                        .filter(p => getPropostaValor(p) > 0)
+                        .map(p => {
+                          const cc = p.combinar_com || [];
+                          const totalValor = getPropostaValor(p) + cc.reduce((sum, c) => sum + parseValor(c.valor), 0);
+                          return { mainLabel: p.operadora, valor: totalValor, tipo: 'proposta', destaque: p.destaque, logo: p.logo_url, combinarCom: cc };
+                        })
+                        .sort((a, b) => a.valor - b.valor);
                       const bars = [
-                        ...cenarios.filter(c => c.valor).map(c => ({
-                          label: c.operadora || 'Atual', valor: parseValor(c.valor),
-                          tipo: 'atual', logo: SEGURADORAS.find(s => s.nome === c.operadora)?.logo,
-                        })),
-                        ...propostas.filter(p => getPropostaValor(p) > 0).map(p => ({
-                          label: p.operadora, valor: getPropostaValor(p),
-                          tipo: 'proposta', destaque: p.destaque, logo: p.logo_url,
-                        })),
+                        ...(totalAtualValor > 0 ? [{
+                          mainLabel: cenarios.length === 1 ? (cenarios[0].operadora || 'Plano Atual') : 'Total Atual',
+                          subLabel: cenarios.length > 1 ? cenarios.map(c => c.operadora).filter(Boolean).join(' + ') : null,
+                          valor: totalAtualValor, tipo: 'atual', combinarCom: [],
+                          logo: cenarios.length === 1 ? SEGURADORAS.find(s => s.nome === cenarios[0].operadora)?.logo : null,
+                        }] : []),
+                        ...proposalBars,
                       ];
                       if (bars.length < 2) return null;
                       const max = Math.max(...bars.map(b => b.valor), 1);
                       return (
                         <div className="px-6 sm:px-8 py-6">
                           <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block">Comparação de Custo</span>
-                          <p className="text-white/60 text-sm mt-1 mb-5">Mensalidade comparada entre planos</p>
-                          <div className="space-y-4">
+                          <p className="text-white/60 text-sm mt-1 mb-5">Mensalidade total comparada</p>
+                          <div className="space-y-5">
                             {bars.map((b, i) => (
                               <div key={i} className="space-y-2 reveal-item">
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-center justify-between gap-3">
                                   <div className="flex items-center gap-3 min-w-0">
                                     {b.logo
-                                      ? <div className="bg-white/15 rounded-lg px-2 py-1.5 inline-flex items-center justify-center shrink-0"><img src={b.logo} alt={b.label} className="h-9 w-24 object-contain" /></div>
-                                      : <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${b.tipo === 'atual' ? 'bg-amber-300' : 'bg-white'}`} />}
-                                    <span className="text-sm text-white/80 truncate">{b.label}</span>
-                                    {b.tipo === 'atual' && <span className="text-xs bg-amber-400/20 text-amber-200 rounded px-2 py-0.5 shrink-0">atual</span>}
-                                    {b.destaque && <span className="text-xs bg-white/15 text-white rounded px-2 py-0.5 shrink-0">⭐ rec.</span>}
+                                      ? <div className="bg-white/15 rounded-lg px-2 py-1.5 inline-flex items-center justify-center shrink-0"><img src={b.logo} alt={b.mainLabel} className="h-8 w-20 object-contain" /></div>
+                                      : <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${b.tipo === 'atual' ? 'bg-amber-300' : b.destaque ? 'bg-yellow-300' : 'bg-white/60'}`} />}
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-sm text-white/90 font-medium truncate">{b.mainLabel}</span>
+                                        {b.tipo === 'atual' && <span className="text-xs bg-amber-400/20 text-amber-200 rounded px-2 py-0.5 shrink-0">atual</span>}
+                                        {b.destaque && <span className="text-xs bg-yellow-400/25 text-yellow-200 rounded px-2 py-0.5 shrink-0">⭐ rec.</span>}
+                                      </div>
+                                      {b.subLabel && <p className="text-xs text-white/45 mt-0.5 truncate">{b.subLabel}</p>}
+                                      {b.combinarCom?.length > 0 && (
+                                        <p className="text-xs text-white/45 mt-0.5 truncate">+ {b.combinarCom.map(c => c.operadora).join(' + ')} (mantida)</p>
+                                      )}
+                                    </div>
                                   </div>
-                                  <span className="text-sm font-bold text-white shrink-0 ml-3">{fmtValor(b.valor)}</span>
+                                  <span className="text-sm font-bold text-white shrink-0 whitespace-nowrap">{fmtValor(b.valor)}</span>
                                 </div>
                                 <div className="h-3.5 bg-white/10 rounded-full overflow-hidden">
                                   <motion.div
                                     initial={{ width: 0 }}
                                     animate={{ width: `${(b.valor / max) * 100}%` }}
-                                    transition={{ duration: 0.6, delay: i * 0.1 }}
+                                    transition={{ duration: 0.7, delay: i * 0.12 }}
                                     className="h-full rounded-full"
                                     style={{
                                       background: b.tipo === 'atual'
                                         ? 'linear-gradient(90deg, #fbbf24, #f59e0b)'
                                         : b.destaque
-                                          ? 'rgba(255,255,255,0.9)'
-                                          : 'rgba(255,255,255,0.45)',
+                                          ? 'linear-gradient(90deg, #facc15, #eab308)'
+                                          : 'rgba(255,255,255,0.40)',
                                     }}
                                   />
                                 </div>
