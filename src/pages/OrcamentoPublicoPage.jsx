@@ -632,7 +632,15 @@ const OrcamentoPublicoPage = () => {
                                 {p.logo_url
                                   ? <div className="bg-white/15 rounded-lg px-2 py-1.5 inline-flex items-center justify-center shrink-0"><img src={p.logo_url} alt={p.operadora} className="h-9 w-24 object-contain" /></div>
                                   : <Shield className="h-5 w-5 text-white/40" />}
-                                <span className="font-semibold text-white flex-1 truncate">{p.operadora}</span>
+                                <div className="flex-1 min-w-0">
+                                  <span className="font-semibold text-white block truncate">{p.operadora}</span>
+                                  {p.planos?.length === 1 && p.planos[0].nome && (
+                                    <span className="text-xs text-white/50 truncate block">Plano: {p.planos[0].nome}</span>
+                                  )}
+                                  {p.planos?.length > 1 && (
+                                    <span className="text-xs text-white/50 block">{p.planos.length} faixas etárias</span>
+                                  )}
+                                </div>
                                 {p.destaque && (
                                   <span className="inline-flex items-center gap-1 bg-white/20 text-white rounded-full px-3 py-1 text-xs font-bold shrink-0">
                                     <Star className="h-3 w-3 fill-current" /> Melhor opção
