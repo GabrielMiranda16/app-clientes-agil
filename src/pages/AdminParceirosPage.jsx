@@ -538,8 +538,8 @@ const AdminParceirosPage = () => {
   };
 
   const handleCriarOrcamento = async () => {
-    if (!novoForm.cliente_nome || !novoForm.cliente_telefone || !novoForm.cliente_email || !novoForm.segmento)
-      return toast({ variant: 'destructive', title: 'Preencha nome do cliente, telefone, e-mail e segmento.' });
+    if (!novoForm.cliente_nome || !novoForm.cliente_telefone || !novoForm.cliente_email || !novoForm.cliente_cpf || !novoForm.segmento)
+      return toast({ variant: 'destructive', title: 'Preencha nome, telefone, e-mail, CPF e segmento.' });
     setCriando(true);
     try {
       const campos = CAMPOS_SEGMENTO[novoForm.segmento] || [];
@@ -1336,7 +1336,7 @@ const AdminParceirosPage = () => {
                 </div>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs text-gray-500">CPF do cliente <span className="text-gray-400">(necessário para acessar o link)</span></Label>
+                <Label className="text-xs text-gray-500">CPF do cliente * <span className="text-gray-400">(necessário para acessar o link)</span></Label>
                 <Input value={novoForm.cliente_cpf} onChange={e => setNovoForm(f => ({ ...f, cliente_cpf: e.target.value }))}
                   placeholder="000.000.000-00" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
               </div>
