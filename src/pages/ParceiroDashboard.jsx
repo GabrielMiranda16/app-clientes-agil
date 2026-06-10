@@ -192,6 +192,7 @@ const ParceiroDashboard = () => {
     if (!form.cliente_cpf.trim()) return toast({ variant: 'destructive', title: 'Informe o CPF ou CNPJ do cliente.' });
     if (!validarCpfCnpj(form.cliente_cpf)) return toast({ variant: 'destructive', title: 'CPF ou CNPJ inválido.', description: 'CPF deve ter 11 dígitos e CNPJ 14 dígitos.' });
     if (!form.cliente_data_nascimento) return toast({ variant: 'destructive', title: 'Informe a data de nascimento do cliente.' });
+    if (showAgeBrackets && remainingLives !== 0) return toast({ variant: 'destructive', title: 'Distribua todas as vidas por faixa etária.', description: `Faltam ${remainingLives} vida(s) para distribuir.` });
     if (!parceiro?.id) return toast({ variant: 'destructive', title: 'Perfil de parceiro não encontrado.' });
 
     setEnviando(true);
@@ -753,19 +754,22 @@ const ParceiroDashboard = () => {
                     {AGE_BRACKETS.map(({ id, label }) => {
                       const key = faixaKey(id);
                       const val = parseInt(form.extras[key] || '0');
+                      const atingiuTotal = distribuiVidas >= totalVidas;
                       return (
                         <div key={id} className="flex items-center justify-between gap-3">
                           <Label className="text-sm text-gray-600 flex-1">{label}</Label>
                           <div className="flex items-center gap-2">
                             <button type="button"
                               onClick={() => setExtra(key, String(Math.max(0, val - 1)))}
-                              className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-100 active:scale-95">
+                              disabled={val === 0}
+                              className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-100 active:enabled:scale-95">
                               <Minus className="h-3 w-3 text-gray-600" />
                             </button>
                             <span className="w-6 text-center text-sm font-semibold text-gray-800">{val}</span>
                             <button type="button"
-                              onClick={() => setExtra(key, String(val + 1))}
-                              className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-100 active:scale-95">
+                              onClick={() => { if (!atingiuTotal) setExtra(key, String(val + 1)); }}
+                              disabled={atingiuTotal}
+                              className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-100 active:enabled:scale-95">
                               <Plus className="h-3 w-3 text-gray-600" />
                             </button>
                           </div>
@@ -789,7 +793,7 @@ const ParceiroDashboard = () => {
                     Cancelar
                   </Button>
                   <Button onClick={handleSolicitar}
-                    disabled={enviando || !form.segmento || !form.cliente_nome.trim() || !validarTelefone(form.cliente_telefone) || !validarEmail(form.cliente_email) || !validarCpfCnpj(form.cliente_cpf) || !form.cliente_data_nascimento}
+                    disabled={enviando || !form.segmento || !form.cliente_nome.trim() || !validarTelefone(form.cliente_telefone) || !validarEmail(form.cliente_email) || !validarCpfCnpj(form.cliente_cpf) || !form.cliente_data_nascimento || (showAgeBrackets && remainingLives !== 0)}
                     className="flex-1 rounded-lg text-white font-semibold gap-2" style={{ background: '#003580' }}>
                     {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     {enviando ? 'Enviando...' : 'Solicitar'}
