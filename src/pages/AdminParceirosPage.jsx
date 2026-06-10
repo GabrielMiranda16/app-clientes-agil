@@ -593,6 +593,12 @@ const AdminParceirosPage = () => {
       return toast({ variant: 'destructive', title: 'E-mail inválido.' });
     if (!validarCpfCnpj(novoForm.cliente_cpf))
       return toast({ variant: 'destructive', title: 'CPF ou CNPJ inválido.', description: 'Verifique o número digitado.' });
+    const campoFaltando = (CAMPOS_SEGMENTO[novoForm.segmento] || []).find(c => !String(segData[c.key] || '').trim());
+    if (campoFaltando) return toast({ variant: 'destructive', title: `Informe: ${campoFaltando.label}.` });
+    const totalVidasAdm = parseInt(segData.vidas || '0');
+    const distribuiVidasAdm = AGE_BRACKETS.reduce((s, { id }) => s + parseInt(segData[faixaKey(id)] || '0'), 0);
+    if (['SAUDE', 'ODONTOLOGICO', 'SAUDE_VIDA_ODONTO'].includes(novoForm.segmento) && totalVidasAdm > 0 && distribuiVidasAdm !== totalVidasAdm)
+      return toast({ variant: 'destructive', title: 'Distribua todas as vidas por faixa etária.', description: `Faltam ${totalVidasAdm - distribuiVidasAdm} vida(s).` });
     setCriando(true);
     try {
       const campos = CAMPOS_SEGMENTO[novoForm.segmento] || [];
