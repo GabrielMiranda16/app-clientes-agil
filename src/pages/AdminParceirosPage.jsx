@@ -215,7 +215,7 @@ const AdminParceirosPage = () => {
   const [parceiros, setParceiros] = useState([]);
   const [criarModal, setCriarModal] = useState(false);
   const [criando, setCriando] = useState(false);
-  const [novoForm, setNovoForm] = useState({ parceiro_id: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', segmento: '', observacoes: '' });
+  const [novoForm, setNovoForm] = useState({ parceiro_id: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', cliente_cpf: '', segmento: '', observacoes: '' });
   const [segData, setSegData] = useState({});
 
   useEffect(() => {
@@ -565,6 +565,7 @@ const AdminParceirosPage = () => {
         cliente_nome: novoForm.cliente_nome,
         cliente_telefone: novoForm.cliente_telefone,
         cliente_email: novoForm.cliente_email,
+        cliente_cpf: novoForm.cliente_cpf || null,
         segmento: novoForm.segmento,
         observacoes: obsCompleto || null,
         status: 'SOLICITACAO',
@@ -574,7 +575,7 @@ const AdminParceirosPage = () => {
       toast({ title: 'Orçamento criado!', description: 'Agora preencha as propostas.' });
       setCriarModal(false);
       setFiltro('TODOS');
-      setNovoForm({ parceiro_id: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', segmento: '', observacoes: '' });
+      setNovoForm({ parceiro_id: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', cliente_cpf: '', segmento: '', observacoes: '' });
       setSegData({});
       await loadData(data.id);
     } catch (err) {
@@ -1333,6 +1334,11 @@ const AdminParceirosPage = () => {
                   <Input value={novoForm.cliente_email} onChange={e => setNovoForm(f => ({ ...f, cliente_email: e.target.value }))}
                     placeholder="email@exemplo.com" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
                 </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-500">CPF do cliente <span className="text-gray-400">(necessário para acessar o link)</span></Label>
+                <Input value={novoForm.cliente_cpf} onChange={e => setNovoForm(f => ({ ...f, cliente_cpf: e.target.value }))}
+                  placeholder="000.000.000-00" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-gray-500">Segmento *</Label>
