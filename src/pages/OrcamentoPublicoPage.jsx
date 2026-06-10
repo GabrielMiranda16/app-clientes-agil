@@ -722,9 +722,15 @@ const OrcamentoPublicoPage = () => {
                             <div className="space-y-5">
                               {cenariosComDist.map((c, ci) => {
                                 const totalC = Object.values(c.vidas).reduce((s, v) => s + parseInt(v || 0), 0);
+                                const logo = SEGURADORAS.find(s => s.nome === c.operadora)?.logo;
                                 return (
                                   <div key={ci}>
-                                    <p className="text-sm font-semibold text-white/80 mb-2">{c.operadora || `Cenário ${ci + 1}`}</p>
+                                    <div className="flex items-center gap-3 mb-2">
+                                      {logo
+                                        ? <div className="bg-white/15 rounded-xl px-3 py-2 inline-flex items-center justify-center shrink-0"><img src={logo} alt={c.operadora} className="h-10 w-24 object-contain" /></div>
+                                        : <p className="text-sm font-semibold text-white/80">{c.operadora || `Cenário ${ci + 1}`}</p>}
+                                      {logo && <p className="text-sm font-semibold text-white/80">{c.operadora}</p>}
+                                    </div>
                                     <div className="rounded-2xl overflow-hidden bg-white/10 border border-white/15">
                                       <table className="w-full text-sm">
                                         <thead>
@@ -755,7 +761,7 @@ const OrcamentoPublicoPage = () => {
                                 );
                               })}
                               <div>
-                                <p className="text-sm font-semibold text-white/80 mb-2">Total combinado</p>
+                                <p className="text-base font-bold text-white mb-2">Total combinado</p>
                                 {tabelaTotal}
                               </div>
                             </div>
