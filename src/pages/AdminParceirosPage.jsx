@@ -163,6 +163,38 @@ const cenarioVazio = () => ({ tem_plano: false, operadora: '', valor: '', vidas:
 
 const fmtBRL = (v) => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+const formatCPF = (v) => {
+  const d = v.replace(/\D/g, '').slice(0, 11);
+  return d
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/(\d{3})\.(\d{3})\.(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+};
+
+const formatPhone = (v) => {
+  const d = v.replace(/\D/g, '').slice(0, 11);
+  if (d.length <= 10) return d.replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{4})(\d)/, '$1-$2');
+  return d.replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2');
+};
+
+const validarCPF = (cpf) => {
+  const d = cpf.replace(/\D/g, '');
+  if (d.length !== 11 || /^(\d)\1+$/.test(d)) return false;
+  let s = 0;
+  for (let i = 0; i < 9; i++) s += +d[i] * (10 - i);
+  let r = (s * 10) % 11; if (r >= 10) r = 0;
+  if (r !== +d[9]) return false;
+  s = 0;
+  for (let i = 0; i < 10; i++) s += +d[i] * (11 - i);
+  r = (s * 10) % 11; if (r >= 10) r = 0;
+  return r === +d[10];
+};
+
+const validarTelefone = (tel) => {
+  const d = tel.replace(/\D/g, '');
+  return d.length >= 10 && d.length <= 11;
+};
+
 const generateSlug = () => {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
   return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
@@ -540,6 +572,10 @@ const AdminParceirosPage = () => {
   const handleCriarOrcamento = async () => {
     if (!novoForm.cliente_nome || !novoForm.cliente_telefone || !novoForm.cliente_email || !novoForm.cliente_cpf || !novoForm.segmento)
       return toast({ variant: 'destructive', title: 'Preencha nome, telefone, e-mail, CPF e segmento.' });
+    if (!validarCPF(novoForm.cliente_cpf))
+      return toast({ variant: 'destructive', title: 'CPF inválido.', description: 'Verifique o número digitado.' });
+    if (!validarTelefone(novoForm.cliente_telefone))
+      return toast({ variant: 'destructive', title: 'Telefone inválido.', description: 'Informe um número com DDD (ex: (11) 99999-9999).' });
     setCriando(true);
     try {
       const campos = CAMPOS_SEGMENTO[novoForm.segmento] || [];
@@ -1326,7 +1362,7 @@ const AdminParceirosPage = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs text-gray-500">Telefone *</Label>
-                  <Input value={novoForm.cliente_telefone} onChange={e => setNovoForm(f => ({ ...f, cliente_telefone: e.target.value }))}
+                  <Input value={novoForm.cliente_telefone} onChange={e => setNovoForm(f => ({ ...f, cliente_telefone: formatPhone(e.target.value) }))}
                     placeholder="(11) 99999-9999" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
                 </div>
                 <div className="space-y-1">
@@ -1337,7 +1373,7 @@ const AdminParceirosPage = () => {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-gray-500">CPF do cliente * <span className="text-gray-400">(necessário para acessar o link)</span></Label>
-                <Input value={novoForm.cliente_cpf} onChange={e => setNovoForm(f => ({ ...f, cliente_cpf: e.target.value }))}
+                <Input value={novoForm.cliente_cpf} onChange={e => setNovoForm(f => ({ ...f, cliente_cpf: formatCPF(e.target.value) }))}
                   placeholder="000.000.000-00" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
               </div>
               <div className="space-y-1">
