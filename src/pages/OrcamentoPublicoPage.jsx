@@ -235,7 +235,7 @@ const OrcamentoPublicoPage = () => {
   const isSaude = SAUDE_SEGS.includes(segmento);
 
   const segData = propostaDestaque ? SEGURADORAS.find(s => s.nome === propostaDestaque.operadora) : null;
-  const diferenciais = segData?.diferenciais || [];
+  const diferenciais = (segmento === 'ODONTOLOGICO' ? segData?.diferenciais_odonto : null) || segData?.diferenciais || [];
 
   const destaqueCombinarCom = propostaDestaque?.combinar_com || [];
   const destaqueValorProposta = (propostaDestaque?.planos || []).reduce((sum, pl) => sum + parseValor(pl.valor), 0);
