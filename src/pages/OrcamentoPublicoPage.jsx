@@ -571,7 +571,7 @@ const OrcamentoPublicoPage = () => {
                                     <div className="min-w-0">
                                       <div className="flex items-center gap-2 flex-wrap">
                                         <span className="text-sm text-white/90 font-medium truncate">{b.mainLabel}</span>
-                                        {b.tipo === 'atual' && <span className="text-xs bg-amber-400/20 text-amber-200 rounded px-2 py-0.5 shrink-0">atual</span>}
+                                        {b.tipo === 'atual' && <span className="text-xs bg-white/15 text-white/60 rounded px-2 py-0.5 shrink-0">atual</span>}
                                         {b.destaque && <span className="text-xs bg-yellow-400/25 text-yellow-200 rounded px-2 py-0.5 shrink-0">⭐ rec.</span>}
                                       </div>
                                       {b.subLabel && <p className="text-xs text-white/45 mt-0.5 truncate">{b.subLabel}</p>}
