@@ -698,7 +698,7 @@ const AdminParceirosPage = () => {
                         <select value={c.operadora} onChange={e => updCenario(ci, 'operadora', e.target.value)}
                           className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-2 py-1.5 text-sm focus:outline-none focus:border-[#003580]">
                           <option value="">Selecionar...</option>
-                          {SEGURADORAS.map(s => <option key={s.nome} value={s.nome}>{s.nome}</option>)}
+                          {SEGURADORAS.filter(s => !selected?.segmento || s.categorias.includes(selected.segmento)).map(s => <option key={s.nome} value={s.nome}>{s.nome}</option>)}
                         </select>
                       </div>
                       <div className="space-y-1">
@@ -866,7 +866,7 @@ const AdminParceirosPage = () => {
                     <select value={p.operadora} onChange={e => onSelectSeg(pi, e.target.value)}
                       className="flex-1 rounded-lg border border-gray-200 bg-[#f0f7ff] px-2 py-1.5 text-sm focus:outline-none focus:border-[#003580]">
                       <option value="">Selecionar...</option>
-                      {SEGURADORAS.map(s => <option key={s.nome} value={s.nome}>{s.nome}</option>)}
+                      {SEGURADORAS.filter(s => !selected?.segmento || s.categorias.includes(selected.segmento)).map(s => <option key={s.nome} value={s.nome}>{s.nome}</option>)}
                     </select>
                     {p.logo_url && (
                       <img src={p.logo_url} alt={p.operadora} className="h-8 w-16 object-contain rounded border border-gray-100 p-1 bg-white shrink-0" />
