@@ -635,10 +635,10 @@ const OrcamentoPublicoPage = () => {
                                 <div className="flex-1 min-w-0">
                                   <span className="font-semibold text-white block truncate">{p.operadora}</span>
                                   {p.planos?.length === 1 && p.planos[0].nome && (
-                                    <span className="text-xs text-white/50 truncate block">Plano: {p.planos[0].nome}</span>
+                                    <span className="text-sm text-white font-medium truncate block">Plano: {p.planos[0].nome}</span>
                                   )}
                                   {p.planos?.length > 1 && (
-                                    <span className="text-xs text-white/50 block">{p.planos.length} faixas etárias</span>
+                                    <span className="text-sm text-white font-medium block">{p.planos.length} faixas etárias</span>
                                   )}
                                 </div>
                                 {p.destaque && (
