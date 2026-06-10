@@ -159,7 +159,7 @@ const propVazio = () => ({
   destaque: false,
   combinar_com: [],
 });
-const cenarioVazio = () => ({ tem_plano: false, operadora: '', valor: '' });
+const cenarioVazio = () => ({ tem_plano: false, operadora: '', valor: '', vidas: '' });
 
 const fmtBRL = (v) => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -629,8 +629,8 @@ const AdminParceirosPage = () => {
                   <ToggleBtn value={c.tem_plano} onChange={v => updCenario(ci, 'tem_plano', v)} />
                 </div>
                 {c.tem_plano && (
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
+                  <div className={`grid gap-2 ${cenarios.filter(c2 => c2.tem_plano).length > 1 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                    <div className="space-y-1 col-span-1">
                       <Label className="text-xs text-gray-500">Operadora atual</Label>
                       <select value={c.operadora} onChange={e => updCenario(ci, 'operadora', e.target.value)}
                         className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-2 py-1.5 text-sm focus:outline-none focus:border-[#003580]">
@@ -643,6 +643,14 @@ const AdminParceirosPage = () => {
                       <Input value={c.valor} onChange={e => updCenario(ci, 'valor', e.target.value)}
                         placeholder="Ex: 520,00" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-sm" />
                     </div>
+                    {cenarios.filter(c2 => c2.tem_plano).length > 1 && (
+                      <div className="space-y-1">
+                        <Label className="text-xs text-gray-500">Nº de vidas</Label>
+                        <Input value={c.vidas ?? ''} onChange={e => updCenario(ci, 'vidas', e.target.value)}
+                          placeholder="Ex: 30" type="number" min="0"
+                          className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-sm" />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

@@ -465,7 +465,10 @@ const OrcamentoPublicoPage = () => {
                                   {segLogo
                                     ? <div className="bg-white/15 rounded-xl px-3 py-2 inline-flex items-center justify-center shrink-0"><img src={segLogo} alt={c.operadora} className="h-11 w-28 object-contain" /></div>
                                     : <Shield className="h-6 w-6 text-white/50" />}
-                                  <span className="text-base font-medium text-white">{c.operadora || 'Plano atual'}</span>
+                                  <div>
+                                    <span className="text-base font-medium text-white block">{c.operadora || 'Plano atual'}</span>
+                                    {c.vidas && <span className="text-xs text-white/50">{c.vidas} vidas</span>}
+                                  </div>
                                 </div>
                                 {c.valor && (
                                   <div className="text-right">
