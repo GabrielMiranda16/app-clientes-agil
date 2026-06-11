@@ -478,7 +478,7 @@ const AdminParceirosPage = () => {
         valor_mensalidade: parseFloat(String(pl0.valor).replace(',', '.')),
         descricao_orcamento: `${dest.operadora}${pl0.nome ? ` — ${pl0.nome}` : ''}`,
         propostas: validComDestaque,
-        lista_documentos: DOCS_POR_MODALIDADE[selected?.segmento]?.[selected?.modalidade] || DOCS_POR_SEGMENTO[selected?.segmento] || [],
+        lista_documentos: DOCS_POR_MODALIDADE[selected?.segmento]?.[selected?.modalidade] || DOCS_POR_MODALIDADE[selected?.segmento]?.['INDIVIDUAL'] || DOCS_POR_SEGMENTO[selected?.segmento] || [],
         docs_extras: ['PME', 'PJ'].includes(selected?.modalidade) ? ['Declaração de Saúde (DS) — beneficiários acima de 59 anos (preenchida pelo próprio beneficiário)'] : [],
         data_orcamento: new Date().toISOString(),
       }).eq('id', expandedId);
