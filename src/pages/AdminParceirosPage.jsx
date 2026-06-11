@@ -22,8 +22,8 @@ const STATUS_CONFIG = {
   ORCAMENTO:   { label: 'Orçamento',    color: 'bg-blue-100 text-blue-700',    border: 'border-l-blue-400' },
   DOCUMENTOS:  { label: 'Documentos',   color: 'bg-blue-100 text-[#003580]',   border: 'border-l-[#003580]' },
   ASSINATURA:  { label: 'Assinatura',   color: 'bg-blue-100 text-[#003580]',   border: 'border-l-[#003580]' },
-  CONCLUIDO:   { label: 'Concluído',    color: 'bg-green-100 text-green-700',   border: 'border-l-green-400' },
-  COMISSAO:    { label: 'Comissão',     color: 'bg-emerald-100 text-emerald-700', border: 'border-l-emerald-400' },
+  CONCLUIDO:   { label: 'Concluído',    color: 'bg-blue-100 text-[#003580]',   border: 'border-l-[#003580]' },
+  COMISSAO:    { label: 'Comissão',     color: 'bg-blue-100 text-[#003580]',   border: 'border-l-[#003580]' },
 };
 
 const SEGMENTO_LABEL = {
@@ -1112,13 +1112,13 @@ const AdminParceirosPage = () => {
           const aposImp = base * (1 - 0.06);
           const comissao = aposImp * (pct / 100);
           return (
-            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-sm">
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-sm">
               <p className="text-xs text-gray-500">Base: R$ {fmtBRL(base)} → após 6% imposto: R$ {fmtBRL(aposImp)}</p>
-              <p className="text-lg font-bold text-emerald-700 mt-1">Comissão: R$ {fmtBRL(comissao)}</p>
+              <p className="text-lg font-bold text-[#003580] mt-1">Comissão: R$ {fmtBRL(comissao)}</p>
             </div>
           );
         })()}
-        <Button onClick={handleComissao} disabled={enviando} className="w-full rounded-xl text-white font-semibold gap-2 bg-emerald-600 hover:bg-emerald-700">
+        <Button onClick={handleComissao} disabled={enviando} className="w-full rounded-xl text-white font-semibold gap-2" style={{ background: '#003580' }}>
           {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <DollarSign className="h-4 w-4" />}
           Registrar Comissão
         </Button>
@@ -1128,14 +1128,14 @@ const AdminParceirosPage = () => {
     if (s === 'COMISSAO') return (
       <div className="space-y-3">
         <p className="text-sm font-semibold text-gray-700 border-b pb-2">Comissão registrada</p>
-        <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
+        <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
           <p className="text-xs text-gray-500">Parceiro: {selected.parceiros?.nome_completo}</p>
-          <p className="text-base font-bold text-emerald-700 mt-1">Contrato concluído ✅</p>
+          <p className="text-base font-bold text-[#003580] mt-1">Contrato concluído ✅</p>
         </div>
         <div className="space-y-2">
           <p className="text-xs font-medium text-gray-600">Upload do comprovante de pagamento</p>
           <input ref={compInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleUploadComprovante(e.target.files?.[0])} />
-          <Button onClick={() => compInputRef.current?.click()} disabled={uploadingComp} variant="outline" className="w-full rounded-xl gap-2 text-sm border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+          <Button onClick={() => compInputRef.current?.click()} disabled={uploadingComp} variant="outline" className="w-full rounded-xl gap-2 text-sm border-[#003580]/30 text-[#003580] hover:bg-blue-50">
             {uploadingComp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
             {uploadingComp ? 'Enviando...' : 'Enviar comprovante e marcar como pago'}
           </Button>
