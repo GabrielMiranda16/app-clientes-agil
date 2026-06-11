@@ -264,10 +264,11 @@ const AdminParceirosPage = () => {
   const [criando, setCriando] = useState(false);
   const [novoForm, setNovoForm] = useState({ parceiro_id: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', cliente_cpf: '', cliente_data_nascimento: '', segmento: '', observacoes: '' });
   const [segData, setSegData] = useState({});
-  const [cenariosCriar, setCenariosCriar] = useState([{ tem_plano: false, operadora: '', valor: '' }]);
-  const addCenarioCriar = () => setCenariosCriar(cs => [...cs, { tem_plano: false, operadora: '', valor: '' }]);
+  const [cenariosCriar, setCenariosCriar] = useState([{ tem_plano: false, operadora: '', valor: '', vidas: {} }]);
+  const addCenarioCriar = () => setCenariosCriar(cs => [...cs, { tem_plano: false, operadora: '', valor: '', vidas: {} }]);
   const removeCenarioCriar = (i) => setCenariosCriar(cs => cs.filter((_, idx) => idx !== i));
   const updCenarioCriar = (i, key, val) => setCenariosCriar(cs => cs.map((c, idx) => idx === i ? { ...c, [key]: val } : c));
+  const updCenarioCriarVidas = (ci, id, val) => setCenariosCriar(cs => cs.map((c, idx) => idx === ci ? { ...c, vidas: { ...(c.vidas || {}), [id]: val } } : c));
 
   useEffect(() => {
     loadData();
@@ -426,7 +427,6 @@ const AdminParceirosPage = () => {
         slug,
         valor_mensalidade: parseFloat(String(pl0.valor).replace(',', '.')),
         descricao_orcamento: `${dest.operadora}${pl0.nome ? ` — ${pl0.nome}` : ''}`,
-        cenarios_atuais: cenarios.filter(c => c.tem_plano),
         propostas: validComDestaque,
         lista_documentos: formR.docsBase,
         docs_extras: formR.docsExtras,
@@ -467,7 +467,6 @@ const AdminParceirosPage = () => {
       const { error } = await supabase.from('orcamentos').update({
         valor_mensalidade: parseFloat(String(pl0.valor).replace(',', '.')),
         descricao_orcamento: `${dest.operadora}${pl0.nome ? ` — ${pl0.nome}` : ''}`,
-        cenarios_atuais: cenarios.filter(c => c.tem_plano),
         propostas: validComDestaque,
       }).eq('id', expandedId);
       if (error) throw error;
@@ -634,7 +633,7 @@ const AdminParceirosPage = () => {
         observacoes: obsCompleto || null,
         status: 'SOLICITACAO',
         perfil_vidas: perfilVidas.length > 0 ? perfilVidas : null,
-        cenarios_atuais: cenariosCriar.some(c => c.tem_plano) ? cenariosCriar.filter(c => c.tem_plano).map(c => ({ tem_plano: true, operadora: c.operadora || '', valor: c.valor || '' })) : null,
+        cenarios_atuais: cenariosCriar.some(c => c.tem_plano) ? cenariosCriar.filter(c => c.tem_plano).map(c => ({ tem_plano: true, operadora: c.operadora || '', valor: c.valor || '', vidas: c.vidas || {} })) : null,
       }).select('*, parceiros(nome_completo, modalidade, comissao_percentual, telefone)').single();
       if (error) throw error;
       toast({ title: 'Orçamento criado!', description: 'Agora preencha as propostas.' });
@@ -642,7 +641,7 @@ const AdminParceirosPage = () => {
       setFiltro('TODOS');
       setNovoForm({ parceiro_id: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', cliente_cpf: '', cliente_data_nascimento: '', segmento: '', observacoes: '' });
       setSegData({});
-      setCenariosCriar([{ tem_plano: false, operadora: '', valor: '' }]);
+      setCenariosCriar([{ tem_plano: false, operadora: '', valor: '', vidas: {} }]);
       await loadData(data.id);
     } catch (err) {
       toast({ variant: 'destructive', title: 'Erro ao criar.', description: err?.message });
@@ -661,115 +660,26 @@ const AdminParceirosPage = () => {
   // ── Builder (SOLICITACAO + editar + nova proposta) ──
   const renderBuilder = (mode) => (
     <div className="space-y-5">
-      {/* Cenário atual — read-only base info + distribuição de vidas editável pelo ADM */}
+      {/* Cenário atual — somente leitura (preenchido na solicitação) */}
       {(() => {
-        const cenAtivos = cenarios.filter(c => c.tem_plano);
-        const temMultiplos = cenAtivos.length > 1;
-        const temPerfil = selected?.perfil_vidas?.length > 0;
+        const cenAtivos = (selected?.cenarios_atuais || []).filter(c => c.tem_plano);
         return (
           <div className="space-y-2">
             <p className="text-sm font-semibold text-gray-700">Cenário atual do cliente</p>
             {cenAtivos.length > 0 ? (
               <div className="space-y-2">
-                {cenarios.map((c, ci) => {
-                  if (!c.tem_plano) return null;
+                {cenAtivos.map((c, ci) => {
                   const logo = SEGURADORAS.find(s => s.nome === c.operadora)?.logo;
                   return (
-                    <div key={ci} className="border border-gray-200 rounded-xl overflow-hidden">
-                      <div className="flex items-center gap-3 px-3 py-2.5 bg-gray-50 border-b border-gray-100">
-                        {logo
-                          ? <img src={logo} alt={c.operadora} className="h-5 w-10 object-contain shrink-0" />
-                          : <Shield className="h-4 w-4 text-gray-400 shrink-0" />}
-                        <span className="text-sm font-medium text-gray-700 flex-1 truncate">{c.operadora || 'Operadora não informada'}</span>
-                        {c.valor && <span className="text-xs text-gray-400 shrink-0">R$ {c.valor}/mês</span>}
-                      </div>
-                      {temMultiplos && temPerfil && (
-                        <div className="p-3 space-y-1.5 bg-white">
-                          <p className="text-xs font-semibold text-gray-600">Vidas por faixa etária</p>
-                          {selected.perfil_vidas.map(({ id, label, vidas: meta }) => {
-                            const val = parseInt((c.vidas || {})[id] || 0);
-                            const totalFaixa = cenAtivos.reduce((s, c2) => s + parseInt((c2.vidas || {})[id] || 0), 0);
-                            const atingiuLimite = totalFaixa >= meta;
-                            return (
-                              <div key={id} className="flex items-center gap-2">
-                                <span className="text-xs text-gray-600 flex-1 min-w-0 truncate">{label}</span>
-                                <span className="text-xs text-gray-300 shrink-0">{totalFaixa}/{meta}</span>
-                                <div className="flex items-center gap-1 shrink-0">
-                                  <button type="button"
-                                    onClick={() => updCenarioVidasFaixa(ci, id, Math.max(0, val - 1))}
-                                    disabled={val === 0}
-                                    className="w-5 h-5 rounded border border-gray-200 bg-gray-50 flex items-center justify-center text-xs font-bold text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-100">−</button>
-                                  <span className="w-6 text-center text-xs font-semibold text-gray-800">{val}</span>
-                                  <button type="button"
-                                    onClick={() => { if (!atingiuLimite) updCenarioVidasFaixa(ci, id, val + 1); }}
-                                    disabled={atingiuLimite}
-                                    className="w-5 h-5 rounded border border-gray-200 bg-gray-50 flex items-center justify-center text-xs font-bold text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-100">+</button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                          <div className="flex justify-between pt-1.5 border-t border-gray-100">
-                            <span className="text-xs font-semibold text-gray-600">Total deste cenário</span>
-                            <span className="text-xs font-bold text-gray-800">
-                              {(selected.perfil_vidas || []).reduce((s, { id }) => s + parseInt((c.vidas || {})[id] || 0), 0)}
-                            </span>
-                          </div>
-                        </div>
-                      )}
+                    <div key={ci} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5">
+                      {logo
+                        ? <img src={logo} alt={c.operadora} className="h-5 w-10 object-contain shrink-0" />
+                        : <Shield className="h-4 w-4 text-gray-400 shrink-0" />}
+                      <span className="text-sm font-medium text-gray-700 flex-1 truncate">{c.operadora || 'Operadora não informada'}</span>
+                      {c.valor && <span className="text-xs text-gray-400 shrink-0">R$ {c.valor}/mês</span>}
                     </div>
                   );
                 })}
-
-                {temMultiplos && temPerfil && (() => {
-                  const perfil = selected.perfil_vidas;
-                  const porFaixa = perfil.map(f => {
-                    const dist = cenAtivos.reduce((s, c) => s + parseInt((c.vidas || {})[f.id] || 0), 0);
-                    return { ...f, distribuido: dist, faltam: f.vidas - dist };
-                  });
-                  const totalMeta = perfil.reduce((s, f) => s + (f.vidas || 0), 0);
-                  const totalDist = porFaixa.reduce((s, f) => s + f.distribuido, 0);
-                  const totalFaltam = totalMeta - totalDist;
-                  const completo = totalFaltam === 0 && totalMeta > 0;
-                  const excede = totalFaltam < 0;
-                  return (
-                    <div className="border border-gray-200 rounded-xl overflow-hidden">
-                      <div className={`flex items-center justify-between px-4 py-2.5 border-b ${completo ? 'bg-green-50 border-green-200' : excede ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
-                        <span className={`text-sm font-semibold ${completo ? 'text-green-700' : excede ? 'text-red-600' : 'text-amber-700'}`}>
-                          {completo ? '✓ Todas as vidas distribuídas' : excede ? `Excede em ${Math.abs(totalFaltam)} vidas` : `${totalFaltam} vidas para distribuir`}
-                        </span>
-                        <span className="text-xs text-gray-400">{totalDist}/{totalMeta}</span>
-                      </div>
-                      <table className="w-full text-xs">
-                        <thead>
-                          <tr className="bg-gray-50 border-b border-gray-100">
-                            <th className="text-left px-4 py-2 text-gray-500 font-medium">Faixa Etária</th>
-                            <th className="text-right px-4 py-2 text-gray-500 font-medium">Meta</th>
-                            <th className="text-right px-4 py-2 text-gray-500 font-medium">Distribuído</th>
-                            <th className="text-right px-4 py-2 text-gray-500 font-medium">Faltam</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {porFaixa.map((f, i) => (
-                            <tr key={i} className={`border-b border-gray-100 ${f.faltam === 0 ? 'bg-green-50/40' : f.faltam < 0 ? 'bg-red-50/40' : ''}`}>
-                              <td className="px-4 py-1.5 text-gray-700">{f.label}</td>
-                              <td className="px-4 py-1.5 text-right text-gray-400">{f.vidas}</td>
-                              <td className="px-4 py-1.5 text-right font-semibold text-gray-800">{f.distribuido}</td>
-                              <td className={`px-4 py-1.5 text-right font-semibold ${f.faltam === 0 ? 'text-green-600' : f.faltam < 0 ? 'text-red-500' : 'text-amber-600'}`}>
-                                {f.faltam === 0 ? '✓' : f.faltam}
-                              </td>
-                            </tr>
-                          ))}
-                          <tr className="bg-gray-50">
-                            <td className="px-4 py-2 font-bold text-gray-700">Total</td>
-                            <td className="px-4 py-2 text-right font-semibold text-gray-400">{totalMeta}</td>
-                            <td className="px-4 py-2 text-right font-black text-gray-800">{totalDist}</td>
-                            <td className={`px-4 py-2 text-right font-black ${completo ? 'text-green-600' : 'text-amber-600'}`}>{completo ? '✓' : totalFaltam}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  );
-                })()}
               </div>
             ) : (
               <p className="text-xs text-gray-400 italic">Nenhum plano atual informado pelo parceiro.</p>
@@ -1475,37 +1385,124 @@ const AdminParceirosPage = () => {
                     <Plus className="h-3 w-3" /> Adicionar plano
                   </button>
                 </div>
-                {cenariosCriar.map((c, ci) => (
-                  <div key={ci} className="space-y-2 bg-white rounded-lg p-2 border border-blue-100">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Label className="text-xs text-gray-500">Possui plano atual?</Label>
-                        <div className="flex rounded border border-gray-200 overflow-hidden text-xs font-semibold">
-                          <button type="button" onClick={() => updCenarioCriar(ci, 'tem_plano', false)} className={`px-2 py-1 transition-colors ${!c.tem_plano ? 'bg-[#003580] text-white' : 'bg-white text-gray-400'}`}>Não</button>
-                          <button type="button" onClick={() => updCenarioCriar(ci, 'tem_plano', true)} className={`px-2 py-1 transition-colors ${c.tem_plano ? 'bg-[#003580] text-white' : 'bg-white text-gray-400'}`}>Sim</button>
+                {(() => {
+                  const cenAtivosAdm = cenariosCriar.filter(c => c.tem_plano);
+                  const temMultiplosAdm = cenAtivosAdm.length > 1;
+                  const showDistAdm = temMultiplosAdm && ['SAUDE', 'ODONTOLOGICO', 'SAUDE_VIDA_ODONTO'].includes(novoForm.segmento) && parseInt(segData.vidas || '0') > 0;
+                  return (
+                    <>
+                      {cenariosCriar.map((c, ci) => (
+                        <div key={ci} className="space-y-2 bg-white rounded-lg p-2 border border-blue-100">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Label className="text-xs text-gray-500">Possui plano atual?</Label>
+                              <div className="flex rounded border border-gray-200 overflow-hidden text-xs font-semibold">
+                                <button type="button" onClick={() => updCenarioCriar(ci, 'tem_plano', false)} className={`px-2 py-1 transition-colors ${!c.tem_plano ? 'bg-[#003580] text-white' : 'bg-white text-gray-400'}`}>Não</button>
+                                <button type="button" onClick={() => updCenarioCriar(ci, 'tem_plano', true)} className={`px-2 py-1 transition-colors ${c.tem_plano ? 'bg-[#003580] text-white' : 'bg-white text-gray-400'}`}>Sim</button>
+                              </div>
+                            </div>
+                            {cenariosCriar.length > 1 && <button type="button" onClick={() => removeCenarioCriar(ci)} className="text-gray-400 hover:text-red-500"><X className="h-3.5 w-3.5" /></button>}
+                          </div>
+                          {c.tem_plano && (
+                            <>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-gray-500">Operadora atual</Label>
+                                  <select value={c.operadora} onChange={e => updCenarioCriar(ci, 'operadora', e.target.value)}
+                                    className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-2 py-1.5 text-sm focus:outline-none focus:border-[#003580]">
+                                    <option value="">Selecionar...</option>
+                                    {SEGURADORAS.filter(s => !novoForm.segmento || s.categorias.includes(novoForm.segmento)).map(s => <option key={s.nome} value={s.nome}>{s.nome}</option>)}
+                                  </select>
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-gray-500">Valor mensal (R$)</Label>
+                                  <Input value={c.valor} onChange={e => updCenarioCriar(ci, 'valor', e.target.value)}
+                                    placeholder="Ex: 520,00" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-sm" />
+                                </div>
+                              </div>
+                              {showDistAdm && (
+                                <div className="pt-1.5 border-t border-blue-100 space-y-1.5">
+                                  <p className="text-xs font-semibold text-gray-600">Vidas por faixa etária</p>
+                                  {AGE_BRACKETS.filter(({ id }) => parseInt(segData[faixaKey(id)] || '0') > 0).map(({ id, label }) => {
+                                    const meta = parseInt(segData[faixaKey(id)] || '0');
+                                    const val = parseInt((c.vidas || {})[id] || 0);
+                                    const totalFaixa = cenAtivosAdm.reduce((s, c2) => s + parseInt((c2.vidas || {})[id] || 0), 0);
+                                    const atingiuLimite = totalFaixa >= meta;
+                                    return (
+                                      <div key={id} className="flex items-center gap-2">
+                                        <span className="text-xs text-gray-600 flex-1 min-w-0 truncate">{label}</span>
+                                        <span className="text-xs text-gray-300 shrink-0">{totalFaixa}/{meta}</span>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                          <button type="button" onClick={() => updCenarioCriarVidas(ci, id, Math.max(0, val - 1))} disabled={val === 0}
+                                            className="w-5 h-5 rounded border border-gray-200 bg-gray-50 flex items-center justify-center text-xs font-bold text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-100">−</button>
+                                          <span className="w-6 text-center text-xs font-semibold text-gray-800">{val}</span>
+                                          <button type="button" onClick={() => { if (!atingiuLimite) updCenarioCriarVidas(ci, id, val + 1); }} disabled={atingiuLimite}
+                                            className="w-5 h-5 rounded border border-gray-200 bg-gray-50 flex items-center justify-center text-xs font-bold text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-100">+</button>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                  <div className="flex justify-between pt-1 border-t border-gray-100">
+                                    <span className="text-xs font-semibold text-gray-600">Total deste cenário</span>
+                                    <span className="text-xs font-bold text-gray-800">
+                                      {AGE_BRACKETS.reduce((s, { id }) => s + parseInt((c.vidas || {})[id] || 0), 0)}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          )}
                         </div>
-                      </div>
-                      {cenariosCriar.length > 1 && <button type="button" onClick={() => removeCenarioCriar(ci)} className="text-gray-400 hover:text-red-500"><X className="h-3.5 w-3.5" /></button>}
-                    </div>
-                    {c.tem_plano && (
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <Label className="text-xs text-gray-500">Operadora atual</Label>
-                          <select value={c.operadora} onChange={e => updCenarioCriar(ci, 'operadora', e.target.value)}
-                            className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-2 py-1.5 text-sm focus:outline-none focus:border-[#003580]">
-                            <option value="">Selecionar...</option>
-                            {SEGURADORAS.filter(s => !novoForm.segmento || s.categorias.includes(novoForm.segmento)).map(s => <option key={s.nome} value={s.nome}>{s.nome}</option>)}
-                          </select>
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs text-gray-500">Valor mensal (R$)</Label>
-                          <Input value={c.valor} onChange={e => updCenarioCriar(ci, 'valor', e.target.value)}
-                            placeholder="Ex: 520,00" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-sm" />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      ))}
+                      {showDistAdm && (() => {
+                        const porFaixa = AGE_BRACKETS.filter(({ id }) => parseInt(segData[faixaKey(id)] || '0') > 0).map(({ id, label }) => {
+                          const meta = parseInt(segData[faixaKey(id)] || '0');
+                          const dist = cenAtivosAdm.reduce((s, c) => s + parseInt((c.vidas || {})[id] || 0), 0);
+                          return { id, label, vidas: meta, distribuido: dist, faltam: meta - dist };
+                        });
+                        const totalMeta = porFaixa.reduce((s, f) => s + f.vidas, 0);
+                        const totalDist = porFaixa.reduce((s, f) => s + f.distribuido, 0);
+                        const totalFaltam = totalMeta - totalDist;
+                        const completo = totalFaltam === 0 && totalMeta > 0;
+                        const excede = totalFaltam < 0;
+                        return (
+                          <div className="border border-gray-200 rounded-xl overflow-hidden">
+                            <div className={`flex items-center justify-between px-3 py-2 border-b ${completo ? 'bg-green-50 border-green-200' : excede ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
+                              <span className={`text-xs font-semibold ${completo ? 'text-green-700' : excede ? 'text-red-600' : 'text-amber-700'}`}>
+                                {completo ? '✓ Todas as vidas distribuídas' : excede ? `Excede em ${Math.abs(totalFaltam)} vidas` : `${totalFaltam} vidas para distribuir`}
+                              </span>
+                              <span className="text-xs text-gray-400">{totalDist}/{totalMeta}</span>
+                            </div>
+                            <table className="w-full text-xs">
+                              <thead><tr className="bg-gray-50 border-b border-gray-100">
+                                <th className="text-left px-3 py-1.5 text-gray-500 font-medium">Faixa</th>
+                                <th className="text-right px-3 py-1.5 text-gray-500 font-medium">Meta</th>
+                                <th className="text-right px-3 py-1.5 text-gray-500 font-medium">Dist.</th>
+                                <th className="text-right px-3 py-1.5 text-gray-500 font-medium">Faltam</th>
+                              </tr></thead>
+                              <tbody>
+                                {porFaixa.map((f, i) => (
+                                  <tr key={i} className={`border-b border-gray-100 ${f.faltam === 0 ? 'bg-green-50/40' : f.faltam < 0 ? 'bg-red-50/40' : ''}`}>
+                                    <td className="px-3 py-1 text-gray-700">{f.label}</td>
+                                    <td className="px-3 py-1 text-right text-gray-400">{f.vidas}</td>
+                                    <td className="px-3 py-1 text-right font-semibold text-gray-800">{f.distribuido}</td>
+                                    <td className={`px-3 py-1 text-right font-semibold ${f.faltam === 0 ? 'text-green-600' : f.faltam < 0 ? 'text-red-500' : 'text-amber-600'}`}>{f.faltam === 0 ? '✓' : f.faltam}</td>
+                                  </tr>
+                                ))}
+                                <tr className="bg-gray-50">
+                                  <td className="px-3 py-1.5 font-bold text-gray-700">Total</td>
+                                  <td className="px-3 py-1.5 text-right font-semibold text-gray-400">{totalMeta}</td>
+                                  <td className="px-3 py-1.5 text-right font-black text-gray-800">{totalDist}</td>
+                                  <td className={`px-3 py-1.5 text-right font-black ${completo ? 'text-green-600' : 'text-amber-600'}`}>{completo ? '✓' : totalFaltam}</td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        );
+                      })()}
+                    </>
+                  );
+                })()}
               </div>
 
               <div className="space-y-1">
