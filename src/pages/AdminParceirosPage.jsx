@@ -39,8 +39,6 @@ const SEGMENTO_LABEL = {
   FROTA:        'Seguro Frota',
   CARGAS:       'Seguro de Cargas',
   EQUIPAMENTOS: 'Equipamentos Portáteis',
-  SAUDE_VIDA_ODONTO: 'Saúde / Vida / Odonto',
-  AUTO_FROTA: 'Auto / Frota',
 };
 
 const DOCS_POR_SEGMENTO = {
@@ -82,8 +80,6 @@ const DOCS_POR_SEGMENTO = {
   FROTA:        ['CNPJ', 'CRLV de todos os veículos', 'CNH dos motoristas'],
   CARGAS:       ['CPF ou CNPJ', 'Nota fiscal da carga'],
   EQUIPAMENTOS: ['CPF ou CNPJ', 'Nota fiscal do equipamento'],
-  SAUDE_VIDA_ODONTO: ['RG', 'CPF', 'Comprovante de residência'],
-  AUTO_FROTA: ['CRLV', 'CNH', 'CPF'],
 };
 
 const AGE_BRACKETS = [
@@ -105,10 +101,6 @@ const CAMPOS_SEGMENTO = {
     { key: 'tipo', label: 'Tipo de plano', type: 'select', options: ['Familiar', 'Empresarial', 'Individual', 'MEI', 'Adesão'] },
     { key: 'vidas', label: 'Nº de vidas', type: 'number', placeholder: 'Ex: 3' },
   ],
-  SAUDE_VIDA_ODONTO: [
-    { key: 'tipo', label: 'Tipo de plano', type: 'select', options: ['Familiar', 'Empresarial', 'Individual', 'MEI'] },
-    { key: 'vidas', label: 'Nº de vidas', type: 'number', placeholder: 'Ex: 3' },
-  ],
   ODONTOLOGICO: [
     { key: 'tipo', label: 'Tipo de plano', type: 'select', options: ['Individual', 'Familiar', 'Empresarial'] },
     { key: 'vidas', label: 'Nº de vidas', type: 'number', placeholder: 'Ex: 2' },
@@ -117,11 +109,6 @@ const CAMPOS_SEGMENTO = {
     { key: 'placa', label: 'Placa do veículo', type: 'text', placeholder: 'Ex: ABC1D23' },
     { key: 'modelo_veiculo', label: 'Modelo do veículo', type: 'text', placeholder: 'Ex: Honda Civic 2023' },
     { key: 'ano_fabricacao', label: 'Ano de fabricação', type: 'number', placeholder: 'Ex: 2023' },
-  ],
-  AUTO_FROTA: [
-    { key: 'nome_empresa', label: 'Nome da empresa', type: 'text', placeholder: 'Ex: Transportadora ABC' },
-    { key: 'qtd_veiculos', label: 'Número de veículos', type: 'number', placeholder: 'Ex: 10' },
-    { key: 'tipo_veiculos', label: 'Tipo de veículos', type: 'text', placeholder: 'Ex: Caminhões, Vans, Carros' },
   ],
   RESIDENCIAL: [
     { key: 'tipo_imovel', label: 'Tipo de imóvel', type: 'select', options: ['Casa', 'Apartamento', 'Sobrado'] },
@@ -626,14 +613,14 @@ const AdminParceirosPage = () => {
     if (campoFaltando) return toast({ variant: 'destructive', title: `Informe: ${campoFaltando.label}.` });
     const totalVidasAdm = parseInt(segData.vidas || '0');
     const distribuiVidasAdm = AGE_BRACKETS.reduce((s, { id }) => s + parseInt(segData[faixaKey(id)] || '0'), 0);
-    if (['SAUDE', 'ODONTOLOGICO', 'SAUDE_VIDA_ODONTO'].includes(novoForm.segmento) && totalVidasAdm > 0 && distribuiVidasAdm !== totalVidasAdm)
+    if (['SAUDE', 'ODONTOLOGICO'].includes(novoForm.segmento) && totalVidasAdm > 0 && distribuiVidasAdm !== totalVidasAdm)
       return toast({ variant: 'destructive', title: 'Distribua todas as vidas por faixa etária.', description: `Faltam ${totalVidasAdm - distribuiVidasAdm} vida(s).` });
     setCriando(true);
     try {
       const campos = CAMPOS_SEGMENTO[novoForm.segmento] || [];
       const obsSegmento = campos.filter(f => segData[f.key]).map(f => `${f.label}: ${segData[f.key]}`).join('\n');
       let obsFaixas = '';
-      if (['SAUDE', 'ODONTOLOGICO', 'SAUDE_VIDA_ODONTO'].includes(novoForm.segmento)) {
+      if (['SAUDE', 'ODONTOLOGICO'].includes(novoForm.segmento)) {
         const lines = AGE_BRACKETS
           .map(({ id, label }) => {
             const val = parseInt(segData[faixaKey(id)] || '0');
@@ -643,7 +630,7 @@ const AdminParceirosPage = () => {
         if (lines.length) obsFaixas = `Distribuição por faixa etária:\n${lines.join('\n')}`;
       }
       const obsCompleto = [obsSegmento, obsFaixas, novoForm.observacoes].filter(Boolean).join('\n\n');
-      const perfilVidas = ['SAUDE', 'ODONTOLOGICO', 'SAUDE_VIDA_ODONTO'].includes(novoForm.segmento)
+      const perfilVidas = ['SAUDE', 'ODONTOLOGICO'].includes(novoForm.segmento)
         ? AGE_BRACKETS
             .map(({ id, label }) => ({ id, label, vidas: parseInt(segData[faixaKey(id)] || '0') }))
             .filter(b => b.vidas > 0)
@@ -1400,7 +1387,7 @@ const AdminParceirosPage = () => {
               )}
 
               {/* Faixas etárias — igual ao formulário do parceiro */}
-              {['SAUDE', 'ODONTOLOGICO', 'SAUDE_VIDA_ODONTO'].includes(novoForm.segmento) && parseInt(segData.vidas || '0') > 0 && (() => {
+              {['SAUDE', 'ODONTOLOGICO'].includes(novoForm.segmento) && parseInt(segData.vidas || '0') > 0 && (() => {
                 const totalVidas = parseInt(segData.vidas || '0');
                 const distribuiVidas = AGE_BRACKETS.reduce((s, { id }) => s + parseInt(segData[faixaKey(id)] || '0'), 0);
                 const remaining = totalVidas - distribuiVidas;
@@ -1453,7 +1440,7 @@ const AdminParceirosPage = () => {
                 {(() => {
                   const cenAtivosAdm = cenariosCriar.filter(c => c.tem_plano);
                   const temMultiplosAdm = cenAtivosAdm.length > 1;
-                  const showDistAdm = temMultiplosAdm && ['SAUDE', 'ODONTOLOGICO', 'SAUDE_VIDA_ODONTO'].includes(novoForm.segmento) && parseInt(segData.vidas || '0') > 0;
+                  const showDistAdm = temMultiplosAdm && ['SAUDE', 'ODONTOLOGICO'].includes(novoForm.segmento) && parseInt(segData.vidas || '0') > 0;
                   return (
                     <>
                       {cenariosCriar.map((c, ci) => (
