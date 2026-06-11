@@ -121,6 +121,9 @@ const OrcamentoPublicoPage = () => {
   const [docStatus, setDocStatus] = useState({});
   const [docsEnviados, setDocsEnviados] = useState([]);
   const [expandedDifs, setExpandedDifs] = useState(false);
+  const [extraNome, setExtraNome] = useState('');
+  const [extraKey, setExtraKey] = useState(0);
+  const extraInputRef = useRef(null);
 
   const docTipo = orcamento?.cliente_cpf?.replace(/\D/g, '').length === 14 ? 'CNPJ' : 'CPF';
 
@@ -379,6 +382,38 @@ const OrcamentoPublicoPage = () => {
                       const errMsg = docStatus[`${tipo}__err`];
                       return <DocUploadItem key={tipo} tipo={tipo} jaEnviado={jaEnviado} status={status} errMsg={errMsg} onUpload={file => handleUploadDoc(tipo, file)} />;
                     })}
+                  </div>
+                  <div className="pt-3 border-t border-white/15 space-y-2">
+                    <p className="text-xs text-white/50 font-medium">Adicionar documento extra (opcional)</p>
+                    <div className="flex gap-2">
+                      <input
+                        value={extraNome}
+                        onChange={e => setExtraNome(e.target.value)}
+                        placeholder="Nome do documento..."
+                        className="flex-1 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/40"
+                      />
+                      <input
+                        key={extraKey}
+                        ref={extraInputRef}
+                        type="file"
+                        accept="image/*,.pdf"
+                        className="hidden"
+                        onChange={e => {
+                          if (e.target.files?.[0] && extraNome.trim()) {
+                            handleUploadDoc(extraNome.trim(), e.target.files[0]);
+                            setExtraNome('');
+                            setExtraKey(k => k + 1);
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={() => extraNome.trim() && extraInputRef.current?.click()}
+                        disabled={!extraNome.trim()}
+                        className="px-3 py-2 rounded-lg bg-white/20 text-white text-sm font-medium disabled:opacity-40 flex items-center gap-1.5 shrink-0"
+                      >
+                        <Upload className="h-4 w-4" /> Enviar
+                      </button>
+                    </div>
                   </div>
                   {todosEnviados && (
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
@@ -1063,6 +1098,38 @@ const OrcamentoPublicoPage = () => {
                           const errMsg = docStatus[`${tipo}__err`];
                           return <DocUploadItem key={tipo} tipo={tipo} jaEnviado={jaEnviado} status={status} errMsg={errMsg} onUpload={file => handleUploadDoc(tipo, file)} />;
                         })}
+                      </div>
+                      <div className="pt-3 border-t border-white/15 space-y-2">
+                        <p className="text-xs text-white/50 font-medium">Adicionar documento extra (opcional)</p>
+                        <div className="flex gap-2">
+                          <input
+                            value={extraNome}
+                            onChange={e => setExtraNome(e.target.value)}
+                            placeholder="Nome do documento..."
+                            className="flex-1 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/40"
+                          />
+                          <input
+                            key={extraKey}
+                            ref={extraInputRef}
+                            type="file"
+                            accept="image/*,.pdf"
+                            className="hidden"
+                            onChange={e => {
+                              if (e.target.files?.[0] && extraNome.trim()) {
+                                handleUploadDoc(extraNome.trim(), e.target.files[0]);
+                                setExtraNome('');
+                                setExtraKey(k => k + 1);
+                              }
+                            }}
+                          />
+                          <button
+                            onClick={() => extraNome.trim() && extraInputRef.current?.click()}
+                            disabled={!extraNome.trim()}
+                            className="px-3 py-2 rounded-lg bg-white/20 text-white text-sm font-medium disabled:opacity-40 flex items-center gap-1.5 shrink-0"
+                          >
+                            <Upload className="h-4 w-4" /> Enviar
+                          </button>
+                        </div>
                       </div>
                       {todosEnviados && (
                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
