@@ -165,7 +165,8 @@ const ParceiroDashboard = () => {
   }, [user]);
 
   useEffect(() => {
-    if (!detalhe) return;
+    const aberto = detalhe || modalAberto;
+    if (!aberto) return;
     const scrollY = window.scrollY;
     document.body.style.position = 'fixed';
     document.body.style.top = `-${scrollY}px`;
@@ -176,7 +177,7 @@ const ParceiroDashboard = () => {
       document.body.style.width = '';
       window.scrollTo(0, scrollY);
     };
-  }, [detalhe]);
+  }, [detalhe, modalAberto]);
 
   const loadData = async () => {
     setLoading(true);
@@ -669,11 +670,11 @@ const ParceiroDashboard = () => {
       <AnimatePresence>
         {modalAberto && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-4"
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-4 overflow-hidden"
             onClick={e => { if (e.target === e.currentTarget) setModalAberto(false); }}>
             <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden overscroll-contain">
               <div className="bg-[#003580] px-6 py-4 flex items-center justify-between rounded-t-2xl shrink-0">
                 <div>
                   <h2 className="text-white font-bold text-lg">Solicitar Orçamento</h2>
