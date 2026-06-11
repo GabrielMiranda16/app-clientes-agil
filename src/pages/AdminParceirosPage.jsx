@@ -20,8 +20,8 @@ import { SEGURADORAS } from '@/data/seguradoras';
 const STATUS_CONFIG = {
   SOLICITACAO: { label: 'Solicitação',  color: 'bg-gray-100 text-gray-700',    border: 'border-l-gray-400' },
   ORCAMENTO:   { label: 'Orçamento',    color: 'bg-blue-100 text-blue-700',    border: 'border-l-blue-400' },
-  DOCUMENTOS:  { label: 'Documentos',   color: 'bg-yellow-100 text-yellow-700', border: 'border-l-yellow-400' },
-  ASSINATURA:  { label: 'Assinatura',   color: 'bg-purple-100 text-purple-700', border: 'border-l-purple-400' },
+  DOCUMENTOS:  { label: 'Documentos',   color: 'bg-blue-100 text-blue-800',    border: 'border-l-blue-500' },
+  ASSINATURA:  { label: 'Assinatura',   color: 'bg-indigo-100 text-indigo-800', border: 'border-l-indigo-500' },
   CONCLUIDO:   { label: 'Concluído',    color: 'bg-green-100 text-green-700',   border: 'border-l-green-400' },
   COMISSAO:    { label: 'Comissão',     color: 'bg-emerald-100 text-emerald-700', border: 'border-l-emerald-400' },
 };
@@ -1048,7 +1048,7 @@ const AdminParceirosPage = () => {
             ))}
           </div>
         )}
-        <Button onClick={() => handleAvancar('ASSINATURA')} disabled={enviando} className="w-full rounded-xl text-white font-semibold gap-2 bg-purple-600 hover:bg-purple-700">
+        <Button onClick={() => handleAvancar('ASSINATURA')} disabled={enviando} className="w-full rounded-xl text-white font-semibold gap-2" style={{ background: '#003580' }}>
           {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
           Avançar para Assinatura
         </Button>

@@ -21,8 +21,8 @@ import { SEGURADORAS } from '@/data/seguradoras';
 const STATUS_CONFIG = {
   SOLICITACAO:  { label: 'Solicitação',  color: 'bg-gray-100 text-gray-700',     desc: 'Aguardando resposta do ADM' },
   ORCAMENTO:    { label: 'Orçamento',    color: 'bg-blue-100 text-blue-700',     desc: 'Link pronto — envie para o cliente' },
-  DOCUMENTOS:   { label: 'Documentos',   color: 'bg-yellow-100 text-yellow-700', desc: 'Cliente aceitou — enviando documentos' },
-  ASSINATURA:   { label: 'Assinatura',   color: 'bg-purple-100 text-purple-700', desc: 'Documentos recebidos — em assinatura' },
+  DOCUMENTOS:   { label: 'Documentos',   color: 'bg-blue-100 text-blue-800',    desc: 'Cliente aceitou — enviando documentos' },
+  ASSINATURA:   { label: 'Assinatura',   color: 'bg-indigo-100 text-indigo-800', desc: 'Documentos recebidos — em assinatura' },
   CONCLUIDO:    { label: 'Concluído',    color: 'bg-green-100 text-green-700',   desc: 'Contrato assinado — aguardando comissão' },
   COMISSAO:     { label: 'Comissão',     color: 'bg-emerald-100 text-emerald-700', desc: 'Comissão registrada' },
 };
@@ -289,7 +289,7 @@ const ParceiroDashboard = () => {
   const metrics = [
     { label: 'Em andamento', value: emAndamento.length, icon: Clock, color: 'text-blue-600' },
     { label: 'Contratos fechados', value: concluidos.length, icon: CheckCircle2, color: 'text-green-600' },
-    { label: 'A receber', value: `R$ ${comissaoPendente.toFixed(2).replace('.', ',')}`, icon: DollarSign, color: 'text-yellow-600' },
+    { label: 'A receber', value: `R$ ${comissaoPendente.toFixed(2).replace('.', ',')}`, icon: DollarSign, color: 'text-[#003580]' },
     { label: 'Total recebido', value: `R$ ${comissaoRecebida.toFixed(2).replace('.', ',')}`, icon: TrendingUp, color: 'text-emerald-600' },
   ];
 
@@ -454,7 +454,7 @@ const ParceiroDashboard = () => {
                 <Card className="border shadow-sm">
                   <CardContent className="p-4">
                     <p className="text-xs text-gray-500">A receber</p>
-                    <p className="text-2xl font-bold text-yellow-600">R$ {comissaoPendente.toFixed(2).replace('.', ',')}</p>
+                    <p className="text-2xl font-bold text-[#003580]">R$ {comissaoPendente.toFixed(2).replace('.', ',')}</p>
                   </CardContent>
                 </Card>
                 <Card className="border shadow-sm">
@@ -488,7 +488,7 @@ const ParceiroDashboard = () => {
                           </div>
                           <div className="text-right">
                             <p className="text-lg font-bold text-emerald-600">R$ {Number(c.valor_comissao || 0).toFixed(2).replace('.', ',')}</p>
-                            <Badge className={c.status === 'PAGO' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}>
+                            <Badge className={c.status === 'PAGO' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-800'}>
                               {c.status === 'PAGO' ? 'Pago' : 'Pendente'}
                             </Badge>
                             {c.data_pagamento && <p className="text-xs text-gray-400 mt-1">{fmtData(c.data_pagamento)}</p>}
@@ -522,8 +522,8 @@ const ParceiroDashboard = () => {
               <div className={`px-5 py-4 flex items-start justify-between rounded-t-2xl sticky top-0 z-10 ${
                 detalhe.status === 'SOLICITACAO' ? 'bg-[#003580]' :
                 detalhe.status === 'ORCAMENTO' ? 'bg-blue-600' :
-                detalhe.status === 'DOCUMENTOS' ? 'bg-yellow-600' :
-                detalhe.status === 'ASSINATURA' ? 'bg-purple-600' :
+                detalhe.status === 'DOCUMENTOS' ? 'bg-blue-500' :
+                detalhe.status === 'ASSINATURA' ? 'bg-blue-800' :
                 detalhe.status === 'CONCLUIDO' ? 'bg-green-600' : 'bg-emerald-600'
               }`}>
                 <div>
@@ -632,7 +632,7 @@ const ParceiroDashboard = () => {
                             R$ {Number(detalheComissao.valor_comissao || 0).toFixed(2).replace('.', ',')}
                           </p>
                         </div>
-                        <Badge className={detalheComissao.status === 'PAGO' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}>
+                        <Badge className={detalheComissao.status === 'PAGO' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-800'}>
                           {detalheComissao.status === 'PAGO' ? 'Pago ✓' : 'Pendente'}
                         </Badge>
                       </div>
