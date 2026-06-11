@@ -282,8 +282,8 @@ const OrcamentoPublicoPage = () => {
       setDocStatus(prev => ({ ...prev, [tipo]: 'done' }));
       setDocsEnviados(prev => prev.includes(tipo) ? prev : [...prev, tipo]);
     } catch (err) {
-      console.error(err);
-      setDocStatus(prev => ({ ...prev, [tipo]: 'error' }));
+      console.error('Upload error:', err);
+      setDocStatus(prev => ({ ...prev, [tipo]: 'error', [`${tipo}__err`]: err?.message || String(err) }));
     }
   };
 
@@ -998,7 +998,8 @@ const OrcamentoPublicoPage = () => {
                         {todosOsDocs.map(tipo => {
                           const status = docStatus[tipo];
                           const jaEnviado = docsEnviados.includes(tipo) || status === 'done';
-                          return <DocUploadItem key={tipo} tipo={tipo} jaEnviado={jaEnviado} status={status} onUpload={file => handleUploadDoc(tipo, file)} />;
+                          const errMsg = docStatus[`${tipo}__err`];
+                          return <DocUploadItem key={tipo} tipo={tipo} jaEnviado={jaEnviado} status={status} errMsg={errMsg} onUpload={file => handleUploadDoc(tipo, file)} />;
                         })}
                       </div>
                       {todosEnviados && (
@@ -1274,25 +1275,30 @@ const PropostaCard = ({ proposta, isSaude, cenarios = [], onEscolher, aceitando 
   );
 };
 
-const DocUploadItem = ({ tipo, jaEnviado, status, onUpload }) => {
+const DocUploadItem = ({ tipo, jaEnviado, status, errMsg, onUpload }) => {
   const inputRef = useRef(null);
   return (
-    <div className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${jaEnviado ? 'bg-green-400/20 border-green-400/30' : 'bg-white/10 border-white/15'}`}>
-      <div className={`p-2 rounded-lg shrink-0 ${jaEnviado ? 'bg-green-400/20' : 'bg-white/15'}`}>
-        {jaEnviado ? <Check className="h-4 w-4 text-green-300" /> : <FileText className="h-4 w-4 text-white/70" />}
+    <div className={`rounded-xl border transition-colors ${jaEnviado ? 'bg-green-400/20 border-green-400/30' : 'bg-white/10 border-white/15'}`}>
+      <div className="flex items-center gap-3 p-3">
+        <div className={`p-2 rounded-lg shrink-0 ${jaEnviado ? 'bg-green-400/20' : 'bg-white/15'}`}>
+          {jaEnviado ? <Check className="h-4 w-4 text-green-300" /> : <FileText className="h-4 w-4 text-white/70" />}
+        </div>
+        <span className={`text-sm flex-1 ${jaEnviado ? 'text-green-200 font-medium' : 'text-white/80'}`}>{tipo}</span>
+        {!jaEnviado && (
+          <>
+            <input ref={inputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => onUpload(e.target.files?.[0])} />
+            <button onClick={() => inputRef.current?.click()} disabled={status === 'uploading'}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-[#003580] text-xs font-medium disabled:opacity-60 shrink-0">
+              {status === 'uploading' ? <Loader2 className="h-3 w-3 animate-spin text-[#003580]" /> : <Upload className="h-3 w-3" />}
+              {status === 'uploading' ? 'Enviando...' : status === 'error' ? 'Tentar novamente' : 'Enviar'}
+            </button>
+          </>
+        )}
+        {jaEnviado && <span className="text-xs text-green-300 shrink-0">Enviado ✓</span>}
       </div>
-      <span className={`text-sm flex-1 ${jaEnviado ? 'text-green-200 font-medium' : 'text-white/80'}`}>{tipo}</span>
-      {!jaEnviado && (
-        <>
-          <input ref={inputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => onUpload(e.target.files?.[0])} />
-          <button onClick={() => inputRef.current?.click()} disabled={status === 'uploading'}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-[#003580] text-xs font-medium disabled:opacity-60 shrink-0">
-            {status === 'uploading' ? <Loader2 className="h-3 w-3 animate-spin text-[#003580]" /> : <Upload className="h-3 w-3" />}
-            {status === 'uploading' ? 'Enviando...' : status === 'error' ? 'Tentar novamente' : 'Enviar'}
-          </button>
-        </>
+      {status === 'error' && errMsg && (
+        <p className="px-3 pb-2 text-xs text-red-300 break-all">{errMsg}</p>
       )}
-      {jaEnviado && <span className="text-xs text-green-300 shrink-0">Enviado ✓</span>}
     </div>
   );
 };
