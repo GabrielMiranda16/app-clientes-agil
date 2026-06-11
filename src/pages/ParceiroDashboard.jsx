@@ -165,8 +165,17 @@ const ParceiroDashboard = () => {
   }, [user]);
 
   useEffect(() => {
-    document.body.style.overflow = detalhe ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
+    if (!detalhe) return;
+    const scrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+    return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      window.scrollTo(0, scrollY);
+    };
   }, [detalhe]);
 
   const loadData = async () => {
