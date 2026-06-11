@@ -336,6 +336,64 @@ const OrcamentoPublicoPage = () => {
     </div>
   );
 
+  if (stage === 'documentos') return (
+    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(180deg, #003580 0%, #1a5599 25%, #6b9fd4 52%, #c8e0f5 70%, #f0f7ff 84%, #ffffff 100%)' }}>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center h-16 sm:h-20">
+          <img src={logoUrl} alt="Ágil Seguros" className="h-16 sm:h-20 w-auto object-contain" />
+        </div>
+      </div>
+      <div className="flex-1 flex items-center justify-center px-4 py-8">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-2xl space-y-4">
+          <div className="rounded-[24px] overflow-hidden" style={cardBg}>
+            <div className="px-6 pt-7 pb-0 flex items-center gap-3">
+              <CheckCircle2 className="h-7 w-7 text-green-300 shrink-0" />
+              <div>
+                <h1 className="text-white font-bold text-lg">Proposta aceita! ✅</h1>
+                {(propostaEscolhida || orcamento?.operadora_escolhida) && (
+                  <p className="text-white/70 text-xs mt-0.5">
+                    Opção escolhida: <strong className="text-white">{propostaEscolhida?.operadora || orcamento?.operadora_escolhida}</strong>
+                  </p>
+                )}
+                <p className="text-white/60 text-xs mt-0.5">Envie seus documentos para prosseguirmos</p>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              {todosOsDocs.length === 0 ? (
+                <div className="text-center py-6">
+                  <CheckCircle2 className="h-10 w-10 text-green-300 mx-auto mb-3" />
+                  <p className="text-white font-medium">Tudo certo!</p>
+                  <p className="text-sm text-white/60 mt-1">Nossa equipe entrará em contato em breve.</p>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-white/70">Envie cada documento abaixo. Formatos aceitos: PDF, JPG, PNG.</p>
+                  <div className="space-y-3">
+                    {todosOsDocs.map(tipo => {
+                      const status = docStatus[tipo];
+                      const jaEnviado = docsEnviados.includes(tipo) || status === 'done';
+                      const errMsg = docStatus[`${tipo}__err`];
+                      return <DocUploadItem key={tipo} tipo={tipo} jaEnviado={jaEnviado} status={status} errMsg={errMsg} onUpload={file => handleUploadDoc(tipo, file)} />;
+                    })}
+                  </div>
+                  {todosEnviados && (
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                      className="bg-green-400/20 border border-green-400/30 rounded-2xl p-4 text-center mt-4">
+                      <CheckCircle2 className="h-8 w-8 text-green-300 mx-auto mb-2" />
+                      <p className="font-bold text-green-300">Todos os documentos enviados!</p>
+                      <p className="text-sm text-white/70 mt-1">Nossa equipe irá analisar e entrar em contato. 🎉</p>
+                    </motion.div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+          <p className="text-center text-white/40 text-xs">Ágil Seguros · SUSEP 252166308 · segurosagil.com.br</p>
+        </motion.div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-white">
 
