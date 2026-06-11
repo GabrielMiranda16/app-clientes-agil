@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import DashboardLayout from '@/components/DashboardLayout';
+import { SEGURADORAS } from '@/data/seguradoras';
 
 const STATUS_CONFIG = {
   SOLICITACAO:  { label: 'Solicitação',  color: 'bg-gray-100 text-gray-700',     desc: 'Aguardando resposta do ADM' },
@@ -151,6 +152,7 @@ const ParceiroDashboard = () => {
 
   const [modalAberto, setModalAberto] = useState(false);
   const [form, setForm] = useState(FORM_VAZIO);
+  const [cenariosSolic, setCenariosSolic] = useState([{ tem_plano: false, operadora: '', valor: '' }]);
   const [enviando, setEnviando] = useState(false);
 
   const [detalhe, setDetalhe] = useState(null);
@@ -178,9 +180,12 @@ const ParceiroDashboard = () => {
     }
   };
 
-  const abrirModal = () => { setForm(FORM_VAZIO); setModalAberto(true); };
+  const abrirModal = () => { setForm(FORM_VAZIO); setCenariosSolic([{ tem_plano: false, operadora: '', valor: '' }]); setModalAberto(true); };
   const setField = (key, value) => setForm(f => ({ ...f, [key]: value }));
   const setExtra = (key, value) => setForm(f => ({ ...f, extras: { ...f.extras, [key]: value } }));
+  const addCenarioSolic = () => setCenariosSolic(cs => [...cs, { tem_plano: false, operadora: '', valor: '' }]);
+  const removeCenarioSolic = (i) => setCenariosSolic(cs => cs.filter((_, idx) => idx !== i));
+  const updCenarioSolic = (i, key, val) => setCenariosSolic(cs => cs.map((c, idx) => idx === i ? { ...c, [key]: val } : c));
 
   const handleSolicitar = async () => {
     if (!form.segmento) return toast({ variant: 'destructive', title: 'Selecione o segmento.' });
@@ -216,6 +221,7 @@ const ParceiroDashboard = () => {
       }
       if (form.observacoes.trim()) obsTexto += `\nObservações: ${form.observacoes.trim()}`;
 
+      const cenAtivos = cenariosSolic.filter(c => c.tem_plano).map(c => ({ tem_plano: true, operadora: c.operadora || '', valor: c.valor || '' }));
       const { error } = await supabase.from('orcamentos').insert({
         parceiro_id: parceiro.id,
         segmento: form.segmento,
@@ -226,6 +232,7 @@ const ParceiroDashboard = () => {
         cliente_cpf: form.cliente_cpf.replace(/\D/g, ''),
         cliente_data_nascimento: form.cliente_data_nascimento || null,
         observacoes: obsTexto.trim() || null,
+        cenarios_atuais: cenAtivos.length > 0 ? cenAtivos : null,
       });
 
       if (error) throw error;
@@ -783,6 +790,61 @@ const ParceiroDashboard = () => {
                     })}
                   </div>
                 )}
+
+                {/* Cenário Atual do Cliente */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Cenário atual do cliente</p>
+                    <button type="button" onClick={addCenarioSolic}
+                      className="text-xs text-[#003580] hover:underline flex items-center gap-1">
+                      <Plus className="h-3 w-3" /> Adicionar plano
+                    </button>
+                  </div>
+                  {cenariosSolic.map((c, ci) => (
+                    <div key={ci} className="border border-gray-200 rounded-xl p-3 space-y-3 bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Label className="text-sm text-gray-600">Possui plano atual?</Label>
+                          <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs font-semibold">
+                            <button type="button" onClick={() => updCenarioSolic(ci, 'tem_plano', false)}
+                              className={`px-3 py-1.5 transition-colors ${!c.tem_plano ? 'bg-[#003580] text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
+                              Não
+                            </button>
+                            <button type="button" onClick={() => updCenarioSolic(ci, 'tem_plano', true)}
+                              className={`px-3 py-1.5 transition-colors ${c.tem_plano ? 'bg-[#003580] text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
+                              Sim
+                            </button>
+                          </div>
+                        </div>
+                        {cenariosSolic.length > 1 && (
+                          <button type="button" onClick={() => removeCenarioSolic(ci)} className="text-gray-400 hover:text-red-500">
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                      {c.tem_plano && (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1.5">
+                            <Label className="text-sm font-medium text-gray-700">Operadora atual</Label>
+                            <select value={c.operadora} onChange={e => updCenarioSolic(ci, 'operadora', e.target.value)}
+                              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:border-[#003580]">
+                              <option value="">Selecionar...</option>
+                              {SEGURADORAS.filter(s => !form.segmento || s.categorias.includes(form.segmento)).map(s => (
+                                <option key={s.nome} value={s.nome}>{s.nome}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-sm font-medium text-gray-700">Valor mensal (R$)</Label>
+                            <input value={c.valor} onChange={e => updCenarioSolic(ci, 'valor', e.target.value)}
+                              placeholder="Ex: 520,00"
+                              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580]" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
 
                 {/* Observações */}
                 <div className="space-y-1.5">
