@@ -532,9 +532,9 @@ const ParceiroDashboard = () => {
             onClick={e => { if (e.target === e.currentTarget) setDetalhe(null); }}>
             <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto overscroll-contain">
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden">
               {/* Header */}
-              <div className={`px-5 py-4 flex items-start justify-between rounded-t-2xl sticky top-0 z-10 ${
+              <div className={`px-5 py-4 flex items-start justify-between rounded-t-2xl shrink-0 ${
                 detalhe.status === 'SOLICITACAO' ? 'bg-[#003580]' :
                 detalhe.status === 'ORCAMENTO' ? 'bg-blue-600' :
                 detalhe.status === 'DOCUMENTOS' ? 'bg-[#003580]' :
@@ -551,7 +551,7 @@ const ParceiroDashboard = () => {
                 </button>
               </div>
 
-              <div className="p-5 space-y-4">
+              <div className="flex-1 overflow-y-auto overscroll-contain p-5 space-y-4">
                 {/* Status desc */}
                 <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-600">
                   {STATUS_CONFIG[detalhe.status]?.desc}
