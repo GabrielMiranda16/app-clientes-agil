@@ -534,13 +534,7 @@ const ParceiroDashboard = () => {
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden">
               {/* Header */}
-              <div className={`px-5 py-4 flex items-start justify-between rounded-t-2xl shrink-0 ${
-                detalhe.status === 'SOLICITACAO' ? 'bg-[#003580]' :
-                detalhe.status === 'ORCAMENTO' ? 'bg-blue-600' :
-                detalhe.status === 'DOCUMENTOS' ? 'bg-[#003580]' :
-                detalhe.status === 'ASSINATURA' ? 'bg-[#003580]' :
-                detalhe.status === 'CONCLUIDO' ? 'bg-green-600' : 'bg-emerald-600'
-              }`}>
+              <div className="px-5 py-4 flex items-start justify-between rounded-t-2xl shrink-0 bg-[#003580]">
                 <div>
                   <p className="text-white font-bold text-base">{detalhe.cliente_nome}</p>
                   <p className="text-white/80 text-xs">{SEGMENTO_LABEL[detalhe.segmento] || detalhe.segmento}</p>
