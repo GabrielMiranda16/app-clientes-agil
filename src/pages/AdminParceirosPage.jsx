@@ -57,6 +57,7 @@ const DOCS_POR_SEGMENTO = {
     'Certidão de casamento — Genro/Nora',
     'RG e CPF ou CNH — Neto(a)',
     'Certidão de nascimento — Neto(a)',
+    'Carta de permanência — Plano anterior (se houver)',
   ],
   RESIDENCIAL:  ['RG', 'CPF', 'Comprovante de residência', 'Escritura ou contrato do imóvel'],
   EMPRESARIAL:  ['CNPJ', 'Contrato Social', 'Comprovante de endereço da empresa'],
@@ -72,6 +73,7 @@ const DOCS_POR_SEGMENTO = {
     'Certidão de casamento — Genro/Nora',
     'RG e CPF ou CNH — Neto(a)',
     'Certidão de nascimento — Neto(a)',
+    'Carta de permanência — Plano anterior (se houver)',
   ],
   VIAGEM:       ['RG ou Passaporte', 'CPF'],
   PET_SAUDE:    ['CPF do titular', 'Cartão de vacinação do pet'],
@@ -92,6 +94,7 @@ const DOCS_POR_SEGMENTO = {
     'Certidão de casamento — Genro/Nora',
     'RG e CPF ou CNH — Neto(a)',
     'Certidão de nascimento — Neto(a)',
+    'Carta de permanência — Plano anterior (se houver)',
   ],
   AUTO_FROTA: ['CRLV', 'CNH', 'CPF'],
 };
