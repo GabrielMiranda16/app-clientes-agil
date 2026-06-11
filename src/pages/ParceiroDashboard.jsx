@@ -21,8 +21,8 @@ import { SEGURADORAS } from '@/data/seguradoras';
 const STATUS_CONFIG = {
   SOLICITACAO:  { label: 'Solicitação',  color: 'bg-gray-100 text-gray-700',     desc: 'Aguardando resposta do ADM' },
   ORCAMENTO:    { label: 'Orçamento',    color: 'bg-blue-100 text-blue-700',     desc: 'Link pronto — envie para o cliente' },
-  DOCUMENTOS:   { label: 'Documentos',   color: 'bg-blue-100 text-blue-800',    desc: 'Cliente aceitou — enviando documentos' },
-  ASSINATURA:   { label: 'Assinatura',   color: 'bg-indigo-100 text-indigo-800', desc: 'Documentos recebidos — em assinatura' },
+  DOCUMENTOS:   { label: 'Documentos',   color: 'bg-blue-100 text-[#003580]',   desc: 'Cliente aceitou — enviando documentos' },
+  ASSINATURA:   { label: 'Assinatura',   color: 'bg-blue-100 text-[#003580]',   desc: 'Documentos recebidos — em assinatura' },
   CONCLUIDO:    { label: 'Concluído',    color: 'bg-green-100 text-green-700',   desc: 'Contrato assinado — aguardando comissão' },
   COMISSAO:     { label: 'Comissão',     color: 'bg-emerald-100 text-emerald-700', desc: 'Comissão registrada' },
 };
@@ -522,8 +522,8 @@ const ParceiroDashboard = () => {
               <div className={`px-5 py-4 flex items-start justify-between rounded-t-2xl sticky top-0 z-10 ${
                 detalhe.status === 'SOLICITACAO' ? 'bg-[#003580]' :
                 detalhe.status === 'ORCAMENTO' ? 'bg-blue-600' :
-                detalhe.status === 'DOCUMENTOS' ? 'bg-blue-500' :
-                detalhe.status === 'ASSINATURA' ? 'bg-blue-800' :
+                detalhe.status === 'DOCUMENTOS' ? 'bg-[#003580]' :
+                detalhe.status === 'ASSINATURA' ? 'bg-[#003580]' :
                 detalhe.status === 'CONCLUIDO' ? 'bg-green-600' : 'bg-emerald-600'
               }`}>
                 <div>
