@@ -292,7 +292,11 @@ const OrcamentoPublicoPage = () => {
     if (saved.length > 0) return saved;
     const mod = orcamento?.modalidade;
     const seg = orcamento?.segmento;
-    return DOCS_POR_MODALIDADE[seg]?.[mod] || DOCS_POR_MODALIDADE[seg]?.['INDIVIDUAL'] || [];
+    const base = DOCS_POR_MODALIDADE[seg]?.[mod] || DOCS_POR_MODALIDADE[seg]?.['INDIVIDUAL'] || [];
+    const ds = ['PME', 'PJ'].includes(mod)
+      ? ['Declaração de Saúde (DS) — beneficiários acima de 59 anos (preenchida pelo próprio beneficiário)']
+      : [];
+    return [...base, ...ds];
   })();
   const todosEnviados = todosOsDocs.length > 0 && todosOsDocs.every(d => docsEnviados.includes(d) || docStatus[d] === 'done');
 
