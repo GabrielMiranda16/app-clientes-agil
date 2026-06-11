@@ -1246,13 +1246,13 @@ const AdminParceirosPage = () => {
       {/* Modal — Novo orçamento */}
       {criarModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => setCriarModal(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 pt-6 pb-4 shrink-0">
               <h2 className="text-lg font-bold text-gray-900">Novo orçamento</h2>
               <button onClick={() => setCriarModal(false)} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
             </div>
 
-            <div className="space-y-3 overflow-y-auto px-6 pb-6">
+            <div className="space-y-3 overflow-y-auto px-6 pb-8">
               <div className="space-y-1">
                 <Label className="text-xs text-gray-500">Parceiro</Label>
                 <select value={novoForm.parceiro_id} onChange={e => setNovoForm(f => ({ ...f, parceiro_id: e.target.value }))}

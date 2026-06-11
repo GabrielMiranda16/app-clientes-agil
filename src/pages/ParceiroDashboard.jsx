@@ -657,7 +657,7 @@ const ParceiroDashboard = () => {
             onClick={e => { if (e.target === e.currentTarget) setModalAberto(false); }}>
             <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
               <div className="bg-[#003580] px-6 py-4 flex items-center justify-between rounded-t-2xl shrink-0">
                 <div>
                   <h2 className="text-white font-bold text-lg">Solicitar Orçamento</h2>
