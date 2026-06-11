@@ -82,20 +82,7 @@ const DOCS_POR_SEGMENTO = {
   FROTA:        ['CNPJ', 'CRLV de todos os veículos', 'CNH dos motoristas'],
   CARGAS:       ['CPF ou CNPJ', 'Nota fiscal da carga'],
   EQUIPAMENTOS: ['CPF ou CNPJ', 'Nota fiscal do equipamento'],
-  SAUDE_VIDA_ODONTO: [
-    'RG e CPF ou CNH — Titular',
-    'Comprovante de residência — Titular',
-    'Certificado MEI — Titular (se MEI)',
-    'Contrato Social — Empresa (se Ltda)',
-    'RG e CPF ou CNH — Cônjuge',
-    'Certidão de casamento — Cônjuge',
-    'RG e CPF ou CNH — Filho(a)',
-    'RG e CPF ou CNH — Genro/Nora',
-    'Certidão de casamento — Genro/Nora',
-    'RG e CPF ou CNH — Neto(a)',
-    'Certidão de nascimento — Neto(a)',
-    'Carta de permanência — Plano anterior (se houver)',
-  ],
+  SAUDE_VIDA_ODONTO: ['RG', 'CPF', 'Comprovante de residência'],
   AUTO_FROTA: ['CRLV', 'CNH', 'CPF'],
 };
 
