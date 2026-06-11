@@ -325,6 +325,20 @@ const AdminParceirosPage = () => {
     supabase.from('parceiros').select('id, nome_completo').order('nome_completo').then(({ data }) => setParceiros(data || []));
   }, []);
 
+  useEffect(() => {
+    if (!criarModal) return;
+    const scrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+    return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      window.scrollTo(0, scrollY);
+    };
+  }, [criarModal]);
+
   const loadData = async (expandId = null) => {
     setLoading(true);
     try {
@@ -1296,8 +1310,8 @@ const AdminParceirosPage = () => {
 
       {/* Modal — Novo orçamento */}
       {criarModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => setCriarModal(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 overflow-hidden" onClick={() => setCriarModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden overscroll-contain" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 pt-6 pb-4 shrink-0">
               <h2 className="text-lg font-bold text-gray-900">Novo orçamento</h2>
               <button onClick={() => setCriarModal(false)} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
