@@ -1514,7 +1514,7 @@ const AdminParceirosPage = () => {
               </div>
             </div>
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-3 px-6 pt-2 pb-6 shrink-0">
               <Button variant="outline" className="flex-1" onClick={() => setCriarModal(false)}>Cancelar</Button>
               <Button onClick={handleCriarOrcamento} disabled={criando} className="flex-1 text-white font-semibold gap-2" style={{ background: '#003580' }}>
                 {criando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
