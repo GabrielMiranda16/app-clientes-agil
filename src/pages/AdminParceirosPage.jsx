@@ -881,6 +881,44 @@ const AdminParceirosPage = () => {
       </div>
 
 
+      {/* Documentos necessários — só no modo responder */}
+      {mode === 'responder' && (
+        <div className="space-y-2">
+          <p className="text-sm font-semibold text-gray-700">Documentos necessários</p>
+          <div className="space-y-1.5">
+            {(DOCS_POR_SEGMENTO[selected?.segmento] || []).map(doc => (
+              <label key={doc} className={`flex items-center gap-2 cursor-pointer px-3 py-2 rounded-xl border transition-colors ${formR.docsBase.includes(doc) ? 'bg-[#f0f7ff] border-[#003580]/30' : 'bg-white border-gray-200 hover:border-gray-300'}`}>
+                <input type="checkbox" checked={formR.docsBase.includes(doc)} onChange={() => toggleDocBase(doc)}
+                  className="rounded border-gray-300 text-[#003580] focus:ring-[#003580]" />
+                <span className="text-sm text-gray-700">{doc}</span>
+              </label>
+            ))}
+          </div>
+          {formR.docsExtras.length > 0 && (
+            <div className="space-y-1.5 pt-1">
+              {formR.docsExtras.map((doc, i) => (
+                <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[#003580]/30 bg-[#f0f7ff]">
+                  <Check className="h-4 w-4 text-[#003580] shrink-0" />
+                  <span className="text-sm text-gray-700 flex-1">{doc}</span>
+                  <button type="button" onClick={() => removeDocExtra(i)} className="text-gray-400 hover:text-red-500">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2 pt-1">
+            <Input value={formR.docExtra} onChange={e => setFormR(f => ({ ...f, docExtra: e.target.value }))}
+              onKeyDown={e => e.key === 'Enter' && addDocExtra()}
+              placeholder="Adicionar documento extra..."
+              className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] text-sm h-9" />
+            <Button type="button" variant="outline" onClick={addDocExtra} className="h-9 px-3 shrink-0 border-[#003580]/40 text-[#003580] hover:bg-[#f0f7ff]">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Botões de ação */}
       {mode === 'responder' && (
         <Button onClick={handleResponder} disabled={enviando} className="w-full rounded-xl text-white font-semibold gap-2 py-5" style={{ background: '#003580' }}>
