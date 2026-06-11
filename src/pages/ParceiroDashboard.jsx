@@ -685,7 +685,7 @@ const ParceiroDashboard = () => {
                 </button>
               </div>
 
-              <div className="p-6 space-y-5 overflow-y-auto">
+              <div className="flex-1 p-6 space-y-5 overflow-y-auto">
                 {/* Segmento */}
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-gray-700">Segmento <span className="text-red-500">*</span></Label>
