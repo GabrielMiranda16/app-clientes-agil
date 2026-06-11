@@ -51,8 +51,8 @@ const SEGMENTO_CAMPOS = {
     { key: 'ano_fabricacao', label: 'Ano de fabricação',   type: 'number', placeholder: 'Ex: 2023' },
   ],
   SAUDE: [
-    { key: 'modalidade_plano', label: 'Modalidade do plano', type: 'select', options: ['Empresarial', 'Familiar', 'Sênior', 'Individual'] },
-    { key: 'qtd_vidas',        label: 'Número de vidas',     type: 'number', placeholder: 'Ex: 3' },
+    { key: 'tipo', label: 'Modalidade do plano', type: 'select', options: ['INDIVIDUAL', 'MEI', 'PME', 'PJ'] },
+    { key: 'qtd_vidas', label: 'Número de vidas', type: 'number', placeholder: 'Ex: 3' },
   ],
   RESIDENCIAL: [
     { key: 'tipo_imovel',     label: 'Tipo de imóvel',       type: 'select', options: ['Casa', 'Apartamento', 'Sobrado'] },
@@ -66,6 +66,7 @@ const SEGMENTO_CAMPOS = {
     { key: 'segmento_empresa', label: 'Segmento da empresa',  placeholder: 'Ex: Tecnologia, Varejo, Saúde' },
   ],
   ODONTOLOGICO: [
+    { key: 'tipo', label: 'Modalidade do plano', type: 'select', options: ['INDIVIDUAL', 'MEI', 'PME', 'PJ'] },
     { key: 'qtd_vidas', label: 'Número de vidas', type: 'number', placeholder: 'Ex: 3' },
   ],
   VIAGEM: [
@@ -226,6 +227,7 @@ const ParceiroDashboard = () => {
       const { error } = await supabase.from('orcamentos').insert({
         parceiro_id: parceiro.id,
         segmento: form.segmento,
+        modalidade: form.extras.tipo || null,
         status: 'SOLICITACAO',
         cliente_nome: form.cliente_nome.trim(),
         cliente_telefone: form.cliente_telefone.trim(),

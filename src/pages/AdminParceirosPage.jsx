@@ -43,36 +43,8 @@ const SEGMENTO_LABEL = {
 
 const DOCS_POR_SEGMENTO = {
   AUTO:         ['CRLV', 'CNH', 'CPF'],
-  SAUDE: [
-    'RG e CPF ou CNH — Titular',
-    'Comprovante de residência — Titular',
-    'Certificado MEI — Titular (se MEI)',
-    'Contrato Social — Empresa (se Ltda)',
-    'RG e CPF ou CNH — Cônjuge',
-    'Certidão de casamento — Cônjuge',
-    'RG e CPF ou CNH — Filho(a)',
-    'RG e CPF ou CNH — Genro/Nora',
-    'Certidão de casamento — Genro/Nora',
-    'RG e CPF ou CNH — Neto(a)',
-    'Certidão de nascimento — Neto(a)',
-    'Carta de permanência — Plano anterior (se houver)',
-  ],
   RESIDENCIAL:  ['RG', 'CPF', 'Comprovante de residência', 'Escritura ou contrato do imóvel'],
   EMPRESARIAL:  ['CNPJ', 'Contrato Social', 'Comprovante de endereço da empresa'],
-  ODONTOLOGICO: [
-    'RG e CPF ou CNH — Titular',
-    'Comprovante de residência — Titular',
-    'Certificado MEI — Titular (se MEI)',
-    'Contrato Social — Empresa (se Ltda)',
-    'RG e CPF ou CNH — Cônjuge',
-    'Certidão de casamento — Cônjuge',
-    'RG e CPF ou CNH — Filho(a)',
-    'RG e CPF ou CNH — Genro/Nora',
-    'Certidão de casamento — Genro/Nora',
-    'RG e CPF ou CNH — Neto(a)',
-    'Certidão de nascimento — Neto(a)',
-    'Carta de permanência — Plano anterior (se houver)',
-  ],
   VIAGEM:       ['RG ou Passaporte', 'CPF'],
   PET_SAUDE:    ['CPF do titular', 'Cartão de vacinação do pet'],
   PET_SEGURO:   ['CPF do titular', 'Cartão de vacinação do pet'],
@@ -80,6 +52,71 @@ const DOCS_POR_SEGMENTO = {
   FROTA:        ['CNPJ', 'CRLV de todos os veículos', 'CNH dos motoristas'],
   CARGAS:       ['CPF ou CNPJ', 'Nota fiscal da carga'],
   EQUIPAMENTOS: ['CPF ou CNPJ', 'Nota fiscal do equipamento'],
+};
+
+const DOCS_POR_MODALIDADE = {
+  SAUDE: {
+    INDIVIDUAL: [
+      'RG e CPF ou CNH — Titular',
+      'Comprovante de residência — Titular',
+      'Carta de permanência — Plano anterior (se houver)',
+    ],
+    MEI: [
+      'RG e CPF ou CNH — Titular',
+      'Comprovante de residência — Titular',
+      'Certificado MEI (requerimento do microempreendedor)',
+      'Cartão do CNPJ',
+      'RG e CPF ou CNH — Dependentes',
+      'Comprovante de parentesco — Dependentes e agregados',
+      'Carta de permanência — Plano anterior (se houver)',
+    ],
+    PME: [
+      'Contrato Social / Estatuto Social (Ata)',
+      'Cartão do CNPJ',
+      'Relação atualizada do FGTS com quitação e capa GFIP',
+      'Relação atualizada do plano anterior — se 100% de adesão (se houver)',
+      'RG e CPF ou CNH — Todos os beneficiários',
+      'Comprovante de parentesco — Dependentes e agregados',
+    ],
+    PJ: [
+      'Contrato Social / Estatuto Social (Ata)',
+      'Cartão do CNPJ',
+      'Relação atualizada do FGTS com quitação e capa GFIP',
+      'Relação atualizada do plano anterior — se 100% de adesão (se houver)',
+      'RG e CPF ou CNH — Todos os beneficiários',
+      'Comprovante de parentesco — Dependentes e agregados',
+    ],
+  },
+  ODONTOLOGICO: {
+    INDIVIDUAL: [
+      'RG e CPF ou CNH — Titular',
+      'Comprovante de residência — Titular',
+      'Carta de permanência — Plano anterior (se houver)',
+    ],
+    MEI: [
+      'RG e CPF ou CNH — Titular',
+      'Comprovante de residência — Titular',
+      'Certificado MEI (requerimento do microempreendedor)',
+      'Cartão do CNPJ',
+      'RG e CPF ou CNH — Dependentes',
+      'Comprovante de parentesco — Dependentes e agregados',
+      'Carta de permanência — Plano anterior (se houver)',
+    ],
+    PME: [
+      'Contrato Social / Estatuto Social (Ata)',
+      'Cartão do CNPJ',
+      'Relação atualizada do FGTS com quitação e capa GFIP',
+      'RG e CPF ou CNH — Todos os beneficiários',
+      'Comprovante de parentesco — Dependentes e agregados',
+    ],
+    PJ: [
+      'Contrato Social / Estatuto Social (Ata)',
+      'Cartão do CNPJ',
+      'Relação atualizada do FGTS com quitação e capa GFIP',
+      'RG e CPF ou CNH — Todos os beneficiários',
+      'Comprovante de parentesco — Dependentes e agregados',
+    ],
+  },
 };
 
 const AGE_BRACKETS = [
@@ -98,11 +135,11 @@ const faixaKey = (id) => `faixa_${id.replace(/-/g, '_').replace('+', 'plus')}`;
 
 const CAMPOS_SEGMENTO = {
   SAUDE: [
-    { key: 'tipo', label: 'Tipo de plano', type: 'select', options: ['Familiar', 'Empresarial', 'Individual', 'MEI', 'Adesão'] },
+    { key: 'tipo', label: 'Modalidade do plano', type: 'select', options: ['INDIVIDUAL', 'MEI', 'PME', 'PJ'] },
     { key: 'vidas', label: 'Nº de vidas', type: 'number', placeholder: 'Ex: 3' },
   ],
   ODONTOLOGICO: [
-    { key: 'tipo', label: 'Tipo de plano', type: 'select', options: ['Individual', 'Familiar', 'Empresarial'] },
+    { key: 'tipo', label: 'Modalidade do plano', type: 'select', options: ['INDIVIDUAL', 'MEI', 'PME', 'PJ'] },
     { key: 'vidas', label: 'Nº de vidas', type: 'number', placeholder: 'Ex: 2' },
   ],
   AUTO: [
@@ -441,7 +478,8 @@ const AdminParceirosPage = () => {
         valor_mensalidade: parseFloat(String(pl0.valor).replace(',', '.')),
         descricao_orcamento: `${dest.operadora}${pl0.nome ? ` — ${pl0.nome}` : ''}`,
         propostas: validComDestaque,
-        lista_documentos: DOCS_POR_SEGMENTO[selected?.segmento] || [],
+        lista_documentos: DOCS_POR_MODALIDADE[selected?.segmento]?.[selected?.modalidade] || DOCS_POR_SEGMENTO[selected?.segmento] || [],
+        docs_extras: ['PME', 'PJ'].includes(selected?.modalidade) ? ['Declaração de Saúde (DS) — beneficiários acima de 59 anos (preenchida pelo próprio beneficiário)'] : [],
         data_orcamento: new Date().toISOString(),
       }).eq('id', expandedId);
       if (error) throw error;
@@ -642,6 +680,7 @@ const AdminParceirosPage = () => {
         cliente_cpf: novoForm.cliente_cpf || null,
         cliente_data_nascimento: novoForm.cliente_data_nascimento || null,
         segmento: novoForm.segmento,
+        modalidade: segData.tipo || null,
         observacoes: obsCompleto || null,
         status: 'SOLICITACAO',
         perfil_vidas: perfilVidas.length > 0 ? perfilVidas : null,
