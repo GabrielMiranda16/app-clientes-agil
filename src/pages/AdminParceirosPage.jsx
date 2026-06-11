@@ -20,8 +20,8 @@ import { SEGURADORAS } from '@/data/seguradoras';
 const STATUS_CONFIG = {
   SOLICITACAO: { label: 'Solicitação',  color: 'bg-gray-100 text-gray-700',    border: 'border-l-gray-400' },
   ORCAMENTO:   { label: 'Orçamento',    color: 'bg-blue-100 text-blue-700',    border: 'border-l-blue-400' },
-  DOCUMENTOS:  { label: 'Documentos',   color: 'bg-blue-100 text-blue-800',    border: 'border-l-blue-500' },
-  ASSINATURA:  { label: 'Assinatura',   color: 'bg-indigo-100 text-indigo-800', border: 'border-l-indigo-500' },
+  DOCUMENTOS:  { label: 'Documentos',   color: 'bg-blue-100 text-[#003580]',   border: 'border-l-[#003580]' },
+  ASSINATURA:  { label: 'Assinatura',   color: 'bg-blue-100 text-[#003580]',   border: 'border-l-[#003580]' },
   CONCLUIDO:   { label: 'Concluído',    color: 'bg-green-100 text-green-700',   border: 'border-l-green-400' },
   COMISSAO:    { label: 'Comissão',     color: 'bg-emerald-100 text-emerald-700', border: 'border-l-emerald-400' },
 };
