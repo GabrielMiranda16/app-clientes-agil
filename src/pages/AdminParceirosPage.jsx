@@ -426,6 +426,7 @@ const AdminParceirosPage = () => {
         slug,
         valor_mensalidade: parseFloat(String(pl0.valor).replace(',', '.')),
         descricao_orcamento: `${dest.operadora}${pl0.nome ? ` — ${pl0.nome}` : ''}`,
+        cenarios_atuais: cenarios.filter(c => c.tem_plano),
         propostas: validComDestaque,
         lista_documentos: formR.docsBase,
         docs_extras: formR.docsExtras,
@@ -466,6 +467,7 @@ const AdminParceirosPage = () => {
       const { error } = await supabase.from('orcamentos').update({
         valor_mensalidade: parseFloat(String(pl0.valor).replace(',', '.')),
         descricao_orcamento: `${dest.operadora}${pl0.nome ? ` — ${pl0.nome}` : ''}`,
+        cenarios_atuais: cenarios.filter(c => c.tem_plano),
         propostas: validComDestaque,
       }).eq('id', expandedId);
       if (error) throw error;
@@ -659,26 +661,115 @@ const AdminParceirosPage = () => {
   // ── Builder (SOLICITACAO + editar + nova proposta) ──
   const renderBuilder = (mode) => (
     <div className="space-y-5">
-      {/* Cenário atual — somente leitura (preenchido pelo parceiro na solicitação) */}
+      {/* Cenário atual — read-only base info + distribuição de vidas editável pelo ADM */}
       {(() => {
-        const cenAtivos = (selected?.cenarios_atuais || []).filter(c => c.tem_plano);
+        const cenAtivos = cenarios.filter(c => c.tem_plano);
+        const temMultiplos = cenAtivos.length > 1;
+        const temPerfil = selected?.perfil_vidas?.length > 0;
         return (
           <div className="space-y-2">
             <p className="text-sm font-semibold text-gray-700">Cenário atual do cliente</p>
             {cenAtivos.length > 0 ? (
               <div className="space-y-2">
-                {cenAtivos.map((c, ci) => {
+                {cenarios.map((c, ci) => {
+                  if (!c.tem_plano) return null;
                   const logo = SEGURADORAS.find(s => s.nome === c.operadora)?.logo;
                   return (
-                    <div key={ci} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5">
-                      {logo
-                        ? <img src={logo} alt={c.operadora} className="h-5 w-10 object-contain shrink-0" />
-                        : <Shield className="h-4 w-4 text-gray-400 shrink-0" />}
-                      <span className="text-sm font-medium text-gray-700 flex-1 truncate">{c.operadora || 'Operadora não informada'}</span>
-                      {c.valor && <span className="text-xs text-gray-400 shrink-0">R$ {c.valor}/mês</span>}
+                    <div key={ci} className="border border-gray-200 rounded-xl overflow-hidden">
+                      <div className="flex items-center gap-3 px-3 py-2.5 bg-gray-50 border-b border-gray-100">
+                        {logo
+                          ? <img src={logo} alt={c.operadora} className="h-5 w-10 object-contain shrink-0" />
+                          : <Shield className="h-4 w-4 text-gray-400 shrink-0" />}
+                        <span className="text-sm font-medium text-gray-700 flex-1 truncate">{c.operadora || 'Operadora não informada'}</span>
+                        {c.valor && <span className="text-xs text-gray-400 shrink-0">R$ {c.valor}/mês</span>}
+                      </div>
+                      {temMultiplos && temPerfil && (
+                        <div className="p-3 space-y-1.5 bg-white">
+                          <p className="text-xs font-semibold text-gray-600">Vidas por faixa etária</p>
+                          {selected.perfil_vidas.map(({ id, label, vidas: meta }) => {
+                            const val = parseInt((c.vidas || {})[id] || 0);
+                            const totalFaixa = cenAtivos.reduce((s, c2) => s + parseInt((c2.vidas || {})[id] || 0), 0);
+                            const atingiuLimite = totalFaixa >= meta;
+                            return (
+                              <div key={id} className="flex items-center gap-2">
+                                <span className="text-xs text-gray-600 flex-1 min-w-0 truncate">{label}</span>
+                                <span className="text-xs text-gray-300 shrink-0">{totalFaixa}/{meta}</span>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button type="button"
+                                    onClick={() => updCenarioVidasFaixa(ci, id, Math.max(0, val - 1))}
+                                    disabled={val === 0}
+                                    className="w-5 h-5 rounded border border-gray-200 bg-gray-50 flex items-center justify-center text-xs font-bold text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-100">−</button>
+                                  <span className="w-6 text-center text-xs font-semibold text-gray-800">{val}</span>
+                                  <button type="button"
+                                    onClick={() => { if (!atingiuLimite) updCenarioVidasFaixa(ci, id, val + 1); }}
+                                    disabled={atingiuLimite}
+                                    className="w-5 h-5 rounded border border-gray-200 bg-gray-50 flex items-center justify-center text-xs font-bold text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-100">+</button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          <div className="flex justify-between pt-1.5 border-t border-gray-100">
+                            <span className="text-xs font-semibold text-gray-600">Total deste cenário</span>
+                            <span className="text-xs font-bold text-gray-800">
+                              {(selected.perfil_vidas || []).reduce((s, { id }) => s + parseInt((c.vidas || {})[id] || 0), 0)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
+
+                {temMultiplos && temPerfil && (() => {
+                  const perfil = selected.perfil_vidas;
+                  const porFaixa = perfil.map(f => {
+                    const dist = cenAtivos.reduce((s, c) => s + parseInt((c.vidas || {})[f.id] || 0), 0);
+                    return { ...f, distribuido: dist, faltam: f.vidas - dist };
+                  });
+                  const totalMeta = perfil.reduce((s, f) => s + (f.vidas || 0), 0);
+                  const totalDist = porFaixa.reduce((s, f) => s + f.distribuido, 0);
+                  const totalFaltam = totalMeta - totalDist;
+                  const completo = totalFaltam === 0 && totalMeta > 0;
+                  const excede = totalFaltam < 0;
+                  return (
+                    <div className="border border-gray-200 rounded-xl overflow-hidden">
+                      <div className={`flex items-center justify-between px-4 py-2.5 border-b ${completo ? 'bg-green-50 border-green-200' : excede ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
+                        <span className={`text-sm font-semibold ${completo ? 'text-green-700' : excede ? 'text-red-600' : 'text-amber-700'}`}>
+                          {completo ? '✓ Todas as vidas distribuídas' : excede ? `Excede em ${Math.abs(totalFaltam)} vidas` : `${totalFaltam} vidas para distribuir`}
+                        </span>
+                        <span className="text-xs text-gray-400">{totalDist}/{totalMeta}</span>
+                      </div>
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="bg-gray-50 border-b border-gray-100">
+                            <th className="text-left px-4 py-2 text-gray-500 font-medium">Faixa Etária</th>
+                            <th className="text-right px-4 py-2 text-gray-500 font-medium">Meta</th>
+                            <th className="text-right px-4 py-2 text-gray-500 font-medium">Distribuído</th>
+                            <th className="text-right px-4 py-2 text-gray-500 font-medium">Faltam</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {porFaixa.map((f, i) => (
+                            <tr key={i} className={`border-b border-gray-100 ${f.faltam === 0 ? 'bg-green-50/40' : f.faltam < 0 ? 'bg-red-50/40' : ''}`}>
+                              <td className="px-4 py-1.5 text-gray-700">{f.label}</td>
+                              <td className="px-4 py-1.5 text-right text-gray-400">{f.vidas}</td>
+                              <td className="px-4 py-1.5 text-right font-semibold text-gray-800">{f.distribuido}</td>
+                              <td className={`px-4 py-1.5 text-right font-semibold ${f.faltam === 0 ? 'text-green-600' : f.faltam < 0 ? 'text-red-500' : 'text-amber-600'}`}>
+                                {f.faltam === 0 ? '✓' : f.faltam}
+                              </td>
+                            </tr>
+                          ))}
+                          <tr className="bg-gray-50">
+                            <td className="px-4 py-2 font-bold text-gray-700">Total</td>
+                            <td className="px-4 py-2 text-right font-semibold text-gray-400">{totalMeta}</td>
+                            <td className="px-4 py-2 text-right font-black text-gray-800">{totalDist}</td>
+                            <td className={`px-4 py-2 text-right font-black ${completo ? 'text-green-600' : 'text-amber-600'}`}>{completo ? '✓' : totalFaltam}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })()}
               </div>
             ) : (
               <p className="text-xs text-gray-400 italic">Nenhum plano atual informado pelo parceiro.</p>
