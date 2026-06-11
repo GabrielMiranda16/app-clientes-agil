@@ -792,8 +792,8 @@ const ParceiroDashboard = () => {
                   </div>
                 )}
 
-                {/* Cenário Atual do Cliente */}
-                {(() => {
+                {/* Cenário Atual do Cliente — só para SAUDE e ODONTOLOGICO com vidas preenchidas */}
+                {showAgeBrackets && (() => {
                   const cenAtivosS = cenariosSolic.filter(c => c.tem_plano);
                   const temMultiplosS = cenAtivosS.length > 1;
                   const showDistS = temMultiplosS && showAgeBrackets;

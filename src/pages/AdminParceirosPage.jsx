@@ -1377,7 +1377,8 @@ const AdminParceirosPage = () => {
                 );
               })()}
 
-              {/* Cenário Atual do Cliente */}
+              {/* Cenário Atual do Cliente — só para SAUDE e ODONTOLOGICO com vidas preenchidas */}
+              {['SAUDE', 'ODONTOLOGICO'].includes(novoForm.segmento) && parseInt(segData.vidas || '0') > 0 && (
               <div className="space-y-2 border border-blue-100 rounded-xl p-3 bg-blue-50">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Cenário atual do cliente</p>
@@ -1504,6 +1505,7 @@ const AdminParceirosPage = () => {
                   );
                 })()}
               </div>
+              )}
 
               <div className="space-y-1">
                 <Label className="text-xs text-gray-500">Observações adicionais</Label>
