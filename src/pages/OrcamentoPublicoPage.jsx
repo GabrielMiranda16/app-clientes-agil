@@ -29,6 +29,71 @@ const SEGMENTO_ICON = {
 
 const SAUDE_SEGS = ['SAUDE', 'ODONTOLOGICO', 'SAUDE_VIDA_ODONTO'];
 
+const DOCS_POR_MODALIDADE = {
+  SAUDE: {
+    INDIVIDUAL: [
+      'RG e CPF ou CNH — Titular',
+      'Comprovante de residência — Titular',
+      'Carta de permanência — Plano anterior (se houver)',
+    ],
+    MEI: [
+      'RG e CPF ou CNH — Titular',
+      'Comprovante de residência — Titular',
+      'Certificado MEI (requerimento do microempreendedor)',
+      'Cartão do CNPJ',
+      'RG e CPF ou CNH — Dependentes',
+      'Comprovante de parentesco — Dependentes e agregados',
+      'Carta de permanência — Plano anterior (se houver)',
+    ],
+    PME: [
+      'Contrato Social / Estatuto Social (Ata)',
+      'Cartão do CNPJ',
+      'Relação atualizada do FGTS com quitação e capa GFIP',
+      'Relação atualizada do plano anterior — se 100% de adesão (se houver)',
+      'RG e CPF ou CNH — Todos os beneficiários',
+      'Comprovante de parentesco — Dependentes e agregados',
+    ],
+    PJ: [
+      'Contrato Social / Estatuto Social (Ata)',
+      'Cartão do CNPJ',
+      'Relação atualizada do FGTS com quitação e capa GFIP',
+      'Relação atualizada do plano anterior — se 100% de adesão (se houver)',
+      'RG e CPF ou CNH — Todos os beneficiários',
+      'Comprovante de parentesco — Dependentes e agregados',
+    ],
+  },
+  ODONTOLOGICO: {
+    INDIVIDUAL: [
+      'RG e CPF ou CNH — Titular',
+      'Comprovante de residência — Titular',
+      'Carta de permanência — Plano anterior (se houver)',
+    ],
+    MEI: [
+      'RG e CPF ou CNH — Titular',
+      'Comprovante de residência — Titular',
+      'Certificado MEI (requerimento do microempreendedor)',
+      'Cartão do CNPJ',
+      'RG e CPF ou CNH — Dependentes',
+      'Comprovante de parentesco — Dependentes e agregados',
+      'Carta de permanência — Plano anterior (se houver)',
+    ],
+    PME: [
+      'Contrato Social / Estatuto Social (Ata)',
+      'Cartão do CNPJ',
+      'Relação atualizada do FGTS com quitação e capa GFIP',
+      'RG e CPF ou CNH — Todos os beneficiários',
+      'Comprovante de parentesco — Dependentes e agregados',
+    ],
+    PJ: [
+      'Contrato Social / Estatuto Social (Ata)',
+      'Cartão do CNPJ',
+      'Relação atualizada do FGTS com quitação e capa GFIP',
+      'RG e CPF ou CNH — Todos os beneficiários',
+      'Comprovante de parentesco — Dependentes e agregados',
+    ],
+  },
+};
+
 const fmtValor = (v) => {
   const n = typeof v === 'string' ? parseFloat(v.replace(',', '.')) : Number(v || 0);
   if (isNaN(n)) return 'R$ 0,00';
@@ -222,7 +287,13 @@ const OrcamentoPublicoPage = () => {
     }
   };
 
-  const todosOsDocs = [...(orcamento?.lista_documentos || []), ...(orcamento?.docs_extras || [])];
+  const todosOsDocs = (() => {
+    const saved = [...(orcamento?.lista_documentos || []), ...(orcamento?.docs_extras || [])];
+    if (saved.length > 0) return saved;
+    const mod = orcamento?.modalidade;
+    const seg = orcamento?.segmento;
+    return DOCS_POR_MODALIDADE[seg]?.[mod] || DOCS_POR_MODALIDADE[seg]?.['INDIVIDUAL'] || [];
+  })();
   const todosEnviados = todosOsDocs.length > 0 && todosOsDocs.every(d => docsEnviados.includes(d) || docStatus[d] === 'done');
 
   const propostas = orcamento?.propostas || [];
