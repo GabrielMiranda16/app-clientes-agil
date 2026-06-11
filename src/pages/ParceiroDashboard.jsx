@@ -164,6 +164,11 @@ const ParceiroDashboard = () => {
     if (user?.id) loadData();
   }, [user]);
 
+  useEffect(() => {
+    document.body.style.overflow = detalhe ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [detalhe]);
+
   const loadData = async () => {
     setLoading(true);
     try {
@@ -513,11 +518,11 @@ const ParceiroDashboard = () => {
       <AnimatePresence>
         {detalhe && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-4"
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-4 overflow-hidden"
             onClick={e => { if (e.target === e.currentTarget) setDetalhe(null); }}>
             <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto">
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto overscroll-contain">
               {/* Header */}
               <div className={`px-5 py-4 flex items-start justify-between rounded-t-2xl sticky top-0 z-10 ${
                 detalhe.status === 'SOLICITACAO' ? 'bg-[#003580]' :
