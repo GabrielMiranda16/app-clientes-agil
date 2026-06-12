@@ -19,12 +19,12 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { SEGURADORAS } from '@/data/seguradoras';
 
 const STATUS_CONFIG = {
-  SOLICITACAO:  { label: 'Solicitação',  color: 'bg-gray-100 text-gray-700',     desc: 'Aguardando resposta do ADM' },
-  ORCAMENTO:    { label: 'Orçamento',    color: 'bg-blue-100 text-blue-700',     desc: 'Link pronto — envie para o cliente' },
+  SOLICITACAO:  { label: 'Solicitação',  color: 'bg-gray-100 text-gray-700',    desc: 'Aguardando resposta do ADM' },
+  ORCAMENTO:    { label: 'Orçamento',    color: 'bg-blue-100 text-blue-700',    desc: 'Link pronto — envie para o cliente' },
   DOCUMENTOS:   { label: 'Documentos',   color: 'bg-blue-100 text-[#003580]',   desc: 'Cliente aceitou — enviando documentos' },
   ASSINATURA:   { label: 'Assinatura',   color: 'bg-blue-100 text-[#003580]',   desc: 'Documentos recebidos — em assinatura' },
-  CONCLUIDO:    { label: 'Concluído',    color: 'bg-green-100 text-green-700',   desc: 'Contrato assinado — aguardando comissão' },
-  COMISSAO:     { label: 'Comissão',     color: 'bg-emerald-100 text-emerald-700', desc: 'Comissão registrada' },
+  CONCLUIDO:    { label: 'Concluído',    color: 'bg-blue-100 text-[#003580]',   desc: 'Contrato assinado — aguardando comissão' },
+  COMISSAO:     { label: 'Comissão',     color: 'bg-blue-100 text-[#003580]',   desc: 'Comissão registrada' },
 };
 
 const SEGMENTOS = [
@@ -159,6 +159,11 @@ const ParceiroDashboard = () => {
 
   const [detalhe, setDetalhe] = useState(null);
   const [detalheComissao, setDetalheComissao] = useState(null);
+
+  const [pgOrc, setPgOrc] = useState(1);
+  const [pgContr, setPgContr] = useState(1);
+  const [pgCom, setPgCom] = useState(1);
+  const POR_PAGINA = 10;
 
   useEffect(() => {
     if (user?.id) loadData();
@@ -298,14 +303,19 @@ const ParceiroDashboard = () => {
 
   const emAndamento = orcamentos.filter(o => !['CONCLUIDO', 'COMISSAO'].includes(o.status));
   const concluidos = orcamentos.filter(o => ['CONCLUIDO', 'COMISSAO'].includes(o.status));
-  const comissaoPendente = comissoes.filter(c => c.status === 'PENDENTE').reduce((s, c) => s + Number(c.valor_comissao || 0), 0);
-  const comissaoRecebida = comissoes.filter(c => c.status === 'PAGO').reduce((s, c) => s + Number(c.valor_comissao || 0), 0);
+  const agora = new Date();
+  const comissoesMes = comissoes.filter(c => {
+    const d = new Date(c.created_at);
+    return d.getMonth() === agora.getMonth() && d.getFullYear() === agora.getFullYear();
+  });
+  const comissaoPendente = comissoesMes.filter(c => c.status === 'PENDENTE').reduce((s, c) => s + Number(c.valor_comissao || 0), 0);
+  const comissaoRecebida = comissoesMes.filter(c => c.status === 'PAGO').reduce((s, c) => s + Number(c.valor_comissao || 0), 0);
 
   const metrics = [
     { label: 'Em andamento', value: emAndamento.length, icon: Clock, color: 'text-blue-600' },
-    { label: 'Contratos fechados', value: concluidos.length, icon: CheckCircle2, color: 'text-green-600' },
-    { label: 'A receber', value: `R$ ${comissaoPendente.toFixed(2).replace('.', ',')}`, icon: DollarSign, color: 'text-[#003580]' },
-    { label: 'Total recebido', value: `R$ ${comissaoRecebida.toFixed(2).replace('.', ',')}`, icon: TrendingUp, color: 'text-emerald-600' },
+    { label: 'Contratos fechados', value: concluidos.length, icon: CheckCircle2, color: 'text-[#003580]' },
+    { label: 'A receber (mês)', value: `R$ ${comissaoPendente.toFixed(2).replace('.', ',')}`, icon: DollarSign, color: 'text-[#003580]' },
+    { label: 'Recebido (mês)', value: `R$ ${comissaoRecebida.toFixed(2).replace('.', ',')}`, icon: TrendingUp, color: 'text-[#003580]' },
   ];
 
   const renderOrcamentoCard = (o, clicavel = true) => {
@@ -355,6 +365,24 @@ const ParceiroDashboard = () => {
   const distribuiVidas = AGE_BRACKETS.reduce((s, { id }) => s + parseInt(form.extras[faixaKey(id)] || '0'), 0);
   const remainingLives = totalVidas - distribuiVidas;
   const showAgeBrackets = ['SAUDE', 'ODONTOLOGICO'].includes(form.segmento) && totalVidas > 0;
+
+  const Paginacao = ({ total, pagina, setPagina }) => {
+    const totalPags = Math.ceil(total / POR_PAGINA);
+    if (totalPags <= 1) return null;
+    return (
+      <div className="flex items-center justify-center gap-2 pt-2">
+        <button disabled={pagina === 1} onClick={() => setPagina(p => p - 1)}
+          className="px-3 py-1 rounded-lg text-sm bg-white/10 text-white/70 border border-white/20 disabled:opacity-30 hover:bg-white/20">
+          ← Anterior
+        </button>
+        <span className="text-sm text-white/60">{pagina} / {totalPags}</span>
+        <button disabled={pagina === totalPags} onClick={() => setPagina(p => p + 1)}
+          className="px-3 py-1 rounded-lg text-sm bg-white/10 text-white/70 border border-white/20 disabled:opacity-30 hover:bg-white/20">
+          Próxima →
+        </button>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -440,9 +468,10 @@ const ParceiroDashboard = () => {
                     </CardContent>
                   </Card>
                 ) : (
-                  orcamentos.map(o => renderOrcamentoCard(o))
+                  orcamentos.slice((pgOrc - 1) * POR_PAGINA, pgOrc * POR_PAGINA).map(o => renderOrcamentoCard(o))
                 )}
               </div>
+              <Paginacao total={orcamentos.length} pagina={pgOrc} setPagina={setPgOrc} />
             </TabsContent>
 
             {/* ── Contratos ── */}
@@ -458,9 +487,10 @@ const ParceiroDashboard = () => {
                     </CardContent>
                   </Card>
                 ) : (
-                  concluidos.map(o => renderOrcamentoCard(o))
+                  concluidos.slice((pgContr - 1) * POR_PAGINA, pgContr * POR_PAGINA).map(o => renderOrcamentoCard(o))
                 )}
               </div>
+              <Paginacao total={concluidos.length} pagina={pgContr} setPagina={setPgContr} />
             </TabsContent>
 
             {/* ── Comissão ── */}
@@ -468,14 +498,14 @@ const ParceiroDashboard = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Card className="border shadow-sm">
                   <CardContent className="p-4">
-                    <p className="text-xs text-gray-500">A receber</p>
+                    <p className="text-xs text-gray-500">A receber (este mês)</p>
                     <p className="text-2xl font-bold text-[#003580]">R$ {comissaoPendente.toFixed(2).replace('.', ',')}</p>
                   </CardContent>
                 </Card>
                 <Card className="border shadow-sm">
                   <CardContent className="p-4">
-                    <p className="text-xs text-gray-500">Total recebido</p>
-                    <p className="text-2xl font-bold text-emerald-600">R$ {comissaoRecebida.toFixed(2).replace('.', ',')}</p>
+                    <p className="text-xs text-gray-500">Total recebido (este mês)</p>
+                    <p className="text-2xl font-bold text-[#003580]">R$ {comissaoRecebida.toFixed(2).replace('.', ',')}</p>
                   </CardContent>
                 </Card>
               </div>
@@ -490,7 +520,7 @@ const ParceiroDashboard = () => {
                     </CardContent>
                   </Card>
                 ) : (
-                  comissoes.map(c => (
+                  comissoes.slice((pgCom - 1) * POR_PAGINA, pgCom * POR_PAGINA).map(c => (
                     <Card key={c.id} className="border shadow-sm">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
@@ -502,15 +532,15 @@ const ParceiroDashboard = () => {
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="text-lg font-bold text-emerald-600">R$ {Number(c.valor_comissao || 0).toFixed(2).replace('.', ',')}</p>
-                            <Badge className={c.status === 'PAGO' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-800'}>
+                            <p className="text-lg font-bold text-[#003580]">R$ {Number(c.valor_comissao || 0).toFixed(2).replace('.', ',')}</p>
+                            <Badge className={c.status === 'PAGO' ? 'bg-blue-100 text-[#003580]' : 'bg-blue-100 text-blue-800'}>
                               {c.status === 'PAGO' ? 'Pago' : 'Pendente'}
                             </Badge>
                             {c.data_pagamento && <p className="text-xs text-gray-400 mt-1">{fmtData(c.data_pagamento)}</p>}
                           </div>
                         </div>
                         {c.comprovante_path && (
-                          <a href={c.comprovante_path} target="_blank" rel="noreferrer" className="mt-2 flex items-center gap-1 text-xs text-blue-600 hover:underline">
+                          <a href={c.comprovante_path} target="_blank" rel="noreferrer" className="mt-2 flex items-center gap-1 text-xs text-[#003580] hover:underline">
                             <ArrowUpRight className="h-3 w-3" /> Ver comprovante
                           </a>
                         )}
@@ -519,6 +549,7 @@ const ParceiroDashboard = () => {
                   ))
                 )}
               </div>
+              <Paginacao total={comissoes.length} pagina={pgCom} setPagina={setPgCom} />
             </TabsContent>
           </Tabs>
         </motion.div>
@@ -631,17 +662,17 @@ const ParceiroDashboard = () => {
                 {detalheComissao && (
                   <div className="space-y-1.5">
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Comissão</p>
-                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
+                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-xs text-gray-500">
                             Base R$ {Number(detalheComissao.valor_base).toFixed(2).replace('.', ',')} · {detalheComissao.comissao_percentual}% · 6% imposto
                           </p>
-                          <p className="text-2xl font-bold text-emerald-700 mt-0.5">
+                          <p className="text-2xl font-bold text-[#003580] mt-0.5">
                             R$ {Number(detalheComissao.valor_comissao || 0).toFixed(2).replace('.', ',')}
                           </p>
                         </div>
-                        <Badge className={detalheComissao.status === 'PAGO' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-800'}>
+                        <Badge className={detalheComissao.status === 'PAGO' ? 'bg-blue-100 text-[#003580]' : 'bg-blue-100 text-blue-800'}>
                           {detalheComissao.status === 'PAGO' ? 'Pago ✓' : 'Pendente'}
                         </Badge>
                       </div>
