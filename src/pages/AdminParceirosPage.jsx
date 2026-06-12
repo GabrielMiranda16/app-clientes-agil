@@ -208,6 +208,14 @@ const propVazio = () => ({
   rede_url: '',
   destaque: false,
   combinar_com: [],
+  cobertura_tipo: '',
+  franquia: '',
+  assistencia_24h: false,
+  carro_reserva: false,
+  carro_reserva_dias: '',
+  cobre_terceiros: false,
+  cobre_vidros: false,
+  rastreador: false,
 });
 const cenarioVazio = () => ({ tem_plano: false, operadora: '', valor: '', vidas: {} });
 
@@ -733,7 +741,9 @@ const AdminParceirosPage = () => {
   };
 
   // ── Builder (SOLICITACAO + editar + nova proposta) ──
-  const renderBuilder = (mode) => (
+  const renderBuilder = (mode) => {
+    const isAutoSeg = selected?.segmento === 'AUTO';
+    return (
     <div className="space-y-5">
       {/* Cenário atual — somente leitura (preenchido na solicitação) */}
       {(() => {
@@ -832,88 +842,172 @@ const AdminParceirosPage = () => {
                   </div>
                 </div>
 
-                {/* Planos */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs text-gray-500">Planos *</Label>
-                    <button type="button" onClick={() => addPlano(pi)} className="text-xs text-[#003580] hover:underline flex items-center gap-0.5">
-                      <Plus className="h-3 w-3" /> plano
-                    </button>
+                {/* AUTO: Tipo de cobertura + Mensalidade */}
+                {isAutoSeg && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-gray-500">Tipo de cobertura</Label>
+                      <select value={p.cobertura_tipo || ''} onChange={e => updProposta(pi, 'cobertura_tipo', e.target.value)}
+                        className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-2 py-1.5 text-xs focus:outline-none focus:border-[#003580]">
+                        <option value="">Selecionar...</option>
+                        {['Básica', 'Intermediária', 'Completa', 'Premium'].map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-gray-500">Mensalidade (R$) *</Label>
+                      <Input value={p.planos?.[0]?.valor || ''} onChange={e => updPlano(pi, 0, 'valor', e.target.value)}
+                        placeholder="Ex: 250,00"
+                        className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
+                    </div>
                   </div>
-                  {p.planos.map((pl, pli) => (
-                    <div key={pli} className="flex gap-2 items-center">
-                      <Input value={pl.nome} onChange={e => updPlano(pi, pli, 'nome', e.target.value)}
-                        placeholder="Nome do plano (opcional)"
-                        className="flex-1 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
-                      <Input value={pl.valor} onChange={e => updPlano(pi, pli, 'valor', e.target.value)}
-                        placeholder="R$ valor *"
-                        className="w-24 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
-                      {p.planos.length > 1 && (
-                        <button type="button" onClick={() => removePlano(pi, pli)} className="text-gray-400 hover:text-red-500 shrink-0">
-                          <X className="h-3.5 w-3.5" />
-                        </button>
+                )}
+
+                {/* SAUDE/outros: Planos */}
+                {!isAutoSeg && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs text-gray-500">Planos *</Label>
+                      <button type="button" onClick={() => addPlano(pi)} className="text-xs text-[#003580] hover:underline flex items-center gap-0.5">
+                        <Plus className="h-3 w-3" /> plano
+                      </button>
+                    </div>
+                    {p.planos.map((pl, pli) => (
+                      <div key={pli} className="flex gap-2 items-center">
+                        <Input value={pl.nome} onChange={e => updPlano(pi, pli, 'nome', e.target.value)}
+                          placeholder="Nome do plano (opcional)"
+                          className="flex-1 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
+                        <Input value={pl.valor} onChange={e => updPlano(pi, pli, 'valor', e.target.value)}
+                          placeholder="R$ valor *"
+                          className="w-24 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
+                        {p.planos.length > 1 && (
+                          <button type="button" onClick={() => removePlano(pi, pli)} className="text-gray-400 hover:text-red-500 shrink-0">
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* SAUDE/outros: Abrangência + Acomodação */}
+                {!isAutoSeg && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-gray-500">Abrangência</Label>
+                      <select value={p.abrangencia} onChange={e => updProposta(pi, 'abrangencia', e.target.value)}
+                        className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-2 py-1.5 text-xs focus:outline-none focus:border-[#003580]">
+                        <option value="">Selecionar...</option>
+                        {['Nacional', 'Regional', 'Estadual', 'Municipal'].map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-gray-500">Acomodação</Label>
+                      <select value={p.acomodacao} onChange={e => updProposta(pi, 'acomodacao', e.target.value)}
+                        className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-2 py-1.5 text-xs focus:outline-none focus:border-[#003580]">
+                        <option value="">Selecionar...</option>
+                        {['Enfermaria', 'Apartamento'].map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* AUTO: Franquia */}
+                {isAutoSeg && (
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500">Franquia (R$)</Label>
+                    <Input value={p.franquia || ''} onChange={e => updProposta(pi, 'franquia', e.target.value)}
+                      placeholder="Ex: 3.000,00"
+                      className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
+                  </div>
+                )}
+
+                {/* SAUDE/outros: Coparticipação */}
+                {!isAutoSeg && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <Label className="text-xs text-gray-500 shrink-0">Coparticipação</Label>
+                      <ToggleBtn value={p.coparticipacao.tem} onChange={v => updCopart(pi, 'tem', v)} />
+                    </div>
+                    {p.coparticipacao.tem && (
+                      <div className="flex items-center gap-3 pl-1 flex-wrap">
+                        <div className="flex items-center gap-1.5">
+                          <Label className="text-xs text-gray-500 shrink-0">%</Label>
+                          <Input value={p.coparticipacao.percentual} onChange={e => updCopart(pi, 'percentual', e.target.value)}
+                            placeholder="30" className="w-16 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-7 text-xs" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs text-gray-500 shrink-0">Limitada</Label>
+                          <ToggleBtn value={p.coparticipacao.limitada} onChange={v => updCopart(pi, 'limitada', v)} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* AUTO: Assistência 24h + Carro reserva */}
+                {isAutoSeg && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <Label className="text-xs text-gray-500 shrink-0">Assistência 24h</Label>
+                      <ToggleBtn value={p.assistencia_24h || false} onChange={v => updProposta(pi, 'assistencia_24h', v)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <Label className="text-xs text-gray-500 shrink-0">Carro reserva</Label>
+                        <ToggleBtn value={p.carro_reserva || false} onChange={v => updProposta(pi, 'carro_reserva', v)} />
+                      </div>
+                      {p.carro_reserva && (
+                        <div className="flex items-center gap-2 pl-1">
+                          <Label className="text-xs text-gray-500 shrink-0">Dias</Label>
+                          <Input value={p.carro_reserva_dias || ''} onChange={e => updProposta(pi, 'carro_reserva_dias', e.target.value)}
+                            placeholder="Ex: 15" className="w-20 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-7 text-xs" />
+                        </div>
                       )}
                     </div>
-                  ))}
-                </div>
-
-                {/* Abrangência + Acomodação */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <Label className="text-xs text-gray-500">Abrangência</Label>
-                    <select value={p.abrangencia} onChange={e => updProposta(pi, 'abrangencia', e.target.value)}
-                      className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-2 py-1.5 text-xs focus:outline-none focus:border-[#003580]">
-                      <option value="">Selecionar...</option>
-                      {['Nacional', 'Regional', 'Estadual', 'Municipal'].map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs text-gray-500">Acomodação</Label>
-                    <select value={p.acomodacao} onChange={e => updProposta(pi, 'acomodacao', e.target.value)}
-                      className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-2 py-1.5 text-xs focus:outline-none focus:border-[#003580]">
-                      <option value="">Selecionar...</option>
-                      {['Enfermaria', 'Apartamento'].map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
-                  </div>
-                </div>
+                )}
 
-                {/* Coparticipação */}
-                <div className="space-y-2">
+                {/* SAUDE/outros: Carência */}
+                {!isAutoSeg && (
                   <div className="flex items-center gap-3 flex-wrap">
-                    <Label className="text-xs text-gray-500 shrink-0">Coparticipação</Label>
-                    <ToggleBtn value={p.coparticipacao.tem} onChange={v => updCopart(pi, 'tem', v)} />
+                    <Label className="text-xs text-gray-500 shrink-0">Carência</Label>
+                    <ToggleBtn value={p.carencia} onChange={v => updProposta(pi, 'carencia', v)} />
                   </div>
-                  {p.coparticipacao.tem && (
-                    <div className="flex items-center gap-3 pl-1 flex-wrap">
-                      <div className="flex items-center gap-1.5">
-                        <Label className="text-xs text-gray-500 shrink-0">%</Label>
-                        <Input value={p.coparticipacao.percentual} onChange={e => updCopart(pi, 'percentual', e.target.value)}
-                          placeholder="30" className="w-16 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-7 text-xs" />
+                )}
+
+                {/* AUTO: Coberturas adicionais */}
+                {isAutoSeg && (
+                  <div className="space-y-2 pt-1">
+                    <Label className="text-xs text-gray-500 block">Coberturas adicionais</Label>
+                    <div className="flex flex-wrap gap-x-4 gap-y-2">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-gray-500 shrink-0">Terceiros</Label>
+                        <ToggleBtn value={p.cobre_terceiros || false} onChange={v => updProposta(pi, 'cobre_terceiros', v)} />
                       </div>
                       <div className="flex items-center gap-2">
-                        <Label className="text-xs text-gray-500 shrink-0">Limitada</Label>
-                        <ToggleBtn value={p.coparticipacao.limitada} onChange={v => updCopart(pi, 'limitada', v)} />
+                        <Label className="text-xs text-gray-500 shrink-0">Vidros</Label>
+                        <ToggleBtn value={p.cobre_vidros || false} onChange={v => updProposta(pi, 'cobre_vidros', v)} />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-gray-500 shrink-0">Rastreador</Label>
+                        <ToggleBtn value={p.rastreador || false} onChange={v => updProposta(pi, 'rastreador', v)} />
                       </div>
                     </div>
-                  )}
-                </div>
-
-                {/* Carência */}
-                <div className="flex items-center gap-3 flex-wrap">
-                  <Label className="text-xs text-gray-500 shrink-0">Carência</Label>
-                  <ToggleBtn value={p.carencia} onChange={v => updProposta(pi, 'carencia', v)} />
-                </div>
-
-                {/* Rede credenciada */}
-                <div className="space-y-1">
-                  <Label className="text-xs text-gray-500">Link de redes credenciadas (opcional)</Label>
-                  <div className="flex items-center gap-1.5">
-                    <LinkIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                    <Input value={p.rede_url} onChange={e => updProposta(pi, 'rede_url', e.target.value)}
-                      placeholder="https://..."
-                      className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-7 text-xs" />
                   </div>
-                </div>
+                )}
+
+                {/* SAUDE/outros: Rede credenciada */}
+                {!isAutoSeg && (
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500">Link de redes credenciadas (opcional)</Label>
+                    <div className="flex items-center gap-1.5">
+                      <LinkIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                      <Input value={p.rede_url} onChange={e => updProposta(pi, 'rede_url', e.target.value)}
+                        placeholder="https://..."
+                        className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-7 text-xs" />
+                    </div>
+                  </div>
+                )}
 
                 {/* Destaque */}
                 {propostas.length > 1 && (
@@ -982,7 +1076,7 @@ const AdminParceirosPage = () => {
         </div>
       )}
     </div>
-  );
+  );};
 
   const renderActionPanel = () => {
     if (!selected) return null;

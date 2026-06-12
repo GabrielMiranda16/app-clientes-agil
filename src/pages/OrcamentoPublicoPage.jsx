@@ -679,7 +679,7 @@ const OrcamentoPublicoPage = () => {
                             if (!a.destaque && b.destaque) return 1;
                             return getPropostaValor(a) - getPropostaValor(b);
                           }).map((p, i) => (
-                            <PropostaCard key={i} proposta={p} isSaude={isSaude} cenarios={cenarios}
+                            <PropostaCard key={i} proposta={p} isSaude={isSaude} isAuto={segmento === 'AUTO'} cenarios={cenarios}
                               onEscolher={() => handleAceitarProposta(p)} aceitando={aceitando} />
                           ))}
                         </div>
@@ -794,10 +794,12 @@ const OrcamentoPublicoPage = () => {
                       );
                     })()}
 
-                    {/* Comparação de Planos */}
+                    {/* Comparação de Planos / Coberturas */}
                     {propostas.length > 1 && (
                       <div className="px-6 sm:px-8 py-6">
-                        <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block mb-4">Comparação de Planos</span>
+                        <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block mb-4">
+                          {segmento === 'AUTO' ? 'Comparação de Coberturas' : 'Comparação de Planos'}
+                        </span>
                         <div className="flex flex-col gap-3">
                           {propostas.map((p, i) => (
                             <div key={i} className={`rounded-2xl border overflow-hidden reveal-item ${p.destaque ? 'border-white/30 bg-white/10' : 'border-white/15 bg-white/5'}`}>
@@ -807,10 +809,13 @@ const OrcamentoPublicoPage = () => {
                                   : <Shield className="h-5 w-5 text-white/40" />}
                                 <div className="flex-1 min-w-0">
                                   <span className="font-semibold text-white block truncate">{p.operadora}</span>
-                                  {p.planos?.length === 1 && p.planos[0].nome && (
+                                  {segmento === 'AUTO' && p.cobertura_tipo && (
+                                    <span className="text-sm text-white/70 block">Cobertura {p.cobertura_tipo}</span>
+                                  )}
+                                  {segmento !== 'AUTO' && p.planos?.length === 1 && p.planos[0].nome && (
                                     <span className="text-sm text-white font-medium truncate block">Plano: {p.planos[0].nome}</span>
                                   )}
-                                  {p.planos?.length > 1 && (
+                                  {segmento !== 'AUTO' && p.planos?.length > 1 && (
                                     <span className="text-sm text-white font-medium block">{p.planos.length} faixas etárias</span>
                                   )}
                                 </div>
@@ -821,31 +826,62 @@ const OrcamentoPublicoPage = () => {
                                 )}
                               </div>
                               <div className="divide-y divide-white/10">
-                                {isSaude && (
-                                  <div className="flex items-center justify-between px-5 py-3">
-                                    <span className="text-sm text-white/60">Abrangência</span>
-                                    <span className="text-sm font-medium text-white">{p.abrangencia || '—'}</span>
-                                  </div>
-                                )}
-                                {isSaude && (
-                                  <div className="flex items-center justify-between px-5 py-3">
-                                    <span className="text-sm text-white/60">Acomodação</span>
-                                    <span className="text-sm font-medium text-white">{p.acomodacao || '—'}</span>
-                                  </div>
-                                )}
-                                <div className="flex items-center justify-between px-5 py-3">
-                                  <span className="text-sm text-white/60">Coparticipação</span>
-                                  {p.coparticipacao?.tem
-                                    ? <span className="text-sm font-medium text-amber-300">{p.coparticipacao.percentual ? `${p.coparticipacao.percentual}%` : 'Sim'}</span>
-                                    : <span className="text-sm font-medium text-green-300">Não</span>}
-                                </div>
-                                {isSaude && (
-                                  <div className="flex items-center justify-between px-5 py-3">
-                                    <span className="text-sm text-white/60">Carência</span>
-                                    {p.carencia
-                                      ? <span className="text-sm font-medium text-amber-300">Sim</span>
-                                      : <span className="text-sm font-medium text-green-300">Não</span>}
-                                  </div>
+                                {segmento === 'AUTO' ? (
+                                  <>
+                                    {p.franquia && (
+                                      <div className="flex items-center justify-between px-5 py-3">
+                                        <span className="text-sm text-white/60">Franquia</span>
+                                        <span className="text-sm font-medium text-white">R$ {p.franquia}</span>
+                                      </div>
+                                    )}
+                                    <div className="flex items-center justify-between px-5 py-3">
+                                      <span className="text-sm text-white/60">Assistência 24h</span>
+                                      {p.assistencia_24h ? <span className="text-sm font-medium text-green-300">✓ Incluso</span> : <span className="text-sm font-medium text-white/40">Não incluso</span>}
+                                    </div>
+                                    <div className="flex items-center justify-between px-5 py-3">
+                                      <span className="text-sm text-white/60">Carro reserva</span>
+                                      {p.carro_reserva
+                                        ? <span className="text-sm font-medium text-green-300">✓ {p.carro_reserva_dias ? `${p.carro_reserva_dias} dias` : 'Incluso'}</span>
+                                        : <span className="text-sm font-medium text-white/40">Não incluso</span>}
+                                    </div>
+                                    <div className="flex items-center justify-between px-5 py-3">
+                                      <span className="text-sm text-white/60">Cobertura terceiros</span>
+                                      {p.cobre_terceiros ? <span className="text-sm font-medium text-green-300">✓ Incluso</span> : <span className="text-sm font-medium text-white/40">Não incluso</span>}
+                                    </div>
+                                    <div className="flex items-center justify-between px-5 py-3">
+                                      <span className="text-sm text-white/60">Cobertura vidros</span>
+                                      {p.cobre_vidros ? <span className="text-sm font-medium text-green-300">✓ Incluso</span> : <span className="text-sm font-medium text-white/40">Não incluso</span>}
+                                    </div>
+                                  </>
+                                ) : (
+                                  <>
+                                    {isSaude && (
+                                      <div className="flex items-center justify-between px-5 py-3">
+                                        <span className="text-sm text-white/60">Abrangência</span>
+                                        <span className="text-sm font-medium text-white">{p.abrangencia || '—'}</span>
+                                      </div>
+                                    )}
+                                    {isSaude && (
+                                      <div className="flex items-center justify-between px-5 py-3">
+                                        <span className="text-sm text-white/60">Acomodação</span>
+                                        <span className="text-sm font-medium text-white">{p.acomodacao || '—'}</span>
+                                      </div>
+                                    )}
+                                    <div className="flex items-center justify-between px-5 py-3">
+                                      <span className="text-sm text-white/60">Coparticipação</span>
+                                      {p.coparticipacao?.tem
+                                        ? <span className="text-sm font-medium text-amber-300">{p.coparticipacao.percentual ? `${p.coparticipacao.percentual}%` : 'Sim'}</span>
+                                        : <span className="text-sm font-medium text-green-300">Não</span>}
+                                    </div>
+                                    {isSaude && (
+                                      <div className="flex items-center justify-between px-5 py-3">
+                                        <span className="text-sm text-white/60">Carência</span>
+                                        {p.carencia
+                                          ? <span className="text-sm font-medium text-amber-300">Sim</span>
+                                          : <span className="text-sm font-medium text-green-300">Não</span>}
+                                      </div>
+                                    )}
+                                  </>
                                 )}
                               </div>
                             </div>
@@ -967,6 +1003,41 @@ const OrcamentoPublicoPage = () => {
                             )}
                           </div>
                           <p className="text-sm text-white/50">A coparticipação é cobrada apenas quando você utiliza o plano. Consultas, exames e procedimentos geram uma taxa proporcional ao serviço.</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Detalhes da Cobertura — AUTO */}
+                    {segmento === 'AUTO' && propostaDestaque && (
+                      <div className="px-6 sm:px-8 py-6">
+                        <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block mb-4">O que está incluído</span>
+                        <div className="rounded-2xl overflow-hidden bg-white/10 border border-white/15">
+                          {propostaDestaque.cobertura_tipo && (
+                            <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/10">
+                              <span className="text-sm text-white/70">Tipo de cobertura</span>
+                              <span className="text-sm font-semibold text-white">{propostaDestaque.cobertura_tipo}</span>
+                            </div>
+                          )}
+                          {propostaDestaque.franquia && (
+                            <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/10">
+                              <span className="text-sm text-white/70">Franquia</span>
+                              <span className="text-sm font-semibold text-white">R$ {propostaDestaque.franquia}</span>
+                            </div>
+                          )}
+                          {[
+                            { key: 'assistencia_24h', label: 'Assistência 24h' },
+                            { key: 'carro_reserva', label: 'Carro reserva', extra: propostaDestaque.carro_reserva_dias ? ` (${propostaDestaque.carro_reserva_dias} dias)` : '' },
+                            { key: 'cobre_terceiros', label: 'Cobertura de terceiros' },
+                            { key: 'cobre_vidros', label: 'Cobertura de vidros' },
+                            { key: 'rastreador', label: 'Rastreador incluso' },
+                          ].map(({ key, label, extra = '' }) => (
+                            <div key={key} className="flex items-center justify-between px-5 py-3.5 border-b border-white/10 last:border-0">
+                              <span className="text-sm text-white/70">{label}</span>
+                              {propostaDestaque[key]
+                                ? <span className="text-sm font-semibold text-green-300">✓ Incluso{extra}</span>
+                                : <span className="text-sm text-white/30">Não incluso</span>}
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
@@ -1195,7 +1266,7 @@ const useCountUp = (target, shouldStart = false, duration = 1200) => {
   return value;
 };
 
-const PropostaCard = ({ proposta, isSaude, cenarios = [], onEscolher, aceitando }) => {
+const PropostaCard = ({ proposta, isSaude, isAuto = false, cenarios = [], onEscolher, aceitando }) => {
   const [expanded, setExpanded] = useState(false);
   const economiaRef = useRef(null);
   const [economiaVisible, setEconomiaVisible] = useState(false);
@@ -1245,8 +1316,11 @@ const PropostaCard = ({ proposta, isSaude, cenarios = [], onEscolher, aceitando 
           </div>
           <div className="min-w-0">
             <p className={`font-bold text-base ${d ? 'text-[#003580]' : 'text-white'}`}>{proposta.operadora || 'Seguradora'}</p>
-            {nomePlano && (
+            {nomePlano && !isAuto && (
               <p className={`text-sm font-medium mt-0.5 ${d ? 'text-[#003580]/70' : 'text-white/70'}`}>Plano: {nomePlano}</p>
+            )}
+            {isAuto && proposta.cobertura_tipo && (
+              <p className={`text-sm font-medium mt-0.5 ${d ? 'text-[#003580]/70' : 'text-white/70'}`}>Cobertura {proposta.cobertura_tipo}</p>
             )}
             {isSaude && proposta.abrangencia && (
               <p className={`text-sm mt-0.5 ${d ? 'text-[#003580]/60' : 'text-white/60'}`}>{proposta.abrangencia} · {proposta.acomodacao || 'Sem acomodação'}</p>
@@ -1360,7 +1434,7 @@ const PropostaCard = ({ proposta, isSaude, cenarios = [], onEscolher, aceitando 
         </>
       )}
 
-      {/* Chips */}
+      {/* Chips — SAUDE */}
       {isSaude && (
         <div className={`px-6 py-4 flex flex-wrap gap-2 border-b ${d ? 'border-gray-100' : 'border-white/15'}`}>
           {proposta.abrangencia && (
@@ -1388,6 +1462,27 @@ const PropostaCard = ({ proposta, isSaude, cenarios = [], onEscolher, aceitando 
         </div>
       )}
 
+      {/* Chips — AUTO */}
+      {isAuto && (
+        <div className={`px-6 py-4 flex flex-wrap gap-2 border-b ${d ? 'border-gray-100' : 'border-white/15'}`}>
+          {proposta.franquia && (
+            <span className={`text-sm rounded-full px-3 py-1 ${d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80'}`}>Franquia R$ {proposta.franquia}</span>
+          )}
+          <span className={`text-sm rounded-full px-3 py-1 ${proposta.assistencia_24h ? (d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80') : (d ? 'bg-gray-100 text-gray-400' : 'bg-white/5 text-white/40')}`}>
+            {proposta.assistencia_24h ? 'Assistência 24h ✓' : 'Sem assistência 24h'}
+          </span>
+          <span className={`text-sm rounded-full px-3 py-1 ${proposta.carro_reserva ? (d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80') : (d ? 'bg-gray-100 text-gray-400' : 'bg-white/5 text-white/40')}`}>
+            {proposta.carro_reserva ? `Carro reserva${proposta.carro_reserva_dias ? ` ${proposta.carro_reserva_dias}d` : ''} ✓` : 'Sem carro reserva'}
+          </span>
+          {proposta.cobre_terceiros && (
+            <span className={`text-sm rounded-full px-3 py-1 ${d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80'}`}>Terceiros ✓</span>
+          )}
+          {proposta.cobre_vidros && (
+            <span className={`text-sm rounded-full px-3 py-1 ${d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80'}`}>Vidros ✓</span>
+          )}
+        </div>
+      )}
+
       {/* CTA */}
       <div className="px-6 py-5">
         <button onClick={onEscolher} disabled={aceitando}
@@ -1397,7 +1492,7 @@ const PropostaCard = ({ proposta, isSaude, cenarios = [], onEscolher, aceitando 
               : 'bg-white/15 text-white hover:bg-white/25'
           }`}>
           {aceitando ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
-          {aceitando ? 'Processando...' : 'Quero este plano'}
+          {aceitando ? 'Processando...' : isAuto ? 'Quero este seguro' : 'Quero este plano'}
         </button>
       </div>
     </motion.div>
