@@ -143,9 +143,16 @@ const CAMPOS_SEGMENTO = {
     { key: 'vidas', label: 'Nº de vidas', type: 'number', placeholder: 'Ex: 2' },
   ],
   AUTO: [
-    { key: 'placa', label: 'Placa do veículo', type: 'text', placeholder: 'Ex: ABC1D23' },
-    { key: 'modelo_veiculo', label: 'Modelo do veículo', type: 'text', placeholder: 'Ex: Honda Civic 2023' },
-    { key: 'ano_fabricacao', label: 'Ano de fabricação', type: 'number', placeholder: 'Ex: 2023' },
+    { key: 'placa',          label: 'Placa',              header: 'Dados do veículo', type: 'text',   placeholder: 'Ex: ABC1D23' },
+    { key: 'chassi',         label: 'Chassi',             type: 'text',   placeholder: 'Ex: 9BWZZZ377VT004251' },
+    { key: 'modelo_veiculo', label: 'Modelo',             type: 'text',   placeholder: 'Ex: Honda Civic' },
+    { key: 'ano_fabricacao', label: 'Ano de fabricação',  type: 'number', placeholder: 'Ex: 2023' },
+    { key: 'tipo_uso',       label: 'Tipo de uso',        header: 'Uso do veículo', type: 'select',
+      options: ['Particular','Táxi','Frete','Misto','Lotação','Bombeiro','Ambulância','Policiamento','Escolar','Test Drive','Diferenciado','Transporte por Aplicativo'] },
+    { key: 'cep',            label: 'CEP',                header: 'Endereço', type: 'cep', placeholder: 'Ex: 01310-100' },
+    { key: 'rua',            label: 'Rua / Logradouro',   type: 'text',   placeholder: 'Auto-preenchido pelo CEP', optional: true },
+    { key: 'numero',         label: 'Número',             type: 'text',   placeholder: 'Ex: 123' },
+    { key: 'complemento',    label: 'Complemento',        type: 'text',   placeholder: 'Ex: Apto 42', optional: true },
   ],
   RESIDENCIAL: [
     { key: 'tipo_imovel', label: 'Tipo de imóvel', type: 'select', options: ['Casa', 'Apartamento', 'Sobrado'] },
@@ -329,6 +336,22 @@ const AdminParceirosPage = () => {
   const removeCenarioCriar = (i) => setCenariosCriar(cs => cs.filter((_, idx) => idx !== i));
   const updCenarioCriar = (i, key, val) => setCenariosCriar(cs => cs.map((c, idx) => idx === i ? { ...c, [key]: val } : c));
   const updCenarioCriarVidas = (ci, id, val) => setCenariosCriar(cs => cs.map((c, idx) => idx === ci ? { ...c, vidas: { ...(c.vidas || {}), [id]: val } } : c));
+
+  const handleSegDataChange = async (key, value) => {
+    setSegData(d => ({ ...d, [key]: value }));
+    if (key === 'cep') {
+      const digits = value.replace(/\D/g, '');
+      if (digits.length === 8) {
+        try {
+          const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
+          const json = await res.json();
+          if (!json.erro) {
+            setSegData(d => ({ ...d, cep: value, rua: json.logradouro || '', bairro: json.bairro || '', cidade: json.localidade || '' }));
+          }
+        } catch {}
+      }
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -678,7 +701,7 @@ const AdminParceirosPage = () => {
       return toast({ variant: 'destructive', title: 'E-mail inválido.' });
     if (!validarCpfCnpj(novoForm.cliente_cpf))
       return toast({ variant: 'destructive', title: 'CPF ou CNPJ inválido.', description: 'Verifique o número digitado.' });
-    const campoFaltando = (CAMPOS_SEGMENTO[novoForm.segmento] || []).find(c => !String(segData[c.key] || '').trim());
+    const campoFaltando = (CAMPOS_SEGMENTO[novoForm.segmento] || []).find(c => !c.optional && !String(segData[c.key] || '').trim());
     if (campoFaltando) return toast({ variant: 'destructive', title: `Informe: ${campoFaltando.label}.` });
     const totalVidasAdm = parseInt(segData.vidas || '0');
     const distribuiVidasAdm = AGE_BRACKETS.reduce((s, { id }) => s + parseInt(segData[faixaKey(id)] || '0'), 0);
@@ -1515,22 +1538,31 @@ const AdminParceirosPage = () => {
                 <div className="space-y-2 border border-blue-100 rounded-xl p-3 bg-blue-50">
                   <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Dados do {SEGMENTO_LABEL[novoForm.segmento]}</p>
                   {(CAMPOS_SEGMENTO[novoForm.segmento] || []).map(campo => {
-                    const vazio = !String(segData[campo.key] || '').trim();
+                    const vazio = !campo.optional && !String(segData[campo.key] || '').trim();
                     return (
-                      <div key={campo.key} className="space-y-1">
-                        <Label className="text-xs text-gray-600">{campo.label} <span className="text-red-500">*</span></Label>
-                        {campo.type === 'select' ? (
-                          <select value={segData[campo.key] || ''} onChange={e => setSegData(d => ({ ...d, [campo.key]: e.target.value }))}
-                            className={`w-full rounded-lg border bg-white px-2 py-1.5 text-sm focus:outline-none focus:border-[#003580] ${vazio ? 'border-red-300' : 'border-gray-200'}`}>
-                            <option value="">Selecionar...</option>
-                            {campo.options.map(o => <option key={o} value={o}>{o}</option>)}
-                          </select>
-                        ) : (
-                          <Input value={segData[campo.key] || ''} onChange={e => setSegData(d => ({ ...d, [campo.key]: e.target.value }))}
-                            type={campo.type} placeholder={campo.placeholder}
-                            className={`bg-white focus:border-[#003580] h-8 text-sm ${vazio ? 'border-red-300' : 'border-gray-200'}`} />
+                      <React.Fragment key={campo.key}>
+                        {campo.header && (
+                          <p className="text-xs font-semibold text-[#003580] uppercase tracking-wide pt-2">{campo.header}</p>
                         )}
-                      </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-600">
+                            {campo.label} {!campo.optional && <span className="text-red-500">*</span>}
+                          </Label>
+                          {campo.type === 'select' ? (
+                            <select value={segData[campo.key] || ''} onChange={e => handleSegDataChange(campo.key, e.target.value)}
+                              className={`w-full rounded-lg border bg-white px-2 py-1.5 text-sm focus:outline-none focus:border-[#003580] ${vazio ? 'border-red-300' : 'border-gray-200'}`}>
+                              <option value="">Selecionar...</option>
+                              {campo.options.map(o => <option key={o} value={o}>{o}</option>)}
+                            </select>
+                          ) : (
+                            <Input value={segData[campo.key] || ''} onChange={e => handleSegDataChange(campo.key, e.target.value)}
+                              type={campo.type === 'cep' ? 'text' : campo.type}
+                              maxLength={campo.type === 'cep' ? 9 : undefined}
+                              placeholder={campo.placeholder}
+                              className={`bg-white focus:border-[#003580] h-8 text-sm ${vazio ? 'border-red-300' : 'border-gray-200'}`} />
+                          )}
+                        </div>
+                      </React.Fragment>
                     );
                   })}
                 </div>

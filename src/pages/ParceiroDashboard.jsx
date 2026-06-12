@@ -46,9 +46,16 @@ const SEGMENTO_LABEL = Object.fromEntries(SEGMENTOS.map(s => [s.value, s.label])
 
 const SEGMENTO_CAMPOS = {
   AUTO: [
-    { key: 'placa',          label: 'Placa do veículo',    placeholder: 'Ex: ABC1D23' },
-    { key: 'modelo_veiculo', label: 'Modelo do veículo',   placeholder: 'Ex: Honda Civic 2023' },
-    { key: 'ano_fabricacao', label: 'Ano de fabricação',   type: 'number', placeholder: 'Ex: 2023' },
+    { key: 'placa',          label: 'Placa',              header: 'Dados do veículo', placeholder: 'Ex: ABC1D23' },
+    { key: 'chassi',         label: 'Chassi',             placeholder: 'Ex: 9BWZZZ377VT004251' },
+    { key: 'modelo_veiculo', label: 'Modelo',             placeholder: 'Ex: Honda Civic' },
+    { key: 'ano_fabricacao', label: 'Ano de fabricação',  type: 'number', placeholder: 'Ex: 2023' },
+    { key: 'tipo_uso',       label: 'Tipo de uso',        header: 'Uso do veículo', type: 'select',
+      options: ['Particular','Táxi','Frete','Misto','Lotação','Bombeiro','Ambulância','Policiamento','Escolar','Test Drive','Diferenciado','Transporte por Aplicativo'] },
+    { key: 'cep',            label: 'CEP',                header: 'Endereço', type: 'cep', placeholder: 'Ex: 01310-100' },
+    { key: 'rua',            label: 'Rua / Logradouro',   type: 'text', placeholder: 'Auto-preenchido pelo CEP', optional: true },
+    { key: 'numero',         label: 'Número',             type: 'text', placeholder: 'Ex: 123' },
+    { key: 'complemento',    label: 'Complemento',        type: 'text', placeholder: 'Ex: Apto 42', optional: true },
   ],
   SAUDE: [
     { key: 'tipo', label: 'Modalidade do plano', type: 'select', options: ['INDIVIDUAL', 'MEI', 'PME', 'PJ'] },
@@ -204,7 +211,21 @@ const ParceiroDashboard = () => {
 
   const abrirModal = () => { setForm(FORM_VAZIO); setCenariosSolic([{ tem_plano: false, operadora: '', valor: '', vidas: {} }]); setModalAberto(true); };
   const setField = (key, value) => setForm(f => ({ ...f, [key]: value }));
-  const setExtra = (key, value) => setForm(f => ({ ...f, extras: { ...f.extras, [key]: value } }));
+  const setExtra = async (key, value) => {
+    setForm(f => ({ ...f, extras: { ...f.extras, [key]: value } }));
+    if (key === 'cep') {
+      const digits = value.replace(/\D/g, '');
+      if (digits.length === 8) {
+        try {
+          const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
+          const json = await res.json();
+          if (!json.erro) {
+            setForm(f => ({ ...f, extras: { ...f.extras, cep: value, rua: json.logradouro || '', bairro: json.bairro || '', cidade: json.localidade || '' } }));
+          }
+        } catch {}
+      }
+    }
+  };
   const addCenarioSolic = () => setCenariosSolic(cs => [...cs, { tem_plano: false, operadora: '', valor: '', vidas: {} }]);
   const removeCenarioSolic = (i) => setCenariosSolic(cs => cs.filter((_, idx) => idx !== i));
   const updCenarioSolic = (i, key, val) => setCenariosSolic(cs => cs.map((c, idx) => idx === i ? { ...c, [key]: val } : c));
@@ -219,7 +240,7 @@ const ParceiroDashboard = () => {
     if (!form.cliente_cpf.trim()) return toast({ variant: 'destructive', title: 'Informe o CPF ou CNPJ do cliente.' });
     if (!validarCpfCnpj(form.cliente_cpf)) return toast({ variant: 'destructive', title: 'CPF ou CNPJ inválido.', description: 'CPF deve ter 11 dígitos e CNPJ 14 dígitos.' });
     if (!form.cliente_data_nascimento) return toast({ variant: 'destructive', title: 'Informe a data de nascimento do cliente.' });
-    const campoFaltando = camposDoSegmento.find(c => !String(form.extras[c.key] || '').trim());
+    const campoFaltando = camposDoSegmento.find(c => !c.optional && !String(form.extras[c.key] || '').trim());
     if (campoFaltando) return toast({ variant: 'destructive', title: `Informe: ${campoFaltando.label}.` });
     if (showAgeBrackets && remainingLives !== 0) return toast({ variant: 'destructive', title: 'Distribua todas as vidas por faixa etária.', description: `Faltam ${remainingLives} vida(s) para distribuir.` });
     if (!parceiro?.id) return toast({ variant: 'destructive', title: 'Perfil de parceiro não encontrado.' });
@@ -774,24 +795,34 @@ const ParceiroDashboard = () => {
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                       Informações do seguro ({SEGMENTO_LABEL[form.segmento]})
                     </p>
-                    {camposDoSegmento.map(({ key, label, placeholder, type, options }) => {
-                      const vazio = !String(form.extras[key] || '').trim();
+                    {camposDoSegmento.map((campo) => {
+                      const { key, label, placeholder, type, options, optional, header } = campo;
+                      const vazio = !optional && !String(form.extras[key] || '').trim();
                       return (
-                        <div key={key} className="space-y-1.5">
-                          <Label className="text-sm font-medium text-gray-700">{label} <span className="text-red-500">*</span></Label>
-                          {type === 'select' ? (
-                            <select value={form.extras[key] || ''}
-                              onChange={e => setExtra(key, e.target.value)}
-                              className={`w-full rounded-lg border bg-[#f0f7ff] px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580] ${vazio ? 'border-red-300' : 'border-gray-200'}`}>
-                              <option value="">Selecione...</option>
-                              {(options || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                            </select>
-                          ) : (
-                            <input value={form.extras[key] || ''} onChange={e => setExtra(key, e.target.value)}
-                              type={type || 'text'} placeholder={placeholder}
-                              className={`w-full rounded-lg border bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580] ${vazio ? 'border-red-300' : 'border-gray-200'}`} />
+                        <React.Fragment key={key}>
+                          {header && (
+                            <p className="text-xs font-semibold text-[#003580] uppercase tracking-wide pt-1">{header}</p>
                           )}
-                        </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-sm font-medium text-gray-700">
+                              {label} {!optional && <span className="text-red-500">*</span>}
+                            </Label>
+                            {type === 'select' ? (
+                              <select value={form.extras[key] || ''}
+                                onChange={e => setExtra(key, e.target.value)}
+                                className={`w-full rounded-lg border bg-[#f0f7ff] px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580] ${vazio ? 'border-red-300' : 'border-gray-200'}`}>
+                                <option value="">Selecione...</option>
+                                {(options || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                              </select>
+                            ) : (
+                              <input value={form.extras[key] || ''} onChange={e => setExtra(key, e.target.value)}
+                                type={type === 'cep' ? 'text' : (type || 'text')}
+                                maxLength={type === 'cep' ? 9 : undefined}
+                                placeholder={placeholder}
+                                className={`w-full rounded-lg border bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580] ${vazio ? 'border-red-300' : 'border-gray-200'}`} />
+                            )}
+                          </div>
+                        </React.Fragment>
                       );
                     })}
                   </div>
