@@ -287,6 +287,7 @@ const AdminParceirosPage = () => {
   const [orcamentos, setOrcamentos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState('TODOS');
+  const [pagina, setPagina] = useState(1);
   const [expandedId, setExpandedId] = useState(null);
   const [selected, setSelected] = useState(null);
   const [docs, setDocs] = useState([]);
@@ -307,6 +308,7 @@ const AdminParceirosPage = () => {
   const [editandoProposta, setEditandoProposta] = useState(false);
   const [novaPropostaMode, setNovaPropostaMode] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [selectedComissao, setSelectedComissao] = useState(null);
 
   // Criar orçamento
   const [parceiros, setParceiros] = useState([]);
@@ -407,12 +409,19 @@ const AdminParceirosPage = () => {
       .eq('orcamento_id', o.id)
       .order('enviado_em', { ascending: true });
     setDocs(docData || []);
+    if (o.status === 'COMISSAO') {
+      const { data: comData } = await supabase.from('comissoes').select('*').eq('orcamento_id', o.id).maybeSingle();
+      setSelectedComissao(comData || null);
+    } else {
+      setSelectedComissao(null);
+    }
   };
 
   const refreshSelected = async (id) => {
-    const [orcRes, docsRes] = await Promise.allSettled([
+    const [orcRes, docsRes, comRes] = await Promise.allSettled([
       supabase.from('orcamentos').select('*, parceiros(nome_completo, modalidade, comissao_percentual, telefone)').eq('id', id).maybeSingle(),
       supabase.from('orcamento_documentos').select('*').eq('orcamento_id', id).order('enviado_em', { ascending: true }),
+      supabase.from('comissoes').select('*').eq('orcamento_id', id).maybeSingle(),
     ]);
     if (orcRes.status === 'fulfilled' && orcRes.value.data) {
       const data = orcRes.value.data;
@@ -420,6 +429,7 @@ const AdminParceirosPage = () => {
       setOrcamentos(prev => prev.map(o => o.id === id ? data : o));
     }
     if (docsRes.status === 'fulfilled') setDocs(docsRes.value.data || []);
+    if (comRes.status === 'fulfilled') setSelectedComissao(comRes.value.data || null);
   };
 
   // ── Cenários ──
@@ -1130,14 +1140,29 @@ const AdminParceirosPage = () => {
         <p className="text-sm font-semibold text-gray-700 border-b pb-2">Comissão registrada</p>
         <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
           <p className="text-xs text-gray-500">Parceiro: {selected.parceiros?.nome_completo}</p>
-          <p className="text-base font-bold text-[#003580] mt-1">Contrato concluído ✅</p>
+          {selectedComissao && (
+            <p className="text-xs text-gray-500 mt-0.5">
+              R$ {Number(selectedComissao.valor_base || 0).toFixed(2).replace('.', ',')} · {selectedComissao.comissao_percentual}% · 6% imposto = <span className="font-semibold text-[#003580]">R$ {Number(selectedComissao.valor_comissao || 0).toFixed(2).replace('.', ',')}</span>
+            </p>
+          )}
+          <p className="text-base font-bold text-[#003580] mt-1">
+            {selectedComissao?.status === 'PAGO' ? 'Pagamento realizado ✅' : 'Contrato concluído ✅'}
+          </p>
         </div>
+        {selectedComissao?.comprovante_path && (
+          <a href={selectedComissao.comprovante_path} target="_blank" rel="noreferrer"
+            className="flex items-center gap-1.5 text-sm text-[#003580] hover:underline font-medium">
+            <Eye className="h-4 w-4" /> Ver comprovante enviado
+          </a>
+        )}
         <div className="space-y-2">
-          <p className="text-xs font-medium text-gray-600">Upload do comprovante de pagamento</p>
+          <p className="text-xs font-medium text-gray-600">
+            {selectedComissao?.comprovante_path ? 'Alterar comprovante' : 'Upload do comprovante de pagamento'}
+          </p>
           <input ref={compInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleUploadComprovante(e.target.files?.[0])} />
           <Button onClick={() => compInputRef.current?.click()} disabled={uploadingComp} variant="outline" className="w-full rounded-xl gap-2 text-sm border-[#003580]/30 text-[#003580] hover:bg-blue-50">
             {uploadingComp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            {uploadingComp ? 'Enviando...' : 'Enviar comprovante e marcar como pago'}
+            {uploadingComp ? 'Enviando...' : selectedComissao?.comprovante_path ? 'Substituir comprovante' : 'Enviar comprovante e marcar como pago'}
           </Button>
         </div>
       </div>
@@ -1151,6 +1176,9 @@ const AdminParceirosPage = () => {
   const concluidos = orcamentos.filter(o => ['CONCLUIDO', 'COMISSAO'].includes(o.status)).length;
   const FILTROS = ['TODOS', 'SOLICITACAO', 'ORCAMENTO', 'DOCUMENTOS', 'ASSINATURA', 'CONCLUIDO', 'COMISSAO'];
   const orcamentosFiltrados = filtro === 'TODOS' ? orcamentos : orcamentos.filter(o => o.status === filtro);
+  const totalFiltrado = orcamentosFiltrados.length;
+  const totalPaginas = Math.ceil(totalFiltrado / 10);
+  const orcamentoPagina = orcamentosFiltrados.slice((pagina - 1) * 10, pagina * 10);
 
   return (
     <>
@@ -1187,7 +1215,7 @@ const AdminParceirosPage = () => {
           {/* Filtros */}
           <div className="flex gap-2 flex-wrap">
             {FILTROS.map(f => (
-              <button key={f} onClick={() => setFiltro(f)}
+              <button key={f} onClick={() => { setFiltro(f); setPagina(1); }}
                 className={`px-3 py-1 rounded-lg text-xs font-medium border transition-colors ${filtro === f ? 'bg-white text-[#003580] border-white' : 'bg-white/10 text-white/70 border-white/20 hover:bg-white/20'}`}>
                 {f === 'TODOS' ? 'Todos' : (STATUS_CONFIG[f]?.label || f)}
                 {f !== 'TODOS' && ` (${orcamentos.filter(o => o.status === f).length})`}
@@ -1209,7 +1237,7 @@ const AdminParceirosPage = () => {
                 </CardContent>
               </Card>
             ) : (
-              orcamentosFiltrados.map(o => {
+              orcamentoPagina.map(o => {
                 const cfg = STATUS_CONFIG[o.status] || STATUS_CONFIG.SOLICITACAO;
                 const step = FUNIL.indexOf(o.status);
                 const isExpanded = expandedId === o.id;
@@ -1304,6 +1332,20 @@ const AdminParceirosPage = () => {
               })
             )}
           </div>
+
+          {totalPaginas > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <button disabled={pagina === 1} onClick={() => setPagina(p => p - 1)}
+                className="px-3 py-1 rounded-lg text-sm bg-white/10 text-white/70 border border-white/20 disabled:opacity-30 hover:bg-white/20">
+                ← Anterior
+              </button>
+              <span className="text-sm text-white/60">{pagina} / {totalPaginas}</span>
+              <button disabled={pagina === totalPaginas} onClick={() => setPagina(p => p + 1)}
+                className="px-3 py-1 rounded-lg text-sm bg-white/10 text-white/70 border border-white/20 disabled:opacity-30 hover:bg-white/20">
+                Próxima →
+              </button>
+            </div>
+          )}
 
         </motion.div>
       </DashboardLayout>
