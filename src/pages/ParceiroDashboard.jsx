@@ -46,9 +46,9 @@ const SEGMENTO_LABEL = Object.fromEntries(SEGMENTOS.map(s => [s.value, s.label])
 
 const SEGMENTO_CAMPOS = {
   AUTO: [
-    { key: 'placa',          label: 'Placa',              header: 'Dados do veículo', placeholder: 'Ex: ABC1D23' },
-    { key: 'chassi',         label: 'Chassi',             placeholder: 'Ex: 9BWZZZ377VT004251' },
-    { key: 'modelo_veiculo', label: 'Modelo',             placeholder: 'Ex: Honda Civic' },
+    { key: 'placa',          label: 'Placa',              header: 'Dados do veículo', type: 'plate', placeholder: 'Ex: ABC1D23' },
+    { key: 'chassi',         label: 'Chassi',             type: 'text', placeholder: 'Auto-preenchido pela placa', optional: true },
+    { key: 'modelo_veiculo', label: 'Modelo',             type: 'text', placeholder: 'Auto-preenchido pela placa', optional: true },
     { key: 'ano_fabricacao', label: 'Ano de fabricação',  type: 'number', placeholder: 'Ex: 2023' },
     { key: 'tipo_uso',       label: 'Tipo de uso',        header: 'Uso do veículo', type: 'select',
       options: ['Particular','Táxi','Frete','Misto','Lotação','Bombeiro','Ambulância','Policiamento','Escolar','Test Drive','Diferenciado','Transporte por Aplicativo'] },
@@ -62,9 +62,12 @@ const SEGMENTO_CAMPOS = {
     { key: 'qtd_vidas', label: 'Número de vidas', type: 'number', placeholder: 'Ex: 3' },
   ],
   RESIDENCIAL: [
-    { key: 'tipo_imovel',     label: 'Tipo de imóvel',       type: 'select', options: ['Casa', 'Apartamento', 'Sobrado'] },
-    { key: 'endereco_imovel', label: 'Endereço do imóvel',   placeholder: 'Rua, número, bairro, cidade' },
-    { key: 'valor_imovel',    label: 'Valor aproximado (R$)', placeholder: 'Ex: 350000' },
+    { key: 'tipo_imovel',  label: 'Tipo de imóvel',        type: 'select', options: ['Casa', 'Apartamento', 'Sobrado'] },
+    { key: 'cep',          label: 'CEP do imóvel',          header: 'Endereço', type: 'cep', placeholder: 'Ex: 01310-100' },
+    { key: 'rua',          label: 'Rua / Logradouro',       type: 'text', placeholder: 'Auto-preenchido pelo CEP', optional: true },
+    { key: 'numero',       label: 'Número',                 type: 'text', placeholder: 'Ex: 123' },
+    { key: 'complemento',  label: 'Complemento',            type: 'text', placeholder: 'Ex: Apto 42', optional: true },
+    { key: 'valor_imovel', label: 'Valor aproximado (R$)',  type: 'text', placeholder: 'Ex: 350.000' },
   ],
   EMPRESARIAL: [
     { key: 'nome_empresa',     label: 'Nome da empresa',      placeholder: 'Ex: Empresa ABC Ltda' },
@@ -163,6 +166,7 @@ const ParceiroDashboard = () => {
   const [cenariosSolic, setCenariosSolic] = useState([{ tem_plano: false, operadora: '', valor: '', vidas: {} }]);
   const updCenarioSolicVidas = (ci, id, val) => setCenariosSolic(cs => cs.map((c, idx) => idx === ci ? { ...c, vidas: { ...(c.vidas || {}), [id]: val } } : c));
   const [enviando, setEnviando] = useState(false);
+  const [buscandoPlaca, setBuscandoPlaca] = useState(false);
 
   const [detalhe, setDetalhe] = useState(null);
   const [detalheComissao, setDetalheComissao] = useState(null);
@@ -212,18 +216,44 @@ const ParceiroDashboard = () => {
   const abrirModal = () => { setForm(FORM_VAZIO); setCenariosSolic([{ tem_plano: false, operadora: '', valor: '', vidas: {} }]); setModalAberto(true); };
   const setField = (key, value) => setForm(f => ({ ...f, [key]: value }));
   const setExtra = async (key, value) => {
-    setForm(f => ({ ...f, extras: { ...f.extras, [key]: value } }));
+    const val = key === 'placa' ? value.toUpperCase().replace(/[^A-Z0-9]/g, '') : value;
+    setForm(f => ({ ...f, extras: { ...f.extras, [key]: val } }));
+
     if (key === 'cep') {
-      const digits = value.replace(/\D/g, '');
+      const digits = val.replace(/\D/g, '');
       if (digits.length === 8) {
         try {
           const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
           const json = await res.json();
           if (!json.erro) {
-            setForm(f => ({ ...f, extras: { ...f.extras, cep: value, rua: json.logradouro || '', bairro: json.bairro || '', cidade: json.localidade || '' } }));
+            setForm(f => ({ ...f, extras: { ...f.extras, cep: val, rua: json.logradouro || '', bairro: json.bairro || '', cidade: json.localidade || '' } }));
           }
         } catch {}
       }
+    }
+
+    if (key === 'placa' && val.length === 7) {
+      const token = import.meta.env.VITE_APIPLACAS_TOKEN;
+      if (!token) return;
+      setBuscandoPlaca(true);
+      try {
+        const res = await fetch(`https://apiplacas.com.br/api/v1/placa/${val}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = await res.json();
+        if (res.ok) {
+          setForm(f => ({
+            ...f,
+            extras: {
+              ...f.extras,
+              chassi: json.chassis || json.CHASSI || f.extras.chassi,
+              modelo_veiculo: [json.brand || json.MARCA, json.model || json.MODELO].filter(Boolean).join(' ') || f.extras.modelo_veiculo,
+              ano_fabricacao: String(json.year_fab || json.ANOFABRICACAO || json.year || f.extras.ano_fabricacao || ''),
+            },
+          }));
+        }
+      } catch {}
+      finally { setBuscandoPlaca(false); }
     }
   };
   const addCenarioSolic = () => setCenariosSolic(cs => [...cs, { tem_plano: false, operadora: '', valor: '', vidas: {} }]);
@@ -806,6 +836,7 @@ const ParceiroDashboard = () => {
                           <div className="space-y-1.5">
                             <Label className="text-sm font-medium text-gray-700">
                               {label} {!optional && <span className="text-red-500">*</span>}
+                              {key === 'placa' && buscandoPlaca && <span className="text-[#003580] ml-1 font-normal text-xs">buscando...</span>}
                             </Label>
                             {type === 'select' ? (
                               <select value={form.extras[key] || ''}
@@ -816,8 +847,8 @@ const ParceiroDashboard = () => {
                               </select>
                             ) : (
                               <input value={form.extras[key] || ''} onChange={e => setExtra(key, e.target.value)}
-                                type={type === 'cep' ? 'text' : (type || 'text')}
-                                maxLength={type === 'cep' ? 9 : undefined}
+                                type={['cep','plate'].includes(type) ? 'text' : (type || 'text')}
+                                maxLength={type === 'cep' ? 9 : type === 'plate' ? 7 : undefined}
                                 placeholder={placeholder}
                                 className={`w-full rounded-lg border bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580] ${vazio ? 'border-red-300' : 'border-gray-200'}`} />
                             )}

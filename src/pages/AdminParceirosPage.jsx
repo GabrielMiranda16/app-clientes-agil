@@ -143,9 +143,9 @@ const CAMPOS_SEGMENTO = {
     { key: 'vidas', label: 'Nº de vidas', type: 'number', placeholder: 'Ex: 2' },
   ],
   AUTO: [
-    { key: 'placa',          label: 'Placa',              header: 'Dados do veículo', type: 'text',   placeholder: 'Ex: ABC1D23' },
-    { key: 'chassi',         label: 'Chassi',             type: 'text',   placeholder: 'Ex: 9BWZZZ377VT004251' },
-    { key: 'modelo_veiculo', label: 'Modelo',             type: 'text',   placeholder: 'Ex: Honda Civic' },
+    { key: 'placa',          label: 'Placa',              header: 'Dados do veículo', type: 'plate', placeholder: 'Ex: ABC1D23' },
+    { key: 'chassi',         label: 'Chassi',             type: 'text',   placeholder: 'Auto-preenchido pela placa', optional: true },
+    { key: 'modelo_veiculo', label: 'Modelo',             type: 'text',   placeholder: 'Auto-preenchido pela placa', optional: true },
     { key: 'ano_fabricacao', label: 'Ano de fabricação',  type: 'number', placeholder: 'Ex: 2023' },
     { key: 'tipo_uso',       label: 'Tipo de uso',        header: 'Uso do veículo', type: 'select',
       options: ['Particular','Táxi','Frete','Misto','Lotação','Bombeiro','Ambulância','Policiamento','Escolar','Test Drive','Diferenciado','Transporte por Aplicativo'] },
@@ -155,9 +155,12 @@ const CAMPOS_SEGMENTO = {
     { key: 'complemento',    label: 'Complemento',        type: 'text',   placeholder: 'Ex: Apto 42', optional: true },
   ],
   RESIDENCIAL: [
-    { key: 'tipo_imovel', label: 'Tipo de imóvel', type: 'select', options: ['Casa', 'Apartamento', 'Sobrado'] },
-    { key: 'endereco_imovel', label: 'Endereço do imóvel', type: 'text', placeholder: 'Rua, número, bairro, cidade' },
-    { key: 'valor_imovel', label: 'Valor aproximado (R$)', type: 'text', placeholder: 'Ex: 350.000' },
+    { key: 'tipo_imovel',  label: 'Tipo de imóvel',        type: 'select', options: ['Casa', 'Apartamento', 'Sobrado'] },
+    { key: 'cep',          label: 'CEP do imóvel',          header: 'Endereço', type: 'cep', placeholder: 'Ex: 01310-100' },
+    { key: 'rua',          label: 'Rua / Logradouro',       type: 'text',   placeholder: 'Auto-preenchido pelo CEP', optional: true },
+    { key: 'numero',       label: 'Número',                 type: 'text',   placeholder: 'Ex: 123' },
+    { key: 'complemento',  label: 'Complemento',            type: 'text',   placeholder: 'Ex: Apto 42', optional: true },
+    { key: 'valor_imovel', label: 'Valor aproximado (R$)',  type: 'text',   placeholder: 'Ex: 350.000' },
   ],
   EMPRESARIAL: [
     { key: 'nome_empresa', label: 'Nome da empresa', type: 'text', placeholder: 'Ex: Empresa ABC Ltda' },
@@ -329,6 +332,7 @@ const AdminParceirosPage = () => {
   const [parceiros, setParceiros] = useState([]);
   const [criarModal, setCriarModal] = useState(false);
   const [criando, setCriando] = useState(false);
+  const [buscandoPlaca, setBuscandoPlaca] = useState(false);
   const [novoForm, setNovoForm] = useState({ parceiro_id: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', cliente_cpf: '', cliente_data_nascimento: '', segmento: '', observacoes: '' });
   const [segData, setSegData] = useState({});
   const [cenariosCriar, setCenariosCriar] = useState([{ tem_plano: false, operadora: '', valor: '', vidas: {} }]);
@@ -338,18 +342,41 @@ const AdminParceirosPage = () => {
   const updCenarioCriarVidas = (ci, id, val) => setCenariosCriar(cs => cs.map((c, idx) => idx === ci ? { ...c, vidas: { ...(c.vidas || {}), [id]: val } } : c));
 
   const handleSegDataChange = async (key, value) => {
-    setSegData(d => ({ ...d, [key]: value }));
+    const val = key === 'placa' ? value.toUpperCase().replace(/[^A-Z0-9]/g, '') : value;
+    setSegData(d => ({ ...d, [key]: val }));
+
     if (key === 'cep') {
-      const digits = value.replace(/\D/g, '');
+      const digits = val.replace(/\D/g, '');
       if (digits.length === 8) {
         try {
           const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
           const json = await res.json();
           if (!json.erro) {
-            setSegData(d => ({ ...d, cep: value, rua: json.logradouro || '', bairro: json.bairro || '', cidade: json.localidade || '' }));
+            setSegData(d => ({ ...d, cep: val, rua: json.logradouro || '', bairro: json.bairro || '', cidade: json.localidade || '' }));
           }
         } catch {}
       }
+    }
+
+    if (key === 'placa' && val.length === 7) {
+      const token = import.meta.env.VITE_APIPLACAS_TOKEN;
+      if (!token) return;
+      setBuscandoPlaca(true);
+      try {
+        const res = await fetch(`https://apiplacas.com.br/api/v1/placa/${val}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = await res.json();
+        if (res.ok) {
+          setSegData(d => ({
+            ...d,
+            chassi: json.chassis || json.CHASSI || d.chassi,
+            modelo_veiculo: [json.brand || json.MARCA, json.model || json.MODELO].filter(Boolean).join(' ') || d.modelo_veiculo,
+            ano_fabricacao: String(json.year_fab || json.ANOFABRICACAO || json.year || d.ano_fabricacao || ''),
+          }));
+        }
+      } catch {}
+      finally { setBuscandoPlaca(false); }
     }
   };
 
@@ -1547,6 +1574,7 @@ const AdminParceirosPage = () => {
                         <div className="space-y-1">
                           <Label className="text-xs text-gray-600">
                             {campo.label} {!campo.optional && <span className="text-red-500">*</span>}
+                            {campo.key === 'placa' && buscandoPlaca && <span className="text-[#003580] ml-1">buscando...</span>}
                           </Label>
                           {campo.type === 'select' ? (
                             <select value={segData[campo.key] || ''} onChange={e => handleSegDataChange(campo.key, e.target.value)}
@@ -1556,8 +1584,8 @@ const AdminParceirosPage = () => {
                             </select>
                           ) : (
                             <Input value={segData[campo.key] || ''} onChange={e => handleSegDataChange(campo.key, e.target.value)}
-                              type={campo.type === 'cep' ? 'text' : campo.type}
-                              maxLength={campo.type === 'cep' ? 9 : undefined}
+                              type={['cep','plate'].includes(campo.type) ? 'text' : campo.type}
+                              maxLength={campo.type === 'cep' ? 9 : campo.type === 'plate' ? 7 : undefined}
                               placeholder={campo.placeholder}
                               className={`bg-white focus:border-[#003580] h-8 text-sm ${vazio ? 'border-red-300' : 'border-gray-200'}`} />
                           )}
