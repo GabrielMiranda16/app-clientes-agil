@@ -673,7 +673,9 @@ const OrcamentoPublicoPage = () => {
                             {propostas.length} opções disponíveis
                           </p>
                         )}
-                        <div className="space-y-4">
+                        <div className={segmento === 'AUTO' && propostas.length > 1
+                          ? 'grid grid-cols-1 sm:grid-cols-2 gap-4 items-start'
+                          : 'space-y-4'}>
                           {[...propostas].sort((a, b) => {
                             if (a.destaque && !b.destaque) return -1;
                             if (!a.destaque && b.destaque) return 1;
@@ -690,9 +692,8 @@ const OrcamentoPublicoPage = () => {
                     {propostas.length === 0 && (
                       <div className="px-6 sm:px-8 py-6 space-y-5">
                         <div className="bg-white/10 rounded-2xl p-6 text-center border border-white/15">
-                          <p className="text-sm text-white/50 uppercase tracking-wide">Mensalidade</p>
+                          <p className="text-sm text-white/50 uppercase tracking-wide">Valor total do seguro</p>
                           <p className="text-5xl font-bold text-white mt-1">{fmtValor(orcamento?.valor_mensalidade)}</p>
-                          <p className="text-sm text-white/40 mt-1">por mês</p>
                         </div>
                         {orcamento?.descricao_orcamento && (
                           <div className="bg-white/10 rounded-xl p-5 text-base text-white/80 leading-relaxed whitespace-pre-wrap border border-white/15">
@@ -1007,8 +1008,8 @@ const OrcamentoPublicoPage = () => {
                       </div>
                     )}
 
-                    {/* Detalhes da Cobertura — AUTO */}
-                    {segmento === 'AUTO' && propostaDestaque && (
+                    {/* Detalhes da Cobertura — AUTO (removido: tabela agora está em cada card) */}
+                    {false && segmento === 'AUTO' && propostaDestaque && (
                       <div className="px-6 sm:px-8 py-6">
                         <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block mb-4">O que está incluído</span>
                         <div className="rounded-2xl overflow-hidden bg-white/10 border border-white/15">
@@ -1375,9 +1376,9 @@ const PropostaCard = ({ proposta, isSaude, isAuto = false, cenarios = [], onEsco
         {primeiroValor ? (
           <>
             {temMultiplosPlanos && <p className={`text-xs uppercase tracking-wide mb-1 ${d ? 'text-[#003580]/50' : 'text-white/50'}`}>a partir de</p>}
-            {!temMultiplosPlanos && <p className={`text-sm uppercase tracking-wide ${d ? 'text-[#003580]/50' : 'text-white/50'}`}>Mensalidade</p>}
+            {!temMultiplosPlanos && <p className={`text-sm uppercase tracking-wide ${d ? 'text-[#003580]/50' : 'text-white/50'}`}>{isAuto ? 'Valor total do seguro' : 'Mensalidade'}</p>}
             <p className={`font-bold mt-1 text-5xl ${d ? 'text-[#003580]' : 'text-white'}`}>{fmtValor(primeiroValor)}</p>
-            <p className={`text-sm mt-1 ${d ? 'text-[#003580]/50' : 'text-white/50'}`}>por mês</p>
+            {!isAuto && <p className={`text-sm mt-1 ${d ? 'text-[#003580]/50' : 'text-white/50'}`}>por mês</p>}
             {combinarCom.length > 0 && (
               <div className={`mt-4 rounded-xl p-3 text-left space-y-2 ${d ? 'bg-gray-50' : 'bg-white/5'}`}>
                 {combinarCom.map((c, i) => (
@@ -1491,47 +1492,60 @@ const PropostaCard = ({ proposta, isSaude, isAuto = false, cenarios = [], onEsco
         </div>
       )}
 
-      {/* Chips — AUTO */}
+      {/* Tabela de coberturas — AUTO */}
       {isAuto && (
-        <div className={`px-6 py-4 flex flex-wrap gap-2 border-b ${d ? 'border-gray-100' : 'border-white/15'}`}>
-          {/* LMI */}
-          {proposta.lmi_percentual && (
-            <span className={`text-sm rounded-full px-3 py-1 ${d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80'}`}>LMI {proposta.lmi_percentual}%</span>
+        <div className={`border-b ${d ? 'border-gray-100' : 'border-white/15'}`}>
+          {/* Cobertura + LMI + Franquia */}
+          {(proposta.cobertura_tipo || proposta.lmi_percentual || proposta.franquia_percentual || proposta.franquia_valor || proposta.franquia) && (
+            <div className={`px-5 py-3 border-b ${d ? 'border-gray-100 bg-gray-50/60' : 'border-white/10 bg-white/5'}`}>
+              {proposta.cobertura_tipo && (
+                <div className="flex items-center justify-between py-1.5">
+                  <span className={`text-xs ${d ? 'text-gray-500' : 'text-white/60'}`}>Tipo de cobertura</span>
+                  <span className={`text-xs font-semibold ${d ? 'text-[#003580]' : 'text-white'}`}>{proposta.cobertura_tipo}</span>
+                </div>
+              )}
+              {proposta.lmi_percentual && (
+                <div className="flex items-center justify-between py-1.5">
+                  <span className={`text-xs ${d ? 'text-gray-500' : 'text-white/60'}`}>LMI</span>
+                  <span className={`text-xs font-semibold ${d ? 'text-[#003580]' : 'text-white'}`}>{proposta.lmi_percentual}%</span>
+                </div>
+              )}
+              {(proposta.franquia_percentual || proposta.franquia_valor || proposta.franquia) && (
+                <div className="flex items-center justify-between py-1.5">
+                  <span className={`text-xs ${d ? 'text-gray-500' : 'text-white/60'}`}>Franquia</span>
+                  <span className={`text-xs font-semibold ${d ? 'text-[#003580]' : 'text-white'}`}>
+                    {proposta.franquia_percentual ? `${proposta.franquia_percentual} — ` : ''}R$ {proposta.franquia_valor || proposta.franquia}
+                  </span>
+                </div>
+              )}
+            </div>
           )}
-          {/* Franquia */}
-          {(proposta.franquia_percentual || proposta.franquia_valor || proposta.franquia) && (
-            <span className={`text-sm rounded-full px-3 py-1 ${d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80'}`}>
-              Franquia{proposta.franquia_percentual ? ` ${proposta.franquia_percentual}` : ''}{(proposta.franquia_valor || proposta.franquia) ? ` — R$ ${proposta.franquia_valor || proposta.franquia}` : ''}
-            </span>
-          )}
-          {/* Assistência 24h */}
-          <span className={`text-sm rounded-full px-3 py-1 ${proposta.assistencia_24h ? (d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80') : (d ? 'bg-gray-100 text-gray-400' : 'bg-white/5 text-white/40')}`}>
-            {proposta.assistencia_24h ? 'Assistência 24h ✓' : 'Sem assistência 24h'}
-          </span>
-          {/* Assistências */}
-          {proposta.assistencias && (
-            <span className={`text-sm rounded-full px-3 py-1 ${d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80'}`}>Assistências ✓</span>
-          )}
-          {/* Carro reserva */}
-          <span className={`text-sm rounded-full px-3 py-1 ${proposta.carro_reserva ? (d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80') : (d ? 'bg-gray-100 text-gray-400' : 'bg-white/5 text-white/40')}`}>
-            {proposta.carro_reserva ? `Carro reserva${proposta.carro_reserva_dias ? ` ${proposta.carro_reserva_dias}d` : ''} ✓` : 'Sem carro reserva'}
-          </span>
-          {/* Coberturas com valor */}
-          {[
-            { key: 'rcfv_materiais',  valKey: 'rcfv_materiais_valor',  label: 'RCF-V Materiais' },
-            { key: 'rcfv_corporais',  valKey: 'rcfv_corporais_valor',  label: 'RCF-V Corporais' },
-            { key: 'danos_morais',    valKey: 'danos_morais_valor',    label: 'Danos morais' },
-            { key: 'custos_defesa',   valKey: 'custos_defesa_valor',   label: 'Defesa auto' },
-            { key: 'app_passageiros', valKey: 'app_passageiros_valor', label: 'APP' },
-            { key: 'blindagem',       valKey: 'blindagem_valor',       label: 'Blindagem' },
-            { key: 'cobre_vidros',    valKey: 'vidros_valor',          label: 'Vidros' },
-            { key: 'cobre_terceiros', valKey: null,                    label: 'Terceiros' },
-            { key: 'rastreador',      valKey: null,                    label: 'Rastreador' },
-          ].map(({ key, valKey, label }) => proposta[key] ? (
-            <span key={key} className={`text-sm rounded-full px-3 py-1 ${d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80'}`}>
-              {label}{valKey && proposta[valKey] ? ` R$ ${proposta[valKey]}` : ' ✓'}
-            </span>
-          ) : null)}
+          {/* Serviços e coberturas adicionais */}
+          <div className="divide-y divide-white/10">
+            {[
+              { key: 'assistencia_24h', label: 'Assistência 24h',            valKey: null },
+              { key: 'assistencias',    label: 'Assistências',                valKey: null },
+              { key: 'carro_reserva',   label: 'Carro reserva',              valKey: null, extra: proposta.carro_reserva_dias ? ` (${proposta.carro_reserva_dias} dias)` : '' },
+              { key: 'rastreador',      label: 'Rastreador',                  valKey: null },
+              { key: 'rcfv_materiais',  label: 'RCF-V Danos materiais',      valKey: 'rcfv_materiais_valor' },
+              { key: 'rcfv_corporais',  label: 'RCF-V Danos corporais',      valKey: 'rcfv_corporais_valor' },
+              { key: 'danos_morais',    label: 'Danos morais e estéticos',   valKey: 'danos_morais_valor' },
+              { key: 'custos_defesa',   label: 'Custos de defesa auto',      valKey: 'custos_defesa_valor' },
+              { key: 'app_passageiros', label: 'Acid. pessoais passageiros', valKey: 'app_passageiros_valor' },
+              { key: 'blindagem',       label: 'Blindagem',                  valKey: 'blindagem_valor' },
+              { key: 'cobre_vidros',    label: 'Vidros',                     valKey: 'vidros_valor' },
+              { key: 'cobre_terceiros', label: 'Terceiros (RCF-V)',          valKey: null },
+            ].map(({ key, label, valKey, extra = '' }) => (
+              <div key={key} className={`flex items-center justify-between px-5 py-2.5 ${d ? 'divide-gray-100' : ''}`}>
+                <span className={`text-xs ${d ? 'text-gray-500' : 'text-white/60'}`}>{label}</span>
+                {proposta[key]
+                  ? <span className={`text-xs font-semibold ${d ? 'text-green-600' : 'text-green-300'}`}>
+                      ✓{valKey && proposta[valKey] ? ` R$ ${proposta[valKey]}` : extra || ' Incluso'}
+                    </span>
+                  : <span className={`text-xs ${d ? 'text-gray-300' : 'text-white/25'}`}>—</span>}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
