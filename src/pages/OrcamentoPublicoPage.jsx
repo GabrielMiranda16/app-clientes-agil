@@ -772,7 +772,7 @@ const OrcamentoPublicoPage = () => {
                                   <div className="h-5 bg-white/10 rounded-full overflow-hidden">
                                     <motion.div
                                       initial={{ width: 0 }}
-                                      animate={{ width: `${(b.valor / max) * 100}%` }}
+                                      animate={{ width: `${Math.max((1 - Math.min((1 - b.valor / max) * 4, 0.9)) * 100, 10)}%` }}
                                       transition={{ duration: 0.7, delay: i * 0.12 }}
                                       className="h-full rounded-full flex items-center px-4 overflow-hidden"
                                       style={{
