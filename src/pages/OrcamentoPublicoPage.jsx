@@ -1018,23 +1018,52 @@ const OrcamentoPublicoPage = () => {
                               <span className="text-sm font-semibold text-white">{propostaDestaque.cobertura_tipo}</span>
                             </div>
                           )}
-                          {propostaDestaque.franquia && (
+                          {propostaDestaque.lmi_percentual && (
                             <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/10">
-                              <span className="text-sm text-white/70">Franquia</span>
-                              <span className="text-sm font-semibold text-white">R$ {propostaDestaque.franquia}</span>
+                              <span className="text-sm text-white/70">LMI</span>
+                              <span className="text-sm font-semibold text-white">{propostaDestaque.lmi_percentual}%</span>
                             </div>
                           )}
+                          {(propostaDestaque.franquia_percentual || propostaDestaque.franquia_valor || propostaDestaque.franquia) && (
+                            <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/10">
+                              <span className="text-sm text-white/70">Franquia</span>
+                              <span className="text-sm font-semibold text-white">
+                                {propostaDestaque.franquia_percentual ? `${propostaDestaque.franquia_percentual} — ` : ''}
+                                R$ {propostaDestaque.franquia_valor || propostaDestaque.franquia}
+                              </span>
+                            </div>
+                          )}
+                          {/* Serviços sempre exibidos */}
                           {[
                             { key: 'assistencia_24h', label: 'Assistência 24h' },
-                            { key: 'carro_reserva', label: 'Carro reserva', extra: propostaDestaque.carro_reserva_dias ? ` (${propostaDestaque.carro_reserva_dias} dias)` : '' },
-                            { key: 'cobre_terceiros', label: 'Cobertura de terceiros' },
-                            { key: 'cobre_vidros', label: 'Cobertura de vidros' },
-                            { key: 'rastreador', label: 'Rastreador incluso' },
+                            { key: 'assistencias',    label: 'Assistências' },
+                            { key: 'carro_reserva',   label: 'Carro reserva', extra: propostaDestaque.carro_reserva_dias ? ` (${propostaDestaque.carro_reserva_dias} dias)` : '' },
+                            { key: 'rastreador',      label: 'Rastreador incluso' },
                           ].map(({ key, label, extra = '' }) => (
-                            <div key={key} className="flex items-center justify-between px-5 py-3.5 border-b border-white/10 last:border-0">
+                            <div key={key} className="flex items-center justify-between px-5 py-3.5 border-b border-white/10">
                               <span className="text-sm text-white/70">{label}</span>
                               {propostaDestaque[key]
                                 ? <span className="text-sm font-semibold text-green-300">✓ Incluso{extra}</span>
+                                : <span className="text-sm text-white/30">Não incluso</span>}
+                            </div>
+                          ))}
+                          {/* Coberturas adicionais — só mostra as que têm valor ou estão ativas */}
+                          {[
+                            { key: 'rcfv_materiais',  valKey: 'rcfv_materiais_valor',  label: 'RCF-V Danos materiais' },
+                            { key: 'rcfv_corporais',  valKey: 'rcfv_corporais_valor',  label: 'RCF-V Danos corporais' },
+                            { key: 'danos_morais',    valKey: 'danos_morais_valor',    label: 'Danos morais e estéticos' },
+                            { key: 'custos_defesa',   valKey: 'custos_defesa_valor',   label: 'Custos de defesa auto' },
+                            { key: 'app_passageiros', valKey: 'app_passageiros_valor', label: 'Acidentes pessoais passageiros' },
+                            { key: 'blindagem',       valKey: 'blindagem_valor',       label: 'Blindagem' },
+                            { key: 'cobre_vidros',    valKey: 'vidros_valor',          label: 'Cobertura de vidros' },
+                            { key: 'cobre_terceiros', valKey: null,                    label: 'Cobertura de terceiros (RCF-V)' },
+                          ].map(({ key, label, valKey }) => (
+                            <div key={key} className="flex items-center justify-between px-5 py-3.5 border-b border-white/10 last:border-0">
+                              <span className="text-sm text-white/70">{label}</span>
+                              {propostaDestaque[key]
+                                ? <span className="text-sm font-semibold text-green-300">
+                                    ✓{valKey && propostaDestaque[valKey] ? ` R$ ${propostaDestaque[valKey]}` : ' Incluso'}
+                                  </span>
                                 : <span className="text-sm text-white/30">Não incluso</span>}
                             </div>
                           ))}
@@ -1465,21 +1494,44 @@ const PropostaCard = ({ proposta, isSaude, isAuto = false, cenarios = [], onEsco
       {/* Chips — AUTO */}
       {isAuto && (
         <div className={`px-6 py-4 flex flex-wrap gap-2 border-b ${d ? 'border-gray-100' : 'border-white/15'}`}>
-          {proposta.franquia && (
-            <span className={`text-sm rounded-full px-3 py-1 ${d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80'}`}>Franquia R$ {proposta.franquia}</span>
+          {/* LMI */}
+          {proposta.lmi_percentual && (
+            <span className={`text-sm rounded-full px-3 py-1 ${d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80'}`}>LMI {proposta.lmi_percentual}%</span>
           )}
+          {/* Franquia */}
+          {(proposta.franquia_percentual || proposta.franquia_valor || proposta.franquia) && (
+            <span className={`text-sm rounded-full px-3 py-1 ${d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80'}`}>
+              Franquia{proposta.franquia_percentual ? ` ${proposta.franquia_percentual}` : ''}{(proposta.franquia_valor || proposta.franquia) ? ` — R$ ${proposta.franquia_valor || proposta.franquia}` : ''}
+            </span>
+          )}
+          {/* Assistência 24h */}
           <span className={`text-sm rounded-full px-3 py-1 ${proposta.assistencia_24h ? (d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80') : (d ? 'bg-gray-100 text-gray-400' : 'bg-white/5 text-white/40')}`}>
             {proposta.assistencia_24h ? 'Assistência 24h ✓' : 'Sem assistência 24h'}
           </span>
+          {/* Assistências */}
+          {proposta.assistencias && (
+            <span className={`text-sm rounded-full px-3 py-1 ${d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80'}`}>Assistências ✓</span>
+          )}
+          {/* Carro reserva */}
           <span className={`text-sm rounded-full px-3 py-1 ${proposta.carro_reserva ? (d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80') : (d ? 'bg-gray-100 text-gray-400' : 'bg-white/5 text-white/40')}`}>
             {proposta.carro_reserva ? `Carro reserva${proposta.carro_reserva_dias ? ` ${proposta.carro_reserva_dias}d` : ''} ✓` : 'Sem carro reserva'}
           </span>
-          {proposta.cobre_terceiros && (
-            <span className={`text-sm rounded-full px-3 py-1 ${d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80'}`}>Terceiros ✓</span>
-          )}
-          {proposta.cobre_vidros && (
-            <span className={`text-sm rounded-full px-3 py-1 ${d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80'}`}>Vidros ✓</span>
-          )}
+          {/* Coberturas com valor */}
+          {[
+            { key: 'rcfv_materiais',  valKey: 'rcfv_materiais_valor',  label: 'RCF-V Materiais' },
+            { key: 'rcfv_corporais',  valKey: 'rcfv_corporais_valor',  label: 'RCF-V Corporais' },
+            { key: 'danos_morais',    valKey: 'danos_morais_valor',    label: 'Danos morais' },
+            { key: 'custos_defesa',   valKey: 'custos_defesa_valor',   label: 'Defesa auto' },
+            { key: 'app_passageiros', valKey: 'app_passageiros_valor', label: 'APP' },
+            { key: 'blindagem',       valKey: 'blindagem_valor',       label: 'Blindagem' },
+            { key: 'cobre_vidros',    valKey: 'vidros_valor',          label: 'Vidros' },
+            { key: 'cobre_terceiros', valKey: null,                    label: 'Terceiros' },
+            { key: 'rastreador',      valKey: null,                    label: 'Rastreador' },
+          ].map(({ key, valKey, label }) => proposta[key] ? (
+            <span key={key} className={`text-sm rounded-full px-3 py-1 ${d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80'}`}>
+              {label}{valKey && proposta[valKey] ? ` R$ ${proposta[valKey]}` : ' ✓'}
+            </span>
+          ) : null)}
         </div>
       )}
 
