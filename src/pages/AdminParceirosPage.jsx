@@ -220,12 +220,23 @@ const propVazio = () => ({
   combinar_com: [],
   cobertura_tipo: '',
   franquia: '',
+  lmi_percentual: '',
+  franquia_percentual: '',
+  franquia_valor: '',
   assistencia_24h: false,
   carro_reserva: false,
   carro_reserva_dias: '',
   cobre_terceiros: false,
   cobre_vidros: false,
+  vidros_valor: '',
   rastreador: false,
+  rcfv_materiais: false, rcfv_materiais_valor: '',
+  rcfv_corporais: false, rcfv_corporais_valor: '',
+  danos_morais: false,   danos_morais_valor: '',
+  custos_defesa: false,  custos_defesa_valor: '',
+  app_passageiros: false, app_passageiros_valor: '',
+  blindagem: false,      blindagem_valor: '',
+  assistencias: false,
 });
 const cenarioVazio = () => ({ tem_plano: false, operadora: '', valor: '', vidas: {} });
 
@@ -961,13 +972,31 @@ const AdminParceirosPage = () => {
                   </div>
                 )}
 
-                {/* AUTO: Franquia */}
+                {/* AUTO: LMI + Franquia */}
                 {isAutoSeg && (
-                  <div className="space-y-1">
-                    <Label className="text-xs text-gray-500">Franquia (R$)</Label>
-                    <Input value={p.franquia || ''} onChange={e => updProposta(pi, 'franquia', e.target.value)}
-                      placeholder="Ex: 3.000,00"
-                      className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
+                  <div className="space-y-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-gray-500">LMI (%)</Label>
+                      <Input value={p.lmi_percentual || ''} onChange={e => updProposta(pi, 'lmi_percentual', e.target.value)}
+                        placeholder="Ex: 100"
+                        className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-gray-500">Franquia (%)</Label>
+                        <select value={p.franquia_percentual || ''} onChange={e => updProposta(pi, 'franquia_percentual', e.target.value)}
+                          className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-2 py-1.5 text-xs focus:outline-none focus:border-[#003580]">
+                          <option value="">Selecionar...</option>
+                          {['25%','50%','75%','100%'].map(o => <option key={o} value={o}>{o}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-gray-500">Valor da franquia (R$)</Label>
+                        <Input value={p.franquia_valor || ''} onChange={e => updProposta(pi, 'franquia_valor', e.target.value)}
+                          placeholder="Ex: 3.000,00"
+                          className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -1028,21 +1057,34 @@ const AdminParceirosPage = () => {
                 {/* AUTO: Coberturas adicionais */}
                 {isAutoSeg && (
                   <div className="space-y-2 pt-1">
-                    <Label className="text-xs text-gray-500 block">Coberturas adicionais</Label>
-                    <div className="flex flex-wrap gap-x-4 gap-y-2">
-                      <div className="flex items-center gap-2">
-                        <Label className="text-xs text-gray-500 shrink-0">Terceiros</Label>
-                        <ToggleBtn value={p.cobre_terceiros || false} onChange={v => updProposta(pi, 'cobre_terceiros', v)} />
+                    <Label className="text-xs font-semibold text-gray-600 block uppercase tracking-wide">Coberturas adicionais</Label>
+                    {[
+                      { key: 'rcfv_materiais',  label: 'RCF-V Danos materiais',          valKey: 'rcfv_materiais_valor' },
+                      { key: 'rcfv_corporais',  label: 'RCF-V Danos corporais',          valKey: 'rcfv_corporais_valor' },
+                      { key: 'danos_morais',    label: 'Danos morais e estéticos',       valKey: 'danos_morais_valor' },
+                      { key: 'custos_defesa',   label: 'Custos de defesa auto',          valKey: 'custos_defesa_valor' },
+                      { key: 'app_passageiros', label: 'Acidentes pessoais passageiros', valKey: 'app_passageiros_valor' },
+                      { key: 'blindagem',       label: 'Blindagem',                      valKey: 'blindagem_valor' },
+                      { key: 'cobre_vidros',    label: 'Vidros',                         valKey: 'vidros_valor' },
+                      { key: 'cobre_terceiros', label: 'Terceiros (RCF-V)',              valKey: null },
+                      { key: 'rastreador',      label: 'Rastreador',                     valKey: null },
+                      { key: 'assistencias',    label: 'Assistências',                   valKey: null },
+                    ].map(({ key, label, valKey }) => (
+                      <div key={key} className="space-y-1">
+                        <div className="flex items-center gap-3">
+                          <Label className="text-xs text-gray-500 flex-1 shrink-0">{label}</Label>
+                          <ToggleBtn value={p[key] || false} onChange={v => updProposta(pi, key, v)} />
+                        </div>
+                        {valKey && p[key] && (
+                          <div className="flex items-center gap-2 pl-2">
+                            <Label className="text-xs text-gray-400 shrink-0">R$</Label>
+                            <Input value={p[valKey] || ''} onChange={e => updProposta(pi, valKey, e.target.value)}
+                              placeholder="Ex: 100.000"
+                              className="w-36 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-7 text-xs" />
+                          </div>
+                        )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Label className="text-xs text-gray-500 shrink-0">Vidros</Label>
-                        <ToggleBtn value={p.cobre_vidros || false} onChange={v => updProposta(pi, 'cobre_vidros', v)} />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Label className="text-xs text-gray-500 shrink-0">Rastreador</Label>
-                        <ToggleBtn value={p.rastreador || false} onChange={v => updProposta(pi, 'rastreador', v)} />
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 )}
 
