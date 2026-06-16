@@ -797,7 +797,7 @@ const OrcamentoPublicoPage = () => {
                     })()}
 
                     {/* Comparação de Planos / Coberturas */}
-                    {propostas.length > 1 && (
+                    {propostas.length > 1 && segmento !== 'AUTO' && (
                       <div className="px-6 sm:px-8 py-6">
                         <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block mb-4">
                           {segmento === 'AUTO' ? 'Comparação de Coberturas' : 'Comparação de Planos'}
@@ -1299,7 +1299,9 @@ const useCountUp = (target, shouldStart = false, duration = 1200) => {
 
 const PropostaCard = ({ proposta, isSaude, isAuto = false, cenarios = [], onEscolher, aceitando }) => {
   const [expanded, setExpanded] = useState(false);
+  const [expandedCardDifs, setExpandedCardDifs] = useState(false);
   const economiaRef = useRef(null);
+  const autoDifs = isAuto ? (SEGURADORAS.find(s => s.nome === proposta.operadora)?.auto_diferenciais || []) : [];
   const [economiaVisible, setEconomiaVisible] = useState(false);
   const primeiroValor = proposta.planos?.find(pl => pl.valor)?.valor;
   const planosValidos = proposta.planos?.filter(pl => pl.nome || pl.valor) || [];
@@ -1545,6 +1547,38 @@ const PropostaCard = ({ proposta, isSaude, isAuto = false, cenarios = [], onEsco
                   : <span className={`text-xs ${d ? 'text-gray-300' : 'text-white/25'}`}>—</span>}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Diferenciais — AUTO */}
+      {isAuto && autoDifs.length > 0 && (
+        <div className={`border-b ${d ? 'border-gray-100' : 'border-white/15'}`}>
+          <div className="px-5 py-4">
+            <p className={`text-xs font-bold uppercase tracking-wide mb-3 ${d ? 'text-[#003580]/50' : 'text-white/50'}`}>Diferenciais</p>
+            <div className="space-y-2.5">
+              {autoDifs.slice(0, expandedCardDifs ? undefined : 3).map((dif, i) => (
+                <div key={i} className="flex items-start gap-2.5">
+                  <div className={`mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${d ? 'bg-[#003580]/10' : 'bg-white/15'}`}>
+                    <Check className={`h-3 w-3 ${d ? 'text-[#003580]' : 'text-white'}`} />
+                  </div>
+                  <div>
+                    <p className={`text-xs font-semibold ${d ? 'text-[#003580]' : 'text-white'}`}>{dif.titulo}</p>
+                    <p className={`text-xs mt-0.5 leading-relaxed ${d ? 'text-gray-500' : 'text-white/55'}`}>{dif.descricao}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {autoDifs.length > 3 && (
+              <button
+                onClick={() => setExpandedCardDifs(v => !v)}
+                className={`w-full flex items-center justify-center gap-1.5 py-2 mt-3 text-xs font-medium rounded-lg transition-colors ${d ? 'text-[#003580]/60 hover:bg-blue-50' : 'text-blue-300 hover:bg-white/10'}`}
+              >
+                {expandedCardDifs
+                  ? <><ChevronUp className="h-3.5 w-3.5" /> Ver menos</>
+                  : <><ChevronDown className="h-3.5 w-3.5" /> Ver mais {autoDifs.length - 3}</>}
+              </button>
+            )}
           </div>
         </div>
       )}
