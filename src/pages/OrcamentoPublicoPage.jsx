@@ -94,12 +94,13 @@ const DOCS_POR_MODALIDADE = {
   },
 };
 
+const parseBRL = (v) => parseFloat(String(v || '0').replace(/\./g, '').replace(',', '.')) || 0;
 const fmtValor = (v) => {
-  const n = typeof v === 'string' ? parseFloat(v.replace(',', '.')) : Number(v || 0);
+  const n = typeof v === 'string' ? parseBRL(v) : Number(v || 0);
   if (isNaN(n)) return 'R$ 0,00';
   return `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
-const parseValor = (v) => parseFloat(String(v || '0').replace(',', '.')) || 0;
+const parseValor = (v) => parseBRL(v);
 const getPropostaValor = (p) => parseValor(p?.planos?.find(pl => pl.valor)?.valor || '0');
 
 const cardBg = { background: 'linear-gradient(to top right, #6b9fd4, #2a6db5, #003580)' };
