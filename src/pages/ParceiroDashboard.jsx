@@ -233,22 +233,22 @@ const ParceiroDashboard = () => {
     }
 
     if (key === 'placa' && val.length === 7) {
-      const token = import.meta.env.VITE_APIPLACAS_TOKEN;
-      if (!token) return;
       setBuscandoPlaca(true);
       try {
-        const res = await fetch(`https://apiplacas.com.br/api/v1/placa/${val}`, {
-          headers: { Authorization: `Bearer ${token}` },
+        const res = await fetch('/api/buscar-placa', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ placa: val }),
         });
         const json = await res.json();
-        if (res.ok) {
+        if (res.ok && !json.error) {
           setForm(f => ({
             ...f,
             extras: {
               ...f.extras,
-              chassi: json.chassis || json.CHASSI || f.extras.chassi,
-              modelo_veiculo: [json.brand || json.MARCA, json.model || json.MODELO].filter(Boolean).join(' ') || f.extras.modelo_veiculo,
-              ano_fabricacao: String(json.year_fab || json.ANOFABRICACAO || json.year || f.extras.ano_fabricacao || ''),
+              chassi: json.chassis || json.CHASSI || json.chassi || f.extras.chassi,
+              modelo_veiculo: [json.brand || json.MARCA || json.marca, json.model || json.MODELO || json.modelo].filter(Boolean).join(' ') || f.extras.modelo_veiculo,
+              ano_fabricacao: String(json.year_fab || json.ANOFABRICACAO || json.ano_fabricacao || json.year || f.extras.ano_fabricacao || ''),
             },
           }));
         }
