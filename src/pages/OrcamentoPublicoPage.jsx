@@ -1526,7 +1526,6 @@ const PropostaCard = ({ proposta, isSaude, isAuto = false, cenarios = [], onEsco
               { key: 'assistencia_24h', label: 'Assistência 24h',            valKey: null },
               { key: 'assistencias',    label: 'Assistências',                valKey: null },
               { key: 'carro_reserva',   label: 'Carro reserva',              valKey: null, extra: proposta.carro_reserva_dias ? ` (${proposta.carro_reserva_dias} dias)` : '' },
-              { key: 'rastreador',      label: 'Rastreador',                  valKey: null },
               { key: 'rcfv_materiais',  label: 'RCF-V Danos materiais',      valKey: 'rcfv_materiais_valor' },
               { key: 'rcfv_corporais',  label: 'RCF-V Danos corporais',      valKey: 'rcfv_corporais_valor' },
               { key: 'danos_morais',    label: 'Danos morais e estéticos',   valKey: 'danos_morais_valor' },
