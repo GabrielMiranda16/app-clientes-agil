@@ -666,6 +666,30 @@ const OrcamentoPublicoPage = () => {
                       </div>
                     )}
 
+                    {/* Dados do Veículo — AUTO */}
+                    {segmento === 'AUTO' && orcamento?.observacoes && (() => {
+                      const linhas = orcamento.observacoes.split('\n').filter(Boolean);
+                      const campos = linhas.map(l => {
+                        const idx = l.indexOf(': ');
+                        if (idx === -1) return null;
+                        return { label: l.slice(0, idx).replace(/\s*\*$/, '').trim(), valor: l.slice(idx + 2).trim() };
+                      }).filter(Boolean);
+                      if (campos.length === 0) return null;
+                      return (
+                        <div className="px-6 sm:px-8 py-6">
+                          <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block mb-4">Dados do Veículo</span>
+                          <div className="rounded-2xl overflow-hidden bg-white/10 border border-white/15">
+                            {campos.map((c, i) => (
+                              <div key={i} className={`flex items-start justify-between px-5 py-3 gap-4 ${i < campos.length - 1 ? 'border-b border-white/10' : ''}`}>
+                                <span className="text-sm text-white/60 shrink-0">{c.label}</span>
+                                <span className="text-sm font-medium text-white text-right">{c.valor}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     {/* Propostas */}
                     {propostas.length > 0 && (
                       <div className="px-6 sm:px-8 py-6">
