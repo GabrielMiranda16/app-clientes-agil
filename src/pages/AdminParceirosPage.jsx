@@ -240,7 +240,8 @@ const propVazio = () => ({
 });
 const cenarioVazio = () => ({ tem_plano: false, operadora: '', valor: '', vidas: {} });
 
-const fmtBRL = (v) => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const parseBRL = (v) => parseFloat(String(v || '0').replace(/\./g, '').replace(',', '.')) || 0;
+const fmtBRL = (v) => (typeof v === 'string' ? parseBRL(v) : Number(v || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const maskBRL = (v) => {
   let s = String(v || '').replace(/[^\d,]/g, '');
@@ -575,7 +576,7 @@ const AdminParceirosPage = () => {
       const { error } = await supabase.from('orcamentos').update({
         status: 'ORCAMENTO',
         slug,
-        valor_mensalidade: parseFloat(String(pl0.valor).replace(',', '.')),
+        valor_mensalidade: parseBRL(pl0.valor),
         descricao_orcamento: `${dest.operadora}${pl0.nome ? ` — ${pl0.nome}` : ''}`,
         propostas: validComDestaque,
         lista_documentos: DOCS_POR_MODALIDADE[selected?.segmento]?.[selected?.modalidade] || DOCS_POR_MODALIDADE[selected?.segmento]?.['INDIVIDUAL'] || DOCS_POR_SEGMENTO[selected?.segmento] || [],
@@ -615,7 +616,7 @@ const AdminParceirosPage = () => {
       const pl0 = dest.planos.find(pl => pl.valor) || dest.planos[0];
       const validComDestaque = valid.map(p => ({ ...p, destaque: p === dest }));
       const { error } = await supabase.from('orcamentos').update({
-        valor_mensalidade: parseFloat(String(pl0.valor).replace(',', '.')),
+        valor_mensalidade: parseBRL(pl0.valor),
         descricao_orcamento: `${dest.operadora}${pl0.nome ? ` — ${pl0.nome}` : ''}`,
         propostas: validComDestaque,
       }).eq('id', expandedId);
@@ -1218,7 +1219,7 @@ const AdminParceirosPage = () => {
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-gray-700 truncate">{p.operadora || `Opção ${i + 1}`}</p>
                       <p className="text-xs text-gray-500">
-                        {p.planos?.length > 0 ? p.planos.map(pl => `R$ ${fmtBRL(parseFloat(String(pl.valor).replace(',', '.')))}`).join(' / ') : `R$ ${fmtBRL(p.valor)}`}/mês
+                        {p.planos?.length > 0 ? p.planos.map(pl => `R$ ${fmtBRL(parseBRL(pl.valor))}`).join(' / ') : `R$ ${fmtBRL(parseBRL(p.valor))}`}
                       </p>
                     </div>
                     {p.destaque && <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-400 shrink-0" />}
