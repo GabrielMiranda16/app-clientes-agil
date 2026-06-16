@@ -242,6 +242,13 @@ const cenarioVazio = () => ({ tem_plano: false, operadora: '', valor: '', vidas:
 
 const fmtBRL = (v) => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+const maskBRL = (v) => {
+  let s = String(v || '').replace(/[^\d,]/g, '');
+  const parts = s.split(',');
+  const int = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return parts.length > 1 ? int + ',' + parts[1].slice(0, 2) : int;
+};
+
 const formatPhone = (v) => {
   const d = v.replace(/\D/g, '').slice(0, 11);
   if (d.length <= 10) return d.replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{4})(\d)/, '$1-$2');
@@ -915,9 +922,9 @@ const AdminParceirosPage = () => {
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs text-gray-500">Mensalidade (R$) *</Label>
-                      <Input value={p.planos?.[0]?.valor || ''} onChange={e => updPlano(pi, 0, 'valor', e.target.value)}
-                        placeholder="Ex: 250,00"
+                      <Label className="text-xs text-gray-500">Valor total do seguro (R$) *</Label>
+                      <Input value={p.planos?.[0]?.valor || ''} onChange={e => updPlano(pi, 0, 'valor', maskBRL(e.target.value))}
+                        placeholder="Ex: 3.000,00"
                         className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
                     </div>
                   </div>
@@ -976,7 +983,7 @@ const AdminParceirosPage = () => {
                 {isAutoSeg && (
                   <div className="space-y-2">
                     <div className="space-y-1">
-                      <Label className="text-xs text-gray-500">LMI (%)</Label>
+                      <Label className="text-xs text-gray-500">LMI — Limite Máximo de Indenização (%)</Label>
                       <Input value={p.lmi_percentual || ''} onChange={e => updProposta(pi, 'lmi_percentual', e.target.value)}
                         placeholder="Ex: 100"
                         className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
@@ -992,7 +999,7 @@ const AdminParceirosPage = () => {
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs text-gray-500">Valor da franquia (R$)</Label>
-                        <Input value={p.franquia_valor || ''} onChange={e => updProposta(pi, 'franquia_valor', e.target.value)}
+                        <Input value={p.franquia_valor || ''} onChange={e => updProposta(pi, 'franquia_valor', maskBRL(e.target.value))}
                           placeholder="Ex: 3.000,00"
                           className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
                       </div>
@@ -1078,8 +1085,8 @@ const AdminParceirosPage = () => {
                         {valKey && p[key] && (
                           <div className="flex items-center gap-2 pl-2">
                             <Label className="text-xs text-gray-400 shrink-0">R$</Label>
-                            <Input value={p[valKey] || ''} onChange={e => updProposta(pi, valKey, e.target.value)}
-                              placeholder="Ex: 100.000"
+                            <Input value={p[valKey] || ''} onChange={e => updProposta(pi, valKey, maskBRL(e.target.value))}
+                              placeholder="Ex: 100.000,00"
                               className="w-36 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-7 text-xs" />
                           </div>
                         )}
