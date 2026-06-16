@@ -380,15 +380,8 @@ const AdminParceirosPage = () => {
     if (key === 'placa' && val.length === 7) {
       setBuscandoPlaca(true);
       try {
-        const token = import.meta.env.VITE_APIPLACAS_TOKEN;
-        if (!token) { setBuscandoPlaca(false); return; }
-        const res = await fetch(`https://apiplacas.com.br/api/v1/placa/${val}`, {
-          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-        });
-        const text = await res.text();
-        let json;
-        try { json = JSON.parse(text); } catch { setBuscandoPlaca(false); return; }
-        if (json && !json.error && !json.message) {
+        const { data: json, error } = await supabase.functions.invoke('buscar-placa', { body: { placa: val } });
+        if (!error && json && !json.error) {
           setSegData(d => ({
             ...d,
             chassi: json.chassi || json.chassis || json.CHASSI || d.chassi || '',
