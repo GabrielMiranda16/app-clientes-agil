@@ -1507,7 +1507,7 @@ const AdminParceirosPage = () => {
                           <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                         </div>
                       </div>
-                      <div className="mt-3 flex items-center">
+                      <div className="mt-4 flex items-center px-1">
                         {FUNIL.map((s, i) => {
                           const isPast = i < step;
                           const isCurrent = i === step;
@@ -1517,11 +1517,17 @@ const AdminParceirosPage = () => {
                             <React.Fragment key={s}>
                               <div className="relative flex items-center justify-center shrink-0">
                                 {shouldPulse && (
-                                  <span className="absolute inline-flex h-3 w-3 rounded-full bg-[#003580] opacity-60 animate-ping" />
+                                  <span className="absolute inline-flex h-4 w-4 rounded-full bg-[#003580] opacity-50 animate-ping" />
                                 )}
-                                <div className={`rounded-full transition-all duration-300 relative z-10 ${isPast || isCurrent ? 'h-3 w-3 bg-[#003580]' : 'h-2 w-2 bg-gray-300'}`} />
+                                <div className={`rounded-full transition-all duration-300 relative z-10 shadow-sm ${
+                                  isPast ? 'h-3.5 w-3.5 bg-[#003580]' :
+                                  isCurrent ? 'h-4 w-4 bg-[#003580]' :
+                                  'h-2.5 w-2.5 bg-gray-200 border-2 border-gray-300'
+                                }`} />
                               </div>
-                              {!isLast && <div className={`flex-1 h-px transition-colors duration-300 ${isPast ? 'bg-[#003580]' : 'bg-gray-200'}`} />}
+                              {!isLast && (
+                                <div className={`flex-1 h-0.5 mx-1.5 rounded-full transition-colors duration-300 ${isPast ? 'bg-[#003580]' : 'bg-gray-200'}`} />
+                              )}
                             </React.Fragment>
                           );
                         })}
