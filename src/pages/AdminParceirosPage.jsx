@@ -701,18 +701,27 @@ const AdminParceirosPage = () => {
     }
   };
 
+  const parseComprovantes = (path) => {
+    if (!path) return [];
+    try { const arr = JSON.parse(path); return Array.isArray(arr) ? arr : [path]; } catch { return [path]; }
+  };
+
   const handleUploadComprovante = async (file) => {
     if (!file) return;
     setUploadingComp(true);
     try {
       const ext = file.name.split('.').pop();
-      const path = `comissoes/${expandedId}/comprovante.${ext}`;
+      const path = `comissoes/${expandedId}/comprovante_${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from('orcamento-documentos').upload(path, file, { upsert: true });
       if (upErr) throw upErr;
       const { data: { publicUrl } } = supabase.storage.from('orcamento-documentos').getPublicUrl(path);
-      const { data: com } = await supabase.from('comissoes').select('id').eq('orcamento_id', expandedId).maybeSingle();
-      if (com) await supabase.from('comissoes').update({ comprovante_path: publicUrl, status: 'PAGO', data_pagamento: new Date().toISOString() }).eq('id', com.id);
-      toast({ title: 'Comprovante enviado e comissão marcada como paga!' });
+      const { data: com } = await supabase.from('comissoes').select('id, comprovante_path').eq('orcamento_id', expandedId).maybeSingle();
+      if (com) {
+        const existentes = parseComprovantes(com.comprovante_path);
+        const novoArray = [...existentes, publicUrl];
+        await supabase.from('comissoes').update({ comprovante_path: JSON.stringify(novoArray), status: 'PAGO', data_pagamento: new Date().toISOString() }).eq('id', com.id);
+      }
+      toast({ title: 'Comprovante enviado!' });
       await loadData();
       await refreshSelected(expandedId);
     } catch (err) {
@@ -1347,20 +1356,28 @@ const AdminParceirosPage = () => {
             {selectedComissao?.status === 'PAGO' ? 'Pagamento realizado ✅' : 'Contrato concluído ✅'}
           </p>
         </div>
-        {selectedComissao?.comprovante_path && (
-          <a href={selectedComissao.comprovante_path} target="_blank" rel="noreferrer"
-            className="flex items-center gap-1.5 text-sm text-[#003580] hover:underline font-medium">
-            <Eye className="h-4 w-4" /> Ver comprovante enviado
-          </a>
-        )}
+        {(() => {
+          const comps = parseComprovantes(selectedComissao?.comprovante_path);
+          return comps.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-gray-600">Comprovantes enviados ({comps.length})</p>
+              {comps.map((url, i) => (
+                <a key={i} href={url} target="_blank" rel="noreferrer"
+                  className="flex items-center gap-1.5 text-sm text-[#003580] hover:underline font-medium">
+                  <Eye className="h-4 w-4" /> Comprovante {comps.length > 1 ? i + 1 : ''}
+                </a>
+              ))}
+            </div>
+          );
+        })()}
         <div className="space-y-2">
           <p className="text-xs font-medium text-gray-600">
-            {selectedComissao?.comprovante_path ? 'Alterar comprovante' : 'Upload do comprovante de pagamento'}
+            {selectedComissao?.comprovante_path ? 'Adicionar comprovante' : 'Upload do comprovante de pagamento'}
           </p>
           <input ref={compInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleUploadComprovante(e.target.files?.[0])} />
           <Button onClick={() => compInputRef.current?.click()} disabled={uploadingComp} variant="outline" className="w-full rounded-xl gap-2 text-sm border-[#003580]/30 text-[#003580] hover:bg-blue-50">
             {uploadingComp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            {uploadingComp ? 'Enviando...' : selectedComissao?.comprovante_path ? 'Substituir comprovante' : 'Enviar comprovante e marcar como pago'}
+            {uploadingComp ? 'Enviando...' : selectedComissao?.comprovante_path ? 'Adicionar comprovante' : 'Enviar comprovante e marcar como pago'}
           </Button>
         </div>
       </div>
