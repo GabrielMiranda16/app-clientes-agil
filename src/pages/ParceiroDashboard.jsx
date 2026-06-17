@@ -18,6 +18,16 @@ import { useToast } from '@/components/ui/use-toast';
 import DashboardLayout from '@/components/DashboardLayout';
 import { SEGURADORAS } from '@/data/seguradoras';
 
+const maskBRL = (v) => {
+  const digits = String(v || '').replace(/\D/g, '');
+  if (!digits) return '';
+  const n = parseInt(digits, 10);
+  const cents = n % 100;
+  const reais = Math.floor(n / 100);
+  const reaisStr = reais === 0 ? '0' : reais.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${reaisStr},${String(cents).padStart(2, '0')}`;
+};
+
 const STATUS_CONFIG = {
   SOLICITACAO:  { label: 'Solicitação',        color: 'bg-gray-100 text-gray-700',    desc: 'Aguardando resposta do ADM' },
   ORCAMENTO:    { label: 'Orçamento',          color: 'bg-blue-100 text-blue-700',    desc: 'Link pronto — envie para o cliente' },
@@ -73,7 +83,7 @@ const SEGMENTO_CAMPOS = {
     { key: 'rua',          label: 'Rua / Logradouro',       type: 'text', placeholder: 'Auto-preenchido pelo CEP', optional: true },
     { key: 'numero',       label: 'Número',                 type: 'text', placeholder: 'Ex: 123' },
     { key: 'complemento',  label: 'Complemento',            type: 'text', placeholder: 'Ex: Apto 42', optional: true },
-    { key: 'valor_imovel', label: 'Valor aproximado (R$)',  type: 'text', placeholder: 'Ex: 350.000' },
+    { key: 'valor_imovel', label: 'Valor aproximado (R$)',  type: 'text', placeholder: 'Ex: 350.000', money: true },
   ],
   EMPRESARIAL: [
     { key: 'nome_empresa',     label: 'Nome da empresa',      placeholder: 'Ex: Empresa ABC Ltda' },
@@ -116,12 +126,12 @@ const SEGMENTO_CAMPOS = {
     { key: 'nome_empresa',   label: 'Nome da empresa',              placeholder: 'Ex: Transportadora ABC' },
     { key: 'tipo_mercadoria', label: 'Tipo de carga',               placeholder: 'Ex: Eletrônicos, Alimentos' },
     { key: 'trajeto',        label: 'Trajeto (origem → destino)',   placeholder: 'Ex: São Paulo → Rio de Janeiro' },
-    { key: 'valor_carga',    label: 'Valor da carga (R$)',          placeholder: 'Ex: 50000' },
+    { key: 'valor_carga',    label: 'Valor da carga (R$)',          placeholder: 'Ex: 50.000,00', money: true },
   ],
   EQUIPAMENTOS: [
     { key: 'tipo_equip',    label: 'Tipo de equipamento',       placeholder: 'Ex: Notebook, Câmera, Drone' },
     { key: 'descricao_equip', label: 'Descrição do equipamento', placeholder: 'Ex: MacBook Pro M3 14"' },
-    { key: 'valor_equip',   label: 'Valor do equipamento (R$)', placeholder: 'Ex: 8000' },
+    { key: 'valor_equip',   label: 'Valor do equipamento (R$)', placeholder: 'Ex: 8000', money: true },
   ],
 };
 
@@ -855,7 +865,7 @@ const ParceiroDashboard = () => {
                                 {(options || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
                               </select>
                             ) : (
-                              <input value={form.extras[key] || ''} onChange={e => setExtra(key, e.target.value)}
+                              <input value={form.extras[key] || ''} onChange={e => setExtra(key, campo.money ? maskBRL(e.target.value) : e.target.value)}
                                 type={['cep','plate'].includes(type) ? 'text' : (type || 'text')}
                                 maxLength={type === 'cep' ? 9 : type === 'plate' ? 7 : undefined}
                                 placeholder={placeholder}
@@ -952,7 +962,7 @@ const ParceiroDashboard = () => {
                                 </div>
                                 <div className="space-y-1.5">
                                   <Label className="text-sm font-medium text-gray-700">Valor mensal (R$)</Label>
-                                  <input value={c.valor} onChange={e => updCenarioSolic(ci, 'valor', e.target.value)}
+                                  <input value={c.valor} onChange={e => updCenarioSolic(ci, 'valor', maskBRL(e.target.value))}
                                     placeholder="Ex: 520,00"
                                     className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580]" />
                                 </div>
