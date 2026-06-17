@@ -177,10 +177,13 @@ const CAMPOS_SEGMENTO = {
     { key: 'cobertura_desejada', label: 'Valor de cobertura desejado (R$)', type: 'text', placeholder: 'Ex: 100.000' },
   ],
   VIAGEM: [
-    { key: 'destino', label: 'Destino', type: 'text', placeholder: 'Ex: Europa, EUA, Nordeste' },
-    { key: 'data_inicio', label: 'Data de início', type: 'date' },
-    { key: 'data_fim', label: 'Data de fim', type: 'date' },
-    { key: 'qtd_viajantes', label: 'Quantidade de viajantes', type: 'number', placeholder: 'Ex: 2' },
+    { key: 'tipo_viagem',  label: 'Tipo da viagem',                  type: 'select', options: ['Nacional', 'Internacional'] },
+    { key: 'destino',      label: 'Destino',                         type: 'text',   placeholder: 'Ex: Portugal, EUA, Nordeste' },
+    { key: 'data_saida',   label: 'Data de saída',                   type: 'date' },
+    { key: 'data_retorno', label: 'Data de retorno',                 type: 'date' },
+    { key: 'utiliza_moto', label: 'Utilizará moto?',                 type: 'select', options: ['Não', 'Sim'] },
+    { key: 'pax_0_70',     label: 'Passageiros de 0 a 70 anos',     type: 'number', placeholder: 'Ex: 2' },
+    { key: 'pax_71_90',    label: 'Passageiros de 71 a 90 anos',    type: 'number', placeholder: 'Ex: 0', optional: true },
   ],
   PET_SAUDE: [
     { key: 'nome_pet', label: 'Nome do pet', type: 'text', placeholder: 'Ex: Rex' },
