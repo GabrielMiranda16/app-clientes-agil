@@ -18,13 +18,14 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { SEGURADORAS } from '@/data/seguradoras';
 
 const STATUS_CONFIG = {
-  SOLICITACAO: { label: 'Solicitação',  color: 'bg-gray-100 text-gray-700',    border: 'border-l-gray-400' },
-  ORCAMENTO:   { label: 'Orçamento',    color: 'bg-blue-100 text-blue-700',    border: 'border-l-blue-400' },
-  DOCUMENTOS:  { label: 'Documentos',   color: 'bg-blue-100 text-[#003580]',   border: 'border-l-[#003580]' },
-  ASSINATURA:  { label: 'Assinatura',   color: 'bg-blue-100 text-[#003580]',   border: 'border-l-[#003580]' },
-  CONCLUIDO:   { label: 'Concluído',    color: 'bg-blue-100 text-[#003580]',   border: 'border-l-[#003580]' },
-  COMISSAO:    { label: 'Comissão',     color: 'bg-blue-100 text-[#003580]',   border: 'border-l-[#003580]' },
+  SOLICITACAO: { label: 'Solicitação',        color: 'bg-gray-100 text-gray-700',    border: 'border-l-gray-400' },
+  ORCAMENTO:   { label: 'Orçamento',          color: 'bg-blue-100 text-blue-700',    border: 'border-l-blue-400' },
+  DOCUMENTOS:  { label: 'Documentos',         color: 'bg-blue-100 text-[#003580]',   border: 'border-l-[#003580]' },
+  ASSINATURA:  { label: 'Assinatura/Transmitida', color: 'bg-blue-100 text-[#003580]', border: 'border-l-[#003580]' },
+  CONCLUIDO:   { label: 'Concluído',          color: 'bg-blue-100 text-[#003580]',   border: 'border-l-[#003580]' },
+  COMISSAO:    { label: 'Comissão',           color: 'bg-blue-100 text-[#003580]',   border: 'border-l-[#003580]' },
 };
+const assinaturaLabel = seg => ['SAUDE', 'VIDA', 'ODONTOLOGICO', 'SAUDE_VIDA_ODONTO'].includes(seg) ? 'Assinatura' : 'Transmitida';
 
 const SEGMENTO_LABEL = {
   AUTO:         'Seguro Auto',
@@ -1271,7 +1272,7 @@ const AdminParceirosPage = () => {
         )}
         <Button onClick={() => handleAvancar('ASSINATURA')} disabled={enviando} className="w-full rounded-xl text-white font-semibold gap-2" style={{ background: '#003580' }}>
           {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-          Avançar para Assinatura
+          Avançar para {assinaturaLabel(selected?.segmento)}
         </Button>
       </div>
     );
@@ -1461,7 +1462,7 @@ const AdminParceirosPage = () => {
                               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
                             </span>
                           )}
-                          <Badge className={`text-xs ${cfg.color}`}>{cfg.label}</Badge>
+                          <Badge className={`text-xs ${cfg.color}`}>{o.status === 'ASSINATURA' ? assinaturaLabel(o.segmento) : cfg.label}</Badge>
                           <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                         </div>
                       </div>
