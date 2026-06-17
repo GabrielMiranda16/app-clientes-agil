@@ -706,6 +706,24 @@ const AdminParceirosPage = () => {
     try { const arr = JSON.parse(path); return Array.isArray(arr) ? arr : [path]; } catch { return [path]; }
   };
 
+  const handleExcluirComprovante = async (index) => {
+    try {
+      const { data: com } = await supabase.from('comissoes').select('id, comprovante_path').eq('orcamento_id', expandedId).maybeSingle();
+      if (!com) return;
+      const existentes = parseComprovantes(com.comprovante_path);
+      const novoArray = existentes.filter((_, i) => i !== index);
+      const novoPath = novoArray.length === 0 ? null : JSON.stringify(novoArray);
+      const updates = { comprovante_path: novoPath };
+      if (novoArray.length === 0) updates.status = 'PENDENTE';
+      await supabase.from('comissoes').update(updates).eq('id', com.id);
+      toast({ title: 'Comprovante removido.' });
+      await loadData();
+      await refreshSelected(expandedId);
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro ao remover.', description: err?.message });
+    }
+  };
+
   const handleUploadComprovante = async (file) => {
     if (!file) return;
     setUploadingComp(true);
@@ -1362,10 +1380,16 @@ const AdminParceirosPage = () => {
             <div className="space-y-1">
               <p className="text-xs font-medium text-gray-600">Comprovantes enviados ({comps.length})</p>
               {comps.map((url, i) => (
-                <a key={i} href={url} target="_blank" rel="noreferrer"
-                  className="flex items-center gap-1.5 text-sm text-[#003580] hover:underline font-medium">
-                  <Eye className="h-4 w-4" /> Comprovante {comps.length > 1 ? i + 1 : ''}
-                </a>
+                <div key={i} className="flex items-center gap-2">
+                  <a href={url} target="_blank" rel="noreferrer"
+                    className="flex items-center gap-1.5 text-sm text-[#003580] hover:underline font-medium flex-1">
+                    <Eye className="h-4 w-4" /> Comprovante {comps.length > 1 ? i + 1 : ''}
+                  </a>
+                  <button onClick={() => handleExcluirComprovante(i)}
+                    className="text-red-400 hover:text-red-600 p-0.5 rounded transition-colors" title="Excluir comprovante">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               ))}
             </div>
           );
