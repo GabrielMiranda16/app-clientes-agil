@@ -681,7 +681,7 @@ const OrcamentoPublicoPage = () => {
                         <div className="px-6 sm:px-8 py-6">
                           <div className="flex items-center gap-3 mb-4">
                             {logoEntry && (
-                              <img src={logoEntry.valor} alt="Logo" className="h-8 w-14 object-contain bg-white/90 rounded-lg p-1" />
+                              <img src={logoEntry.valor} alt="Logo" className="h-14 w-24 object-contain bg-white/90 rounded-xl p-2" />
                             )}
                             <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest">Dados do Veículo</span>
                           </div>
