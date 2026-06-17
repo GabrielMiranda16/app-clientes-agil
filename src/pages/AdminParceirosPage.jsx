@@ -1526,7 +1526,7 @@ const AdminParceirosPage = () => {
                                 }`} />
                               </div>
                               {!isLast && (
-                                <div className={`flex-1 h-0.5 mx-1.5 rounded-full transition-colors duration-300 ${isPast ? 'bg-[#003580]' : 'bg-gray-200'}`} />
+                                <div className={`flex-1 h-1 mx-2.5 rounded-full transition-colors duration-300 ${isPast ? 'bg-[#003580]' : 'bg-gray-200'}`} />
                               )}
                             </React.Fragment>
                           );
