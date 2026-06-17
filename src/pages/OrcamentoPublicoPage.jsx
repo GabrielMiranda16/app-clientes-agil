@@ -724,7 +724,7 @@ const OrcamentoPublicoPage = () => {
                             if (!a.destaque && b.destaque) return 1;
                             return getPropostaValor(a) - getPropostaValor(b);
                           }).map((p, i) => (
-                            <PropostaCard key={i} proposta={p} isSaude={isSaude} isAuto={segmento === 'AUTO'} cenarios={cenarios}
+                            <PropostaCard key={i} proposta={p} isSaude={isSaude} isAuto={segmento === 'AUTO'} isViagem={segmento === 'VIAGEM'} cenarios={cenarios}
                               onEscolher={() => handleAceitarProposta(p)} aceitando={aceitando} />
                           ))}
                         </div>
@@ -1339,7 +1339,32 @@ const useCountUp = (target, shouldStart = false, duration = 1200) => {
   return value;
 };
 
-const PropostaCard = ({ proposta, isSaude, isAuto = false, cenarios = [], onEscolher, aceitando }) => {
+const COBERTURAS_VIAGEM_LABELS = [
+  { key: 'morte_acidental',         label: 'Morte Acidental' },
+  { key: 'extravio_bagagem',        label: 'Extravio de Bagagem' },
+  { key: 'despesas_medicas',        label: 'Desp. Médicas, Hosp. e Odonto.' },
+  { key: 'invalidez_permanente',    label: 'Invalidez Permanente por Acidente' },
+  { key: 'traslado_corpo',          label: 'Traslado de Corpo' },
+  { key: 'traslado_medico',         label: 'Traslado Médico' },
+  { key: 'regresso_sanitario',      label: 'Regresso Sanitário' },
+  { key: 'assistencia_funeral',     label: 'Assistência Funeral Individual' },
+  { key: 'hospedagem_apos_alta',    label: 'Hospedagem Após Alta Hospitalar' },
+  { key: 'remarcacao_passagem',     label: 'Remarcação de Passagem (Regresso)' },
+  { key: 'acompanhante_hosp',       label: 'Acompanhante — Hosp. Prolongada' },
+  { key: 'hospedagem_acompanhante', label: 'Hospedagem p/ Acompanhante' },
+  { key: 'acompanhamento_menor',    label: 'Acompanhamento de Menor' },
+  { key: 'remarcacao_familia',      label: 'Remarcação Passagem — Família' },
+  { key: 'despesas_farmaceuticas',  label: 'Despesas Farmacêuticas' },
+  { key: 'danos_bagagem',           label: 'Danos de Bagagem' },
+];
+const BOOL_COBERTURAS_VIAGEM_LABELS = [
+  { key: 'extensao_vigencia',   label: 'Extensão de Vigência por Razões Médicas' },
+  { key: 'localizacao_bagagem', label: 'Localização e Encaminhamento de Bagagem' },
+  { key: 'perda_documentos',    label: 'Orientação em caso de Perda de Documentos' },
+  { key: 'esportes_lazer',      label: 'Esportes de Lazer e Turismo de Aventura' },
+];
+
+const PropostaCard = ({ proposta, isSaude, isAuto = false, isViagem = false, cenarios = [], onEscolher, aceitando }) => {
   const [expanded, setExpanded] = useState(false);
   const [expandedCardDifs, setExpandedCardDifs] = useState(false);
   const economiaRef = useRef(null);
@@ -1537,6 +1562,36 @@ const PropostaCard = ({ proposta, isSaude, isAuto = false, cenarios = [], onEsco
         </div>
       )}
 
+      {/* Coberturas — VIAGEM */}
+      {isViagem && proposta.coberturas && (() => {
+        const cobs = COBERTURAS_VIAGEM_LABELS.filter(c => (proposta.coberturas[c.key]?.valor));
+        const bools = BOOL_COBERTURAS_VIAGEM_LABELS.filter(c => proposta.coberturas[c.key] === true);
+        if (cobs.length === 0 && bools.length === 0) return null;
+        return (
+          <div className={`border-b ${d ? 'border-gray-100' : 'border-white/15'}`}>
+            <div className="px-5 pt-4 pb-2">
+              <p className={`text-xs font-bold uppercase tracking-widest mb-3 ${d ? 'text-[#003580]' : 'text-blue-300'}`}>Capital</p>
+              {cobs.map(({ key, label }) => {
+                const { moeda, valor } = proposta.coberturas[key];
+                return (
+                  <div key={key} className={`flex items-center justify-between py-2 border-b last:border-b-0 ${d ? 'border-gray-100' : 'border-white/10'}`}>
+                    <span className={`text-xs ${d ? 'text-gray-500' : 'text-white/60'}`}>{label}</span>
+                    <span className={`text-xs font-semibold ${d ? 'text-[#003580]' : 'text-white'}`}>{moeda} {valor}</span>
+                  </div>
+                );
+              })}
+            </div>
+            {bools.length > 0 && (
+              <div className="px-5 pb-4 flex flex-wrap gap-2">
+                {bools.map(({ key, label }) => (
+                  <span key={key} className={`text-[11px] font-medium px-2.5 py-1 rounded-full ${d ? 'bg-green-50 text-green-700' : 'bg-white/10 text-green-300'}`}>✓ {label}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Tabela de coberturas — AUTO */}
       {isAuto && (
         <div className={`border-b ${d ? 'border-gray-100' : 'border-white/15'}`}>
@@ -1634,7 +1689,7 @@ const PropostaCard = ({ proposta, isSaude, isAuto = false, cenarios = [], onEsco
               : 'bg-white/15 text-white hover:bg-white/25'
           }`}>
           {aceitando ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
-          {aceitando ? 'Processando...' : isAuto ? 'Quero este seguro' : 'Quero este plano'}
+          {aceitando ? 'Processando...' : isAuto ? 'Quero este seguro' : isViagem ? 'Quero esta cobertura' : 'Quero este plano'}
         </button>
       </div>
     </motion.div>

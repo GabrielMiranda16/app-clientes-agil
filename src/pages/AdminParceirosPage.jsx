@@ -215,6 +215,32 @@ const CAMPOS_SEGMENTO = {
 
 const FUNIL = ['SOLICITACAO', 'ORCAMENTO', 'DOCUMENTOS', 'ASSINATURA', 'CONCLUIDO', 'COMISSAO'];
 
+const COBERTURAS_VIAGEM = [
+  { key: 'morte_acidental',             label: 'Morte Acidental' },
+  { key: 'extravio_bagagem',            label: 'Extravio de Bagagem' },
+  { key: 'despesas_medicas',            label: 'Despesas Médicas, Hospitalares e Odontológicas' },
+  { key: 'invalidez_permanente',        label: 'Invalidez Permanente Total ou Parcial por Acidente' },
+  { key: 'traslado_corpo',              label: 'Traslado de Corpo' },
+  { key: 'traslado_medico',             label: 'Traslado Médico' },
+  { key: 'regresso_sanitario',          label: 'Regresso Sanitário' },
+  { key: 'assistencia_funeral',         label: 'Assistência Funeral Individual' },
+  { key: 'hospedagem_apos_alta',        label: 'Hospedagem Após Alta Hospitalar' },
+  { key: 'remarcacao_passagem',         label: 'Remarcação de Passagem para Regresso' },
+  { key: 'acompanhante_hosp',           label: 'Acompanhante em caso de Hospitalização Prolongada' },
+  { key: 'hospedagem_acompanhante',     label: 'Hospedagem para Acompanhante em caso de Hospitalização Prolongada' },
+  { key: 'acompanhamento_menor',        label: 'Acompanhamento de Menor' },
+  { key: 'remarcacao_familia',          label: 'Remarcação de Passagem para Regresso de Membros da Família' },
+  { key: 'despesas_farmaceuticas',      label: 'Despesas Farmacêuticas' },
+  { key: 'danos_bagagem',               label: 'Danos de Bagagem' },
+];
+const BOOL_COBERTURAS_VIAGEM = [
+  { key: 'extensao_vigencia',   label: 'Extensão de Vigência por Razões Médicas' },
+  { key: 'localizacao_bagagem', label: 'Localização e Encaminhamento de Bagagem' },
+  { key: 'perda_documentos',    label: 'Orientação e Envio em caso de Perda de Documentos' },
+  { key: 'esportes_lazer',      label: 'Esportes de Lazer e Turismo de Aventura' },
+];
+const MOEDAS_VIAGEM = ['R$', 'US$', '€'];
+
 const planoVazio = () => ({ nome: '', valor: '' });
 const propVazio = () => ({
   operadora: '', logo_url: '',
@@ -559,6 +585,12 @@ const AdminParceirosPage = () => {
   const addPlano = (pi) => setPropostas(ps => ps.map((p, idx) => idx === pi ? { ...p, planos: [...p.planos, planoVazio()] } : p));
   const removePlano = (pi, pli) => setPropostas(ps => ps.map((p, idx) => idx === pi ? { ...p, planos: p.planos.filter((_, j) => j !== pli) } : p));
   const updPlano = (pi, pli, field, val) => setPropostas(ps => ps.map((p, idx) => idx === pi ? { ...p, planos: p.planos.map((pl, j) => j === pli ? { ...pl, [field]: val } : pl) } : p));
+  const updCobertura = (pi, key, field, val) => setPropostas(ps => ps.map((p, idx) => {
+    if (idx !== pi) return p;
+    const prev = (p.coberturas || {})[key];
+    const next = field === null ? val : { ...(prev || {}), [field]: val };
+    return { ...p, coberturas: { ...(p.coberturas || {}), [key]: next } };
+  }));
 
   // ── Docs ──
   const toggleDocBase = (doc) => setFormR(f => ({
@@ -572,19 +604,20 @@ const AdminParceirosPage = () => {
 
   // ── Enviar orçamento ──
   const handleResponder = async () => {
-    const valid = propostas.filter(p => p.operadora && p.planos.some(pl => pl.valor));
-    if (valid.length === 0) return toast({ variant: 'destructive', title: 'Informe ao menos uma proposta com operadora e valor.' });
+    const isViagem = selected?.segmento === 'VIAGEM';
+    const valid = propostas.filter(p => isViagem ? p.operadora : (p.operadora && p.planos.some(pl => pl.valor)));
+    if (valid.length === 0) return toast({ variant: 'destructive', title: isViagem ? 'Informe ao menos uma proposta com operadora.' : 'Informe ao menos uma proposta com operadora e valor.' });
     setEnviando(true);
     try {
       const slug = generateSlug();
       const dest = valid.find(p => p.destaque) || valid[0];
-      const pl0 = dest.planos.find(pl => pl.valor) || dest.planos[0];
+      const pl0 = dest.planos?.find(pl => pl.valor) || dest.planos?.[0];
       const validComDestaque = valid.map(p => ({ ...p, destaque: p === dest }));
       const { error } = await supabase.from('orcamentos').update({
         status: 'ORCAMENTO',
         slug,
-        valor_mensalidade: parseBRL(pl0.valor),
-        descricao_orcamento: `${dest.operadora}${pl0.nome ? ` — ${pl0.nome}` : ''}`,
+        valor_mensalidade: isViagem ? null : parseBRL(pl0?.valor),
+        descricao_orcamento: `${dest.operadora}${!isViagem && pl0?.nome ? ` — ${pl0.nome}` : ''}`,
         propostas: validComDestaque,
         lista_documentos: DOCS_POR_MODALIDADE[selected?.segmento]?.[selected?.modalidade] || DOCS_POR_MODALIDADE[selected?.segmento]?.['INDIVIDUAL'] || DOCS_POR_SEGMENTO[selected?.segmento] || [],
         docs_extras: ['PME', 'PJ'].includes(selected?.modalidade) ? ['Declaração de Saúde (DS) — beneficiários acima de 59 anos (preenchida pelo próprio beneficiário)'] : [],
@@ -615,16 +648,17 @@ const AdminParceirosPage = () => {
   };
 
   const handleEditarProposta = async () => {
-    const valid = propostas.filter(p => p.operadora && p.planos.some(pl => pl.valor));
-    if (valid.length === 0) return toast({ variant: 'destructive', title: 'Informe ao menos uma proposta com operadora e valor.' });
+    const isViagem = selected?.segmento === 'VIAGEM';
+    const valid = propostas.filter(p => isViagem ? p.operadora : (p.operadora && p.planos.some(pl => pl.valor)));
+    if (valid.length === 0) return toast({ variant: 'destructive', title: isViagem ? 'Informe ao menos uma proposta com operadora.' : 'Informe ao menos uma proposta com operadora e valor.' });
     setEnviando(true);
     try {
       const dest = valid.find(p => p.destaque) || valid[0];
-      const pl0 = dest.planos.find(pl => pl.valor) || dest.planos[0];
+      const pl0 = dest.planos?.find(pl => pl.valor) || dest.planos?.[0];
       const validComDestaque = valid.map(p => ({ ...p, destaque: p === dest }));
       const { error } = await supabase.from('orcamentos').update({
-        valor_mensalidade: parseBRL(pl0.valor),
-        descricao_orcamento: `${dest.operadora}${pl0.nome ? ` — ${pl0.nome}` : ''}`,
+        valor_mensalidade: isViagem ? null : parseBRL(pl0?.valor),
+        descricao_orcamento: `${dest.operadora}${!isViagem && pl0?.nome ? ` — ${pl0.nome}` : ''}`,
         propostas: validComDestaque,
       }).eq('id', expandedId);
       if (error) throw error;
@@ -845,7 +879,8 @@ const AdminParceirosPage = () => {
 
   // ── Builder (SOLICITACAO + editar + nova proposta) ──
   const renderBuilder = (mode) => {
-    const isAutoSeg = selected?.segmento === 'AUTO';
+    const isAutoSeg    = selected?.segmento === 'AUTO';
+    const isViagemSeg  = selected?.segmento === 'VIAGEM';
     return (
     <div className="space-y-5">
       {/* Cenário atual — somente leitura (preenchido na solicitação) */}
@@ -945,6 +980,46 @@ const AdminParceirosPage = () => {
                   </div>
                 </div>
 
+                {/* VIAGEM: Coberturas */}
+                {isViagemSeg && (
+                  <div className="space-y-3">
+                    <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide block">Capital (cobertura)</Label>
+                    {COBERTURAS_VIAGEM.map(({ key, label }) => {
+                      const cob = (p.coberturas || {})[key] || {};
+                      const isOutro = cob.moeda && !MOEDAS_VIAGEM.includes(cob.moeda);
+                      return (
+                        <div key={key} className="space-y-0.5">
+                          <Label className="text-xs text-gray-500">{label}</Label>
+                          <div className="flex gap-1.5 items-center">
+                            <select value={isOutro ? 'Outro' : (cob.moeda || '')}
+                              onChange={e => updCobertura(pi, key, 'moeda', e.target.value === 'Outro' ? '' : e.target.value)}
+                              className="w-16 rounded-lg border border-gray-200 bg-[#f0f7ff] px-1.5 py-1 text-xs focus:outline-none focus:border-[#003580]">
+                              <option value="">--</option>
+                              {MOEDAS_VIAGEM.map(m => <option key={m} value={m}>{m}</option>)}
+                              <option value="Outro">Outro</option>
+                            </select>
+                            {isOutro && (
+                              <Input value={cob.moeda || ''} onChange={e => updCobertura(pi, key, 'moeda', e.target.value)}
+                                placeholder="Moeda" className="w-14 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-7 text-xs" />
+                            )}
+                            <Input value={cob.valor || ''} onChange={e => updCobertura(pi, key, 'valor', e.target.value)}
+                              placeholder="Ex: 30.000" className="flex-1 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-7 text-xs" />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div className="space-y-2 pt-1 border-t border-gray-100">
+                      <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide block">Coberturas Adicionais</Label>
+                      {BOOL_COBERTURAS_VIAGEM.map(({ key, label }) => (
+                        <div key={key} className="flex items-center gap-3 flex-wrap">
+                          <Label className="text-xs text-gray-500 flex-1">{label}</Label>
+                          <ToggleBtn value={(p.coberturas || {})[key] || false} onChange={v => updCobertura(pi, key, null, v)} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* AUTO: Tipo de cobertura + Mensalidade */}
                 {isAutoSeg && (
                   <div className="grid grid-cols-2 gap-2">
@@ -966,7 +1041,7 @@ const AdminParceirosPage = () => {
                 )}
 
                 {/* SAUDE/outros: Planos */}
-                {!isAutoSeg && (
+                {!isAutoSeg && !isViagemSeg && (
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <Label className="text-xs text-gray-500">Planos *</Label>
@@ -993,7 +1068,7 @@ const AdminParceirosPage = () => {
                 )}
 
                 {/* SAUDE/outros: Abrangência + Acomodação */}
-                {!isAutoSeg && (
+                {!isAutoSeg && !isViagemSeg && (
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
                       <Label className="text-xs text-gray-500">Abrangência</Label>
@@ -1043,7 +1118,7 @@ const AdminParceirosPage = () => {
                 )}
 
                 {/* SAUDE/outros: Coparticipação */}
-                {!isAutoSeg && (
+                {!isAutoSeg && !isViagemSeg && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-3 flex-wrap">
                       <Label className="text-xs text-gray-500 shrink-0">Coparticipação</Label>
@@ -1089,7 +1164,7 @@ const AdminParceirosPage = () => {
                 )}
 
                 {/* SAUDE/outros: Carência */}
-                {!isAutoSeg && (
+                {!isAutoSeg && !isViagemSeg && (
                   <div className="flex items-center gap-3 flex-wrap">
                     <Label className="text-xs text-gray-500 shrink-0">Carência</Label>
                     <ToggleBtn value={p.carencia} onChange={v => updProposta(pi, 'carencia', v)} />
@@ -1131,7 +1206,7 @@ const AdminParceirosPage = () => {
                 )}
 
                 {/* SAUDE/outros: Rede credenciada */}
-                {!isAutoSeg && (
+                {!isAutoSeg && !isViagemSeg && (
                   <div className="space-y-1">
                     <Label className="text-xs text-gray-500">Link de redes credenciadas (opcional)</Label>
                     <div className="flex items-center gap-1.5">
