@@ -481,7 +481,7 @@ const AdminParceirosPage = () => {
     );
     setExpandedPropIdx(0);
     setFormC({
-      valor_base: o.valor_mensalidade ? String(o.valor_mensalidade) : '',
+      valor_base: o.valor_mensalidade ? fmtBRL(o.valor_mensalidade) : '',
       comissao_percentual: o.parceiros?.comissao_percentual ? String(o.parceiros.comissao_percentual) : '50',
     });
     const { data: docData } = await supabase
