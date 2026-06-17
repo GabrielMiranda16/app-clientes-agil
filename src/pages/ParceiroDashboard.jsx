@@ -56,6 +56,10 @@ const SEGMENTO_CAMPOS = {
     { key: 'rua',            label: 'Rua / Logradouro',   type: 'text', placeholder: 'Auto-preenchido pelo CEP', optional: true },
     { key: 'numero',         label: 'Número',             type: 'text', placeholder: 'Ex: 123' },
     { key: 'complemento',    label: 'Complemento',        type: 'text', placeholder: 'Ex: Apto 42', optional: true },
+    { key: 'cor',            label: 'Cor',                type: 'text', optional: true, hidden: true },
+    { key: 'municipio',      label: 'Município',          type: 'text', optional: true, hidden: true },
+    { key: 'origem',         label: 'Origem',             type: 'text', optional: true, hidden: true },
+    { key: 'logo_marca',     label: 'Logo',               type: 'text', optional: true, hidden: true },
   ],
   SAUDE: [
     { key: 'tipo', label: 'Modalidade do plano', type: 'select', options: ['INDIVIDUAL', 'MEI', 'PME', 'PJ'] },
@@ -241,9 +245,13 @@ const ParceiroDashboard = () => {
             ...f,
             extras: {
               ...f.extras,
-              chassi: json.chassi || json.chassis || json.CHASSI || f.extras.chassi || '',
-              modelo_veiculo: [json.marca || json.brand || json.MARCA, json.modelo || json.model || json.MODELO, json.submodelo || json.versao || ''].filter(Boolean).join(' ').trim() || f.extras.modelo_veiculo || '',
-              ano_fabricacao: String(json.ano_fabricacao || json.year_fab || json.ANOFABRICACAO || json.anoFabricacao || json.ano || f.extras.ano_fabricacao || ''),
+              chassi: json.chassi || f.extras.chassi || '',
+              modelo_veiculo: [json.marca || json.MARCA, json.modelo || json.MODELO].filter(Boolean).join(' ').trim() || f.extras.modelo_veiculo || '',
+              ano_fabricacao: String(json.extra?.ano_fabricacao || json.ano || f.extras.ano_fabricacao || ''),
+              cor: json.cor || f.extras.cor || '',
+              municipio: json.municipio ? `${json.municipio}${json.uf ? ' - ' + json.uf : ''}` : f.extras.municipio || '',
+              origem: json.origem || f.extras.origem || '',
+              logo_marca: json.logo || f.extras.logo_marca || '',
             },
           }));
         }
@@ -821,6 +829,7 @@ const ParceiroDashboard = () => {
                       Informações do seguro ({SEGMENTO_LABEL[form.segmento]})
                     </p>
                     {camposDoSegmento.map((campo) => {
+                      if (campo.hidden) return null;
                       const { key, label, placeholder, type, options, optional, header } = campo;
                       const vazio = !optional && !String(form.extras[key] || '').trim();
                       return (
@@ -1045,7 +1054,7 @@ const ParceiroDashboard = () => {
                     Cancelar
                   </Button>
                   <Button onClick={handleSolicitar}
-                    disabled={enviando || !form.segmento || !form.cliente_nome.trim() || !validarTelefone(form.cliente_telefone) || !validarEmail(form.cliente_email) || !validarCpfCnpj(form.cliente_cpf) || !form.cliente_data_nascimento || camposDoSegmento.some(c => !String(form.extras[c.key] || '').trim()) || (showAgeBrackets && remainingLives !== 0)}
+                    disabled={enviando || !form.segmento || !form.cliente_nome.trim() || !validarTelefone(form.cliente_telefone) || !validarEmail(form.cliente_email) || !validarCpfCnpj(form.cliente_cpf) || !form.cliente_data_nascimento || camposDoSegmento.some(c => !c.optional && !c.hidden && !String(form.extras[c.key] || '').trim()) || (showAgeBrackets && remainingLives !== 0)}
                     className="flex-1 rounded-lg text-white font-semibold gap-2" style={{ background: '#003580' }}>
                     {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     {enviando ? 'Enviando...' : 'Solicitar'}

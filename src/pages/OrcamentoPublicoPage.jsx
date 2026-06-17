@@ -669,15 +669,22 @@ const OrcamentoPublicoPage = () => {
                     {/* Dados do Veículo — AUTO */}
                     {segmento === 'AUTO' && orcamento?.observacoes && (() => {
                       const linhas = orcamento.observacoes.split('\n').filter(Boolean);
-                      const campos = linhas.map(l => {
+                      const todos = linhas.map(l => {
                         const idx = l.indexOf(': ');
                         if (idx === -1) return null;
                         return { label: l.slice(0, idx).replace(/\s*\*$/, '').trim(), valor: l.slice(idx + 2).trim() };
                       }).filter(Boolean);
+                      const logoEntry = todos.find(c => c.label === 'Logo');
+                      const campos = todos.filter(c => c.label !== 'Logo');
                       if (campos.length === 0) return null;
                       return (
                         <div className="px-6 sm:px-8 py-6">
-                          <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block mb-4">Dados do Veículo</span>
+                          <div className="flex items-center gap-3 mb-4">
+                            {logoEntry && (
+                              <img src={logoEntry.valor} alt="Logo" className="h-8 w-14 object-contain bg-white/90 rounded-lg p-1" />
+                            )}
+                            <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest">Dados do Veículo</span>
+                          </div>
                           <div className="rounded-2xl overflow-hidden bg-white/10 border border-white/15">
                             {campos.map((c, i) => (
                               <div key={i} className={`flex items-start justify-between px-5 py-3 gap-4 ${i < campos.length - 1 ? 'border-b border-white/10' : ''}`}>

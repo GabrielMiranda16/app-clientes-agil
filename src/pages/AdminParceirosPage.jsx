@@ -153,6 +153,10 @@ const CAMPOS_SEGMENTO = {
     { key: 'rua',            label: 'Rua / Logradouro',   type: 'text',   placeholder: 'Auto-preenchido pelo CEP', optional: true },
     { key: 'numero',         label: 'Número',             type: 'text',   placeholder: 'Ex: 123' },
     { key: 'complemento',    label: 'Complemento',        type: 'text',   placeholder: 'Ex: Apto 42', optional: true },
+    { key: 'cor',            label: 'Cor',                type: 'text',   optional: true, hidden: true },
+    { key: 'municipio',      label: 'Município',          type: 'text',   optional: true, hidden: true },
+    { key: 'origem',         label: 'Origem',             type: 'text',   optional: true, hidden: true },
+    { key: 'logo_marca',     label: 'Logo',               type: 'text',   optional: true, hidden: true },
   ],
   RESIDENCIAL: [
     { key: 'tipo_imovel',  label: 'Tipo de imóvel',        type: 'select', options: ['Casa', 'Apartamento', 'Sobrado'] },
@@ -384,9 +388,13 @@ const AdminParceirosPage = () => {
         if (!error && json && !json.error) {
           setSegData(d => ({
             ...d,
-            chassi: json.chassi || json.chassis || json.CHASSI || d.chassi || '',
-            modelo_veiculo: [json.marca || json.brand || json.MARCA, json.modelo || json.model || json.MODELO, json.submodelo || json.versao || ''].filter(Boolean).join(' ').trim() || d.modelo_veiculo || '',
-            ano_fabricacao: String(json.ano_fabricacao || json.year_fab || json.ANOFABRICACAO || json.anoFabricacao || json.ano || d.ano_fabricacao || ''),
+            chassi: json.chassi || d.chassi || '',
+            modelo_veiculo: [json.marca || json.MARCA, json.modelo || json.MODELO].filter(Boolean).join(' ').trim() || d.modelo_veiculo || '',
+            ano_fabricacao: String(json.extra?.ano_fabricacao || json.ano || d.ano_fabricacao || ''),
+            cor: json.cor || d.cor || '',
+            municipio: json.municipio ? `${json.municipio}${json.uf ? ' - ' + json.uf : ''}` : d.municipio || '',
+            origem: json.origem || d.origem || '',
+            logo_marca: json.logo || d.logo_marca || '',
           }));
         }
       } catch {}
@@ -1610,6 +1618,7 @@ const AdminParceirosPage = () => {
                 <div className="space-y-2 border border-blue-100 rounded-xl p-3 bg-blue-50">
                   <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Dados do {SEGMENTO_LABEL[novoForm.segmento]}</p>
                   {(CAMPOS_SEGMENTO[novoForm.segmento] || []).map(campo => {
+                    if (campo.hidden) return null;
                     const vazio = !campo.optional && !String(segData[campo.key] || '').trim();
                     return (
                       <React.Fragment key={campo.key}>
