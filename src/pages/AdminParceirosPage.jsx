@@ -1451,7 +1451,7 @@ const AdminParceirosPage = () => {
                           <p className="text-xs text-gray-400">{SEGMENTO_LABEL[o.segmento] || o.segmento}</p>
                           <p className="text-xs text-gray-500 mt-0.5">Parceiro: <span className="font-medium">{o.parceiros?.nome_completo || '—'}</span></p>
                           {o.valor_mensalidade && (
-                            <p className="text-xs text-gray-500 mt-0.5">R$ {fmtBRL(o.valor_mensalidade)}/mês</p>
+                            <p className="text-xs text-gray-500 mt-0.5">R$ {fmtBRL(o.valor_mensalidade)}{o.segmento === 'AUTO' ? '/seguro' : '/mês'}</p>
                           )}
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
