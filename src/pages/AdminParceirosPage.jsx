@@ -1507,10 +1507,24 @@ const AdminParceirosPage = () => {
                           <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                         </div>
                       </div>
-                      <div className="mt-3 flex gap-1">
-                        {FUNIL.map((s, i) => (
-                          <div key={s} className={`h-1 flex-1 rounded-full transition-colors ${i <= step ? 'bg-[#003580]' : 'bg-gray-200'}`} />
-                        ))}
+                      <div className="mt-3 flex items-center">
+                        {FUNIL.map((s, i) => {
+                          const isPast = i < step;
+                          const isCurrent = i === step;
+                          const isLast = i === FUNIL.length - 1;
+                          const shouldPulse = isCurrent && step < FUNIL.length - 1;
+                          return (
+                            <React.Fragment key={s}>
+                              <div className="relative flex items-center justify-center shrink-0">
+                                {shouldPulse && (
+                                  <span className="absolute inline-flex h-3 w-3 rounded-full bg-[#003580] opacity-60 animate-ping" />
+                                )}
+                                <div className={`rounded-full transition-all duration-300 relative z-10 ${isPast || isCurrent ? 'h-3 w-3 bg-[#003580]' : 'h-2 w-2 bg-gray-300'}`} />
+                              </div>
+                              {!isLast && <div className={`flex-1 h-px transition-colors duration-300 ${isPast ? 'bg-[#003580]' : 'bg-gray-200'}`} />}
+                            </React.Fragment>
+                          );
+                        })}
                       </div>
                     </CardContent>
 
