@@ -19,13 +19,15 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { SEGURADORAS } from '@/data/seguradoras';
 
 const STATUS_CONFIG = {
-  SOLICITACAO:  { label: 'Solicitação',  color: 'bg-gray-100 text-gray-700',    desc: 'Aguardando resposta do ADM' },
-  ORCAMENTO:    { label: 'Orçamento',    color: 'bg-blue-100 text-blue-700',    desc: 'Link pronto — envie para o cliente' },
-  DOCUMENTOS:   { label: 'Documentos',   color: 'bg-blue-100 text-[#003580]',   desc: 'Cliente aceitou — enviando documentos' },
-  ASSINATURA:   { label: 'Assinatura',   color: 'bg-blue-100 text-[#003580]',   desc: 'Documentos recebidos — em assinatura' },
-  CONCLUIDO:    { label: 'Concluído',    color: 'bg-blue-100 text-[#003580]',   desc: 'Contrato assinado — aguardando comissão' },
-  COMISSAO:     { label: 'Comissão',     color: 'bg-blue-100 text-[#003580]',   desc: 'Comissão registrada' },
+  SOLICITACAO:  { label: 'Solicitação',        color: 'bg-gray-100 text-gray-700',    desc: 'Aguardando resposta do ADM' },
+  ORCAMENTO:    { label: 'Orçamento',          color: 'bg-blue-100 text-blue-700',    desc: 'Link pronto — envie para o cliente' },
+  DOCUMENTOS:   { label: 'Documentos',         color: 'bg-blue-100 text-[#003580]',   desc: 'Cliente aceitou — enviando documentos' },
+  ASSINATURA:   { label: 'Assinatura/Transmitida', color: 'bg-blue-100 text-[#003580]', desc: null },
+  CONCLUIDO:    { label: 'Concluído',          color: 'bg-blue-100 text-[#003580]',   desc: 'Contrato assinado — aguardando comissão' },
+  COMISSAO:     { label: 'Comissão',           color: 'bg-blue-100 text-[#003580]',   desc: 'Comissão registrada' },
 };
+const assinaturaLabel = seg => ['SAUDE', 'VIDA', 'ODONTOLOGICO', 'SAUDE_VIDA_ODONTO'].includes(seg) ? 'Assinatura' : 'Transmitida';
+const assinaturaDesc  = seg => ['SAUDE', 'VIDA', 'ODONTOLOGICO', 'SAUDE_VIDA_ODONTO'].includes(seg) ? 'Documentos recebidos — em assinatura' : 'Proposta transmitida — aguardando conclusão';
 
 const SEGMENTOS = [
   { value: 'AUTO',          label: 'Seguro Auto' },
@@ -384,13 +386,13 @@ const ParceiroDashboard = () => {
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-gray-800 truncate">{o.cliente_nome || 'Cliente não informado'}</p>
             <p className="text-xs text-gray-400 mt-0.5">{SEGMENTO_LABEL[o.segmento] || o.segmento}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{cfg.desc}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{o.status === 'ASSINATURA' ? assinaturaDesc(o.segmento) : cfg.desc}</p>
             {o.valor_mensalidade && (
               <p className="text-xs text-gray-500 mt-1">Mensalidade: <span className="font-semibold text-gray-700">R$ {Number(o.valor_mensalidade).toFixed(2).replace('.', ',')}</span></p>
             )}
           </div>
           <div className="flex flex-col items-end gap-2 shrink-0">
-            <Badge className={`text-xs ${cfg.color}`}>{cfg.label}</Badge>
+            <Badge className={`text-xs ${cfg.color}`}>{o.status === 'ASSINATURA' ? assinaturaLabel(o.segmento) : cfg.label}</Badge>
             {o.status === 'ORCAMENTO' && o.slug && (
               <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5"
                 onClick={e => { e.stopPropagation(); copyLink(o.slug); }}>
@@ -623,7 +625,7 @@ const ParceiroDashboard = () => {
                 <div>
                   <p className="text-white font-bold text-base">{detalhe.cliente_nome}</p>
                   <p className="text-white/80 text-xs">{SEGMENTO_LABEL[detalhe.segmento] || detalhe.segmento}</p>
-                  <Badge className={`mt-1 text-xs ${STATUS_CONFIG[detalhe.status]?.color}`}>{STATUS_CONFIG[detalhe.status]?.label}</Badge>
+                  <Badge className={`mt-1 text-xs ${STATUS_CONFIG[detalhe.status]?.color}`}>{detalhe.status === 'ASSINATURA' ? assinaturaLabel(detalhe.segmento) : STATUS_CONFIG[detalhe.status]?.label}</Badge>
                 </div>
                 <button onClick={() => setDetalhe(null)} className="text-white/70 hover:text-white p-1 rounded-lg hover:bg-white/10">
                   <X className="h-5 w-5" />
@@ -633,7 +635,7 @@ const ParceiroDashboard = () => {
               <div className="flex-1 overflow-y-auto overscroll-contain p-5 space-y-4">
                 {/* Status desc */}
                 <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-600">
-                  {STATUS_CONFIG[detalhe.status]?.desc}
+                  {detalhe.status === 'ASSINATURA' ? assinaturaDesc(detalhe.segmento) : STATUS_CONFIG[detalhe.status]?.desc}
                 </div>
 
                 {/* Link (se ORCAMENTO) */}
@@ -701,7 +703,7 @@ const ParceiroDashboard = () => {
                       { label: 'Solicitação', date: detalhe.data_solicitacao || detalhe.created_at },
                       { label: 'Orçamento', date: detalhe.data_orcamento },
                       { label: 'Documentos', date: detalhe.data_documentos },
-                      { label: 'Assinatura', date: detalhe.data_assinatura },
+                      { label: assinaturaLabel(detalhe.segmento), date: detalhe.data_assinatura },
                       { label: 'Concluído', date: detalhe.data_conclusao },
                     ].map(({ label, date }) => date ? (
                       <div key={label}>
