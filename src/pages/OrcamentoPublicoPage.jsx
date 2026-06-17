@@ -248,7 +248,9 @@ const OrcamentoPublicoPage = () => {
   const handleAceitarProposta = async (proposta = null) => {
     setAceitando(true);
     try {
-      const updateData = { status: 'DOCUMENTOS', data_documentos: new Date().toISOString() };
+      const isAuto = segmento === 'AUTO';
+      const novoStatus = isAuto ? 'ASSINATURA' : 'DOCUMENTOS';
+      const updateData = { status: novoStatus, data_documentos: new Date().toISOString() };
       if (proposta) {
         const pl0 = proposta.planos?.find(pl => pl.valor) || proposta.planos?.[0];
         updateData.valor_mensalidade = parseValor(pl0?.valor);
@@ -260,8 +262,8 @@ const OrcamentoPublicoPage = () => {
         await supabase.from('orcamento_acessos').update({ aceitou_proposta: true, aceitou_em: new Date().toISOString() }).eq('id', acessoIdRef.current);
       supabase.functions.invoke('notify-orcamento-aceito', { body: { orcamento_id: orcamento.id } }).catch(() => {});
       setPropostaEscolhida(proposta);
-      setOrcamento(prev => ({ ...prev, status: 'DOCUMENTOS' }));
-      setStage('documentos');
+      setOrcamento(prev => ({ ...prev, status: novoStatus }));
+      setStage(isAuto ? 'aceito' : 'documentos');
     } catch (err) {
       console.error(err);
     } finally {
@@ -341,6 +343,15 @@ const OrcamentoPublicoPage = () => {
       <p className="text-white font-bold text-xl">Proposta em andamento</p>
       <p className="text-white/70 text-sm mt-2">Seus documentos foram recebidos e o processo está em andamento.<br />Em breve entraremos em contato.</p>
       <img src={logoUrl} alt="Ágil Seguros" className="h-12 mt-8 opacity-70 object-contain" />
+    </div>
+  );
+
+  if (stage === 'aceito') return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center" style={{ background: 'linear-gradient(180deg, #003580 0%, #1a5599 25%, #6b9fd4 52%, #c8e0f5 70%, #f0f7ff 84%, #ffffff 100%)' }}>
+      <CheckCircle2 className="h-14 w-14 text-green-400 mb-4" />
+      <p className="text-white font-bold text-2xl">Proposta aceita!</p>
+      <p className="text-white/70 text-sm mt-3 max-w-xs">Nossa equipe entrará em contato em breve para dar continuidade ao processo.</p>
+      <img src={logoUrl} alt="Ágil Seguros" className="h-12 mt-10 opacity-70 object-contain" />
     </div>
   );
 
