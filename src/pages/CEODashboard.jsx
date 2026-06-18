@@ -235,30 +235,42 @@ const CEODashboard = () => {
     };
   }, [empresas, beneficiarios, admins, solicitacoes, apolices]);
 
-  // Top 5 empresas por prêmio total (todas as apólices)
+  // Top 5 empresas por prêmio total — filiais agrupadas na matriz
   const top5EmpresasPremio = useMemo(() => {
-    const premioByEmpresa = {};
+    const getGrupoId = (empresaId) => {
+      const emp = empresas.find(e => String(e.id) === String(empresaId));
+      return emp?.empresa_matriz_id ? String(emp.empresa_matriz_id) : String(empresaId);
+    };
+    const getEmpresasDoGrupo = (grupoId) =>
+      empresas.filter(e => String(e.id) === grupoId || String(e.empresa_matriz_id) === grupoId);
+
+    const premioByGrupo = {};
     apolices.forEach(ap => {
       if (!ap.empresa_id) return;
+      const grupoId = getGrupoId(ap.empresa_id);
       let total;
       if (ap.segmento === 'SAUDE_VIDA_ODONTO') {
         total = (ap.dados_adicionais?.sub_apolices || []).reduce((s, sub) => s + (Number(sub.valor_premio) || 0), 0);
       } else {
         total = Number(ap.valor_premio) || 0;
       }
-      premioByEmpresa[ap.empresa_id] = (premioByEmpresa[ap.empresa_id] || 0) + total;
+      premioByGrupo[grupoId] = (premioByGrupo[grupoId] || 0) + total;
     });
-    return Object.entries(premioByEmpresa)
-      .map(([id, total]) => {
-        const emp = empresas.find(e => String(e.id) === String(id));
+
+    return Object.entries(premioByGrupo)
+      .map(([grupoId, total]) => {
+        const matriz = empresas.find(e => String(e.id) === grupoId);
+        const grupEmps = getEmpresasDoGrupo(grupoId);
+        const grupIds = grupEmps.map(e => String(e.id));
+        const fullName = matriz ? (matriz.nome_fantasia || matriz.razao_social || `ID: ${grupoId}`) : `ID: ${grupoId}`;
         return {
-          id,
-          name: emp ? (emp.nome_fantasia || emp.razao_social || `ID: ${id}`).substring(0, 18) : `ID: ${id}`,
-          full_name: emp ? (emp.nome_fantasia || emp.razao_social || `ID: ${id}`) : `ID: ${id}`,
-          cnpj: emp?.cnpj || emp?.cpf || '—',
+          id: grupoId,
+          name: fullName.substring(0, 18),
+          full_name: fullName,
+          cnpj: matriz?.cnpj || matriz?.cpf || '—',
           total,
-          beneficiariosCount: beneficiarios.filter(b => String(b.empresa_id) === String(id)).length,
-          apolicesCount: apolices.filter(ap => String(ap.empresa_id) === String(id)).length,
+          beneficiariosCount: beneficiarios.filter(b => grupIds.includes(String(b.empresa_id))).length,
+          apolicesCount: apolices.filter(ap => grupIds.includes(String(ap.empresa_id))).length,
         };
       })
       .sort((a, b) => b.total - a.total)
