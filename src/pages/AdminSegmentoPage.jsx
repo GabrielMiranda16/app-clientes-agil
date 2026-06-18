@@ -15,8 +15,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   ArrowLeft, ChevronRight, Building, Users, Heart, Car, Plane, Home, PawPrint,
   Building2, Package, Monitor, Plus, Edit, Trash2, Loader2, AlertTriangle,
-  FileText, ExternalLink, DollarSign, FileClock, CheckCircle2, Clock, Search, X
+  FileText, ExternalLink, DollarSign, FileClock, CheckCircle2, Clock, Search, X, Sparkles
 } from 'lucide-react';
+import { supabase } from '@/lib/customSupabaseClient';
 import { motion } from 'framer-motion';
 import { applyCnpjMask } from '@/lib/masks';
 import { format } from 'date-fns';
@@ -82,6 +83,8 @@ const AdminSegmentoPage = () => {
   const [subApolicesFiles, setSubApolicesFiles] = useState([]);
   const [dadosAdicionais, setDadosAdicionais] = useState({});
   const [isCepApoliceLoading, setIsCepApoliceLoading] = useState(false);
+  const [isParsingPDF, setIsParsingPDF] = useState(false);
+  const pdfImportRef = React.useRef(null);
 
   const canManage = user.perfil === 'CEO' || user.perfil === 'ADM';
   const isSVD = segConfig?.isSVD;
@@ -158,6 +161,48 @@ const AdminSegmentoPage = () => {
       toast({ variant: 'destructive', title: 'Erro ao buscar CEP' });
     } finally {
       setIsCepApoliceLoading(false);
+    }
+  };
+
+  const handleImportarPDF = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    setIsParsingPDF(true);
+    try {
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const { data: result, error } = await supabase.functions.invoke('parse-apolice-pdf', {
+        body: { pdfBase64: base64, segmento: segConfig?.key || '' },
+      });
+      if (error) throw new Error(error.message);
+      const d = result?.data;
+      if (!d) throw new Error('IA não retornou dados.');
+
+      setEditingApolice(null);
+      setContratoFile(file);
+      setSubApolicesFiles([]);
+      setApoliceEmpresaId(String(todasEmpresas[0]?.id || ''));
+      setApoliceForm({
+        numero_apolice: d.numero_apolice || '',
+        seguradora:     d.seguradora || '',
+        vigencia_inicio: d.vigencia_inicio || '',
+        vigencia_fim:    d.vigencia_fim || '',
+        valor_premio:    d.valor_premio ? String(d.valor_premio) : '',
+        descricao:       d.descricao || '',
+      });
+      const defaultDados = emptyDadosAdicionais(segConfig?.key);
+      setDadosAdicionais(d.dados_adicionais ? { ...defaultDados, ...d.dados_adicionais } : defaultDados);
+      setIsApoliceModalOpen(true);
+      toast({ title: '✨ Apólice identificada!', description: 'Confira os dados e salve.' });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro ao processar PDF', description: String(err) });
+    } finally {
+      setIsParsingPDF(false);
     }
   };
 
@@ -348,9 +393,16 @@ const AdminSegmentoPage = () => {
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold tracking-tight text-white">{label}</h1>
             {canManage && (
-              <Button variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white border border-white/20 rounded-lg" onClick={() => openNewApolice(todasEmpresas[0]?.id)}>
-                <Plus className="mr-1.5 h-4 w-4" /> Nova Apólice
-              </Button>
+              <div className="flex items-center gap-2">
+                <input ref={pdfImportRef} type="file" accept=".pdf" className="hidden" onChange={handleImportarPDF} />
+                <Button variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white border border-white/20 rounded-lg" onClick={() => pdfImportRef.current?.click()} disabled={isParsingPDF}>
+                  {isParsingPDF ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Sparkles className="mr-1.5 h-4 w-4" />}
+                  {isParsingPDF ? 'Identificando...' : 'Importar PDF'}
+                </Button>
+                <Button variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white border border-white/20 rounded-lg" onClick={() => openNewApolice(todasEmpresas[0]?.id)}>
+                  <Plus className="mr-1.5 h-4 w-4" /> Nova Apólice
+                </Button>
+              </div>
             )}
           </div>
 
