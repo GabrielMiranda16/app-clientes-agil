@@ -345,6 +345,33 @@ const ParceiroDashboard = () => {
         },
       }).catch(() => {});
 
+      // Notifica ADM via email
+      supabase.functions.invoke('send-email', {
+        body: {
+          to: ['contato@segurosagil.com.br'],
+          subject: `🔔 Nova solicitação — ${form.cliente_nome.trim()} (${segLabel})`,
+          html: `
+            <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#f8fafc;">
+              <div style="background:#003580;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px;">
+                <h1 style="color:white;margin:0;font-size:22px;">🔔 Nova Solicitação de Orçamento</h1>
+              </div>
+              <div style="background:white;border-radius:12px;padding:24px;border:1px solid #e2e8f0;">
+                <table style="width:100%;border-collapse:collapse;">
+                  <tr><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:14px;">Parceiro</td><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-weight:bold;color:#1e293b;">${parceiro.nome_completo}</td></tr>
+                  <tr><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:14px;">Cliente</td><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-weight:bold;color:#1e293b;">${form.cliente_nome.trim()}</td></tr>
+                  <tr><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:14px;">Telefone</td><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-weight:bold;color:#1e293b;">${form.cliente_telefone.trim()}</td></tr>
+                  <tr><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:14px;">Email</td><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-weight:bold;color:#1e293b;">${form.cliente_email.trim() || '—'}</td></tr>
+                  <tr><td style="padding:10px 0;color:#64748b;font-size:14px;">Segmento</td><td style="padding:10px 0;font-weight:bold;color:#003580;font-size:16px;">${segLabel}</td></tr>
+                </table>
+                <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:16px;margin-top:16px;">
+                  <p style="margin:0;color:#1e40af;font-size:14px;">Acesse o portal para responder com o orçamento: <a href="https://www.agilseguros.app/admin/parceiros" style="color:#003580;font-weight:bold;">agilseguros.app/admin/parceiros</a></p>
+                </div>
+              </div>
+              <p style="text-align:center;color:#94a3b8;font-size:12px;margin-top:16px;">Ágil Seguros · SUSEP 252166308</p>
+            </div>`,
+        },
+      }).catch(() => {});
+
       setModalAberto(false);
       loadData();
     } catch (err) {

@@ -377,7 +377,7 @@ const AdminParceirosPage = () => {
   // Docs form
   const [formR, setFormR] = useState({ docsBase: [], docExtra: '', docsExtras: [] });
   // Comissão
-  const [formC, setFormC] = useState({ valor_base: '', comissao_percentual: '' });
+  const [formC, setFormC] = useState({ valor_base: '', comissao_percentual: '', numero_apolice: '', data_vencimento: '' });
   // ORCAMENTO edit modes
   const [editandoProposta, setEditandoProposta] = useState(false);
   const [novaPropostaMode, setNovaPropostaMode] = useState(false);
@@ -718,7 +718,11 @@ const AdminParceirosPage = () => {
       } else {
         await supabase.from('comissoes').insert({ orcamento_id: expandedId, parceiro_id: selected.parceiro_id, valor_base: base, comissao_percentual: pct, status: 'PENDENTE' });
       }
-      await supabase.from('orcamentos').update({ status: 'COMISSAO' }).eq('id', expandedId);
+      await supabase.from('orcamentos').update({
+        status: 'COMISSAO',
+        ...(formC.numero_apolice ? { numero_apolice: formC.numero_apolice } : {}),
+        ...(formC.data_vencimento ? { data_vencimento: formC.data_vencimento } : {}),
+      }).eq('id', expandedId);
       toast({ title: 'Comissão registrada!' });
 
       const parceiroTel = selected?.parceiros?.telefone;
@@ -1444,6 +1448,18 @@ const AdminParceirosPage = () => {
             <Label className="text-sm">% do parceiro *</Label>
             <Input value={formC.comissao_percentual} onChange={e => setFormC(f => ({ ...f, comissao_percentual: e.target.value }))}
               placeholder="Ex: 50" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label className="text-sm">Nº da apólice</Label>
+            <Input value={formC.numero_apolice} onChange={e => setFormC(f => ({ ...f, numero_apolice: e.target.value }))}
+              placeholder="Ex: 123456789" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm">Data de vencimento</Label>
+            <Input type="date" value={formC.data_vencimento} onChange={e => setFormC(f => ({ ...f, data_vencimento: e.target.value }))}
+              className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
           </div>
         </div>
         {formC.valor_base && formC.comissao_percentual && (() => {
