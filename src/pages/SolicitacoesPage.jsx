@@ -66,6 +66,7 @@ import { solicitacoesService } from '@/services/solicitacoesService';
 import { beneficiariosService } from '@/services/beneficiariosService';
 import { empresasService } from '@/services/empresasService';
 import { formatCpfCnpj } from '@/lib/masks';
+import { supabase } from '@/lib/customSupabaseClient';
 
 const SolicitacoesPage = () => {
   const { toast } = useToast();
@@ -329,6 +330,37 @@ const SolicitacoesPage = () => {
         const newSolicitacao = await solicitacoesService.createSolicitacao(payload);
         setSolicitacoes(prev => [newSolicitacao, ...prev]);
         toast({ title: 'Sucesso', description: 'Solicitação criada com sucesso.' });
+
+        // Notifica ADM via email
+        const empresa = empresas.find(e => e.id === beneficiario.empresa_id);
+        const tipoPlanoLabel = { saude: 'Saúde', odonto: 'Odontológico', vida: 'Vida' }[formData.tipo_plano] || formData.tipo_plano;
+        const tipoSolicLabel = { INCLUSAO: 'Inclusão', EXCLUSAO: 'Exclusão', ALTERACAO: 'Alteração', SEGUNDA_VIA: 'Segunda via de carteirinha' }[formData.tipo_solicitacao] || formData.tipo_solicitacao;
+        supabase.functions.invoke('send-email', {
+          body: {
+            to: ['contato@segurosagil.com.br'],
+            subject: `🔔 Nova solicitação de plano — ${beneficiario.nome} (${tipoPlanoLabel} · ${tipoSolicLabel})`,
+            html: `
+              <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#f8fafc;">
+                <div style="background:#003580;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px;">
+                  <h1 style="color:white;margin:0;font-size:22px;">🔔 Nova Solicitação de Plano</h1>
+                </div>
+                <div style="background:white;border-radius:12px;padding:24px;border:1px solid #e2e8f0;">
+                  <table style="width:100%;border-collapse:collapse;">
+                    <tr><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:14px;">Empresa</td><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-weight:bold;color:#1e293b;">${empresa?.nome_empresa || '—'}</td></tr>
+                    <tr><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:14px;">Beneficiário</td><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-weight:bold;color:#1e293b;">${beneficiario.nome}</td></tr>
+                    <tr><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:14px;">CPF</td><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-weight:bold;color:#1e293b;">${formatCpfCnpj(beneficiario.cpf || '')}</td></tr>
+                    <tr><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:14px;">Tipo de Plano</td><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-weight:bold;color:#003580;font-size:15px;">${tipoPlanoLabel}</td></tr>
+                    <tr><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:14px;">Tipo de Solicitação</td><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-weight:bold;color:#1e293b;">${tipoSolicLabel}</td></tr>
+                    ${formData.observacoes ? `<tr><td style="padding:10px 0;color:#64748b;font-size:14px;">Observações</td><td style="padding:10px 0;font-weight:bold;color:#1e293b;">${formData.observacoes}</td></tr>` : ''}
+                  </table>
+                  <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:16px;margin-top:16px;">
+                    <p style="margin:0;color:#1e40af;font-size:14px;">Acesse o portal para processar: <a href="https://www.agilseguros.app/admin/clientes" style="color:#003580;font-weight:bold;">agilseguros.app/admin/clientes</a></p>
+                  </div>
+                </div>
+                <p style="text-align:center;color:#94a3b8;font-size:12px;margin-top:16px;">Ágil Seguros · SUSEP 252166308</p>
+              </div>`,
+          },
+        }).catch(() => {});
       }
       setIsModalOpen(false);
     } catch (error) {
