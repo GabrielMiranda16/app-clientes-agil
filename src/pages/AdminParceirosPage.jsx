@@ -165,7 +165,7 @@ const CAMPOS_SEGMENTO = {
     { key: 'rua',          label: 'Rua / Logradouro',       type: 'text',   placeholder: 'Auto-preenchido pelo CEP', optional: true },
     { key: 'numero',       label: 'Número',                 type: 'text',   placeholder: 'Ex: 123' },
     { key: 'complemento',  label: 'Complemento',            type: 'text',   placeholder: 'Ex: Apto 42', optional: true },
-    { key: 'valor_imovel', label: 'Valor aproximado (R$)',  type: 'text',   placeholder: 'Ex: 350.000' },
+    { key: 'valor_imovel', label: 'Valor aproximado (R$)',  type: 'text',   placeholder: 'Ex: 350.000,00', money: true },
   ],
   EMPRESARIAL: [
     { key: 'nome_empresa', label: 'Nome da empresa', type: 'text', placeholder: 'Ex: Empresa ABC Ltda' },
@@ -204,12 +204,12 @@ const CAMPOS_SEGMENTO = {
     { key: 'nome_empresa', label: 'Nome da empresa', type: 'text', placeholder: 'Ex: Transportadora ABC' },
     { key: 'tipo_mercadoria', label: 'Tipo de carga', type: 'text', placeholder: 'Ex: Eletrônicos, Alimentos' },
     { key: 'trajeto', label: 'Trajeto (origem → destino)', type: 'text', placeholder: 'Ex: São Paulo → Rio de Janeiro' },
-    { key: 'valor_carga', label: 'Valor da carga (R$)', type: 'text', placeholder: 'Ex: 50.000' },
+    { key: 'valor_carga', label: 'Valor da carga (R$)', type: 'text', placeholder: 'Ex: 50.000,00', money: true },
   ],
   EQUIPAMENTOS: [
     { key: 'tipo_equip', label: 'Tipo de equipamento', type: 'text', placeholder: 'Ex: Notebook, Câmera, Drone' },
     { key: 'descricao_equip', label: 'Descrição do equipamento', type: 'text', placeholder: 'Ex: MacBook Pro M3 14"' },
-    { key: 'valor_equip', label: 'Valor do equipamento (R$)', type: 'text', placeholder: 'Ex: 8.000' },
+    { key: 'valor_equip', label: 'Valor do equipamento (R$)', type: 'text', placeholder: 'Ex: 8.000,00', money: true },
   ],
 };
 
@@ -278,10 +278,13 @@ const parseBRL = (v) => parseFloat(String(v || '0').replace(/\./g, '').replace('
 const fmtBRL = (v) => (typeof v === 'string' ? parseBRL(v) : Number(v || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const maskBRL = (v) => {
-  let s = String(v || '').replace(/[^\d,]/g, '');
-  const parts = s.split(',');
-  const int = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  return parts.length > 1 ? int + ',' + parts[1].slice(0, 2) : int;
+  const digits = String(v || '').replace(/\D/g, '');
+  if (!digits) return '';
+  const n = parseInt(digits, 10);
+  const cents = n % 100;
+  const reais = Math.floor(n / 100);
+  const reaisStr = reais === 0 ? '0' : reais.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${reaisStr},${String(cents).padStart(2, '0')}`;
 };
 
 const formatPhone = (v) => {
@@ -616,7 +619,7 @@ const AdminParceirosPage = () => {
       const { error } = await supabase.from('orcamentos').update({
         status: 'ORCAMENTO',
         slug,
-        valor_mensalidade: isViagem ? null : parseBRL(pl0?.valor),
+        valor_mensalidade: parseBRL(pl0?.valor) || null,
         descricao_orcamento: `${dest.operadora}${!isViagem && pl0?.nome ? ` — ${pl0.nome}` : ''}`,
         propostas: validComDestaque,
         lista_documentos: DOCS_POR_MODALIDADE[selected?.segmento]?.[selected?.modalidade] || DOCS_POR_MODALIDADE[selected?.segmento]?.['INDIVIDUAL'] || DOCS_POR_SEGMENTO[selected?.segmento] || [],
@@ -657,7 +660,7 @@ const AdminParceirosPage = () => {
       const pl0 = dest.planos?.find(pl => pl.valor) || dest.planos?.[0];
       const validComDestaque = valid.map(p => ({ ...p, destaque: p === dest }));
       const { error } = await supabase.from('orcamentos').update({
-        valor_mensalidade: isViagem ? null : parseBRL(pl0?.valor),
+        valor_mensalidade: parseBRL(pl0?.valor) || null,
         descricao_orcamento: `${dest.operadora}${!isViagem && pl0?.nome ? ` — ${pl0.nome}` : ''}`,
         propostas: validComDestaque,
       }).eq('id', expandedId);
@@ -708,7 +711,7 @@ const AdminParceirosPage = () => {
     setEnviando(true);
     try {
       const { data: existente } = await supabase.from('comissoes').select('id').eq('orcamento_id', expandedId).maybeSingle();
-      const base = parseFloat(formC.valor_base.replace(',', '.'));
+      const base = parseBRL(formC.valor_base);
       const pct = parseFloat(formC.comissao_percentual);
       if (existente) {
         await supabase.from('comissoes').update({ valor_base: base, comissao_percentual: pct, status: 'PENDENTE' }).eq('id', existente.id);
@@ -983,7 +986,31 @@ const AdminParceirosPage = () => {
                 {/* VIAGEM: Coberturas */}
                 {isViagemSeg && (
                   <div className="space-y-3">
-                    <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide block">Capital (cobertura)</Label>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-gray-500">Valor do seguro (R$) *</Label>
+                      <Input value={p.planos?.[0]?.valor || ''} onChange={e => updPlano(pi, 0, 'valor', maskBRL(e.target.value))}
+                        placeholder="Ex: 350,00"
+                        className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide block">Capital (cobertura)</Label>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs text-gray-400 mr-1">Tudo em:</span>
+                        {MOEDAS_VIAGEM.map(m => (
+                          <button key={m} type="button"
+                            onClick={() => setPropostas(ps => ps.map((prop, idx) => {
+                              if (idx !== pi) return prop;
+                              const cobAtual = prop.coberturas || {};
+                              const cobNova = {};
+                              COBERTURAS_VIAGEM.forEach(({ key }) => { cobNova[key] = { ...(cobAtual[key] || {}), moeda: m }; });
+                              return { ...prop, coberturas: { ...cobAtual, ...cobNova } };
+                            }))}
+                            className="px-2.5 py-0.5 rounded-full border border-[#003580] text-[#003580] text-xs font-medium hover:bg-[#003580] hover:text-white transition-colors">
+                            {m}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                     {COBERTURAS_VIAGEM.map(({ key, label }) => {
                       const cob = (p.coberturas || {})[key] || {};
                       const isOutro = cob.moeda && !MOEDAS_VIAGEM.includes(cob.moeda);
@@ -1002,8 +1029,8 @@ const AdminParceirosPage = () => {
                               <Input value={cob.moeda || ''} onChange={e => updCobertura(pi, key, 'moeda', e.target.value)}
                                 placeholder="Moeda" className="w-14 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-7 text-xs" />
                             )}
-                            <Input value={cob.valor || ''} onChange={e => updCobertura(pi, key, 'valor', e.target.value)}
-                              placeholder="Ex: 30.000" className="flex-1 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-7 text-xs" />
+                            <Input value={cob.valor || ''} onChange={e => updCobertura(pi, key, 'valor', maskBRL(e.target.value))}
+                              placeholder="Ex: 30.000,00" className="flex-1 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-7 text-xs" />
                           </div>
                         </div>
                       );
@@ -1054,7 +1081,7 @@ const AdminParceirosPage = () => {
                         <Input value={pl.nome} onChange={e => updPlano(pi, pli, 'nome', e.target.value)}
                           placeholder="Nome do plano (opcional)"
                           className="flex-1 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
-                        <Input value={pl.valor} onChange={e => updPlano(pi, pli, 'valor', e.target.value)}
+                        <Input value={pl.valor} onChange={e => updPlano(pi, pli, 'valor', maskBRL(e.target.value))}
                           placeholder="R$ valor *"
                           className="w-24 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
                         {p.planos.length > 1 && (
@@ -1337,7 +1364,7 @@ const AdminParceirosPage = () => {
               </div>
             ) : (
               <>
-                <p>{selected.segmento === 'AUTO' ? 'Valor do seguro' : 'Mensalidade'}: <span className="font-semibold text-gray-800">R$ {fmtBRL(selected.valor_mensalidade)}</span></p>
+                <p>{['AUTO', 'VIAGEM'].includes(selected.segmento) ? 'Valor do seguro' : 'Mensalidade'}: <span className="font-semibold text-gray-800">R$ {fmtBRL(selected.valor_mensalidade)}</span></p>
                 {selected.descricao_orcamento && <p className="mt-1 text-xs">{selected.descricao_orcamento}</p>}
               </>
             )}
@@ -1410,7 +1437,7 @@ const AdminParceirosPage = () => {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-sm">Valor base (R$) *</Label>
-            <Input value={formC.valor_base} onChange={e => setFormC(f => ({ ...f, valor_base: e.target.value }))}
+            <Input value={formC.valor_base} onChange={e => setFormC(f => ({ ...f, valor_base: maskBRL(e.target.value) }))}
               placeholder="Ex: 350,00" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
           </div>
           <div className="space-y-1.5">
@@ -1420,7 +1447,7 @@ const AdminParceirosPage = () => {
           </div>
         </div>
         {formC.valor_base && formC.comissao_percentual && (() => {
-          const base = parseFloat(formC.valor_base.replace(',', '.')) || 0;
+          const base = parseBRL(formC.valor_base) || 0;
           const pct = parseFloat(formC.comissao_percentual) || 0;
           const aposImp = base * (1 - 0.06);
           const comissao = aposImp * (pct / 100);
@@ -1571,7 +1598,7 @@ const AdminParceirosPage = () => {
                           <p className="text-xs text-gray-400">{SEGMENTO_LABEL[o.segmento] || o.segmento}</p>
                           <p className="text-xs text-gray-500 mt-0.5">Parceiro: <span className="font-medium">{o.parceiros?.nome_completo || '—'}</span></p>
                           {o.valor_mensalidade && (
-                            <p className="text-xs text-gray-500 mt-0.5">{o.segmento === 'AUTO' ? 'Valor do seguro' : 'Mensalidade'}: R$ {fmtBRL(o.valor_mensalidade)}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{['AUTO', 'VIAGEM'].includes(o.segmento) ? 'Valor do seguro' : 'Mensalidade'}: R$ {fmtBRL(o.valor_mensalidade)}</p>
                           )}
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -1777,7 +1804,7 @@ const AdminParceirosPage = () => {
                               {campo.options.map(o => <option key={o} value={o}>{o}</option>)}
                             </select>
                           ) : (
-                            <Input value={segData[campo.key] || ''} onChange={e => handleSegDataChange(campo.key, e.target.value)}
+                            <Input value={segData[campo.key] || ''} onChange={e => handleSegDataChange(campo.key, campo.money ? maskBRL(e.target.value) : e.target.value)}
                               type={['cep','plate'].includes(campo.type) ? 'text' : campo.type}
                               maxLength={campo.type === 'cep' ? 9 : campo.type === 'plate' ? 7 : undefined}
                               placeholder={campo.placeholder}
@@ -1872,7 +1899,7 @@ const AdminParceirosPage = () => {
                                 </div>
                                 <div className="space-y-1">
                                   <Label className="text-xs text-gray-500">Valor mensal (R$)</Label>
-                                  <Input value={c.valor} onChange={e => updCenarioCriar(ci, 'valor', e.target.value)}
+                                  <Input value={c.valor} onChange={e => updCenarioCriar(ci, 'valor', maskBRL(e.target.value))}
                                     placeholder="Ex: 520,00" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-sm" />
                                 </div>
                               </div>
