@@ -395,10 +395,12 @@ const AdminSegmentoPage = () => {
             {canManage && (
               <div className="flex items-center gap-2">
                 <input ref={pdfImportRef} type="file" accept=".pdf" className="hidden" onChange={handleImportarPDF} />
-                <Button variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white border border-white/20 rounded-lg" onClick={() => pdfImportRef.current?.click()} disabled={isParsingPDF}>
-                  {isParsingPDF ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Sparkles className="mr-1.5 h-4 w-4" />}
-                  {isParsingPDF ? 'Identificando...' : 'Importar PDF'}
-                </Button>
+                {!isSVD && (
+                  <Button variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white border border-white/20 rounded-lg" onClick={() => pdfImportRef.current?.click()} disabled={isParsingPDF}>
+                    {isParsingPDF ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Sparkles className="mr-1.5 h-4 w-4" />}
+                    {isParsingPDF ? 'Identificando...' : 'Importar PDF'}
+                  </Button>
+                )}
                 <Button variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white border border-white/20 rounded-lg" onClick={() => openNewApolice(todasEmpresas[0]?.id)}>
                   <Plus className="mr-1.5 h-4 w-4" /> Nova Apólice
                 </Button>
