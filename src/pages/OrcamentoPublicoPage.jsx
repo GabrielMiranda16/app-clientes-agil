@@ -249,7 +249,8 @@ const OrcamentoPublicoPage = () => {
     setAceitando(true);
     try {
       const isAuto = segmento === 'AUTO';
-      const novoStatus = isAuto ? 'ASSINATURA' : 'DOCUMENTOS';
+      const skipDocs = isAuto || segmento === 'VIAGEM';
+      const novoStatus = skipDocs ? 'ASSINATURA' : 'DOCUMENTOS';
       const updateData = { status: novoStatus, data_documentos: new Date().toISOString() };
       if (proposta) {
         const pl0 = proposta.planos?.find(pl => pl.valor) || proposta.planos?.[0];
@@ -263,7 +264,7 @@ const OrcamentoPublicoPage = () => {
       supabase.functions.invoke('notify-orcamento-aceito', { body: { orcamento_id: orcamento.id } }).catch(() => {});
       setPropostaEscolhida(proposta);
       setOrcamento(prev => ({ ...prev, status: novoStatus }));
-      setStage(isAuto ? 'aceito' : 'documentos');
+      setStage(skipDocs ? 'aceito' : 'documentos');
     } catch (err) {
       console.error(err);
     } finally {
