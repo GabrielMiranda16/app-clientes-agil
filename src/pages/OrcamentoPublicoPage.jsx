@@ -633,6 +633,52 @@ const OrcamentoPublicoPage = () => {
                   {/* Right column — all sections */}
                   <div className="divide-y divide-white/15 right-col-sections">
 
+                    {/* Dados do Seguro — todos os segmentos */}
+                    {orcamento?.observacoes && (() => {
+                      const TITULO_DADOS = {
+                        AUTO: 'Dados do Veículo', VIAGEM: 'Dados da Viagem',
+                        SAUDE: 'Dados do Beneficiário', SAUDE_VIDA_ODONTO: 'Dados do Beneficiário',
+                        ODONTOLOGICO: 'Dados do Beneficiário', VIDA: 'Dados do Beneficiário',
+                        RESIDENCIAL: 'Dados do Imóvel', EMPRESARIAL: 'Dados da Empresa',
+                        PET_SAUDE: 'Dados do Pet', PET_SEGURO: 'Dados do Pet',
+                        FROTA: 'Dados da Frota', AUTO_FROTA: 'Dados da Frota',
+                        CARGAS: 'Dados da Carga', EQUIPAMENTOS: 'Dados do Equipamento',
+                      };
+                      const fmtDate = (v) => {
+                        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+                        return m ? `${m[3]}/${m[2]}/${m[1]}` : v;
+                      };
+                      const linhas = orcamento.observacoes.split('\n').filter(Boolean);
+                      const todos = linhas.map(l => {
+                        const idx = l.indexOf(': ');
+                        if (idx === -1) return null;
+                        return { label: l.slice(0, idx).replace(/\s*\*$/, '').trim(), valor: fmtDate(l.slice(idx + 2).trim()) };
+                      }).filter(Boolean);
+                      const logoEntry = todos.find(c => c.label === 'Logo');
+                      const campos = todos.filter(c => c.label !== 'Logo');
+                      if (campos.length === 0) return null;
+                      return (
+                        <div className="px-6 sm:px-8 py-6">
+                          <div className="flex items-center gap-3 mb-4">
+                            {logoEntry && (
+                              <img src={logoEntry.valor} alt="Logo" className="h-20 w-32 object-contain bg-white/90 rounded-xl p-2" />
+                            )}
+                            <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest">
+                              {TITULO_DADOS[segmento] || 'Dados do Segurado'}
+                            </span>
+                          </div>
+                          <div className="rounded-2xl overflow-hidden bg-white/10 border border-white/15">
+                            {campos.map((c, i) => (
+                              <div key={i} className={`flex items-start justify-between px-5 py-3 gap-4 ${i < campos.length - 1 ? 'border-b border-white/10' : ''}`}>
+                                <span className="text-sm text-white/60 shrink-0">{c.label}</span>
+                                <span className="text-sm font-medium text-white text-right">{c.valor}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     {/* Cenário Atual */}
                     {cenarios.length > 0 && (
                       <div className="px-6 sm:px-8 py-6">
@@ -677,8 +723,8 @@ const OrcamentoPublicoPage = () => {
                       </div>
                     )}
 
-                    {/* Dados do Veículo — AUTO */}
-                    {segmento === 'AUTO' && orcamento?.observacoes && (() => {
+                    {/* Dados do Veículo — AUTO (legado, substituído pela seção genérica acima) */}
+                    {false && segmento === 'AUTO' && orcamento?.observacoes && (() => {
                       const linhas = orcamento.observacoes.split('\n').filter(Boolean);
                       const todos = linhas.map(l => {
                         const idx = l.indexOf(': ');
