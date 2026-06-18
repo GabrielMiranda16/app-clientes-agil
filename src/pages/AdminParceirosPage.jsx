@@ -1450,18 +1450,6 @@ const AdminParceirosPage = () => {
               placeholder="Ex: 50" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label className="text-sm">Nº da apólice</Label>
-            <Input value={formC.numero_apolice} onChange={e => setFormC(f => ({ ...f, numero_apolice: e.target.value }))}
-              placeholder="Ex: 123456789" className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-sm">Data de vencimento</Label>
-            <Input type="date" value={formC.data_vencimento} onChange={e => setFormC(f => ({ ...f, data_vencimento: e.target.value }))}
-              className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580]" />
-          </div>
-        </div>
         {formC.valor_base && formC.comissao_percentual && (() => {
           const base = parseBRL(formC.valor_base) || 0;
           const pct = parseFloat(formC.comissao_percentual) || 0;
