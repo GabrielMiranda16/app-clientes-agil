@@ -74,8 +74,15 @@ const SEGMENTO_CAMPOS = {
     { key: 'logo_marca',     label: 'Logo',               type: 'text', optional: true, hidden: true },
   ],
   SAUDE: [
-    { key: 'tipo', label: 'Modalidade do plano', type: 'select', options: ['INDIVIDUAL', 'MEI', 'PME', 'PJ'] },
+    { key: 'tipo', label: 'Modalidade do plano', type: 'select', options: [
+      { value: 'INDIVIDUAL', label: 'INDIVIDUAL' },
+      { value: 'MEI',        label: 'MEI/FAMILIAR' },
+      { value: 'PME',        label: 'PME (até 99 vidas)' },
+      { value: 'PJ',         label: 'PJ (acima de 100 vidas)' },
+    ]},
     { key: 'qtd_vidas', label: 'Número de vidas', type: 'number', placeholder: 'Ex: 3' },
+    { key: 'cidade', label: 'Cidade', placeholder: 'Ex: São Paulo' },
+    { key: 'estado', label: 'Estado', type: 'select', options: ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'] },
   ],
   RESIDENCIAL: [
     { key: 'tipo_imovel',  label: 'Tipo de imóvel',        type: 'select', options: ['Casa', 'Apartamento', 'Sobrado'] },
@@ -889,7 +896,11 @@ const ParceiroDashboard = () => {
                                 onChange={e => setExtra(key, e.target.value)}
                                 className={`w-full rounded-lg border bg-[#f0f7ff] px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580] ${vazio ? 'border-red-300' : 'border-gray-200'}`}>
                                 <option value="">Selecione...</option>
-                                {(options || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                {(options || []).map(opt => {
+                                  const val = typeof opt === 'object' ? opt.value : opt;
+                                  const lbl = typeof opt === 'object' ? opt.label : opt;
+                                  return <option key={val} value={val}>{lbl}</option>;
+                                })}
                               </select>
                             ) : (
                               <input value={form.extras[key] || ''} onChange={e => setExtra(key, campo.money ? maskBRL(e.target.value) : e.target.value)}
