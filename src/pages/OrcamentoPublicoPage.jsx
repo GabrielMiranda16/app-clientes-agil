@@ -885,7 +885,7 @@ const OrcamentoPublicoPage = () => {
                     })()}
 
                     {/* Comparação de Planos / Coberturas */}
-                    {propostas.length > 1 && segmento !== 'AUTO' && (
+                    {propostas.length > 1 && segmento !== 'AUTO' && segmento !== 'VIAGEM' && (
                       <div className="px-6 sm:px-8 py-6">
                         <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block mb-4">
                           {segmento === 'AUTO' ? 'Comparação de Coberturas' : 'Comparação de Planos'}
