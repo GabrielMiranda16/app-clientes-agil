@@ -21,7 +21,7 @@ import {
   Users, Building, UserCheck, UserPlus, Trash2, ToggleLeft, ToggleRight,
   Loader2, Edit, FileText, Briefcase, ClipboardList, Shield,
   Clock, CheckCircle2, DollarSign, MoreHorizontal, ChevronLeft, ChevronRight,
-  AlertCircle, TrendingUp, AlertTriangle, Download, FileSpreadsheet, HeartHandshake, Plus
+  AlertCircle, TrendingUp, AlertTriangle, Download, FileSpreadsheet, HeartHandshake, Plus, Bot
 } from 'lucide-react';
 import { motion } from "framer-motion";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -83,6 +83,10 @@ const CEODashboard = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(true);
 
+  // Gi métricas
+  const [giMetricas, setGiMetricas] = useState(null);
+  const [isLoadingGi, setIsLoadingGi] = useState(true);
+
   // Parceiros state
   const [parceiros, setParceiros] = useState([]);
   const [isNovoParceiro, setIsNovoParceiro] = useState(false);
@@ -132,8 +136,27 @@ const CEODashboard = () => {
     }
   };
 
+  const fetchGiMetricas = async () => {
+    try {
+      const res = await fetch('https://agil-seguros.fly.dev/api/metricas?token=agil-gi-metricas-2026');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      setGiMetricas(data);
+    } catch (err) {
+      console.error('Erro ao buscar métricas da Gi:', err);
+    } finally {
+      setIsLoadingGi(false);
+    }
+  };
+
   useEffect(() => {
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    fetchGiMetricas();
+    const interval = setInterval(fetchGiMetricas, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleRefresh = () => {
@@ -535,6 +558,71 @@ const CEODashboard = () => {
                   </Card>
                 </motion.div>
               </div>
+
+              {/* Gi — Métricas do Agente Virtual */}
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="mt-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <div className="flex items-center gap-2">
+                      <Bot className="h-5 w-5 text-[#003580]" />
+                      <CardTitle className="text-base">Gi — Agente Virtual</CardTitle>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={fetchGiMetricas} className="text-xs text-[#003580] hover:underline flex items-center gap-1">
+                        {isLoadingGi ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                        Atualizar
+                      </button>
+                      {giMetricas && (
+                        <span className="text-xs text-gray-400">
+                          {new Date(giMetricas.gerado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoadingGi ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                        {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-16" />)}
+                      </div>
+                    ) : giMetricas ? (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                          {[
+                            { label: 'Sessões ativas', hoje: giMetricas.sessoes_ativas, mes: null },
+                            { label: 'Conversas', hoje: giMetricas.hoje.conversas, mes: giMetricas.mes.conversas },
+                            { label: 'Cotações', hoje: giMetricas.hoje.cotacoes_iniciadas, mes: giMetricas.mes.cotacoes_iniciadas },
+                            { label: 'Concluídas', hoje: giMetricas.hoje.cotacoes_concluidas, mes: giMetricas.mes.cotacoes_concluidas },
+                            { label: 'Leads', hoje: giMetricas.hoje.leads_gerados, mes: giMetricas.mes.leads_gerados },
+                            { label: 'Urgências', hoje: giMetricas.hoje.urgencias, mes: giMetricas.mes.urgencias },
+                          ].map((m, i) => (
+                            <div key={i} className="bg-gray-50 rounded-lg border p-3 text-center">
+                              <p className="text-xs text-gray-500 mb-1">{m.label}</p>
+                              <p className="text-2xl font-bold text-[#003580]">{m.hoje}</p>
+                              {m.mes !== null && <p className="text-xs text-gray-400">{m.mes} no mês</p>}
+                            </div>
+                          ))}
+                        </div>
+                        {giMetricas.mes.por_produto && Object.keys(giMetricas.mes.por_produto).length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 mb-2">Cotações por produto (mês)</p>
+                            <div className="flex flex-wrap gap-2">
+                              {Object.entries(giMetricas.mes.por_produto)
+                                .sort(([, a], [, b]) => b - a)
+                                .map(([produto, count]) => (
+                                  <span key={produto} className="inline-flex items-center gap-1 bg-blue-50 text-[#003580] text-xs font-medium px-2 py-1 rounded-full border border-blue-100">
+                                    {produto} <span className="font-bold">{count}</span>
+                                  </span>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-400">Não foi possível carregar métricas da Gi.</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
 
               <div className="mt-8 pt-4 border-t text-center text-sm text-gray-500">Dashboard do CEO - Seguros Ágil | Última atualização: {getCurrentDateTime()}</div>
             </motion.div>
