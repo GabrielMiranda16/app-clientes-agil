@@ -337,8 +337,18 @@ const ParceiroDashboard = () => {
       if (error) throw error;
       toast({ title: 'Orçamento solicitado!', description: 'O ADM será notificado e responderá em breve.' });
 
-      // Notifica ADM via WhatsApp
+      // Cria lembrete automático no bot WhatsApp
       const segLabel = SEGMENTOS.find(s => s.value === form.segmento)?.label || form.segmento;
+      fetch('https://agil-instagram.fly.dev/api/lembrete-externo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          descricao: `Nova solicitação ${segLabel} — ${form.cliente_nome.trim()} (Parceiro: ${parceiro.nome_completo})`,
+          token: 'agil-lembretes-2026',
+        }),
+      }).catch(() => {});
+
+      // Notifica ADM via WhatsApp
       supabase.functions.invoke('send-whatsapp', {
         body: {
           phone: '5511999996863',
