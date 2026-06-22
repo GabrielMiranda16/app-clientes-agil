@@ -87,6 +87,9 @@ const CEODashboard = () => {
   const [giMetricas, setGiMetricas] = useState(null);
   const [isLoadingGi, setIsLoadingGi] = useState(true);
 
+  // Orcamentos da semana
+  const [orcamentosSemana, setOrcamentosSemana] = useState([]);
+
   // Parceiros state
   const [parceiros, setParceiros] = useState([]);
   const [isNovoParceiro, setIsNovoParceiro] = useState(false);
@@ -128,6 +131,16 @@ const CEODashboard = () => {
         const apolicesData = await apolicesService.getAllApolices();
         setApolices(apolicesData);
       } catch { setApolices([]); }
+
+      try {
+        const seteDiasAtras = new Date();
+        seteDiasAtras.setDate(seteDiasAtras.getDate() - 7);
+        const { data: orcSemana } = await supabaseClient
+          .from('orcamentos')
+          .select('id, status, created_at, segmento, cliente_nome, parceiro_id')
+          .gte('created_at', seteDiasAtras.toISOString());
+        setOrcamentosSemana(orcSemana || []);
+      } catch { setOrcamentosSemana([]); }
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({ variant: 'destructive', title: 'Erro', description: 'Falha ao carregar dados.' });
@@ -635,6 +648,59 @@ const CEODashboard = () => {
                   </CardContent>
                 </Card>
               </motion.div>
+
+              {/* Funil da semana — Parceiros */}
+              {(() => {
+                const agora = new Date();
+                const tresDiasAtras = new Date(agora - 3 * 24 * 60 * 60 * 1000);
+                const novas = orcamentosSemana.length;
+                const aguardando = orcamentosSemana.filter(o => o.status === 'SOLICITACAO').length;
+                const emAndamento = orcamentosSemana.filter(o => ['ORCAMENTO','DOCUMENTOS','ASSINATURA'].includes(o.status)).length;
+                const concluidas = orcamentosSemana.filter(o => ['CONCLUIDO','COMISSAO'].includes(o.status)).length;
+                const paradas = orcamentosSemana.filter(o => o.status === 'SOLICITACAO' && new Date(o.created_at) < tresDiasAtras);
+                return (
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mt-4">
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center gap-2">
+                          <ClipboardList className="h-5 w-5 text-[#003580]" />
+                          <CardTitle className="text-base">Funil da Semana — Parceiros</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          {[
+                            { label: 'Novas', value: novas, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-100' },
+                            { label: 'Aguardando ADM', value: aguardando, color: 'text-yellow-600', bg: 'bg-yellow-50 border-yellow-100' },
+                            { label: 'Em andamento', value: emAndamento, color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-100' },
+                            { label: 'Concluídas', value: concluidas, color: 'text-green-600', bg: 'bg-green-50 border-green-100' },
+                          ].map((m, i) => (
+                            <div key={i} className={`rounded-lg border p-3 text-center ${m.bg}`}>
+                              <p className="text-xs text-gray-500 mb-1">{m.label}</p>
+                              <p className={`text-2xl font-bold ${m.color}`}>{m.value}</p>
+                            </div>
+                          ))}
+                        </div>
+                        {paradas.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold text-red-500 mb-2 flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3" /> {paradas.length} solicitação(ões) sem resposta há +3 dias
+                            </p>
+                            <div className="space-y-1">
+                              {paradas.slice(0, 5).map(o => (
+                                <div key={o.id} className="flex items-center justify-between text-xs bg-red-50 border border-red-100 rounded px-3 py-1.5">
+                                  <span className="font-medium text-gray-700">{o.cliente_nome}</span>
+                                  <span className="text-gray-400">{o.segmento} · {new Date(o.created_at).toLocaleDateString('pt-BR')}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })()}
 
               <div className="mt-8 pt-4 border-t text-center text-sm text-gray-500">Dashboard do CEO - Seguros Ágil | Última atualização: {getCurrentDateTime()}</div>
             </motion.div>
