@@ -634,12 +634,48 @@ const AdminParceirosPage = () => {
       toast({ title: 'Orçamento enviado!', description: 'Link gerado com sucesso.' });
 
       const parceiroTel = selected?.parceiros?.telefone;
+      const segLabel = SEGMENTO_LABEL[selected.segmento] || selected.segmento;
       if (parceiroTel) {
-        const segLabel = SEGMENTO_LABEL[selected.segmento] || selected.segmento;
         supabase.functions.invoke('send-whatsapp', {
           body: {
             phone: parceiroTel,
             message: `📋 *Orçamento pronto!*\n\nOlá, ${selected.parceiros?.nome_completo?.split(' ')[0] || 'Parceiro'}! O orçamento para *${selected.cliente_nome}* (${segLabel}) está pronto.\n\n🔗 ${window.location.origin}/orcamento/${slug}`,
+          },
+        }).catch(() => {});
+      }
+
+      if (selected?.cliente_email) {
+        const primeiroNome = selected.cliente_nome?.split(' ')[0] || 'Cliente';
+        const linkOrcamento = `${window.location.origin}/orcamento/${slug}`;
+        supabase.functions.invoke('send-email', {
+          body: {
+            to: selected.cliente_email,
+            subject: `Seu orçamento de ${segLabel} está pronto — Ágil Seguros`,
+            html: `
+<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;">
+  <div style="background:#003580;padding:28px 32px;border-radius:12px 12px 0 0;">
+    <h1 style="color:#fff;margin:0;font-size:22px;">Ágil Seguros</h1>
+    <p style="color:#cce0ff;margin:6px 0 0;font-size:14px;">Seu orçamento está pronto</p>
+  </div>
+  <div style="padding:32px;">
+    <p style="font-size:16px;color:#222;">Olá, <strong>${primeiroNome}</strong>!</p>
+    <p style="font-size:15px;color:#444;line-height:1.6;">
+      Preparamos um orçamento personalizado de <strong>${segLabel}</strong> especialmente para você.
+      Clique no botão abaixo para visualizar as opções disponíveis e escolher a que melhor se adapta ao seu perfil.
+    </p>
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${linkOrcamento}" style="background:#003580;color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:16px;font-weight:bold;display:inline-block;">
+        Ver meu orçamento →
+      </a>
+    </div>
+    <p style="font-size:13px;color:#888;border-top:1px solid #eee;padding-top:16px;margin-top:8px;">
+      Ou copie o link: <a href="${linkOrcamento}" style="color:#003580;">${linkOrcamento}</a>
+    </p>
+    <p style="font-size:13px;color:#aaa;margin-top:16px;">
+      Ágil Seguros · SUSEP 252166308 · <a href="mailto:cotacao@segurosagil.com.br" style="color:#003580;">cotacao@segurosagil.com.br</a>
+    </p>
+  </div>
+</div>`,
           },
         }).catch(() => {});
       }
