@@ -1828,6 +1828,9 @@ const AdminParceirosPage = () => {
                   {Object.entries(SEGMENTO_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
               </div>
+              <div className="border-t border-gray-100 pt-3 mt-1">
+                <p className="text-xs font-semibold text-[#003580] uppercase tracking-wide mb-3">Dados do cliente</p>
+              </div>
               <div className="space-y-1">
                 <Label className="text-xs text-gray-500">Nome completo *</Label>
                 <Input value={novoForm.cliente_nome} onChange={e => setNovoForm(f => ({ ...f, cliente_nome: e.target.value }))}
