@@ -672,7 +672,7 @@ const AdminParceirosPage = () => {
       Ou copie o link: <a href="${linkOrcamento}" style="color:#003580;">${linkOrcamento}</a>
     </p>
     <p style="font-size:13px;color:#aaa;margin-top:16px;">
-      Ágil Seguros · SUSEP 252166308 · <a href="mailto:cotacao@segurosagil.com.br" style="color:#003580;">cotacao@segurosagil.com.br</a>
+      Ágil Seguros · SUSEP 252166308 · <a href="mailto:contato@segurosagil.com.br" style="color:#003580;">contato@segurosagil.com.br</a>
     </p>
   </div>
 </div>`,
