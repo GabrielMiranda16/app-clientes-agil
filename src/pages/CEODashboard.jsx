@@ -90,6 +90,27 @@ const CEODashboard = () => {
   // Orcamentos da semana
   const [orcamentosSemana, setOrcamentosSemana] = useState([]);
 
+  // Lembretes Ágil
+  const [lembretes, setLembretes] = useState([]);
+  const [loadingLembretes, setLoadingLembretes] = useState(true);
+
+  const fetchLembretes = async () => {
+    try {
+      const r = await fetch('https://agil-instagram.fly.dev/api/lembretes?token=agil-lembretes-2026&empresa=agil');
+      if (r.ok) setLembretes(await r.json());
+    } catch {}
+    setLoadingLembretes(false);
+  };
+
+  const concluirLembrete = async (id) => {
+    await fetch(`https://agil-instagram.fly.dev/api/lembretes/${id}/concluir`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: 'agil-lembretes-2026' }),
+    });
+    setLembretes(prev => prev.filter(l => l.id !== id));
+  };
+
   // Parceiros state
   const [parceiros, setParceiros] = useState([]);
   const [isNovoParceiro, setIsNovoParceiro] = useState(false);
@@ -170,6 +191,10 @@ const CEODashboard = () => {
     fetchGiMetricas();
     const interval = setInterval(fetchGiMetricas, 60000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    fetchLembretes();
   }, []);
 
   const handleRefresh = () => {
@@ -701,6 +726,52 @@ const CEODashboard = () => {
                   </motion.div>
                 );
               })()}
+
+              {/* Lembretes Ágil */}
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="mt-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <ClipboardList className="h-5 w-5 text-[#003580]" />
+                        <CardTitle className="text-base">Lembretes Ágil</CardTitle>
+                        {lembretes.length > 0 && (
+                          <Badge className="bg-[#003580] text-white text-xs">{lembretes.length}</Badge>
+                        )}
+                      </div>
+                      <button onClick={fetchLembretes} className="text-xs text-[#003580] hover:underline">Atualizar</button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingLembretes ? (
+                      <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-8 w-full" />)}</div>
+                    ) : lembretes.length === 0 ? (
+                      <p className="text-sm text-gray-400 text-center py-2">Nenhum lembrete pendente ✨</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {lembretes.map(l => (
+                          <div key={l.id} className="flex items-center justify-between bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
+                            <div>
+                              <p className="text-sm font-medium text-gray-800">{l.descricao}</p>
+                              {l.data_lembrete && (
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                  📅 {new Date(l.data_lembrete).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => concluirLembrete(l.id)}
+                              className="ml-3 text-xs text-green-600 hover:text-green-800 font-medium flex items-center gap-1 shrink-0"
+                            >
+                              <CheckCircle2 className="h-4 w-4" /> Concluir
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
 
               <div className="mt-8 pt-4 border-t text-center text-sm text-gray-500">Dashboard do CEO - Seguros Ágil | Última atualização: {getCurrentDateTime()}</div>
             </motion.div>
