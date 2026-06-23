@@ -56,6 +56,11 @@ const AdminClientePage = () => {
   const emptyFilialForm = { razao_social: '', nome_fantasia: '', cnpj: '', cep: '', rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' };
   const [filialFormData, setFilialFormData] = useState(emptyFilialForm);
 
+  // Matriz modal
+  const [isEditMatrizModalOpen, setIsEditMatrizModalOpen] = useState(false);
+  const emptyMatrizForm = { razao_social: '', nome_fantasia: '', cnpj: '', email_cliente: '', cep: '', rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' };
+  const [matrizFormData, setMatrizFormData] = useState(emptyMatrizForm);
+
   const canManage = user.perfil === 'CEO' || user.perfil === 'ADM';
 
   useEffect(() => {
@@ -118,6 +123,64 @@ const AdminClientePage = () => {
     if (id === 'cnpj') formatted = applyCnpjMask(value);
     if (id === 'cep') formatted = applyCepMask(value);
     setFilialFormData(prev => ({ ...prev, [id]: formatted }));
+  };
+
+  const handleMatrizInputChange = (e) => {
+    const { id, value } = e.target;
+    let formatted = value;
+    if (id === 'cnpj') formatted = applyCnpjMask(value);
+    if (id === 'cep') formatted = applyCepMask(value);
+    setMatrizFormData(prev => ({ ...prev, [id]: formatted }));
+  };
+
+  const buscarCepMatriz = async (cep) => {
+    const nums = cep.replace(/\D/g, '');
+    if (nums.length !== 8) return;
+    setIsCepLoading(true);
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch(`https://viacep.com.br/ws/${nums}/json/`, { signal: controller.signal });
+      clearTimeout(timeout);
+      const data = await res.json();
+      if (data.erro) return toast({ variant: 'destructive', title: 'CEP não encontrado' });
+      setMatrizFormData(prev => ({ ...prev, rua: data.logradouro || '', bairro: data.bairro || '', cidade: data.localidade || '', estado: data.uf || '' }));
+    } catch {
+      toast({ variant: 'destructive', title: 'Erro ao buscar CEP' });
+    } finally {
+      setIsCepLoading(false);
+    }
+  };
+
+  const handleOpenEditMatriz = () => {
+    setMatrizFormData({
+      ...emptyMatrizForm,
+      razao_social: matriz.razao_social || '',
+      nome_fantasia: matriz.nome_fantasia || '',
+      cnpj: matriz.cnpj ? (matriz.cnpj.replace(/\D/g, '').length === 11 ? applyCpfMask(matriz.cnpj) : applyCnpjMask(matriz.cnpj)) : '',
+      email_cliente: matriz.email_cliente || '',
+    });
+    setIsEditMatrizModalOpen(true);
+  };
+
+  const handleEditMatriz = async (e) => {
+    e.preventDefault();
+    if (!matrizFormData.razao_social || !matrizFormData.cnpj)
+      return toast({ variant: 'destructive', title: 'Erro', description: 'Razão Social e CNPJ/CPF são obrigatórios.' });
+    setIsSubmitting(true);
+    try {
+      const { cep, rua, numero, complemento, bairro, cidade, estado, ...rest } = matrizFormData;
+      const endereco_completo = buildEndereco(matrizFormData) || matriz.endereco_completo || '';
+      const cnpjLimpo = matrizFormData.cnpj.replace(/\D/g, '');
+      const updated = await empresasService.updateEmpresa(matriz.id, { ...rest, cnpj: cnpjLimpo, endereco_completo });
+      setMatriz(prev => ({ ...prev, ...updated }));
+      toast({ title: 'Cliente atualizado.' });
+      setIsEditMatrizModalOpen(false);
+    } catch {
+      toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao atualizar cliente.' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const buscarCep = async (cep) => {
@@ -271,9 +334,16 @@ const AdminClientePage = () => {
                     {matriz.nome_fantasia && <p className="text-blue-100 text-sm">{matriz.razao_social}</p>}
                   </div>
                 </div>
-                <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/20 text-white text-xs font-semibold self-start sm:self-center">
-                  MATRIZ
-                </span>
+                <div className="flex items-center gap-2 self-start sm:self-center">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/20 text-white text-xs font-semibold">
+                    MATRIZ
+                  </span>
+                  {canManage && (
+                    <button onClick={handleOpenEditMatriz} className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors" title="Editar cliente">
+                      <Edit className="h-4 w-4 text-white" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
             <CardContent className="pt-4 pb-4">
@@ -435,6 +505,58 @@ const AdminClientePage = () => {
           </form>
         </DialogContent>
       </Dialog>
+      {/* Modal Editar Matriz */}
+      <Dialog open={isEditMatrizModalOpen} onOpenChange={setIsEditMatrizModalOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Cliente</DialogTitle>
+            <p className="text-sm text-muted-foreground">{matriz?.nome_fantasia || matriz?.razao_social}</p>
+          </DialogHeader>
+          <form onSubmit={handleEditMatriz} className="space-y-3 py-2">
+            <div className="grid grid-cols-1 gap-3">
+              <div><Label>Razão Social *</Label><Input id="razao_social" value={matrizFormData.razao_social} onChange={handleMatrizInputChange} /></div>
+              <div><Label>Nome Fantasia</Label><Input id="nome_fantasia" value={matrizFormData.nome_fantasia} onChange={handleMatrizInputChange} /></div>
+              <div><Label>CNPJ / CPF *</Label><Input id="cnpj" placeholder="00.000.000/0000-00" value={matrizFormData.cnpj} onChange={handleMatrizInputChange} /></div>
+              <div><Label>E-mail de acesso</Label><Input id="email_cliente" type="email" placeholder="cliente@empresa.com.br" value={matrizFormData.email_cliente} onChange={handleMatrizInputChange} /></div>
+            </div>
+            <div className="border-t pt-3">
+              <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Endereço</p>
+              {matriz?.endereco_completo && !matrizFormData.cep && (
+                <p className="text-xs text-gray-500 bg-gray-50 rounded p-2 mb-3">Atual: {matriz.endereco_completo}</p>
+              )}
+              <div className="grid grid-cols-1 gap-3">
+                <div>
+                  <Label>CEP</Label>
+                  <div className="flex gap-2">
+                    <Input id="cep" placeholder="00000-000" maxLength={9} value={matrizFormData.cep} onChange={handleMatrizInputChange} onBlur={() => buscarCepMatriz(matrizFormData.cep)} />
+                    <button type="button" onClick={() => buscarCepMatriz(matrizFormData.cep)} disabled={isCepLoading} className="px-3 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 flex items-center gap-1 text-sm">
+                      {isCepLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-2"><Label>Rua</Label><Input id="rua" value={matrizFormData.rua} readOnly className="bg-gray-50 text-gray-600" /></div>
+                  <div><Label>Número</Label><Input id="numero" placeholder="123" value={matrizFormData.numero} onChange={handleMatrizInputChange} /></div>
+                </div>
+                <div><Label>Complemento</Label><Input id="complemento" placeholder="Apto, bloco..." value={matrizFormData.complemento} onChange={handleMatrizInputChange} /></div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div><Label>Bairro</Label><Input id="bairro" value={matrizFormData.bairro} readOnly className="bg-gray-50 text-gray-600" /></div>
+                  <div><Label>Cidade</Label><Input id="cidade" value={matrizFormData.cidade} readOnly className="bg-gray-50 text-gray-600" /></div>
+                  <div><Label>UF</Label><Input id="estado" value={matrizFormData.estado} readOnly className="bg-gray-50 text-gray-600" /></div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsEditMatrizModalOpen(false)}>Cancelar</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-[#003580] hover:bg-[#002060] text-white">
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Salvar
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Modal Editar Filial */}
       <Dialog open={isEditFilialModalOpen} onOpenChange={setIsEditFilialModalOpen}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
