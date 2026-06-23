@@ -337,14 +337,18 @@ const ParceiroDashboard = () => {
       if (error) throw error;
       toast({ title: 'Orçamento solicitado!', description: 'O ADM será notificado e responderá em breve.' });
 
-      // Cria lembrete automático no bot WhatsApp
+      // Notifica grupo Ágil no WhatsApp via bot
       const segLabel = SEGMENTOS.find(s => s.value === form.segmento)?.label || form.segmento;
-      fetch('https://agil-instagram.fly.dev/api/lembrete-externo', {
+      fetch('https://agil-instagram.fly.dev/api/nova-solicitacao', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          descricao: `Nova solicitação ${segLabel} — ${form.cliente_nome.trim()} (Parceiro: ${parceiro.nome_completo})`,
           token: 'agil-lembretes-2026',
+          parceiro_nome: parceiro.nome_completo,
+          cliente_nome: form.cliente_nome.trim(),
+          segmento: segLabel,
+          cliente_telefone: form.cliente_telefone.trim(),
+          observacoes: form.observacoes.trim(),
         }),
       }).catch(() => {});
 
