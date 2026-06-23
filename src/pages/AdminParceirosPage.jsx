@@ -10,7 +10,7 @@ import {
   HeartHandshake, FileText, Clock, CheckCircle2, DollarSign,
   X, Send, Loader2, ChevronRight, Copy, Check,
   Upload, Eye, Plus, Minus, Trash2, ArrowRight, Star,
-  Link as LinkIcon, ChevronDown, Shield, ArrowUp, ArrowDown,
+  Link as LinkIcon, ChevronDown, Shield, ArrowUp, ArrowDown, Edit2,
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
@@ -382,6 +382,8 @@ const AdminParceirosPage = () => {
   const [editandoProposta, setEditandoProposta] = useState(false);
   const [novaPropostaMode, setNovaPropostaMode] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editandoCliente, setEditandoCliente] = useState(false);
+  const [clienteForm, setClienteForm] = useState({ cliente_nome: '', cliente_telefone: '', cliente_email: '', cliente_cpf: '' });
   const [selectedComissao, setSelectedComissao] = useState(null);
 
   // Criar orçamento
@@ -470,6 +472,7 @@ const AdminParceirosPage = () => {
           setEditandoProposta(false);
           setNovaPropostaMode(false);
           setConfirmDelete(false);
+          setEditandoCliente(false);
           setCenarios([cenarioVazio()]);
           setPropostas([propVazio()]);
           setExpandedPropIdx(0);
@@ -496,6 +499,7 @@ const AdminParceirosPage = () => {
     setEditandoProposta(false);
     setNovaPropostaMode(false);
     setConfirmDelete(false);
+    setEditandoCliente(false);
     setFormR({
       docsBase: o.lista_documentos || DOCS_POR_SEGMENTO[o.segmento] || [],
       docExtra: '',
@@ -790,6 +794,40 @@ const AdminParceirosPage = () => {
       toast({ variant: 'destructive', title: 'Erro no upload.', description: err?.message });
     } finally {
       setUploadingComp(false);
+    }
+  };
+
+  const handleAbrirEditarCliente = () => {
+    setClienteForm({
+      cliente_nome: selected.cliente_nome || '',
+      cliente_telefone: selected.cliente_telefone || '',
+      cliente_email: selected.cliente_email || '',
+      cliente_cpf: selected.cliente_cpf || '',
+    });
+    setEditandoCliente(true);
+  };
+
+  const handleSalvarCliente = async () => {
+    if (!clienteForm.cliente_nome || !clienteForm.cliente_telefone)
+      return toast({ variant: 'destructive', title: 'Nome e telefone são obrigatórios.' });
+    setEnviando(true);
+    try {
+      const { error } = await supabase.from('orcamentos').update({
+        cliente_nome: clienteForm.cliente_nome,
+        cliente_telefone: clienteForm.cliente_telefone,
+        cliente_email: clienteForm.cliente_email,
+        cliente_cpf: clienteForm.cliente_cpf,
+      }).eq('id', selected.id);
+      if (error) throw error;
+      const updated = { ...selected, ...clienteForm };
+      setSelected(updated);
+      setOrcamentos(prev => prev.map(o => o.id === selected.id ? updated : o));
+      setEditandoCliente(false);
+      toast({ title: 'Dados do cliente atualizados.' });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro ao salvar.', description: err?.message });
+    } finally {
+      setEnviando(false);
     }
   };
 
@@ -1659,28 +1697,74 @@ const AdminParceirosPage = () => {
                             <div className="bg-gray-50 rounded-xl p-3 space-y-1 text-sm">
                               <div className="flex items-center justify-between mb-1.5">
                                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Dados do cliente</p>
-                                {!confirmDelete ? (
-                                  <button type="button" onClick={() => setConfirmDelete(true)}
-                                    className="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1">
-                                    <Trash2 className="h-3.5 w-3.5" /> Excluir
-                                  </button>
-                                ) : (
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-red-600 font-medium">Confirmar?</span>
-                                    <button type="button" onClick={handleExcluir} disabled={enviando}
-                                      className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors">
-                                      {enviando ? 'Excluindo...' : 'Sim'}
+                                <div className="flex items-center gap-2">
+                                  {!editandoCliente && (
+                                    <button type="button" onClick={handleAbrirEditarCliente}
+                                      className="text-xs text-[#003580] hover:text-[#002060] transition-colors flex items-center gap-1">
+                                      <Edit2 className="h-3.5 w-3.5" /> Editar
                                     </button>
-                                    <button type="button" onClick={() => setConfirmDelete(false)}
-                                      className="text-xs text-gray-500 hover:text-gray-700 transition-colors">
-                                      Não
+                                  )}
+                                  {!confirmDelete && !editandoCliente ? (
+                                    <button type="button" onClick={() => setConfirmDelete(true)}
+                                      className="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1">
+                                      <Trash2 className="h-3.5 w-3.5" /> Excluir
+                                    </button>
+                                  ) : !editandoCliente && (
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-red-600 font-medium">Confirmar?</span>
+                                      <button type="button" onClick={handleExcluir} disabled={enviando}
+                                        className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors">
+                                        {enviando ? 'Excluindo...' : 'Sim'}
+                                      </button>
+                                      <button type="button" onClick={() => setConfirmDelete(false)}
+                                        className="text-xs text-gray-500 hover:text-gray-700 transition-colors">
+                                        Não
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              {editandoCliente ? (
+                                <div className="space-y-2 pt-1">
+                                  <div>
+                                    <p className="text-xs text-gray-400 mb-0.5">Nome</p>
+                                    <input className="w-full text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:border-[#003580]"
+                                      value={clienteForm.cliente_nome} onChange={e => setClienteForm(f => ({ ...f, cliente_nome: e.target.value }))} />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-400 mb-0.5">Telefone</p>
+                                    <input className="w-full text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:border-[#003580]"
+                                      value={clienteForm.cliente_telefone} onChange={e => setClienteForm(f => ({ ...f, cliente_telefone: formatPhone(e.target.value) }))} />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-400 mb-0.5">E-mail</p>
+                                    <input className="w-full text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:border-[#003580]"
+                                      value={clienteForm.cliente_email} onChange={e => setClienteForm(f => ({ ...f, cliente_email: e.target.value }))} />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-400 mb-0.5">CPF / CNPJ</p>
+                                    <input className="w-full text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:border-[#003580]"
+                                      value={clienteForm.cliente_cpf} onChange={e => setClienteForm(f => ({ ...f, cliente_cpf: formatCpfCnpj(e.target.value) }))} />
+                                  </div>
+                                  <div className="flex gap-2 pt-1">
+                                    <button type="button" onClick={() => setEditandoCliente(false)} disabled={enviando}
+                                      className="flex-1 text-xs border border-gray-300 rounded-lg py-1.5 text-gray-600 hover:bg-gray-100 transition-colors">
+                                      Cancelar
+                                    </button>
+                                    <button type="button" onClick={handleSalvarCliente} disabled={enviando}
+                                      className="flex-1 text-xs rounded-lg py-1.5 text-white font-semibold transition-colors disabled:opacity-50"
+                                      style={{ background: '#003580' }}>
+                                      {enviando ? 'Salvando...' : 'Salvar'}
                                     </button>
                                   </div>
-                                )}
-                              </div>
-                              {selected.cliente_telefone && <p><span className="text-gray-400">Tel:</span> {selected.cliente_telefone}</p>}
-                              {selected.cliente_email && <p><span className="text-gray-400">Email:</span> {selected.cliente_email}</p>}
-                              {selected.cliente_cpf && <p><span className="text-gray-400">CPF/CNPJ:</span> {selected.cliente_cpf}</p>}
+                                </div>
+                              ) : (
+                                <>
+                                  {selected.cliente_telefone && <p><span className="text-gray-400">Tel:</span> {selected.cliente_telefone}</p>}
+                                  {selected.cliente_email && <p><span className="text-gray-400">Email:</span> {selected.cliente_email}</p>}
+                                  {selected.cliente_cpf && <p><span className="text-gray-400">CPF/CNPJ:</span> {selected.cliente_cpf}</p>}
+                                </>
+                              )}
                               {selected.observacoes && (
                                 <div className="mt-2 pt-2 border-t border-gray-200">
                                   <p className="text-xs text-gray-500 font-medium mb-0.5">Dados da solicitação</p>
