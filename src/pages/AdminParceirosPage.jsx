@@ -384,6 +384,7 @@ const AdminParceirosPage = () => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editandoCliente, setEditandoCliente] = useState(false);
   const [clienteForm, setClienteForm] = useState({ cliente_nome: '', cliente_telefone: '', cliente_email: '', cliente_cpf: '' });
+  const [acessos, setAcessos] = useState([]);
   const [selectedComissao, setSelectedComissao] = useState(null);
 
   // Criar orçamento
@@ -491,6 +492,7 @@ const AdminParceirosPage = () => {
       setExpandedId(null);
       setSelected(null);
       setDocs([]);
+      setAcessos([]);
       setConfirmDelete(false);
       return;
     }
@@ -520,12 +522,12 @@ const AdminParceirosPage = () => {
       valor_base: o.valor_mensalidade ? fmtBRL(o.valor_mensalidade) : '',
       comissao_percentual: o.parceiros?.comissao_percentual ? String(o.parceiros.comissao_percentual) : '50',
     });
-    const { data: docData } = await supabase
-      .from('orcamento_documentos')
-      .select('*')
-      .eq('orcamento_id', o.id)
-      .order('enviado_em', { ascending: true });
+    const [{ data: docData }, { data: acessoData }] = await Promise.all([
+      supabase.from('orcamento_documentos').select('*').eq('orcamento_id', o.id).order('enviado_em', { ascending: true }),
+      supabase.from('orcamento_acessos').select('*').eq('orcamento_id', o.id).order('acessado_em', { ascending: false }),
+    ]);
     setDocs(docData || []);
+    setAcessos(acessoData || []);
     if (o.status === 'COMISSAO') {
       const { data: comData } = await supabase.from('comissoes').select('*').eq('orcamento_id', o.id).maybeSingle();
       setSelectedComissao(comData || null);
@@ -535,10 +537,11 @@ const AdminParceirosPage = () => {
   };
 
   const refreshSelected = async (id) => {
-    const [orcRes, docsRes, comRes] = await Promise.allSettled([
+    const [orcRes, docsRes, comRes, acessosRes] = await Promise.allSettled([
       supabase.from('orcamentos').select('*, parceiros(nome_completo, modalidade, comissao_percentual, telefone)').eq('id', id).maybeSingle(),
       supabase.from('orcamento_documentos').select('*').eq('orcamento_id', id).order('enviado_em', { ascending: true }),
       supabase.from('comissoes').select('*').eq('orcamento_id', id).maybeSingle(),
+      supabase.from('orcamento_acessos').select('*').eq('orcamento_id', id).order('acessado_em', { ascending: false }),
     ]);
     if (orcRes.status === 'fulfilled' && orcRes.value.data) {
       const data = orcRes.value.data;
@@ -547,6 +550,7 @@ const AdminParceirosPage = () => {
     }
     if (docsRes.status === 'fulfilled') setDocs(docsRes.value.data || []);
     if (comRes.status === 'fulfilled') setSelectedComissao(comRes.value.data || null);
+    if (acessosRes.status === 'fulfilled') setAcessos(acessosRes.value.data || []);
   };
 
   // ── Cenários ──
@@ -1413,6 +1417,31 @@ const AdminParceirosPage = () => {
             </div>
             <p className="text-xs text-blue-500 mt-1">Passe este link ao parceiro para repassar ao cliente</p>
           </div>
+
+          {/* Atividade do cliente */}
+          {(() => {
+            const ultimo = acessos[0];
+            const total = acessos.length;
+            const leuTudo = acessos.some(a => a.scroll_fim);
+            const maiorTempo = acessos.reduce((max, a) => Math.max(max, a.tempo_pagina || 0), 0);
+            const fmtTempo = (s) => s >= 60 ? `${Math.floor(s / 60)}min ${s % 60}s` : `${s}s`;
+            const fmtData = (d) => d ? new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+            return (
+              <div className={`rounded-xl p-3 text-xs border ${total === 0 ? 'bg-gray-50 border-gray-100 text-gray-400' : 'bg-green-50 border-green-100'}`}>
+                <p className={`font-semibold uppercase tracking-wide mb-2 ${total === 0 ? 'text-gray-400' : 'text-green-700'}`}>Atividade do cliente</p>
+                {total === 0 ? (
+                  <p>Cliente ainda não acessou o link.</p>
+                ) : (
+                  <div className="space-y-1 text-gray-600">
+                    <p><span className="text-gray-400">Acessos:</span> <strong>{total}</strong></p>
+                    <p><span className="text-gray-400">Último acesso:</span> {fmtData(ultimo?.acessado_em)}</p>
+                    {maiorTempo > 0 && <p><span className="text-gray-400">Tempo na página:</span> {fmtTempo(maiorTempo)}</p>}
+                    <p><span className="text-gray-400">Leu até o fim:</span> {leuTudo ? '✅ Sim' : '❌ Não'}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-600">
             <div className="flex items-start justify-between gap-2 mb-2">
