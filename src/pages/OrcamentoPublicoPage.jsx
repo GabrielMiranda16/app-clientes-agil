@@ -231,12 +231,25 @@ const OrcamentoPublicoPage = () => {
         setVerificando(false);
         return;
       }
+      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const { data: acesso } = await supabase.from('orcamento_acessos').insert({
         orcamento_id: orcamento.id, cpf_3dig: primeiros3,
         acessado_em: new Date().toISOString(), ip: '', user_agent: navigator.userAgent,
+        device: isMobile ? 'mobile' : 'desktop',
       }).select().maybeSingle();
       if (acesso) acessoIdRef.current = acesso.id;
       startTimeRef.current = Date.now();
+
+      // verificar se é lead quente (2º+ acesso)
+      const { count } = await supabase.from('orcamento_acessos')
+        .select('*', { count: 'exact', head: true })
+        .eq('orcamento_id', orcamento.id);
+      if (count >= 2) {
+        supabase.functions.invoke('notify-lead-quente', {
+          body: { orcamento_id: orcamento.id, num_acessos: count },
+        }).catch(() => {});
+      }
+
       setStage('proposta');
     } catch {
       setStage('proposta');
@@ -259,8 +272,11 @@ const OrcamentoPublicoPage = () => {
         updateData.operadora_escolhida = proposta.operadora || null;
       }
       await supabase.from('orcamentos').update(updateData).eq('id', orcamento.id);
-      if (acessoIdRef.current)
-        await supabase.from('orcamento_acessos').update({ aceitou_proposta: true, aceitou_em: new Date().toISOString() }).eq('id', acessoIdRef.current);
+      if (acessoIdRef.current) {
+        const acessoUpdate = { aceitou_proposta: true, aceitou_em: new Date().toISOString() };
+        if (proposta?.operadora) acessoUpdate.proposta_clicada = proposta.operadora;
+        await supabase.from('orcamento_acessos').update(acessoUpdate).eq('id', acessoIdRef.current);
+      }
       supabase.functions.invoke('notify-orcamento-aceito', { body: { orcamento_id: orcamento.id } }).catch(() => {});
       setPropostaEscolhida(proposta);
       setOrcamento(prev => ({ ...prev, status: novoStatus }));
