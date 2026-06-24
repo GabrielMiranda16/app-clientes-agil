@@ -17,7 +17,7 @@ serve(async (req) => {
     return new Response('ok', { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' } });
   }
 
-  const { orcamento_id, num_acessos } = await req.json();
+  const { orcamento_id, num_acessos, aceitou = false, proposta_clicada: propostaBody = '' } = await req.json();
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
@@ -42,7 +42,7 @@ serve(async (req) => {
 
   const segLabel = SEG_LABEL[o.segmento] || o.segmento;
   const link = o.slug ? `https://www.agilseguros.app/orcamento/${o.slug}` : '';
-  const propostaClicada = lastAcesso?.proposta_clicada || '';
+  const propostaClicada = propostaBody || lastAcesso?.proposta_clicada || '';
   const ord = ordinal(num_acessos);
 
   const BOT_TOKEN = 'agil-lembretes-2026';
@@ -59,21 +59,34 @@ serve(async (req) => {
       num_acessos,
       proposta_clicada: propostaClicada,
       link,
+      aceitou,
     }),
   }).catch(() => {});
 
   // Email via Resend
   const RESEND_KEY = Deno.env.get('RESEND_API_KEY');
   if (RESEND_KEY) {
-    const html = `
-      <div style="font-family:sans-serif;max-width:500px">
-        <h2 style="color:#003580;margin-bottom:4px">🔥 Lead Quente!</h2>
-        <p style="margin:0 0 12px"><strong>${o.cliente_nome}</strong> acessou o orçamento de <strong>${segLabel}</strong> pela <strong>${ord} vez</strong>.</p>
-        ${propostaClicada ? `<p style="margin:0 0 8px">💡 Clicou em: <strong>${propostaClicada}</strong></p>` : ''}
-        ${o.cliente_telefone ? `<p style="margin:0 0 8px">📞 <strong>${o.cliente_telefone}</strong></p>` : ''}
-        ${link ? `<p style="margin:16px 0"><a href="${link}" style="background:#003580;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600">Ver proposta</a></p>` : ''}
-        <p style="color:#999;font-size:11px;margin-top:20px">Ágil Seguros — Portal do Parceiro</p>
-      </div>`;
+    const isAceitou = aceitou;
+    const subject = isAceitou
+      ? `✅ Proposta aceita: ${o.cliente_nome} (${segLabel}${propostaClicada ? ` — ${propostaClicada}` : ''})`
+      : `🔥 Lead quente: ${o.cliente_nome} (${segLabel} — ${ord} acesso)`;
+    const html = isAceitou
+      ? `<div style="font-family:sans-serif;max-width:500px">
+          <h2 style="color:#003580;margin-bottom:4px">✅ Proposta Aceita!</h2>
+          <p style="margin:0 0 12px"><strong>${o.cliente_nome}</strong> aceitou o orçamento de <strong>${segLabel}</strong>.</p>
+          ${propostaClicada ? `<p style="margin:0 0 8px">💡 Plano escolhido: <strong>${propostaClicada}</strong></p>` : ''}
+          ${o.cliente_telefone ? `<p style="margin:0 0 8px">📞 <strong>${o.cliente_telefone}</strong></p>` : ''}
+          ${link ? `<p style="margin:16px 0"><a href="${link}" style="background:#003580;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600">Ver proposta</a></p>` : ''}
+          <p style="color:#999;font-size:11px;margin-top:20px">Ágil Seguros — Portal do Parceiro</p>
+        </div>`
+      : `<div style="font-family:sans-serif;max-width:500px">
+          <h2 style="color:#003580;margin-bottom:4px">🔥 Lead Quente!</h2>
+          <p style="margin:0 0 12px"><strong>${o.cliente_nome}</strong> acessou o orçamento de <strong>${segLabel}</strong> pela <strong>${ord} vez</strong>.</p>
+          ${propostaClicada ? `<p style="margin:0 0 8px">💡 Clicou em: <strong>${propostaClicada}</strong></p>` : ''}
+          ${o.cliente_telefone ? `<p style="margin:0 0 8px">📞 <strong>${o.cliente_telefone}</strong></p>` : ''}
+          ${link ? `<p style="margin:16px 0"><a href="${link}" style="background:#003580;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600">Ver proposta</a></p>` : ''}
+          <p style="color:#999;font-size:11px;margin-top:20px">Ágil Seguros — Portal do Parceiro</p>
+        </div>`;
 
     fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -81,7 +94,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: 'Ágil Seguros <noreply@agilseguros.app>',
         to: 'contato@segurosagil.com.br',
-        subject: `🔥 Lead quente: ${o.cliente_nome} (${segLabel} — ${ord} acesso)`,
+        subject,
         html,
       }),
     }).catch(() => {});

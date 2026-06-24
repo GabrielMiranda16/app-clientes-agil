@@ -278,6 +278,9 @@ const OrcamentoPublicoPage = () => {
         await supabase.from('orcamento_acessos').update(acessoUpdate).eq('id', acessoIdRef.current);
       }
       supabase.functions.invoke('notify-orcamento-aceito', { body: { orcamento_id: orcamento.id } }).catch(() => {});
+      supabase.functions.invoke('notify-lead-quente', {
+        body: { orcamento_id: orcamento.id, num_acessos: 0, aceitou: true, proposta_clicada: proposta?.operadora || '' },
+      }).catch(() => {});
       setPropostaEscolhida(proposta);
       setOrcamento(prev => ({ ...prev, status: novoStatus }));
       setStage(skipDocs ? 'aceito' : 'documentos');
