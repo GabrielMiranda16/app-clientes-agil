@@ -562,15 +562,15 @@ const CEODashboard = () => {
                 ))}
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-2 mt-4">
+              <div className="grid gap-4 lg:grid-cols-2 mt-4 items-stretch">
                 {/* Gráfico Top 5 por prêmio */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                  <Card>
+                <motion.div className="h-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                  <Card className="h-full flex flex-col">
                     <CardHeader><CardTitle className="text-base">Top 5 Empresas — Maior Prêmio</CardTitle></CardHeader>
-                    <CardContent>
-                      <div className="h-[300px] w-full">
+                    <CardContent className="flex-1 min-h-0">
+                      <div className="h-full min-h-[300px] w-full">
                         {top5EmpresasPremio.length > 0 ? (
-                          <ResponsiveContainer width="100%" height={300}>
+                          <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={[...top5EmpresasPremio].reverse()} layout="vertical" margin={{ left: 8, right: 24 }}>
                               <CartesianGrid strokeDasharray="3 3" />
                               <XAxis type="number" tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} />
@@ -588,8 +588,8 @@ const CEODashboard = () => {
                 </motion.div>
 
                 {/* Card detalhado Top 5 */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-                  <Card>
+                <motion.div className="h-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                  <Card className="h-full">
                     <CardHeader><CardTitle className="text-base">Detalhes — Top 5 por Prêmio</CardTitle></CardHeader>
                     <CardContent className="space-y-3">
                       {top5EmpresasPremio.length === 0 ? (
