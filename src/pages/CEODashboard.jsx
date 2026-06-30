@@ -163,6 +163,7 @@ const CEODashboard = () => {
   const [unreadAdm, setUnreadAdm] = useState(0);
   const [textoNovoCEO, setTextoNovoCEO] = useState('');
   const [savingCEO, setSavingCEO] = useState(false);
+  const [addOpenAdm, setAddOpenAdm] = useState(false);
 
   const fetchLembretesAdm = async () => {
     const { data } = await supabaseClient.from('lembretes_adm').select('*').order('created_at', { ascending: true });
@@ -1174,71 +1175,77 @@ const CEODashboard = () => {
           </TabsContent>
           {/* ── Lembretes ADM ── */}
           <TabsContent value="lembretes_adm">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }}>
-              <Card className="max-w-2xl mx-auto">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <ClipboardList className="h-5 w-5 text-[#003580]" />
-                      <CardTitle className="text-base">Lembretes para o ADM</CardTitle>
-                    </div>
-                    <button onClick={fetchLembretesAdm} className="text-xs text-[#003580] hover:underline">Atualizar</button>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">Mensagens visíveis apenas dentro do app, entre CEO e ADM.</p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Histórico de mensagens */}
-                  <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-                    {lembretesAdm.length === 0 ? (
-                      <p className="text-sm text-gray-400 text-center py-6">Nenhuma mensagem ainda.</p>
-                    ) : (
-                      lembretesAdm.map(l => (
-                        <div key={l.id} className={`flex ${l.autor === 'ceo' ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`group relative max-w-[80%] rounded-2xl px-4 py-2.5 ${l.autor === 'ceo' ? 'bg-[#003580] text-white rounded-br-sm' : 'bg-gray-100 text-gray-800 rounded-bl-sm'}`}>
-                            <p className="text-sm">{l.texto}</p>
-                            <div className={`flex items-center gap-1.5 mt-1 ${l.autor === 'ceo' ? 'justify-end' : 'justify-start'}`}>
-                              <span className={`text-[10px] ${l.autor === 'ceo' ? 'text-white/60' : 'text-gray-400'}`}>
-                                {new Date(l.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                              {l.autor === 'adm' && !l.lida && (
-                                <span className="text-[10px] font-semibold text-orange-500">não lido</span>
-                              )}
-                              {l.autor === 'adm' && l.lida && (
-                                <CheckCircle2 className="h-3 w-3 text-gray-400" />
-                              )}
-                            </div>
-                            {l.autor === 'ceo' && (
-                              <button
-                                onClick={() => excluirMensagemCEO(l.id)}
-                                className="absolute -top-2 -left-2 hidden group-hover:flex h-5 w-5 items-center justify-center rounded-full bg-red-100 text-red-400 hover:bg-red-200"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  {/* Input novo lembrete */}
-                  <div className="flex gap-2 pt-2 border-t">
-                    <input
-                      placeholder="Escreva um lembrete para o ADM..."
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }} className="max-w-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-white/70">Lembretes internos — visíveis para CEO e ADM.</p>
+                <div className="flex items-center gap-3">
+                  <button onClick={fetchLembretesAdm} className="text-xs text-white/60 hover:text-white hover:underline">Atualizar</button>
+                  <button
+                    onClick={() => { setAddOpenAdm(o => !o); setTextoNovoCEO(''); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-[#003580] text-xs font-semibold hover:bg-white/90"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Adicionar
+                  </button>
+                </div>
+              </div>
+
+              {addOpenAdm && (
+                <Card>
+                  <CardContent className="pt-4 space-y-3">
+                    <textarea
+                      autoFocus
+                      placeholder="Escreva o lembrete..."
                       value={textoNovoCEO}
                       onChange={e => setTextoNovoCEO(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') enviarLembreteCEO(); }}
-                      className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#003580]"
+                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarLembreteCEO(); } }}
+                      rows={3}
+                      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:border-[#003580] resize-none"
                     />
-                    <button
-                      onClick={enviarLembreteCEO}
-                      disabled={savingCEO || !textoNovoCEO.trim()}
-                      className="px-4 py-2 rounded-lg bg-[#003580] text-white text-sm font-medium hover:bg-[#002060] disabled:opacity-50"
-                    >
-                      Enviar
-                    </button>
-                  </div>
-                </CardContent>
-              </Card>
+                    <div className="flex justify-end gap-2">
+                      <button onClick={() => setAddOpenAdm(false)} className="px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:text-gray-700">Cancelar</button>
+                      <button
+                        onClick={enviarLembreteCEO}
+                        disabled={savingCEO || !textoNovoCEO.trim()}
+                        className="px-4 py-1.5 rounded-lg bg-[#003580] text-white text-sm font-medium hover:bg-[#002060] disabled:opacity-50"
+                      >
+                        {savingCEO ? 'Salvando...' : 'Salvar'}
+                      </button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {lembretesAdm.length === 0 ? (
+                <Card>
+                  <CardContent className="py-10 text-center">
+                    <ClipboardList className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                    <p className="text-sm text-gray-400">Nenhum lembrete ainda.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-2">
+                  {lembretesAdm.map(l => (
+                    <Card key={l.id} className="group hover:shadow-md transition-shadow">
+                      <CardContent className="py-3 px-4 flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-800 whitespace-pre-wrap">{l.texto}</p>
+                          <p className="text-xs text-gray-400 mt-1.5">
+                            📅 {new Date(l.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            <span className="mx-1.5 text-gray-300">·</span>
+                            {l.autor === 'ceo' ? 'CEO' : 'ADM'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => excluirMensagemCEO(l.id)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-300 hover:text-red-400 shrink-0"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </motion.div>
           </TabsContent>
 
