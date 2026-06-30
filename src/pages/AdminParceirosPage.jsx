@@ -393,6 +393,7 @@ const AdminParceirosPage = () => {
   const [criando, setCriando] = useState(false);
   const [buscandoPlaca, setBuscandoPlaca] = useState(false);
   const [novoForm, setNovoForm] = useState({ parceiro_id: '', cliente_nome: '', cliente_telefone: '', cliente_email: '', cliente_cpf: '', cliente_data_nascimento: '', segmento: '', observacoes: '' });
+  const [temParceiro, setTemParceiro] = useState(false);
   const [segData, setSegData] = useState({});
   const [cenariosCriar, setCenariosCriar] = useState([{ tem_plano: false, operadora: '', valor: '', vidas: {} }]);
   const addCenarioCriar = () => setCenariosCriar(cs => [...cs, { tem_plano: false, operadora: '', valor: '', vidas: {} }]);
@@ -444,7 +445,7 @@ const AdminParceirosPage = () => {
   }, []);
 
   useEffect(() => {
-    if (!criarModal) return;
+    if (!criarModal) { setTemParceiro(false); setNovoForm(f => ({ ...f, parceiro_id: '' })); return; }
     const scrollY = window.scrollY;
     document.body.style.position = 'fixed';
     document.body.style.top = `-${scrollY}px`;
@@ -1556,6 +1557,13 @@ const AdminParceirosPage = () => {
 
     if (s === 'CONCLUIDO') return (
       <div className="space-y-4">
+        {!selected.parceiro_id ? (
+          <div className="bg-green-50 border border-green-100 rounded-xl p-4 text-center">
+            <p className="text-2xl mb-1">🎉</p>
+            <p className="text-sm font-semibold text-green-700">Contrato concluído</p>
+            <p className="text-xs text-gray-500 mt-1">Orçamento direto — sem comissão de parceiro.</p>
+          </div>
+        ) : (<>
         <p className="text-sm font-semibold text-gray-700 border-b pb-2">Registrar comissão do parceiro</p>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
@@ -1585,6 +1593,7 @@ const AdminParceirosPage = () => {
           {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <DollarSign className="h-4 w-4" />}
           Registrar Comissão
         </Button>
+        </>)}
       </div>
     );
 
@@ -1893,13 +1902,23 @@ const AdminParceirosPage = () => {
             </div>
 
             <div className="space-y-3 overflow-y-auto px-6 pb-8">
-              <div className="space-y-1">
-                <Label className="text-xs text-gray-500">Parceiro</Label>
-                <select value={novoForm.parceiro_id} onChange={e => setNovoForm(f => ({ ...f, parceiro_id: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580]">
-                  <option value="">Selecionar parceiro...</option>
-                  {parceiros.map(p => <option key={p.id} value={p.id}>{p.nome_completo}</option>)}
-                </select>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={temParceiro}
+                    onChange={e => { setTemParceiro(e.target.checked); if (!e.target.checked) setNovoForm(f => ({ ...f, parceiro_id: '' })); }}
+                    className="h-4 w-4 rounded border-gray-300 accent-[#003580]"
+                  />
+                  <span className="text-sm text-gray-700">Este orçamento é de um parceiro</span>
+                </label>
+                {temParceiro && (
+                  <select value={novoForm.parceiro_id} onChange={e => setNovoForm(f => ({ ...f, parceiro_id: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm focus:outline-none focus:border-[#003580]">
+                    <option value="">Selecionar parceiro...</option>
+                    {parceiros.map(p => <option key={p.id} value={p.id}>{p.nome_completo}</option>)}
+                  </select>
+                )}
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-gray-500">Segmento *</Label>
