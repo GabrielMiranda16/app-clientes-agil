@@ -158,6 +158,36 @@ const CEODashboard = () => {
     setSavingLembrete(false);
   };
 
+  // Lembretes CEO↔ADM (internos)
+  const [lembretesAdm, setLembretesAdm] = useState([]);
+  const [unreadAdm, setUnreadAdm] = useState(0);
+  const [textoNovoCEO, setTextoNovoCEO] = useState('');
+  const [savingCEO, setSavingCEO] = useState(false);
+
+  const fetchLembretesAdm = async () => {
+    const { data } = await supabaseClient.from('lembretes_adm').select('*').order('created_at', { ascending: true });
+    setLembretesAdm(data || []);
+    const unread = (data || []).filter(l => l.autor === 'adm' && !l.lida);
+    if (unread.length > 0) {
+      setUnreadAdm(0);
+      await supabaseClient.from('lembretes_adm').update({ lida: true }).in('id', unread.map(l => l.id));
+    }
+  };
+
+  const enviarLembreteCEO = async () => {
+    if (!textoNovoCEO.trim() || savingCEO) return;
+    setSavingCEO(true);
+    await supabaseClient.from('lembretes_adm').insert({ texto: textoNovoCEO.trim(), autor: 'ceo', lida: false });
+    setTextoNovoCEO('');
+    await fetchLembretesAdm();
+    setSavingCEO(false);
+  };
+
+  const excluirMensagemCEO = async (id) => {
+    await supabaseClient.from('lembretes_adm').delete().eq('id', id);
+    setLembretesAdm(prev => prev.filter(l => l.id !== id));
+  };
+
   // Parceiros state
   const [parceiros, setParceiros] = useState([]);
   const [isNovoParceiro, setIsNovoParceiro] = useState(false);
@@ -242,6 +272,16 @@ const CEODashboard = () => {
 
   useEffect(() => {
     fetchLembretes();
+  }, []);
+
+  useEffect(() => {
+    supabaseClient
+      .from('lembretes_adm')
+      .select('id', { count: 'exact', head: true })
+      .eq('autor', 'adm')
+      .eq('lida', false)
+      .then(({ count }) => setUnreadAdm(count || 0))
+      .catch(() => {});
   }, []);
 
   const handleRefresh = () => {
@@ -584,16 +624,21 @@ const CEODashboard = () => {
             </div>
             <TabsList className="flex overflow-x-auto h-auto gap-1 bg-white/10 border border-white/20 rounded-lg p-1 [&::-webkit-scrollbar]:hidden">
               {[
-                { value: 'dashboard',   label: 'Dashboard' },
-                { value: 'empresas',    label: 'Empresas' },
-                { value: 'solicitacoes',label: 'Solicitações' },
-                { value: 'admins',      label: 'Admins' },
-                { value: 'parceiros',   label: 'Parceiros' },
-                { value: 'relatorios',  label: 'Relatórios' },
-              ].map(({ value, label }) => (
+                { value: 'dashboard',    label: 'Dashboard' },
+                { value: 'empresas',     label: 'Empresas' },
+                { value: 'solicitacoes', label: 'Solicitações' },
+                { value: 'admins',       label: 'Admins' },
+                { value: 'parceiros',    label: 'Parceiros' },
+                { value: 'relatorios',   label: 'Relatórios' },
+                { value: 'lembretes_adm',label: 'Lembretes ADM', badge: unreadAdm },
+              ].map(({ value, label, badge }) => (
                 <TabsTrigger key={value} value={value}
-                  className="shrink-0 text-xs md:text-sm rounded-md text-white/70 data-[state=active]:bg-white/25 data-[state=active]:text-white data-[state=active]:font-semibold hover:text-white px-3 py-1.5">
+                  onClick={() => { if (value === 'lembretes_adm') fetchLembretesAdm(); }}
+                  className="shrink-0 text-xs md:text-sm rounded-md text-white/70 data-[state=active]:bg-white/25 data-[state=active]:text-white data-[state=active]:font-semibold hover:text-white px-3 py-1.5 relative">
                   {label}
+                  {badge > 0 && (
+                    <span className="absolute -top-1 -right-1 flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold">{badge}</span>
+                  )}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -1127,6 +1172,76 @@ const CEODashboard = () => {
               </div>
             </motion.div>
           </TabsContent>
+          {/* ── Lembretes ADM ── */}
+          <TabsContent value="lembretes_adm">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }}>
+              <Card className="max-w-2xl mx-auto">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ClipboardList className="h-5 w-5 text-[#003580]" />
+                      <CardTitle className="text-base">Lembretes para o ADM</CardTitle>
+                    </div>
+                    <button onClick={fetchLembretesAdm} className="text-xs text-[#003580] hover:underline">Atualizar</button>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">Mensagens visíveis apenas dentro do app, entre CEO e ADM.</p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Histórico de mensagens */}
+                  <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+                    {lembretesAdm.length === 0 ? (
+                      <p className="text-sm text-gray-400 text-center py-6">Nenhuma mensagem ainda.</p>
+                    ) : (
+                      lembretesAdm.map(l => (
+                        <div key={l.id} className={`flex ${l.autor === 'ceo' ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`group relative max-w-[80%] rounded-2xl px-4 py-2.5 ${l.autor === 'ceo' ? 'bg-[#003580] text-white rounded-br-sm' : 'bg-gray-100 text-gray-800 rounded-bl-sm'}`}>
+                            <p className="text-sm">{l.texto}</p>
+                            <div className={`flex items-center gap-1.5 mt-1 ${l.autor === 'ceo' ? 'justify-end' : 'justify-start'}`}>
+                              <span className={`text-[10px] ${l.autor === 'ceo' ? 'text-white/60' : 'text-gray-400'}`}>
+                                {new Date(l.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                              {l.autor === 'adm' && !l.lida && (
+                                <span className="text-[10px] font-semibold text-orange-500">não lido</span>
+                              )}
+                              {l.autor === 'adm' && l.lida && (
+                                <CheckCircle2 className="h-3 w-3 text-gray-400" />
+                              )}
+                            </div>
+                            {l.autor === 'ceo' && (
+                              <button
+                                onClick={() => excluirMensagemCEO(l.id)}
+                                className="absolute -top-2 -left-2 hidden group-hover:flex h-5 w-5 items-center justify-center rounded-full bg-red-100 text-red-400 hover:bg-red-200"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  {/* Input novo lembrete */}
+                  <div className="flex gap-2 pt-2 border-t">
+                    <input
+                      placeholder="Escreva um lembrete para o ADM..."
+                      value={textoNovoCEO}
+                      onChange={e => setTextoNovoCEO(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') enviarLembreteCEO(); }}
+                      className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#003580]"
+                    />
+                    <button
+                      onClick={enviarLembreteCEO}
+                      disabled={savingCEO || !textoNovoCEO.trim()}
+                      className="px-4 py-2 rounded-lg bg-[#003580] text-white text-sm font-medium hover:bg-[#002060] disabled:opacity-50"
+                    >
+                      Enviar
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+
         </Tabs>
 
         {/* Modal Novo Parceiro */}
