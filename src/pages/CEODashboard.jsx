@@ -1059,7 +1059,7 @@ const CEODashboard = () => {
             <div className="flex items-center justify-between">
               <p className="text-sm text-white/70">{parceiros.length} parceiro{parceiros.length !== 1 ? 's' : ''} cadastrado{parceiros.length !== 1 ? 's' : ''}</p>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white border border-white/20 rounded-lg" onClick={() => navigate('/admin/parceiros')}>
+                <Button variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white border border-white/20 rounded-lg" onClick={() => navigate('/admin/orcamentos')}>
                   Gerenciar
                 </Button>
                 <Button variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white border border-white/20 rounded-lg" onClick={() => setIsNovoParceiro(true)}>
