@@ -1658,12 +1658,12 @@ const AdminParceirosPage = () => {
 
   return (
     <>
-      <Helmet><title>Parceiros — Ágil Seguros</title></Helmet>
+      <Helmet><title>Orçamentos — Ágil Seguros</title></Helmet>
       <DashboardLayout>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="space-y-6">
 
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold tracking-tight text-white">Orçamentos de Parceiros</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-white">Orçamentos</h1>
             <Button onClick={() => setCriarModal(true)} className="gap-2 text-white font-semibold" style={{ background: '#003580' }}>
               <Plus className="h-4 w-4" /> Novo orçamento
             </Button>
