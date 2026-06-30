@@ -21,7 +21,7 @@ import {
   Users, Building, UserCheck, UserPlus, Trash2, ToggleLeft, ToggleRight,
   Loader2, Edit, FileText, Briefcase, ClipboardList, Shield,
   Clock, CheckCircle2, DollarSign, MoreHorizontal, ChevronLeft, ChevronRight,
-  AlertCircle, TrendingUp, AlertTriangle, Download, FileSpreadsheet, HeartHandshake, Plus, Bot
+  AlertCircle, TrendingUp, AlertTriangle, Download, FileSpreadsheet, HeartHandshake, Plus, Bot, Pencil
 } from 'lucide-react';
 import { motion } from "framer-motion";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -93,6 +93,11 @@ const CEODashboard = () => {
   // Lembretes Ágil
   const [lembretes, setLembretes] = useState([]);
   const [loadingLembretes, setLoadingLembretes] = useState(true);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addForm, setAddForm] = useState({ descricao: '', data: '' });
+  const [editId, setEditId] = useState(null);
+  const [editForm, setEditForm] = useState({ descricao: '', data: '' });
+  const [savingLembrete, setSavingLembrete] = useState(false);
 
   const fetchLembretes = async () => {
     try {
@@ -109,6 +114,48 @@ const CEODashboard = () => {
       body: JSON.stringify({ token: 'agil-lembretes-2026' }),
     });
     setLembretes(prev => prev.filter(l => l.id !== id));
+  };
+
+  const adicionarLembrete = async () => {
+    if (!addForm.descricao.trim() || savingLembrete) return;
+    setSavingLembrete(true);
+    try {
+      const body = { token: 'agil-lembretes-2026', empresa: 'agil', descricao: addForm.descricao.trim() };
+      if (addForm.data) body.data_lembrete = new Date(addForm.data).toISOString();
+      const r = await fetch('https://agil-instagram.fly.dev/api/lembretes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (r.ok) {
+        setAddForm({ descricao: '', data: '' });
+        setAddOpen(false);
+        await fetchLembretes();
+      }
+    } catch {}
+    setSavingLembrete(false);
+  };
+
+  const salvarEdicao = async () => {
+    if (!editForm.descricao.trim() || savingLembrete) return;
+    setSavingLembrete(true);
+    try {
+      const body = {
+        token: 'agil-lembretes-2026',
+        descricao: editForm.descricao.trim(),
+        data_lembrete: editForm.data ? new Date(editForm.data).toISOString() : null,
+      };
+      const r = await fetch(`https://agil-instagram.fly.dev/api/lembretes/${editId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (r.ok) {
+        setEditId(null);
+        await fetchLembretes();
+      }
+    } catch {}
+    setSavingLembrete(false);
   };
 
   // Parceiros state
@@ -739,10 +786,48 @@ const CEODashboard = () => {
                           <Badge className="bg-[#003580] text-white text-xs">{lembretes.length}</Badge>
                         )}
                       </div>
-                      <button onClick={fetchLembretes} className="text-xs text-[#003580] hover:underline">Atualizar</button>
+                      <div className="flex items-center gap-3">
+                        <button onClick={fetchLembretes} className="text-xs text-[#003580] hover:underline">Atualizar</button>
+                        <button
+                          onClick={() => { setAddOpen(o => !o); setEditId(null); }}
+                          className="flex items-center gap-1 text-xs font-medium text-white bg-[#003580] hover:bg-[#002060] rounded-md px-2 py-1"
+                        >
+                          <Plus className="h-3.5 w-3.5" /> Adicionar
+                        </button>
+                      </div>
                     </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="space-y-3">
+                    {/* Formulário de adicionar */}
+                    {addOpen && (
+                      <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 space-y-2">
+                        <input
+                          autoFocus
+                          placeholder="Descrição do lembrete..."
+                          value={addForm.descricao}
+                          onChange={e => setAddForm(f => ({ ...f, descricao: e.target.value }))}
+                          onKeyDown={e => { if (e.key === 'Enter') adicionarLembrete(); if (e.key === 'Escape') setAddOpen(false); }}
+                          className="w-full rounded border border-gray-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:border-[#003580]"
+                        />
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="datetime-local"
+                            value={addForm.data}
+                            onChange={e => setAddForm(f => ({ ...f, data: e.target.value }))}
+                            className="flex-1 rounded border border-gray-200 bg-white px-2 py-1 text-xs focus:outline-none focus:border-[#003580]"
+                          />
+                          <button
+                            onClick={adicionarLembrete}
+                            disabled={savingLembrete || !addForm.descricao.trim()}
+                            className="text-xs font-medium text-white bg-[#003580] hover:bg-[#002060] disabled:opacity-50 rounded px-3 py-1.5"
+                          >
+                            {savingLembrete ? 'Salvando...' : 'Salvar'}
+                          </button>
+                          <button onClick={() => setAddOpen(false)} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
+                        </div>
+                      </div>
+                    )}
+
                     {loadingLembretes ? (
                       <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-8 w-full" />)}</div>
                     ) : lembretes.length === 0 ? (
@@ -750,21 +835,60 @@ const CEODashboard = () => {
                     ) : (
                       <div className="space-y-2">
                         {lembretes.map(l => (
-                          <div key={l.id} className="flex items-center justify-between bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
-                            <div>
-                              <p className="text-sm font-medium text-gray-800">{l.descricao}</p>
-                              {l.data_lembrete && (
-                                <p className="text-xs text-gray-400 mt-0.5">
-                                  📅 {new Date(l.data_lembrete).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                                </p>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => concluirLembrete(l.id)}
-                              className="ml-3 text-xs text-green-600 hover:text-green-800 font-medium flex items-center gap-1 shrink-0"
-                            >
-                              <CheckCircle2 className="h-4 w-4" /> Concluir
-                            </button>
+                          <div key={l.id}>
+                            {editId === l.id ? (
+                              <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-3 space-y-2">
+                                <input
+                                  autoFocus
+                                  value={editForm.descricao}
+                                  onChange={e => setEditForm(f => ({ ...f, descricao: e.target.value }))}
+                                  onKeyDown={e => { if (e.key === 'Enter') salvarEdicao(); if (e.key === 'Escape') setEditId(null); }}
+                                  className="w-full rounded border border-gray-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:border-[#003580]"
+                                />
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="datetime-local"
+                                    value={editForm.data}
+                                    onChange={e => setEditForm(f => ({ ...f, data: e.target.value }))}
+                                    className="flex-1 rounded border border-gray-200 bg-white px-2 py-1 text-xs focus:outline-none focus:border-[#003580]"
+                                  />
+                                  <button
+                                    onClick={salvarEdicao}
+                                    disabled={savingLembrete || !editForm.descricao.trim()}
+                                    className="text-xs font-medium text-white bg-[#003580] hover:bg-[#002060] disabled:opacity-50 rounded px-3 py-1.5"
+                                  >
+                                    {savingLembrete ? 'Salvando...' : 'Salvar'}
+                                  </button>
+                                  <button onClick={() => setEditId(null)} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 group">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-gray-800 truncate">{l.descricao}</p>
+                                  {l.data_lembrete && (
+                                    <p className="text-xs text-gray-400 mt-0.5">
+                                      📅 {new Date(l.data_lembrete).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 ml-3 shrink-0">
+                                  <button
+                                    onClick={() => { setEditId(l.id); setEditForm({ descricao: l.descricao, data: l.data_lembrete ? new Date(l.data_lembrete).toISOString().slice(0,16) : '' }); setAddOpen(false); }}
+                                    className="text-xs text-gray-400 hover:text-[#003580] opacity-0 group-hover:opacity-100 transition-opacity"
+                                    title="Editar"
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => concluirLembrete(l.id)}
+                                    className="text-xs text-green-600 hover:text-green-800 font-medium flex items-center gap-1"
+                                  >
+                                    <CheckCircle2 className="h-4 w-4" /> Concluir
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
