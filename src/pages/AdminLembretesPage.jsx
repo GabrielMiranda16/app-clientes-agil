@@ -203,16 +203,6 @@ const AdminLembretesPage = () => {
                           </p>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                          {/* Editar */}
-                          {!l.concluido && (
-                            <button
-                              onClick={() => { setEditId(l.id); setEditTexto(l.texto); }}
-                              className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-[#003580] transition-colors"
-                              title="Editar"
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </button>
-                          )}
                           {/* Concluir / Reabrir */}
                           {l.concluido ? (
                             <button
@@ -229,6 +219,16 @@ const AdminLembretesPage = () => {
                               title="Marcar como concluído"
                             >
                               <Check className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                          {/* Editar */}
+                          {!l.concluido && (
+                            <button
+                              onClick={() => { setEditId(l.id); setEditTexto(l.texto); }}
+                              className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-[#003580] transition-colors"
+                              title="Editar"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
                             </button>
                           )}
                           {/* Excluir */}
