@@ -1,11 +1,46 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ClipboardList, Plus, Trash2, X, Check, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ClipboardList, Plus, Trash2, X, Check, Pencil, ChevronLeft, ChevronRight, Bell } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+
+// Retorna o status do alerta:
+// 'vencido'   → passou da hora (efeito vermelho pulsando)
+// 'hoje'      → vence hoje (efeito laranja pulsando)
+// 'em_breve'  → dentro de 3 dias (borda amarela)
+// null        → sem alerta ou no futuro distante
+const statusAlerta = (data_alerta) => {
+  if (!data_alerta) return null;
+  const agora = new Date();
+  const alerta = new Date(data_alerta);
+  const diffMs = alerta - agora;
+  const diffDias = diffMs / (1000 * 60 * 60 * 24);
+  if (diffMs < 0) return 'vencido';
+  if (diffDias <= 1) return 'hoje';
+  if (diffDias <= 3) return 'em_breve';
+  return null;
+};
+
+const estiloAlerta = {
+  vencido:  'ring-2 ring-red-400 shadow-red-200 shadow-lg',
+  hoje:     'ring-2 ring-orange-400 shadow-orange-200 shadow-lg',
+  em_breve: 'ring-2 ring-yellow-400 shadow-yellow-100 shadow-md',
+};
+
+const corBadgeAlerta = {
+  vencido:  'bg-red-100 text-red-600',
+  hoje:     'bg-orange-100 text-orange-600',
+  em_breve: 'bg-yellow-100 text-yellow-700',
+};
+
+const labelAlerta = {
+  vencido:  'Alerta vencido',
+  hoje:     'Hoje!',
+  em_breve: 'Em breve',
+};
 
 const AdminLembretesPage = () => {
   const { user } = useAuth();
@@ -16,9 +51,11 @@ const AdminLembretesPage = () => {
   const [filtro, setFiltro] = useState('pendentes');
   const [addOpen, setAddOpen] = useState(false);
   const [texto, setTexto] = useState('');
+  const [dataAlerta, setDataAlerta] = useState('');
   const [saving, setSaving] = useState(false);
   const [editId, setEditId] = useState(null);
   const [editTexto, setEditTexto] = useState('');
+  const [editDataAlerta, setEditDataAlerta] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [pagina, setPagina] = useState(1);
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 640);
@@ -42,13 +79,11 @@ const AdminLembretesPage = () => {
   const adicionar = async () => {
     if (!texto.trim() || saving) return;
     setSaving(true);
-    await supabase.from('lembretes_adm').insert({
-      texto: texto.trim(),
-      autor,
-      lida: false,
-      concluido: false,
-    });
+    const payload = { texto: texto.trim(), autor, lida: false, concluido: false };
+    if (dataAlerta) payload.data_alerta = new Date(dataAlerta).toISOString();
+    await supabase.from('lembretes_adm').insert(payload);
     setTexto('');
+    setDataAlerta('');
     setAddOpen(false);
     await fetchLembretes();
     setSaving(false);
@@ -56,10 +91,12 @@ const AdminLembretesPage = () => {
 
   const salvarEdicao = async (id) => {
     if (!editTexto.trim()) return;
-    await supabase.from('lembretes_adm').update({
+    const payload = {
       texto: editTexto.trim(),
       updated_at: new Date().toISOString(),
-    }).eq('id', id);
+      data_alerta: editDataAlerta ? new Date(editDataAlerta).toISOString() : null,
+    };
+    await supabase.from('lembretes_adm').update(payload).eq('id', id);
     setEditId(null);
     await fetchLembretes();
   };
@@ -101,6 +138,7 @@ const AdminLembretesPage = () => {
 
   const pendentesCount = lembretes.filter(l => !l.concluido).length;
   const concluidosCount = lembretes.filter(l => l.concluido).length;
+  const alertasAtivos = lembretes.filter(l => !l.concluido && ['vencido', 'hoje'].includes(statusAlerta(l.data_alerta))).length;
 
   return (
     <>
@@ -113,9 +151,14 @@ const AdminLembretesPage = () => {
             <div className="flex items-center gap-2">
               <ClipboardList className="h-6 w-6 text-white" />
               <h1 className="text-2xl font-bold tracking-tight text-white">Lembretes</h1>
+              {alertasAtivos > 0 && (
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500 text-white text-xs font-bold animate-pulse">
+                  <Bell className="h-3 w-3" /> {alertasAtivos}
+                </span>
+              )}
             </div>
             <button
-              onClick={() => { setAddOpen(o => !o); setTexto(''); }}
+              onClick={() => { setAddOpen(o => !o); setTexto(''); setDataAlerta(''); }}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white text-[#003580] text-sm font-semibold hover:bg-white/90 transition-colors"
             >
               {addOpen ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
@@ -143,6 +186,24 @@ const AdminLembretesPage = () => {
                       rows={3}
                       className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:border-[#003580] resize-none"
                     />
+                    {/* Campo Me lembre em */}
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-1.5 text-sm text-gray-500 shrink-0">
+                        <Bell className="h-4 w-4 text-orange-400" />
+                        Me lembre em:
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={dataAlerta}
+                        onChange={e => setDataAlerta(e.target.value)}
+                        className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm focus:outline-none focus:border-[#003580]"
+                      />
+                      {dataAlerta && (
+                        <button onClick={() => setDataAlerta('')} className="text-gray-300 hover:text-gray-500">
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                     <div className="flex justify-end gap-2">
                       <button onClick={() => setAddOpen(false)} className="px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:text-gray-700">
                         Cancelar
@@ -196,99 +257,116 @@ const AdminLembretesPage = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               <AnimatePresence>
-                {listaPage.map(l => (
-                  <motion.div
-                    key={l.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.15 }}
-                  >
-                    <Card className={`flex flex-col h-44 ${l.concluido ? 'opacity-70' : ''}`}>
-                      {/* Topo — informações */}
-                      <div className="flex items-start justify-between px-4 pt-3 pb-2 border-b border-gray-100">
-                        <div className="space-y-0.5">
-                          <p className="text-[11px] font-semibold text-[#003580] uppercase tracking-wide">
-                            {l.autor === 'ceo' ? 'CEO' : 'ADM'}
-                          </p>
-                          <p className="text-[11px] text-gray-400">
-                            {l.updated_at
-                              ? `Editado ${fmtData(l.updated_at)}`
-                              : fmtData(l.created_at)}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                          {/* Concluir / Reabrir */}
-                          {l.concluido ? (
-                            <button
-                              onClick={() => reabrir(l.id)}
-                              className="p-1 rounded hover:bg-gray-100 text-green-500 hover:text-gray-500 transition-colors"
-                              title="Reabrir"
-                            >
-                              <Check className="h-3.5 w-3.5" />
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => concluir(l.id)}
-                              className="p-1 rounded hover:bg-green-50 text-gray-400 hover:text-green-600 transition-colors"
-                              title="Marcar como concluído"
-                            >
-                              <Check className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                          {/* Editar */}
-                          {!l.concluido && (
-                            <button
-                              onClick={() => { setEditId(l.id); setEditTexto(l.texto); }}
-                              className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-[#003580] transition-colors"
-                              title="Editar"
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                          {/* Excluir */}
-                          {confirmDelete === l.id ? (
-                            <div className="flex items-center gap-1">
-                              <button onClick={() => excluir(l.id)} className="text-[11px] text-red-600 font-semibold hover:underline">Sim</button>
-                              <button onClick={() => setConfirmDelete(null)} className="text-[11px] text-gray-400 hover:text-gray-600">Não</button>
+                {listaPage.map(l => {
+                  const alerta = l.concluido ? null : statusAlerta(l.data_alerta);
+                  return (
+                    <motion.div
+                      key={l.id}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      <Card className={`flex flex-col h-44 transition-all ${l.concluido ? 'opacity-60' : ''} ${alerta ? estiloAlerta[alerta] : ''} ${alerta === 'vencido' || alerta === 'hoje' ? 'animate-pulse' : ''}`}>
+                        {/* Topo — informações */}
+                        <div className="flex items-start justify-between px-4 pt-3 pb-2 border-b border-gray-100">
+                          <div className="space-y-0.5 min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p className="text-[11px] font-semibold text-[#003580] uppercase tracking-wide">
+                                {l.autor === 'ceo' ? 'CEO' : 'ADM'}
+                              </p>
+                              {alerta && (
+                                <span className={`flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${corBadgeAlerta[alerta]}`}>
+                                  <Bell className="h-2.5 w-2.5" />
+                                  {labelAlerta[alerta]}
+                                </span>
+                              )}
                             </div>
-                          ) : (
-                            <button
-                              onClick={() => setConfirmDelete(l.id)}
-                              className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
-                              title="Excluir"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Corpo — texto */}
-                      <CardContent className="flex-1 px-4 py-3 overflow-hidden">
-                        {editId === l.id ? (
-                          <div className="space-y-2 h-full flex flex-col">
-                            <textarea
-                              autoFocus
-                              value={editTexto}
-                              onChange={e => setEditTexto(e.target.value)}
-                              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); salvarEdicao(l.id); } if (e.key === 'Escape') setEditId(null); }}
-                              className="flex-1 w-full rounded border border-[#003580] bg-blue-50 px-2 py-1 text-sm focus:outline-none resize-none"
-                            />
-                            <div className="flex gap-2 justify-end">
-                              <button onClick={() => setEditId(null)} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
-                              <button onClick={() => salvarEdicao(l.id)} className="text-xs text-[#003580] font-semibold hover:underline">Salvar</button>
-                            </div>
+                            <p className="text-[11px] text-gray-400">
+                              {l.updated_at
+                                ? `Editado ${fmtData(l.updated_at)}`
+                                : fmtData(l.created_at)}
+                            </p>
+                            {l.data_alerta && (
+                              <p className={`text-[11px] font-medium ${alerta ? (alerta === 'vencido' ? 'text-red-500' : alerta === 'hoje' ? 'text-orange-500' : 'text-yellow-600') : 'text-gray-400'}`}>
+                                🔔 {fmtData(l.data_alerta)}
+                              </p>
+                            )}
                           </div>
-                        ) : (
-                          <p className={`text-sm leading-relaxed line-clamp-4 ${l.concluido ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
-                            {l.texto}
-                          </p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))}
+                          <div className="flex items-center gap-1 shrink-0 ml-2">
+                            {/* Concluir / Reabrir */}
+                            {l.concluido ? (
+                              <button onClick={() => reabrir(l.id)} className="p-1 rounded hover:bg-gray-100 text-green-500 hover:text-gray-500 transition-colors" title="Reabrir">
+                                <Check className="h-3.5 w-3.5" />
+                              </button>
+                            ) : (
+                              <button onClick={() => concluir(l.id)} className="p-1 rounded hover:bg-green-50 text-gray-400 hover:text-green-600 transition-colors" title="Concluir">
+                                <Check className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                            {/* Editar */}
+                            {!l.concluido && (
+                              <button
+                                onClick={() => {
+                                  setEditId(l.id);
+                                  setEditTexto(l.texto);
+                                  setEditDataAlerta(l.data_alerta ? new Date(l.data_alerta).toISOString().slice(0, 16) : '');
+                                }}
+                                className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-[#003580] transition-colors"
+                                title="Editar"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                            {/* Excluir */}
+                            {confirmDelete === l.id ? (
+                              <div className="flex items-center gap-1">
+                                <button onClick={() => excluir(l.id)} className="text-[11px] text-red-600 font-semibold hover:underline">Sim</button>
+                                <button onClick={() => setConfirmDelete(null)} className="text-[11px] text-gray-400 hover:text-gray-600">Não</button>
+                              </div>
+                            ) : (
+                              <button onClick={() => setConfirmDelete(l.id)} className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors" title="Excluir">
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Corpo — texto */}
+                        <CardContent className="flex-1 px-4 py-3 overflow-hidden">
+                          {editId === l.id ? (
+                            <div className="space-y-1.5 h-full flex flex-col">
+                              <textarea
+                                autoFocus
+                                value={editTexto}
+                                onChange={e => setEditTexto(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Escape') setEditId(null); }}
+                                className="flex-1 w-full rounded border border-[#003580] bg-blue-50 px-2 py-1 text-sm focus:outline-none resize-none"
+                              />
+                              <div className="flex items-center gap-2">
+                                <Bell className="h-3.5 w-3.5 text-orange-400 shrink-0" />
+                                <input
+                                  type="datetime-local"
+                                  value={editDataAlerta}
+                                  onChange={e => setEditDataAlerta(e.target.value)}
+                                  className="flex-1 rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs focus:outline-none focus:border-[#003580]"
+                                />
+                              </div>
+                              <div className="flex gap-2 justify-end">
+                                <button onClick={() => setEditId(null)} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
+                                <button onClick={() => salvarEdicao(l.id)} className="text-xs text-[#003580] font-semibold hover:underline">Salvar</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className={`text-sm leading-relaxed line-clamp-4 ${l.concluido ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
+                              {l.texto}
+                            </p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
               </AnimatePresence>
             </div>
           )}
@@ -303,7 +381,6 @@ const AdminLembretesPage = () => {
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
-
               {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(p => (
                 <button
                   key={p}
@@ -313,7 +390,6 @@ const AdminLembretesPage = () => {
                   {p}
                 </button>
               ))}
-
               <button
                 onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))}
                 disabled={paginaAtual === totalPaginas}
@@ -323,6 +399,7 @@ const AdminLembretesPage = () => {
               </button>
             </div>
           )}
+
         </motion.div>
       </DashboardLayout>
     </>
