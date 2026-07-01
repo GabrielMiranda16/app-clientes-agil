@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ClipboardList, Plus, Trash2, X, Check, Pencil } from 'lucide-react';
+import { ClipboardList, Plus, Trash2, X, Check, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -20,6 +20,14 @@ const AdminLembretesPage = () => {
   const [editId, setEditId] = useState(null);
   const [editTexto, setEditTexto] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [pagina, setPagina] = useState(1);
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 640);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const fetchLembretes = async () => {
     setLoading(true);
@@ -83,6 +91,13 @@ const AdminLembretesPage = () => {
   const lista = lembretes.filter(l =>
     filtro === 'pendentes' ? !l.concluido : l.concluido
   );
+
+  const porPagina = isMobile ? 5 : 12;
+  const totalPaginas = Math.max(1, Math.ceil(lista.length / porPagina));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const listaPage = lista.slice((paginaAtual - 1) * porPagina, paginaAtual * porPagina);
+
+  const mudarFiltro = (f) => { setFiltro(f); setPagina(1); };
 
   const pendentesCount = lembretes.filter(l => !l.concluido).length;
   const concluidosCount = lembretes.filter(l => l.concluido).length;
@@ -149,13 +164,13 @@ const AdminLembretesPage = () => {
           {/* Filtro */}
           <div className="flex gap-2">
             <button
-              onClick={() => setFiltro('pendentes')}
+              onClick={() => mudarFiltro('pendentes')}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${filtro === 'pendentes' ? 'bg-white text-[#003580]' : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'}`}
             >
               Pendentes {pendentesCount > 0 && <span className="ml-1 text-xs">({pendentesCount})</span>}
             </button>
             <button
-              onClick={() => setFiltro('concluidos')}
+              onClick={() => mudarFiltro('concluidos')}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${filtro === 'concluidos' ? 'bg-white text-[#003580]' : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'}`}
             >
               Concluídos {concluidosCount > 0 && <span className="ml-1 text-xs">({concluidosCount})</span>}
@@ -181,7 +196,7 @@ const AdminLembretesPage = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               <AnimatePresence>
-                {lista.map(l => (
+                {listaPage.map(l => (
                   <motion.div
                     key={l.id}
                     initial={{ opacity: 0, scale: 0.95 }}
@@ -275,6 +290,37 @@ const AdminLembretesPage = () => {
                   </motion.div>
                 ))}
               </AnimatePresence>
+            </div>
+          )}
+
+          {/* Paginação */}
+          {totalPaginas > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <button
+                onClick={() => setPagina(p => Math.max(1, p - 1))}
+                disabled={paginaAtual === 1}
+                className="p-1.5 rounded-lg bg-white/10 text-white hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(p => (
+                <button
+                  key={p}
+                  onClick={() => setPagina(p)}
+                  className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${p === paginaAtual ? 'bg-white text-[#003580]' : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'}`}
+                >
+                  {p}
+                </button>
+              ))}
+
+              <button
+                onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))}
+                disabled={paginaAtual === totalPaginas}
+                className="p-1.5 rounded-lg bg-white/10 text-white hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
             </div>
           )}
         </motion.div>
