@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ClipboardList, Plus, Trash2, X, Check, Pencil, ChevronLeft, ChevronRight, Bell } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
@@ -158,69 +159,62 @@ const AdminLembretesPage = () => {
               )}
             </div>
             <button
-              onClick={() => { setAddOpen(o => !o); setTexto(''); setDataAlerta(''); }}
+              onClick={() => { setAddOpen(true); setTexto(''); setDataAlerta(''); }}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white text-[#003580] text-sm font-semibold hover:bg-white/90 transition-colors"
             >
-              {addOpen ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-              {addOpen ? 'Cancelar' : 'Adicionar lembrete'}
+              <Plus className="h-4 w-4" /> Adicionar lembrete
             </button>
           </div>
 
-          {/* Formulário de adicionar */}
-          <AnimatePresence>
-            {addOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Card>
-                  <CardContent className="pt-4 space-y-3">
-                    <textarea
-                      autoFocus
-                      placeholder="Escreva o lembrete..."
-                      value={texto}
-                      onChange={e => setTexto(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); adicionar(); } }}
-                      rows={3}
-                      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:border-[#003580] resize-none"
+          {/* Popup de adicionar */}
+          <Dialog open={addOpen} onOpenChange={setAddOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Novo lembrete</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-1">
+                <textarea
+                  autoFocus
+                  placeholder="Escreva o lembrete..."
+                  value={texto}
+                  onChange={e => setTexto(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); adicionar(); } }}
+                  rows={4}
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:border-[#003580] resize-none"
+                />
+                <div>
+                  <label className="flex items-center gap-1.5 text-sm text-gray-500 mb-1.5">
+                    <Bell className="h-4 w-4 text-orange-400" /> Me lembre em (opcional)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="datetime-local"
+                      value={dataAlerta}
+                      onChange={e => setDataAlerta(e.target.value)}
+                      className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:border-[#003580]"
                     />
-                    {/* Campo Me lembre em */}
-                    <div className="flex items-center gap-3">
-                      <label className="flex items-center gap-1.5 text-sm text-gray-500 shrink-0">
-                        <Bell className="h-4 w-4 text-orange-400" />
-                        Me lembre em:
-                      </label>
-                      <input
-                        type="datetime-local"
-                        value={dataAlerta}
-                        onChange={e => setDataAlerta(e.target.value)}
-                        className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm focus:outline-none focus:border-[#003580]"
-                      />
-                      {dataAlerta && (
-                        <button onClick={() => setDataAlerta('')} className="text-gray-300 hover:text-gray-500">
-                          <X className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <button onClick={() => setAddOpen(false)} className="px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:text-gray-700">
-                        Cancelar
+                    {dataAlerta && (
+                      <button onClick={() => setDataAlerta('')} className="text-gray-300 hover:text-gray-500">
+                        <X className="h-4 w-4" />
                       </button>
-                      <button
-                        onClick={adicionar}
-                        disabled={saving || !texto.trim()}
-                        className="px-4 py-1.5 rounded-lg bg-[#003580] text-white text-sm font-medium hover:bg-[#002060] disabled:opacity-50"
-                      >
-                        {saving ? 'Salvando...' : 'Salvar'}
-                      </button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                    )}
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-1">
+                  <button onClick={() => setAddOpen(false)} className="px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-gray-700 border border-gray-200">
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={adicionar}
+                    disabled={saving || !texto.trim()}
+                    className="px-4 py-2 rounded-lg bg-[#003580] text-white text-sm font-medium hover:bg-[#002060] disabled:opacity-50"
+                  >
+                    {saving ? 'Salvando...' : 'Salvar lembrete'}
+                  </button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* Filtro */}
           <div className="flex gap-2">
