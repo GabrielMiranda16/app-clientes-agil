@@ -82,6 +82,10 @@ const CEODashboard = () => {
   const [isSolicitacaoModalOpen, setIsSolicitacaoModalOpen] = useState(false);
   const [selectedSolicitacao, setSelectedSolicitacao] = useState(null);
 
+  // Empresas Pagination
+  const [empresasCurrentPage, setEmpresasCurrentPage] = useState(1);
+  const EMPRESAS_PER_PAGE = 10;
+
   // Solicitacoes Pagination
   const [solicitacaoCurrentPage, setSolicitacaoCurrentPage] = useState(1);
   const SOLICITACOES_PER_PAGE = 10;
@@ -346,6 +350,10 @@ const CEODashboard = () => {
     setSolicitacaoCurrentPage(1);
   }, [solicitacaoStatusFilter, solicitacaoTypeFilter, solicitacaoEmpresaFilter]);
 
+  useEffect(() => {
+    setEmpresasCurrentPage(1);
+  }, [searchTerm, statusFilter]);
+
   const admins = useMemo(() => users.filter(u => u.perfil === 'ADM' || u.perfil === 'CEO'), [users]);
 
   const metrics = useMemo(() => {
@@ -438,6 +446,16 @@ const CEODashboard = () => {
       return matchesSearch && matchesStatus;
     });
   }, [empresas, beneficiarios, users, searchTerm, statusFilter]);
+
+  const sortedEmpresas = useMemo(() =>
+    [...filteredEmpresas].sort((a, b) =>
+      (a.razao_social || a.nome_fantasia || '').localeCompare(b.razao_social || b.nome_fantasia || '', 'pt-BR', { sensitivity: 'base' })
+    ), [filteredEmpresas]);
+
+  const totalEmpresasPages = Math.max(1, Math.ceil(sortedEmpresas.length / EMPRESAS_PER_PAGE));
+  const paginatedEmpresas = useMemo(() =>
+    sortedEmpresas.slice((empresasCurrentPage - 1) * EMPRESAS_PER_PAGE, empresasCurrentPage * EMPRESAS_PER_PAGE),
+    [sortedEmpresas, empresasCurrentPage]);
 
   const todasAsEmpresas = useMemo(() => {
     const matrices = empresas.filter(e => !e.empresa_matriz_id);
@@ -983,7 +1001,7 @@ const CEODashboard = () => {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {filteredEmpresas.map((empresa) => (
+                            {paginatedEmpresas.map((empresa) => (
                               <TableRow key={empresa.id}>
                                 <TableCell>
                                   <div className="font-medium">{empresa.nome_fantasia}</div>
@@ -1013,9 +1031,8 @@ const CEODashboard = () => {
 
                       {/* Mobile: cards expansíveis */}
                       <div className="sm:hidden space-y-2">
-                        {filteredEmpresas.map((empresa) => {
+                        {paginatedEmpresas.map((empresa) => {
                           const isOpen = expandedEmpresaId === empresa.id;
-                          const isCpf = empresa.cnpj && empresa.cnpj.replace(/\D/g, '').length === 11;
                           const isFilial = !!empresa.empresa_matriz_id;
                           const displayName = empresa.razao_social || empresa.nome_fantasia;
                           return (
@@ -1031,15 +1048,12 @@ const CEODashboard = () => {
                                   <p className="text-xs text-muted-foreground truncate">{formatCpfCnpj(empresa.cnpj)}</p>
                                 </div>
                                 <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                                  <Badge className={empresa.status === 'Ativa' ? 'bg-green-100 text-green-800 text-xs' : 'bg-red-100 text-red-800 text-xs'}>{empresa.status}</Badge>
+                                  <Badge className={empresa.status === 'Ativa' ? 'bg-green-100 text-green-800 text-xs hover:bg-green-100 hover:text-green-800' : 'bg-red-100 text-red-800 text-xs hover:bg-red-100 hover:text-red-800'}>{empresa.status}</Badge>
                                   <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                                 </div>
                               </button>
                               {isOpen && (
                                 <div className="px-4 pb-4 border-t pt-3 space-y-2 bg-gray-50">
-                                  {!isCpf && empresa.razao_social && empresa.razao_social !== displayName && (
-                                    <div className="text-xs text-muted-foreground">{empresa.razao_social}</div>
-                                  )}
                                   {isFilial && empresa.matriz && (
                                     <div className="text-xs text-muted-foreground">Matriz: {empresa.matriz.nome_fantasia || empresa.matriz.razao_social}</div>
                                   )}
@@ -1054,6 +1068,21 @@ const CEODashboard = () => {
                           );
                         })}
                       </div>
+
+                      {/* Paginação */}
+                      {totalEmpresasPages > 1 && (
+                        <div className="flex items-center justify-between px-1 py-4 border-t mt-2">
+                          <div className="text-sm text-muted-foreground">Página {empresasCurrentPage} de {totalEmpresasPages}</div>
+                          <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setEmpresasCurrentPage(p => Math.max(1, p - 1))} disabled={empresasCurrentPage === 1}>
+                              <ChevronLeft className="h-4 w-4 mr-1" />Anterior
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => setEmpresasCurrentPage(p => Math.min(totalEmpresasPages, p + 1))} disabled={empresasCurrentPage >= totalEmpresasPages}>
+                              Próximo<ChevronRight className="h-4 w-4 ml-1" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </>
                   ) : (<div className="text-center py-10"><p className="text-muted-foreground">Nenhum cliente encontrado.</p></div>)}
                 </CardContent>
