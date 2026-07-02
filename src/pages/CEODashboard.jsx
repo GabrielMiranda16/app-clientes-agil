@@ -953,7 +953,7 @@ const CEODashboard = () => {
                 </Card>
               </motion.div>
 
-              <div className="mt-8 pt-4 border-t text-center text-sm text-gray-500">Dashboard do CEO - Seguros Ágil | Última atualização: {getCurrentDateTime()}</div>
+              <div className="mt-8 pt-4 border-t border-white/20 text-center text-sm text-white/60">Dashboard do CEO - Seguros Ágil | Última atualização: {getCurrentDateTime()}</div>
             </motion.div>
           </TabsContent>
 
