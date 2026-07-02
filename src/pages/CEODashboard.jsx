@@ -21,7 +21,7 @@ import {
   Users, Building, UserCheck, UserPlus, Trash2, ToggleLeft, ToggleRight,
   Loader2, Edit, FileText, Briefcase, ClipboardList, Shield,
   Clock, CheckCircle2, DollarSign, MoreHorizontal, ChevronLeft, ChevronRight,
-  AlertCircle, TrendingUp, AlertTriangle, Download, FileSpreadsheet, HeartHandshake, Plus, Bot, Pencil
+  AlertCircle, TrendingUp, AlertTriangle, Download, FileSpreadsheet, HeartHandshake, Plus, Bot, Pencil, ChevronDown
 } from 'lucide-react';
 import { motion } from "framer-motion";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -95,6 +95,7 @@ const CEODashboard = () => {
 
   // Gi métricas
   const [giMetricas, setGiMetricas] = useState(null);
+  const [expandedEmpresaId, setExpandedEmpresaId] = useState(null);
   const [isLoadingGi, setIsLoadingGi] = useState(true);
 
   // Orcamentos da semana
@@ -628,12 +629,12 @@ const CEODashboard = () => {
       <DashboardLayout>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <div className="space-y-3">
-            <h1 className="text-2xl font-bold tracking-tight text-white">Dashboard do CEO</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-white">{(() => { const h = new Date().getHours(); return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'; })()}, Gabriel!</h1>
             <div className="hidden sm:block overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               <TabsList className="inline-flex h-auto gap-1 bg-white/10 border border-white/20 rounded-lg p-1 min-w-max">
                 {[
                   { value: 'dashboard',    label: 'Dashboard' },
-                  { value: 'empresas',     label: 'Empresas' },
+                  { value: 'empresas',     label: 'Clientes' },
                   { value: 'solicitacoes', label: 'Solicitações' },
                   { value: 'admins',       label: 'Admins' },
                   { value: 'parceiros',    label: 'Parceiros' },
@@ -670,7 +671,7 @@ const CEODashboard = () => {
                     <CardHeader className="pb-2 px-3"><CardTitle className="text-sm sm:text-base">Top 5 — Maior Prêmio</CardTitle></CardHeader>
                     <CardContent className="px-2 pb-3">
                       {top5EmpresasPremio.length > 0 ? (
-                        <div style={{ width: '100%', height: 180, overflow: 'hidden' }}>
+                        <div className="w-full h-[180px] lg:h-[250px] overflow-hidden" style={{ overflow: 'hidden' }}>
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={[...top5EmpresasPremio].reverse()} layout="vertical" margin={{ left: 0, right: 32, top: 2, bottom: 2 }}>
                               <CartesianGrid strokeDasharray="3 3" />
@@ -961,12 +962,90 @@ const CEODashboard = () => {
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }}>
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><Building className="h-5 w-5" />Gestão de Empresas</CardTitle>
-                  <CardDescription>Gerencie todas as empresas cadastradas no sistema.</CardDescription>
+                  <CardTitle className="flex items-center gap-2"><Building className="h-5 w-5" />Gestão de Clientes</CardTitle>
+                  <CardDescription>Gerencie todos os clientes cadastrados no sistema.</CardDescription>
                   <div className="flex flex-col md:flex-row gap-4 mt-4"><div className="relative flex-1"><Input placeholder="Buscar por nome ou CNPJ..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full" /></div><Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-[180px]"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem><SelectItem value="Ativa">Ativa</SelectItem><SelectItem value="Inativa">Inativa</SelectItem></SelectContent></Select></div>
                 </CardHeader>
                 <CardContent>
-                  {filteredEmpresas.length > 0 ? (<div className="rounded-md border"><Table><TableHeader><TableRow><TableHead>Empresa</TableHead><TableHead>CNPJ</TableHead><TableHead className="text-center">Beneficiários</TableHead><TableHead className="text-center">ADMs</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader><TableBody>{filteredEmpresas.map((empresa) => (<TableRow key={empresa.id}><TableCell><div className="font-medium">{empresa.nome_fantasia}</div><div className="text-xs text-muted-foreground">{empresa.razao_social}</div></TableCell><TableCell>{formatCpfCnpj(empresa.cnpj)}</TableCell><TableCell className="text-center">{empresa.beneficiariosCount}</TableCell><TableCell className="text-center">{empresa.adminsCount}</TableCell><TableCell><Badge variant={empresa.status === 'Ativa' ? 'default' : 'destructive'} className={empresa.status === 'Ativa' ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-red-100 text-red-800 hover:bg-red-200'}>{empresa.status}</Badge></TableCell><TableCell className="text-right"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Abrir menu</span><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => handleViewCompany(empresa)}>Visualizar</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell></TableRow>))}</TableBody></Table></div>) : (<div className="text-center py-10"><p className="text-muted-foreground">Nenhuma empresa encontrada.</p></div>)}
+                  {filteredEmpresas.length > 0 ? (
+                    <>
+                      {/* Desktop: tabela */}
+                      <div className="hidden sm:block rounded-md border">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Empresa</TableHead>
+                              <TableHead>CNPJ</TableHead>
+                              <TableHead className="text-center">Beneficiários</TableHead>
+                              <TableHead className="text-center">ADMs</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead className="text-right">Ações</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {filteredEmpresas.map((empresa) => (
+                              <TableRow key={empresa.id}>
+                                <TableCell>
+                                  <div className="font-medium">{empresa.nome_fantasia}</div>
+                                  <div className="text-xs text-muted-foreground">{empresa.razao_social}</div>
+                                </TableCell>
+                                <TableCell>{formatCpfCnpj(empresa.cnpj)}</TableCell>
+                                <TableCell className="text-center">{empresa.beneficiariosCount}</TableCell>
+                                <TableCell className="text-center">{empresa.adminsCount}</TableCell>
+                                <TableCell>
+                                  <Badge className={empresa.status === 'Ativa' ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-red-100 text-red-800 hover:bg-red-200'}>{empresa.status}</Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => handleViewCompany(empresa)}>Visualizar</DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      {/* Mobile: cards expansíveis */}
+                      <div className="sm:hidden space-y-2">
+                        {filteredEmpresas.map((empresa) => {
+                          const isOpen = expandedEmpresaId === empresa.id;
+                          return (
+                            <div key={empresa.id} className="rounded-lg border bg-white overflow-hidden">
+                              <button
+                                className="w-full flex items-center justify-between px-4 py-3 text-left"
+                                onClick={() => setExpandedEmpresaId(isOpen ? null : empresa.id)}
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-semibold text-sm truncate">{empresa.nome_fantasia}</p>
+                                  <p className="text-xs text-muted-foreground truncate">{formatCpfCnpj(empresa.cnpj)}</p>
+                                </div>
+                                <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                                  <Badge className={empresa.status === 'Ativa' ? 'bg-green-100 text-green-800 text-xs' : 'bg-red-100 text-red-800 text-xs'}>{empresa.status}</Badge>
+                                  <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                                </div>
+                              </button>
+                              {isOpen && (
+                                <div className="px-4 pb-4 border-t pt-3 space-y-2 bg-gray-50">
+                                  <div className="text-xs text-muted-foreground">{empresa.razao_social}</div>
+                                  <div className="grid grid-cols-2 gap-2 text-sm">
+                                    <div><span className="text-xs text-muted-foreground block">Beneficiários</span><span className="font-semibold">{empresa.beneficiariosCount}</span></div>
+                                    <div><span className="text-xs text-muted-foreground block">ADMs</span><span className="font-semibold">{empresa.adminsCount}</span></div>
+                                  </div>
+                                  <Button size="sm" variant="outline" className="w-full mt-2" onClick={() => handleViewCompany(empresa)}>Visualizar</Button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  ) : (<div className="text-center py-10"><p className="text-muted-foreground">Nenhum cliente encontrado.</p></div>)}
                 </CardContent>
               </Card>
             </motion.div>
