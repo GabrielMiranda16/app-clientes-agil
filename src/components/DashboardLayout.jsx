@@ -245,7 +245,14 @@ const DashboardLayout = ({ children }) => {
 
   return (
     <div className="min-h-screen flex flex-col bg-soft-gradient">
-      <header className="z-40 relative" style={{ background: 'transparent' }}>
+      <header
+        className="z-40 relative transition-all duration-250"
+        style={{
+          background: mobileMenuOpen ? 'linear-gradient(to top right, #6b9fd4, #2a6db5, #003580)' : 'transparent',
+          borderRadius: mobileMenuOpen ? '0 0 1rem 1rem' : undefined,
+          margin: mobileMenuOpen ? '0 0.5rem 0.5rem' : undefined,
+        }}
+      >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-24">
             {/* Logo + breadcrumb */}
@@ -339,7 +346,7 @@ const DashboardLayout = ({ children }) => {
             transition={{ duration: 0.25, ease: 'easeInOut' }}
             className="sm:hidden overflow-hidden"
           >
-          <div className="border-t border-white/10 rounded-b-2xl px-4 py-4 space-y-1 mx-2 mb-2" style={{ background: 'linear-gradient(to bottom right, #6b9fd4, #2a6db5, #003580)' }}>
+          <div className="border-t border-white/10 px-4 py-4 space-y-1">
             {/* User info */}
             <div className="px-3 py-2 mb-2">
               <p className="text-sm font-semibold text-white">{user?.email}</p>
