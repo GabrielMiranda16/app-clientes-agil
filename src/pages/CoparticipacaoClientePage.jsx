@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { Download, FileText, ArrowLeft, Calendar, Loader2, Search, ChevronRight } from 'lucide-react';
+import { Download, FileText, ArrowLeft, Calendar, Loader2, Search, ChevronRight, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useCompany } from '@/contexts/CompanyContext';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -43,6 +43,7 @@ const CoparticipacaoClientePage = () => {
   const [tipoFiltro, setTipoFiltro] = useState('saude');
   const [selectedColaboradorId, setSelectedColaboradorId] = useState('__all__');
   const [currentPage, setCurrentPage] = useState(1);
+  const [expandedId, setExpandedId] = useState(null);
   const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
@@ -420,53 +421,75 @@ const CoparticipacaoClientePage = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto rounded-md border">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-gray-50 text-gray-700 uppercase font-medium">
-                  <tr>
-                    <th className="px-4 py-3">Beneficiário Titular</th>
-                    <th className="px-4 py-3">Quem Utilizou</th>
-                    <th className="px-4 py-3">CPF Utilizador</th>
-                    <th className="px-4 py-3">Descrição / Procedimento</th>
-                    <th className="px-4 py-3 text-right">Valor</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 bg-white">
-                  {filteredCoparticipacoes.length > 0 ? (
-                    pageData.map((item) => (
-                      <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-3 font-medium text-gray-900">{getBeneficiarioName(item.beneficiario_id)}</td>
-                        <td className="px-4 py-3 text-gray-600">{item.nome_quem_utilizou || '-'}</td>
-                        <td className="px-4 py-3 text-gray-500">{item.cpf_quem_utilizou ? formatCpfCnpj(item.cpf_quem_utilizou) : '-'}</td>
-                        <td className="px-4 py-3 text-gray-600">{item.descricao || '-'}</td>
-                        <td className="px-4 py-3 text-right font-bold text-gray-900">
-                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valor)}
-                        </td>
+            {filteredCoparticipacoes.length === 0 ? (
+              <div className="py-12 text-center text-gray-500 flex flex-col items-center">
+                <Calendar className="h-10 w-10 mb-2 opacity-20" />
+                <p>Nenhuma coparticipação de {tipoLabel.toLowerCase()} encontrada para este período.</p>
+              </div>
+            ) : (
+              <>
+                {/* Desktop */}
+                <div className="hidden sm:block overflow-x-auto rounded-md border">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50 text-gray-700 uppercase font-medium">
+                      <tr>
+                        <th className="px-4 py-3">Beneficiário Titular</th>
+                        <th className="px-4 py-3">Quem Utilizou</th>
+                        <th className="px-4 py-3">CPF Utilizador</th>
+                        <th className="px-4 py-3">Descrição / Procedimento</th>
+                        <th className="px-4 py-3 text-right">Valor</th>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="px-4 py-12 text-center">
-                        <div className="flex flex-col items-center justify-center text-gray-500">
-                          <Calendar className="h-10 w-10 mb-2 opacity-20" />
-                          <p>Nenhuma coparticipação de {tipoLabel.toLowerCase()} encontrada para este período.</p>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-                {filteredCoparticipacoes.length > 0 && (
-                  <tfoot className="bg-gray-50 font-bold border-t">
-                    <tr>
-                      <td colSpan={4} className="px-4 py-3 text-right text-gray-600">TOTAL:</td>
-                      <td className="px-4 py-3 text-right text-blue-700 text-base">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalMes)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                )}
-              </table>
-            </div>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 bg-white">
+                      {pageData.map((item) => (
+                        <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-3 font-medium text-gray-900">{getBeneficiarioName(item.beneficiario_id)}</td>
+                          <td className="px-4 py-3 text-gray-600">{item.nome_quem_utilizou || '-'}</td>
+                          <td className="px-4 py-3 text-gray-500">{item.cpf_quem_utilizou ? formatCpfCnpj(item.cpf_quem_utilizou) : '-'}</td>
+                          <td className="px-4 py-3 text-gray-600">{item.descricao || '-'}</td>
+                          <td className="px-4 py-3 text-right font-bold text-gray-900">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valor)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="bg-gray-50 font-bold border-t">
+                      <tr>
+                        <td colSpan={4} className="px-4 py-3 text-right text-gray-600">TOTAL:</td>
+                        <td className="px-4 py-3 text-right text-blue-700 text-base">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalMes)}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+
+                {/* Mobile */}
+                <div className="sm:hidden space-y-2">
+                  {pageData.map((item) => {
+                    const isOpen = expandedId === item.id;
+                    return (
+                      <div key={item.id} className="rounded-lg border bg-white overflow-hidden">
+                        <button className="w-full px-4 py-3 text-left" onClick={() => setExpandedId(isOpen ? null : item.id)}>
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-semibold text-sm leading-snug">{item.nome_quem_utilizou || getBeneficiarioName(item.beneficiario_id)}</p>
+                            <ChevronDown className={`h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                          </div>
+                          <span className="font-bold text-green-600 text-sm mt-1 block">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valor)}</span>
+                        </button>
+                        {isOpen && (
+                          <div className="px-4 pb-4 border-t pt-3 space-y-2 bg-gray-50 text-sm">
+                            <div><span className="text-xs text-muted-foreground block">Beneficiário Titular</span>{getBeneficiarioName(item.beneficiario_id)}</div>
+                            {item.cpf_quem_utilizou && <div><span className="text-xs text-muted-foreground block">CPF Utilizador</span>{formatCpfCnpj(item.cpf_quem_utilizou)}</div>}
+                            {item.descricao && <div><span className="text-xs text-muted-foreground block">Descrição</span>{item.descricao}</div>}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <div className="pt-2 border-t flex items-center justify-between text-sm font-bold">
+                    <span className="text-gray-600">TOTAL</span>
+                    <span className="text-blue-700">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalMes)}</span>
+                  </div>
+                </div>
+              </>
+            )}
             {filteredCoparticipacoes.length > ITEMS_PER_PAGE && (
               <div className="flex items-center justify-between px-4 py-3 border-t mt-2">
                 <p className="text-sm text-gray-500">

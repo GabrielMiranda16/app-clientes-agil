@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Download, Edit2, Trash2, ArrowLeft, Loader2, Search, Upload, CheckCircle2, AlertCircle, X, ChevronRight } from 'lucide-react';
+import { Plus, Download, Edit2, Trash2, ArrowLeft, Loader2, Search, Upload, CheckCircle2, AlertCircle, X, ChevronRight, ChevronDown } from 'lucide-react';
 import { useCompany } from '@/contexts/CompanyContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -655,6 +655,7 @@ const CoparticipacaoPage = () => {
   const HistoricoCard = ({ tipo }) => {
     const data = getCoparticipacoesByTipo(tipo);
     const [currentPage, setCurrentPage] = useState(1);
+    const [expandedId, setExpandedId] = useState(null);
     const ITEMS_PER_PAGE = 10;
     useEffect(() => { setCurrentPage(1); }, [selectedColaboradorId, searchTerm, selectedMonth, selectedYear, tipo]);
     const totalPages = Math.max(1, Math.ceil(data.length / ITEMS_PER_PAGE));
@@ -707,24 +708,31 @@ const CoparticipacaoPage = () => {
             <div className="text-center py-8 flex flex-col items-center">
               <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-2" />Carregando...
             </div>
+          ) : data.length === 0 ? (
+            <div className="px-4 py-8 text-center text-gray-500">
+              {selectedCompanyId
+                ? `Nenhum registro de ${tipo === 'saude' ? 'Saúde' : 'Odonto'} encontrado para ${getMonthName(selectedMonth)}/${selectedYear}.`
+                : 'Selecione uma empresa no dashboard para visualizar os registros.'}
+            </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px] text-sm text-left">
-                <thead className="bg-gray-50 text-gray-700 uppercase font-medium">
-                  <tr>
-                    <th className="px-4 py-3">Mês</th>
-                    <th className="px-4 py-3">Beneficiário</th>
-                    <th className="px-4 py-3">CNPJ Vinculado</th>
-                    <th className="px-4 py-3">Quem Utilizou</th>
-                    <th className="px-4 py-3">CPF Utilizador</th>
-                    <th className="px-4 py-3">Descrição</th>
-                    <th className="px-4 py-3">Valor (R$)</th>
-                    <th className="px-4 py-3 text-right">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {data.length > 0 ? (
-                    pageData.map((item) => {
+            <>
+              {/* Desktop */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-gray-50 text-gray-700 uppercase font-medium">
+                    <tr>
+                      <th className="px-4 py-3">Mês</th>
+                      <th className="px-4 py-3">Beneficiário</th>
+                      <th className="px-4 py-3">CNPJ Vinculado</th>
+                      <th className="px-4 py-3">Quem Utilizou</th>
+                      <th className="px-4 py-3">CPF Utilizador</th>
+                      <th className="px-4 py-3">Descrição</th>
+                      <th className="px-4 py-3">Valor (R$)</th>
+                      <th className="px-4 py-3 text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {pageData.map((item) => {
                       const emp = empresas.find(e => e.id === item.empresa_id);
                       return (
                         <tr key={item.id} className="hover:bg-gray-50">
@@ -734,34 +742,54 @@ const CoparticipacaoPage = () => {
                           <td className="px-4 py-3 text-gray-600">{item.nome_quem_utilizou || '-'}</td>
                           <td className="px-4 py-3 text-gray-600">{item.cpf_quem_utilizou ? formatCpfCnpj(item.cpf_quem_utilizou) : '-'}</td>
                           <td className="px-4 py-3 text-gray-600">{item.descricao || '-'}</td>
-                          <td className="px-4 py-3 text-green-600 font-bold">
-                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valor)}
-                          </td>
+                          <td className="px-4 py-3 text-green-600 font-bold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valor)}</td>
                           <td className="px-4 py-3 text-right">
                             <div className="flex justify-end gap-2">
-                              <Button variant="ghost" size="icon" onClick={() => handleEditClick(item)}>
-                                <Edit2 className="h-4 w-4 text-blue-600" />
-                              </Button>
-                              <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
-                                <Trash2 className="h-4 w-4 text-red-600" />
-                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => handleEditClick(item)}><Edit2 className="h-4 w-4 text-blue-600" /></Button>
+                              <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
                             </div>
                           </td>
                         </tr>
                       );
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                        {selectedCompanyId
-                          ? `Nenhum registro de ${tipo === 'saude' ? 'Saúde' : 'Odonto'} encontrado para ${getMonthName(selectedMonth)}/${selectedYear}.`
-                          : 'Selecione uma empresa no dashboard para visualizar os registros.'}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile */}
+              <div className="sm:hidden space-y-2">
+                {pageData.map((item) => {
+                  const emp = empresas.find(e => e.id === item.empresa_id);
+                  const isOpen = expandedId === item.id;
+                  return (
+                    <div key={item.id} className="rounded-lg border bg-white overflow-hidden">
+                      <button className="w-full px-4 py-3 text-left" onClick={() => setExpandedId(isOpen ? null : item.id)}>
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="font-semibold text-sm leading-snug">{getBeneficiarioName(item.beneficiario_id)}</p>
+                          <ChevronDown className={`h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-gray-500">{item.competencia}</span>
+                          <span className="font-bold text-green-600 text-sm">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valor)}</span>
+                        </div>
+                      </button>
+                      {isOpen && (
+                        <div className="px-4 pb-4 border-t pt-3 space-y-2 bg-gray-50 text-sm">
+                          {item.nome_quem_utilizou && <div><span className="text-xs text-muted-foreground block">Quem Utilizou</span>{item.nome_quem_utilizou}</div>}
+                          {item.cpf_quem_utilizou && <div><span className="text-xs text-muted-foreground block">CPF Utilizador</span>{formatCpfCnpj(item.cpf_quem_utilizou)}</div>}
+                          {emp?.cnpj && <div><span className="text-xs text-muted-foreground block">CNPJ Vinculado</span>{formatCpfCnpj(emp.cnpj)}</div>}
+                          {item.descricao && <div><span className="text-xs text-muted-foreground block">Descrição</span>{item.descricao}</div>}
+                          <div className="flex gap-2 pt-1">
+                            <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditClick(item)}><Edit2 className="h-4 w-4 mr-1 text-blue-600" />Editar</Button>
+                            <Button variant="outline" size="sm" className="flex-1 text-red-600 hover:text-red-700" onClick={() => handleDelete(item.id)}><Trash2 className="h-4 w-4 mr-1" />Excluir</Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
           {data.length > ITEMS_PER_PAGE && (
             <div className="flex items-center justify-between px-4 py-3 border-t mt-2">
