@@ -619,7 +619,7 @@ const CEODashboard = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <div className="space-y-3">
             <h1 className="text-2xl font-bold tracking-tight text-white">Dashboard do CEO</h1>
-            <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="hidden sm:block overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               <TabsList className="inline-flex h-auto gap-1 bg-white/10 border border-white/20 rounded-lg p-1 min-w-max">
                 {[
                   { value: 'dashboard',    label: 'Dashboard' },
