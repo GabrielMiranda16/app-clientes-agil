@@ -57,6 +57,7 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   ArrowLeft
 } from 'lucide-react';
 import { formatDateTime } from '@/lib/utils';
@@ -124,6 +125,8 @@ const SolicitacoesPage = () => {
     odonto_produto: '',
     odonto_valor_fatura: '',
   });
+
+  const [expandedId, setExpandedId] = useState(null);
 
   const [formData, setFormData] = useState({
     beneficiario_id: '',
@@ -637,81 +640,60 @@ const SolicitacoesPage = () => {
                 <div className="space-y-2">
                   {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full" />)}
                 </div>
+              ) : pendenteSolicitacoes.length === 0 ? (
+                <div className="text-center py-10 text-gray-500">Nenhuma solicitação pendente encontrada.</div>
               ) : (
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Beneficiário</TableHead>
-                        <TableHead>Plano</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Tempo</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pendenteSolicitacoes.length > 0 ? (
-                        pendenteSolicitacoes.map((solicitacao) => {
+                <>
+                  {/* Desktop */}
+                  <div className="hidden sm:block rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Beneficiário</TableHead>
+                          <TableHead>Plano</TableHead>
+                          <TableHead>Tipo</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Tempo</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {pendenteSolicitacoes.map((solicitacao) => {
                           const beneficiario = beneficiarios.find(b => b.id === solicitacao.beneficiario_id);
                           return (
                             <TableRow key={solicitacao.id}>
                               <TableCell className="font-medium">
                                 {beneficiario ? beneficiario.nome_completo : 'Beneficiário Removido'}
-                                {beneficiario && (
-                                  <div className="text-xs text-gray-500">
-                                    CPF: {formatCpfCnpj(beneficiario.cpf)}
-                                  </div>
-                                )}
+                                {beneficiario && <div className="text-xs text-gray-500">CPF: {formatCpfCnpj(beneficiario.cpf)}</div>}
                               </TableCell>
                               <TableCell className="capitalize">{solicitacao.tipo_plano}</TableCell>
                               <TableCell>{getTipoBadge(solicitacao.tipo_solicitacao)}</TableCell>
                               <TableCell>{getStatusBadge(solicitacao.status)}</TableCell>
-                              <TableCell className="text-sm text-gray-600">
-                                {getTempoDecorrido(solicitacao.data_solicitacao)}
-                              </TableCell>
+                              <TableCell className="text-sm text-gray-600">{getTempoDecorrido(solicitacao.data_solicitacao)}</TableCell>
                               <TableCell className="text-right">
                                 <div className="flex justify-end gap-2">
                                   {solicitacao.status === 'PENDENTE' && (
-                                    <Button 
-                                      size="sm"
-                                      className="bg-green-600 hover:bg-green-700 text-white"
-                                      onClick={() => handleAccept(solicitacao)}
-                                    >
-                                      <CheckCircle2 className="w-4 h-4 mr-2" />
-                                      Aceitar
+                                    <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => handleAccept(solicitacao)}>
+                                      <CheckCircle2 className="w-4 h-4 mr-2" />Aceitar
                                     </Button>
                                   )}
-                                  
                                   {solicitacao.status === 'EM PROCESSAMENTO' && (
-                                    <Button 
-                                      variant="outline" 
-                                      size="sm" 
-                                      onClick={() => handleEditBeneficiarioData(solicitacao)}
-                                    >
-                                      <FileText className="h-4 w-4 mr-2" />
-                                      Adicionar Dados
+                                    <Button variant="outline" size="sm" onClick={() => handleEditBeneficiarioData(solicitacao)}>
+                                      <FileText className="h-4 w-4 mr-2" />Adicionar Dados
                                     </Button>
                                   )}
-
                                   <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                      <Button variant="ghost" size="sm" className="text-gray-500 hover:text-red-600">
-                                        Cancelar
-                                      </Button>
+                                      <Button variant="ghost" size="sm" className="text-gray-500 hover:text-red-600">Cancelar</Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                       <AlertDialogHeader>
                                         <AlertDialogTitle>Cancelar Solicitação</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          Tem certeza que deseja cancelar esta solicitação? O cliente poderá solicitá-la novamente.
-                                        </AlertDialogDescription>
+                                        <AlertDialogDescription>Tem certeza que deseja cancelar esta solicitação? O cliente poderá solicitá-la novamente.</AlertDialogDescription>
                                       </AlertDialogHeader>
                                       <AlertDialogFooter>
                                         <AlertDialogCancel>Voltar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleCancel(solicitacao.id)} className="bg-red-600 text-white hover:bg-red-700">
-                                          Confirmar Cancelamento
-                                        </AlertDialogAction>
+                                        <AlertDialogAction onClick={() => handleCancel(solicitacao.id)} className="bg-red-600 text-white hover:bg-red-700">Confirmar Cancelamento</AlertDialogAction>
                                       </AlertDialogFooter>
                                     </AlertDialogContent>
                                   </AlertDialog>
@@ -719,17 +701,70 @@ const SolicitacoesPage = () => {
                               </TableCell>
                             </TableRow>
                           );
-                        })
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={6} className="h-24 text-center text-gray-500">
-                            Nenhuma solicitação pendente encontrada.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile */}
+                  <div className="sm:hidden space-y-2">
+                    {pendenteSolicitacoes.map((solicitacao) => {
+                      const beneficiario = beneficiarios.find(b => b.id === solicitacao.beneficiario_id);
+                      const isOpen = expandedId === solicitacao.id;
+                      return (
+                        <div key={solicitacao.id} className="rounded-lg border bg-white overflow-hidden">
+                          <button className="w-full px-4 py-3 text-left" onClick={() => setExpandedId(isOpen ? null : solicitacao.id)}>
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="font-semibold text-sm leading-snug">
+                                {beneficiario ? beneficiario.nome_completo : 'Beneficiário Removido'}
+                              </p>
+                              <ChevronDown className={`h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                            </div>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              {getStatusBadge(solicitacao.status)}
+                              <span className="text-xs text-gray-500">{getTempoDecorrido(solicitacao.data_solicitacao)}</span>
+                            </div>
+                          </button>
+                          {isOpen && (
+                            <div className="px-4 pb-4 border-t pt-3 space-y-3 bg-gray-50">
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div><span className="text-xs text-muted-foreground block">Plano</span><span className="font-medium capitalize">{solicitacao.tipo_plano}</span></div>
+                                <div><span className="text-xs text-muted-foreground block">Tipo</span>{getTipoBadge(solicitacao.tipo_solicitacao)}</div>
+                              </div>
+                              <div className="flex flex-col gap-2">
+                                {solicitacao.status === 'PENDENTE' && (
+                                  <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white w-full" onClick={() => handleAccept(solicitacao)}>
+                                    <CheckCircle2 className="w-4 h-4 mr-2" />Aceitar
+                                  </Button>
+                                )}
+                                {solicitacao.status === 'EM PROCESSAMENTO' && (
+                                  <Button variant="outline" size="sm" className="w-full" onClick={() => handleEditBeneficiarioData(solicitacao)}>
+                                    <FileText className="h-4 w-4 mr-2" />Adicionar Dados
+                                  </Button>
+                                )}
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="text-gray-500 hover:text-red-600 w-full">Cancelar</Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Cancelar Solicitação</AlertDialogTitle>
+                                      <AlertDialogDescription>Tem certeza que deseja cancelar esta solicitação?</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Voltar</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleCancel(solicitacao.id)} className="bg-red-600 text-white hover:bg-red-700">Confirmar Cancelamento</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -768,7 +803,8 @@ const SolicitacoesPage = () => {
                     Object.entries(groupedCurrentCompletedItems).map(([monthYear, items]) => (
                       <div key={monthYear} className="space-y-2">
                         <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider pl-1">{monthYear}</h3>
-                        <div className="rounded-md border">
+                        {/* Desktop */}
+                        <div className="hidden sm:block rounded-md border">
                           <Table>
                             <TableHeader>
                               <TableRow>
@@ -785,34 +821,24 @@ const SolicitacoesPage = () => {
                                 const beneficiario = beneficiarios.find(b => b.id === solicitacao.beneficiario_id);
                                 return (
                                   <TableRow key={solicitacao.id}>
-                                    <TableCell className="font-medium">
-                                      {beneficiario ? beneficiario.nome_completo : 'Beneficiário Removido'}
-                                    </TableCell>
+                                    <TableCell className="font-medium">{beneficiario ? beneficiario.nome_completo : 'Beneficiário Removido'}</TableCell>
                                     <TableCell className="capitalize">{solicitacao.tipo_plano}</TableCell>
                                     <TableCell>{getTipoBadge(solicitacao.tipo_solicitacao)}</TableCell>
                                     <TableCell>{getStatusBadge(solicitacao.status)}</TableCell>
-                                    <TableCell className="text-sm text-gray-600">
-                                      {formatDateTime(solicitacao.data_conclusao || solicitacao.data_rejeicao || solicitacao.updated_at)}
-                                    </TableCell>
+                                    <TableCell className="text-sm text-gray-600">{formatDateTime(solicitacao.data_conclusao || solicitacao.data_rejeicao || solicitacao.updated_at)}</TableCell>
                                     <TableCell className="text-right">
                                       <AlertDialog>
                                         <AlertDialogTrigger asChild>
-                                          <Button variant="ghost" size="sm" className="text-gray-500 hover:text-red-600">
-                                            Cancelar
-                                          </Button>
+                                          <Button variant="ghost" size="sm" className="text-gray-500 hover:text-red-600">Cancelar</Button>
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
                                           <AlertDialogHeader>
                                             <AlertDialogTitle>Cancelar Solicitação</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                              Deseja cancelar este registro? O cliente poderá solicitar novamente.
-                                            </AlertDialogDescription>
+                                            <AlertDialogDescription>Deseja cancelar este registro? O cliente poderá solicitar novamente.</AlertDialogDescription>
                                           </AlertDialogHeader>
                                           <AlertDialogFooter>
                                             <AlertDialogCancel>Voltar</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleCancel(solicitacao.id)} className="bg-red-600 text-white hover:bg-red-700">
-                                              Confirmar Cancelamento
-                                            </AlertDialogAction>
+                                            <AlertDialogAction onClick={() => handleCancel(solicitacao.id)} className="bg-red-600 text-white hover:bg-red-700">Confirmar Cancelamento</AlertDialogAction>
                                           </AlertDialogFooter>
                                         </AlertDialogContent>
                                       </AlertDialog>
@@ -822,6 +848,51 @@ const SolicitacoesPage = () => {
                               })}
                             </TableBody>
                           </Table>
+                        </div>
+
+                        {/* Mobile */}
+                        <div className="sm:hidden space-y-2">
+                          {items.map((solicitacao) => {
+                            const beneficiario = beneficiarios.find(b => b.id === solicitacao.beneficiario_id);
+                            const isOpen = expandedId === solicitacao.id;
+                            return (
+                              <div key={solicitacao.id} className="rounded-lg border bg-white overflow-hidden">
+                                <button className="w-full px-4 py-3 text-left" onClick={() => setExpandedId(isOpen ? null : solicitacao.id)}>
+                                  <div className="flex items-start justify-between gap-2">
+                                    <p className="font-semibold text-sm leading-snug">{beneficiario ? beneficiario.nome_completo : 'Beneficiário Removido'}</p>
+                                    <ChevronDown className={`h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                    {getStatusBadge(solicitacao.status)}
+                                  </div>
+                                </button>
+                                {isOpen && (
+                                  <div className="px-4 pb-4 border-t pt-3 space-y-3 bg-gray-50">
+                                    <div className="grid grid-cols-2 gap-2 text-sm">
+                                      <div><span className="text-xs text-muted-foreground block">Plano</span><span className="font-medium capitalize">{solicitacao.tipo_plano}</span></div>
+                                      <div><span className="text-xs text-muted-foreground block">Tipo</span>{getTipoBadge(solicitacao.tipo_solicitacao)}</div>
+                                    </div>
+                                    <div><span className="text-xs text-muted-foreground block">Data Conclusão</span><span className="text-sm">{formatDateTime(solicitacao.data_conclusao || solicitacao.data_rejeicao || solicitacao.updated_at)}</span></div>
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="text-gray-500 hover:text-red-600 w-full">Cancelar</Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Cancelar Solicitação</AlertDialogTitle>
+                                          <AlertDialogDescription>Deseja cancelar este registro?</AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Voltar</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => handleCancel(solicitacao.id)} className="bg-red-600 text-white hover:bg-red-700">Confirmar Cancelamento</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     ))
