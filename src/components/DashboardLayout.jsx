@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Link, useNavigate, useLocation, useParams, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Button } from '@/components/ui/button';
@@ -328,8 +329,17 @@ const DashboardLayout = ({ children }) => {
         </div>
 
         {/* Mobile menu panel */}
+        <AnimatePresence>
         {mobileMenuOpen && (
-          <div className="sm:hidden border-t border-white/10 px-4 py-4 space-y-1" style={{ background: 'linear-gradient(to top right, #6b9fd4, #2a6db5, #003580)' }}>
+          <motion.div
+            key="mobile-menu"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className="sm:hidden overflow-hidden"
+          >
+          <div className="border-t border-white/10 rounded-b-2xl px-4 py-4 space-y-1 mx-2 mb-2" style={{ background: 'linear-gradient(to bottom right, #6b9fd4, #2a6db5, #003580)' }}>
             {/* User info */}
             <div className="px-3 py-2 mb-2">
               <p className="text-sm font-semibold text-white">{user?.email}</p>
@@ -457,7 +467,9 @@ const DashboardLayout = ({ children }) => {
               </div>
             </div>
           </div>
+          </motion.div>
         )}
+        </AnimatePresence>
       </header>
 
       <main className="flex-grow container mx-auto p-4 sm:p-6 lg:p-8 pb-28 sm:pb-8">
