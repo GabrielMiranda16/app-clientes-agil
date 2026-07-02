@@ -664,25 +664,25 @@ const CEODashboard = () => {
               </div>
 
               <div className="grid gap-4 lg:grid-cols-2 mt-4">
-                {/* Gráfico Top 5 — só desktop */}
-                <motion.div className="hidden sm:block" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                {/* Gráfico Top 5 */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} style={{ minWidth: 0 }}>
                   <Card className="overflow-hidden">
-                    <CardHeader className="pb-2"><CardTitle className="text-base">Top 5 Empresas — Maior Prêmio</CardTitle></CardHeader>
-                    <CardContent className="px-3 pb-4">
+                    <CardHeader className="pb-2 px-3"><CardTitle className="text-sm sm:text-base">Top 5 — Maior Prêmio</CardTitle></CardHeader>
+                    <CardContent className="px-2 pb-3">
                       {top5EmpresasPremio.length > 0 ? (
-                        <div style={{ width: '100%', height: 240, overflow: 'hidden' }}>
+                        <div style={{ width: '100%', height: 180, overflow: 'hidden' }}>
                           <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={[...top5EmpresasPremio].reverse()} layout="vertical" margin={{ left: 0, right: 24, top: 4, bottom: 4 }}>
+                            <BarChart data={[...top5EmpresasPremio].reverse()} layout="vertical" margin={{ left: 0, right: 32, top: 2, bottom: 2 }}>
                               <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis type="number" tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
-                              <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 11 }} />
+                              <XAxis type="number" tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} tick={{ fontSize: 9 }} />
+                              <YAxis type="category" dataKey="name" width={60} tick={{ fontSize: 9 }} />
                               <Tooltip formatter={(v, name, props) => [formatCurrency(v), props.payload?.full_name || name]} />
-                              <Bar dataKey="total" fill="#003580" name="Prêmio Total" radius={[0, 4, 4, 0]} />
+                              <Bar dataKey="total" fill="#003580" name="Prêmio Total" radius={[0, 3, 3, 0]} />
                             </BarChart>
                           </ResponsiveContainer>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">Sem dados de apólices</div>
+                        <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">Sem dados de apólices</div>
                       )}
                     </CardContent>
                   </Card>
