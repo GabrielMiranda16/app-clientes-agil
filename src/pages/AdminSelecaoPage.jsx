@@ -85,7 +85,7 @@ const AdminSelecaoPage = () => {
         >
           <h1 className="text-2xl font-bold tracking-tight text-white">O que deseja gerenciar?</h1>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-5xl">
             {cards.map(({ icon: Icon, title, description, route, badge, badgeLabel, badgeColor }, i) => (
               <motion.button
                 key={title}
