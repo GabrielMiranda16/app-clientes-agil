@@ -45,6 +45,28 @@ const SEG_LABEL = {
 const SEGMENTOS = Object.keys(SEG_LABEL);
 const ESTADOS_BR = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 
+const formatCPF = (v) => {
+  if (!v) return '';
+  const d = v.replace(/\D/g, '');
+  if (d.length !== 11) return v;
+  return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+};
+
+const formatCNPJ = (v) => {
+  if (!v) return '';
+  const d = v.replace(/\D/g, '');
+  if (d.length !== 14) return v;
+  return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+};
+
+const formatTelefone = (v) => {
+  if (!v) return '';
+  const d = v.replace(/\D/g, '');
+  if (d.length === 11) return d.replace(/(\d{2})(\d{1})(\d{4})(\d{4})/, '($1) $2 $3-$4');
+  if (d.length === 10) return d.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+  return v;
+};
+
 const tempoRelativo = (iso) => {
   if (!iso) return null;
   const diff = Date.now() - new Date(iso).getTime();
@@ -92,15 +114,12 @@ const AdminLeadsPage = () => {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [acessosPorOrcamento, setAcessosPorOrcamento] = useState({});
 
-  const [debug, setDebug] = useState('');
-
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('leads')
       .select('*')
       .order('created_at', { ascending: false });
-    setDebug(`data: ${JSON.stringify(data?.length)} | error: ${JSON.stringify(error)}`);
     if (error) {
       console.error('Erro ao buscar leads:', error);
       toast({ variant: 'destructive', title: 'Erro ao carregar leads.', description: error.message });
@@ -274,9 +293,6 @@ const AdminLeadsPage = () => {
             </div>
           </div>
 
-          {/* Debug temporário */}
-          {debug && <div className="bg-yellow-100 text-yellow-900 text-xs px-3 py-2 rounded font-mono">{debug}</div>}
-
           {/* Busca */}
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -368,7 +384,7 @@ const AdminLeadsPage = () => {
                                 {lead.telefone && (
                                   <a href={`https://wa.me/55${lead.telefone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer"
                                     className="flex items-center gap-1 hover:text-green-600 transition-colors">
-                                    <Phone className="h-3 w-3" /> {lead.telefone}
+                                    <Phone className="h-3 w-3" /> {formatTelefone(lead.telefone)}
                                   </a>
                                 )}
                                 <span>{orig.icon} {orig.label}</span>
@@ -406,8 +422,8 @@ const AdminLeadsPage = () => {
                                   {/* Dados pessoais */}
                                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                     {lead.email && <div><p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Email</p><p className="text-xs text-gray-700">{lead.email}</p></div>}
-                                    {lead.cpf && <div><p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">CPF</p><p className="text-xs text-gray-700">{lead.cpf}</p></div>}
-                                    {lead.cnpj && <div><p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">CNPJ</p><p className="text-xs text-gray-700">{lead.cnpj}</p></div>}
+                                    {lead.cpf && <div><p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">CPF</p><p className="text-xs text-gray-700">{formatCPF(lead.cpf)}</p></div>}
+                                    {lead.cnpj && <div><p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">CNPJ</p><p className="text-xs text-gray-700">{formatCNPJ(lead.cnpj)}</p></div>}
                                     {lead.data_nascimento && <div><p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Nascimento</p><p className="text-xs text-gray-700">{formatDate(lead.data_nascimento)}</p></div>}
                                     {(lead.cidade || lead.estado) && <div><p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Localização</p><p className="text-xs text-gray-700">{[lead.cidade, lead.estado].filter(Boolean).join(' — ')}</p></div>}
                                     {lead.num_vidas && <div><p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Nº de vidas</p><p className="text-xs text-gray-700">{lead.num_vidas}</p></div>}
