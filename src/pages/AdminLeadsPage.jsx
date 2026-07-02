@@ -94,10 +94,16 @@ const AdminLeadsPage = () => {
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('leads')
       .select('*')
       .order('created_at', { ascending: false });
+    if (error) {
+      console.error('Erro ao buscar leads:', error);
+      toast({ variant: 'destructive', title: 'Erro ao carregar leads.', description: error.message });
+      setLoading(false);
+      return;
+    }
     const lista = data || [];
     setLeads(lista);
 
