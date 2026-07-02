@@ -1017,11 +1017,7 @@ const CEODashboard = () => {
                           const isOpen = expandedEmpresaId === empresa.id;
                           const isCpf = empresa.cnpj && empresa.cnpj.replace(/\D/g, '').length === 11;
                           const isFilial = !!empresa.empresa_matriz_id;
-                          const displayName = isCpf
-                            ? (empresa.razao_social || empresa.nome_fantasia)
-                            : isFilial
-                              ? empresa.nome_fantasia
-                              : (empresa.razao_social || empresa.nome_fantasia);
+                          const displayName = empresa.razao_social || empresa.nome_fantasia;
                           return (
                             <div key={empresa.id} className="rounded-lg border bg-white overflow-hidden">
                               <button
