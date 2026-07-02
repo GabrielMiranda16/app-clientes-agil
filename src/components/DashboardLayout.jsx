@@ -24,7 +24,10 @@ import {
   FileText,
   LayoutDashboard,
   ClipboardList,
-  Shield
+  Shield,
+  Flame,
+  Bell,
+  Users2,
 } from 'lucide-react';
 import { formatCpfCnpj } from '@/lib/masks';
 import useDateTime from '@/hooks/use-date-time';
@@ -334,13 +337,29 @@ const DashboardLayout = ({ children }) => {
               {/* CEO nav */}
               {user?.perfil === 'CEO' && (
                 <>
-                  <NavLink to="/ceo" onClick={() => setMobileMenuOpen(false)}
+                  <NavLink to="/ceo" end onClick={() => setMobileMenuOpen(false)}
                     className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
                     <LayoutDashboard className="h-5 w-5" /> Dashboard CEO
                   </NavLink>
                   <NavLink to="/admin/clientes" onClick={() => setMobileMenuOpen(false)}
                     className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
-                    <Shield className="h-5 w-5" /> Administração
+                    <Users className="h-5 w-5" /> Clientes
+                  </NavLink>
+                  <NavLink to="/admin/orcamentos" onClick={() => setMobileMenuOpen(false)}
+                    className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
+                    <FileText className="h-5 w-5" /> Orçamentos
+                  </NavLink>
+                  <NavLink to="/admin/parceiros" onClick={() => setMobileMenuOpen(false)}
+                    className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
+                    <Users2 className="h-5 w-5" /> Parceiros
+                  </NavLink>
+                  <NavLink to="/admin/leads" onClick={() => setMobileMenuOpen(false)}
+                    className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
+                    <Flame className="h-5 w-5" /> Leads
+                  </NavLink>
+                  <NavLink to="/admin/lembretes" onClick={() => setMobileMenuOpen(false)}
+                    className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
+                    <Bell className="h-5 w-5" /> Lembretes
                   </NavLink>
                   <NavLink to="/solicitacoes" onClick={() => setMobileMenuOpen(false)}
                     className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
@@ -352,9 +371,29 @@ const DashboardLayout = ({ children }) => {
               {/* ADM nav */}
               {user?.perfil === 'ADM' && (
                 <>
+                  <NavLink to="/admin" end onClick={() => setMobileMenuOpen(false)}
+                    className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
+                    <LayoutDashboard className="h-5 w-5" /> Início
+                  </NavLink>
                   <NavLink to="/admin/clientes" onClick={() => setMobileMenuOpen(false)}
                     className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
                     <Users className="h-5 w-5" /> Clientes
+                  </NavLink>
+                  <NavLink to="/admin/orcamentos" onClick={() => setMobileMenuOpen(false)}
+                    className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
+                    <FileText className="h-5 w-5" /> Orçamentos
+                  </NavLink>
+                  <NavLink to="/admin/parceiros" onClick={() => setMobileMenuOpen(false)}
+                    className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
+                    <Users2 className="h-5 w-5" /> Parceiros
+                  </NavLink>
+                  <NavLink to="/admin/leads" onClick={() => setMobileMenuOpen(false)}
+                    className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
+                    <Flame className="h-5 w-5" /> Leads
+                  </NavLink>
+                  <NavLink to="/admin/lembretes" onClick={() => setMobileMenuOpen(false)}
+                    className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
+                    <Bell className="h-5 w-5" /> Lembretes
                   </NavLink>
                   <NavLink to="/solicitacoes" onClick={() => setMobileMenuOpen(false)}
                     className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
@@ -369,14 +408,20 @@ const DashboardLayout = ({ children }) => {
                 </>
               )}
 
-              {/* CLIENT nav */}
+              {/* PARCEIRO nav */}
+              {user?.perfil === 'PARCEIRO' && (
+                <NavLink to="/parceiro" onClick={() => setMobileMenuOpen(false)}
+                  className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
+                  <LayoutDashboard className="h-5 w-5" /> Dashboard Parceiro
+                </NavLink>
+              )}
+
+              {/* CLIENTE nav */}
               {user?.perfil === 'CLIENTE' && (
-                <>
-                  <NavLink to="/select-segmento" onClick={() => setMobileMenuOpen(false)}
-                    className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
-                    <FileText className="h-5 w-5" /> Meus Seguros
-                  </NavLink>
-                </>
+                <NavLink to="/select-segmento" onClick={() => setMobileMenuOpen(false)}
+                  className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
+                  <FileText className="h-5 w-5" /> Meus Seguros
+                </NavLink>
               )}
 
               <div className="border-t border-white/10 pt-2 mt-1 space-y-1">
