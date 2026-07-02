@@ -682,14 +682,14 @@ const CEODashboard = () => {
                 ))}
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-2 mt-4">
+              <div className="grid gap-4 lg:grid-cols-2 mt-4 lg:items-stretch">
                 {/* Gráfico Top 5 */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} style={{ minWidth: 0 }}>
-                  <Card className="overflow-hidden">
-                    <CardHeader className="pb-2 px-3"><CardTitle className="text-sm sm:text-base">Top 5 — Maior Prêmio</CardTitle></CardHeader>
-                    <CardContent className="px-2 pb-3">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} style={{ minWidth: 0 }} className="flex flex-col">
+                  <Card className="overflow-hidden flex flex-col h-full">
+                    <CardHeader className="pb-2 px-3"><CardTitle className="text-sm sm:text-base">Top 5 — Gráfico</CardTitle></CardHeader>
+                    <CardContent className="px-2 pb-3 flex-1 flex flex-col">
                       {top5EmpresasPremio.length > 0 ? (
-                        <div className="w-full h-[180px] lg:h-[250px] overflow-hidden" style={{ overflow: 'hidden' }}>
+                        <div className="w-full h-[180px] lg:flex-1 lg:min-h-0 overflow-hidden">
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={[...top5EmpresasPremio].reverse()} layout="vertical" margin={{ left: 0, right: 32, top: 2, bottom: 2 }}>
                               <CartesianGrid strokeDasharray="3 3" />
@@ -708,9 +708,9 @@ const CEODashboard = () => {
                 </motion.div>
 
                 {/* Card detalhado Top 5 — sempre visível */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-                  <Card className="overflow-hidden">
-                    <CardHeader className="pb-2"><CardTitle className="text-base">Top 5 — Maior Prêmio</CardTitle></CardHeader>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex flex-col">
+                  <Card className="overflow-hidden h-full">
+                    <CardHeader className="pb-2"><CardTitle className="text-base">Top 5 — Ranking</CardTitle></CardHeader>
                     <CardContent className="space-y-2 px-3 pb-4">
                       {top5EmpresasPremio.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground text-sm">Sem dados de apólices</div>
