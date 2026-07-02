@@ -620,7 +620,7 @@ const SolicitacoesPage = () => {
         {/* Tab Content: Pendentes */}
         <TabsContent value="pendentes">
         {activeTab === 'pendentes' && (
-          <Card className="border-t-0 rounded-tl-none">
+          <Card>
             <CardHeader className="pb-3">
               <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <CardTitle className="text-lg font-medium">Solicitações Pendentes</CardTitle>
@@ -774,7 +774,7 @@ const SolicitacoesPage = () => {
         {/* Tab Content: Concluídas */}
         <TabsContent value="concluidas">
         {activeTab === 'concluidas' && (
-          <Card className="border-t-0 rounded-tl-none">
+          <Card>
              <CardHeader className="pb-3">
               <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <CardTitle className="text-lg font-medium">Histórico de Solicitações</CardTitle>
