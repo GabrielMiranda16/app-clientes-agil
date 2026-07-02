@@ -36,7 +36,7 @@ export const beneficiariosService = {
   async createBeneficiario(beneficiarioData) {
     try {
       const cleanedData = cleanBeneficiarioData(beneficiarioData);
-      
+
       const { data, error } = await supabase
         .from('beneficiarios')
         .insert([cleanedData])
@@ -44,6 +44,19 @@ export const beneficiariosService = {
         .single();
 
       if (error) throw error;
+
+      supabase.from('leads').insert({
+        nome: data.nome_completo,
+        cpf: data.cpf || null,
+        data_nascimento: data.data_nascimento || null,
+        email: data.email_beneficiario || null,
+        telefone: data.celular || null,
+        cidade: data.cidade || null,
+        estado: data.estado || null,
+        origem: 'beneficiario',
+        status: 'convertido',
+      }).catch(() => {});
+
       return data;
     } catch (error) {
       console.error('Erro ao criar beneficiário:', error);

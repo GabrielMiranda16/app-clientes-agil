@@ -320,7 +320,7 @@ const ParceiroDashboard = () => {
       if (form.observacoes.trim()) obsTexto += `\nObservações: ${form.observacoes.trim()}`;
 
       const cenAtivos = cenariosSolic.filter(c => c.tem_plano).map(c => ({ tem_plano: true, operadora: c.operadora || '', valor: c.valor || '', vidas: c.vidas || {} }));
-      const { error } = await supabase.from('orcamentos').insert({
+      const { data: orcData, error } = await supabase.from('orcamentos').insert({
         parceiro_id: parceiro.id,
         segmento: form.segmento,
         modalidade: form.extras.tipo || null,
@@ -332,9 +332,21 @@ const ParceiroDashboard = () => {
         cliente_data_nascimento: form.cliente_data_nascimento || null,
         observacoes: obsTexto.trim() || null,
         cenarios_atuais: cenAtivos.length > 0 ? cenAtivos : null,
-      });
+      }).select('id').single();
 
       if (error) throw error;
+
+      supabase.from('leads').insert({
+        nome: form.cliente_nome.trim(),
+        cpf: form.cliente_cpf.replace(/\D/g, '') || null,
+        data_nascimento: form.cliente_data_nascimento || null,
+        email: form.cliente_email.trim() || null,
+        telefone: form.cliente_telefone.trim() || null,
+        segmento: form.segmento,
+        origem: 'parceiro',
+        status: 'novo',
+        orcamento_id: orcData.id,
+      }).catch(() => {});
       toast({ title: 'Orçamento solicitado!', description: 'O ADM será notificado e responderá em breve.' });
 
       // Notifica grupo Ágil no WhatsApp via bot
