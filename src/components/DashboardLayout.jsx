@@ -28,6 +28,9 @@ import {
   Flame,
   Bell,
   Users2,
+  Building2,
+  BarChart3,
+  ShieldCheck,
 } from 'lucide-react';
 import { formatCpfCnpj } from '@/lib/masks';
 import useDateTime from '@/hooks/use-date-time';
@@ -339,8 +342,20 @@ const DashboardLayout = ({ children }) => {
                 <>
                   <NavLink to="/ceo" end onClick={() => setMobileMenuOpen(false)}
                     className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
-                    <LayoutDashboard className="h-5 w-5" /> Dashboard CEO
+                    <LayoutDashboard className="h-5 w-5" /> Dashboard
                   </NavLink>
+                  <button onClick={() => { navigate('/ceo', { state: { tab: 'empresas' } }); setMobileMenuOpen(false); }}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors w-full">
+                    <Building2 className="h-5 w-5" /> Empresas
+                  </button>
+                  <button onClick={() => { navigate('/ceo', { state: { tab: 'admins' } }); setMobileMenuOpen(false); }}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors w-full">
+                    <ShieldCheck className="h-5 w-5" /> Admins
+                  </button>
+                  <button onClick={() => { navigate('/ceo', { state: { tab: 'relatorios' } }); setMobileMenuOpen(false); }}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors w-full">
+                    <BarChart3 className="h-5 w-5" /> Relatórios
+                  </button>
                   <NavLink to="/admin/clientes" onClick={() => setMobileMenuOpen(false)}
                     className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
                     <Users className="h-5 w-5" /> Clientes
