@@ -617,32 +617,30 @@ const CEODashboard = () => {
       </Helmet>
       <DashboardLayout>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold tracking-tight text-white">Dashboard do CEO</h1>
-              </div>
+          <div className="space-y-3">
+            <h1 className="text-2xl font-bold tracking-tight text-white">Dashboard do CEO</h1>
+            <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <TabsList className="inline-flex h-auto gap-1 bg-white/10 border border-white/20 rounded-lg p-1 min-w-max">
+                {[
+                  { value: 'dashboard',    label: 'Dashboard' },
+                  { value: 'empresas',     label: 'Empresas' },
+                  { value: 'solicitacoes', label: 'Solicitações' },
+                  { value: 'admins',       label: 'Admins' },
+                  { value: 'parceiros',    label: 'Parceiros' },
+                  { value: 'relatorios',   label: 'Relatórios' },
+                  { value: 'lembretes_adm',label: 'Lembretes', badge: unreadAdm },
+                ].map(({ value, label, badge }) => (
+                  <TabsTrigger key={value} value={value}
+                    onClick={() => { if (value === 'lembretes_adm') fetchLembretesAdm(); }}
+                    className="shrink-0 text-xs md:text-sm rounded-md text-white/70 data-[state=active]:bg-white/25 data-[state=active]:text-white data-[state=active]:font-semibold hover:text-white px-3 py-1.5 relative">
+                    {label}
+                    {badge > 0 && (
+                      <span className="absolute -top-1 -right-1 flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold">{badge}</span>
+                    )}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
             </div>
-            <TabsList className="flex overflow-x-auto h-auto gap-1 bg-white/10 border border-white/20 rounded-lg p-1 [&::-webkit-scrollbar]:hidden">
-              {[
-                { value: 'dashboard',    label: 'Dashboard' },
-                { value: 'empresas',     label: 'Empresas' },
-                { value: 'solicitacoes', label: 'Solicitações' },
-                { value: 'admins',       label: 'Admins' },
-                { value: 'parceiros',    label: 'Parceiros' },
-                { value: 'relatorios',   label: 'Relatórios' },
-                { value: 'lembretes_adm',label: 'Lembretes ADM', badge: unreadAdm },
-              ].map(({ value, label, badge }) => (
-                <TabsTrigger key={value} value={value}
-                  onClick={() => { if (value === 'lembretes_adm') fetchLembretesAdm(); }}
-                  className="shrink-0 text-xs md:text-sm rounded-md text-white/70 data-[state=active]:bg-white/25 data-[state=active]:text-white data-[state=active]:font-semibold hover:text-white px-3 py-1.5 relative">
-                  {label}
-                  {badge > 0 && (
-                    <span className="absolute -top-1 -right-1 flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold">{badge}</span>
-                  )}
-                </TabsTrigger>
-              ))}
-            </TabsList>
           </div>
 
           <TabsContent value="dashboard" className="space-y-4">
