@@ -66,5 +66,6 @@
 }
 
 .bg-soft-gradient {
-  background: linear-gradient(180deg, #003580 0%, #1a5599 30%, #6b9fd4 58%, #c8e0f5 75%, #f0f7ff 88%, #ffffff 100%);
+  background: linear-gradient(to top right, #6b9fd4, #2a6db5, #003580);
+  min-height: 100vh;
 }
