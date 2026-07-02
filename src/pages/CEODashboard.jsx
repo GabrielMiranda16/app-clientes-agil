@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import DashboardLayout from '@/components/DashboardLayout';
 import MetricCard from '@/components/MetricCard';
@@ -43,6 +43,7 @@ const CEODashboard = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const [users, setUsers] = useState([]);
   const [empresas, setEmpresas] = useState([]);
@@ -58,6 +59,15 @@ const CEODashboard = () => {
   const [newAdminPerfil, setNewAdminPerfil] = useState('ADM');
   const [activeTab, setActiveTab] = useState("dashboard");
   const [closedAlerts, setClosedAlerts] = useState([]);
+
+  useEffect(() => {
+    const tab = location.state?.tab;
+    if (tab) {
+      setActiveTab(tab);
+      if (tab === 'lembretes_adm') fetchLembretesAdm();
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Filter State
   const [searchTerm, setSearchTerm] = useState("");
