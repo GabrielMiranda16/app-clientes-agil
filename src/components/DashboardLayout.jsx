@@ -326,7 +326,7 @@ const DashboardLayout = ({ children }) => {
 
         {/* Mobile menu panel */}
         {mobileMenuOpen && (
-          <div className="sm:hidden border-t border-white/10 bg-[#003580]/95 backdrop-blur px-4 py-4 space-y-1">
+          <div className="sm:hidden border-t border-white/10 px-4 py-4 space-y-1" style={{ background: 'linear-gradient(to top right, #6b9fd4, #2a6db5, #003580)' }}>
             {/* User info */}
             <div className="px-3 py-2 mb-2">
               <p className="text-sm font-semibold text-white">{user?.email}</p>
