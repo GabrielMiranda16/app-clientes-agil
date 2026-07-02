@@ -1,29 +1,35 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
-import { motion } from 'framer-motion';
-import { Flame, Users, Search, RefreshCw, Phone, Calendar, Monitor, Smartphone, ChevronDown, ChevronUp } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Flame, Users, Search, RefreshCw, Phone, Calendar, Monitor, Smartphone,
+  ChevronDown, ChevronUp, Plus, Trash2, Pencil, FileText, ExternalLink, Clock,
+} from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/lib/customSupabaseClient';
+import { useToast } from '@/components/ui/use-toast';
 
-const STATUS_LABEL = {
-  SOLICITACAO: 'Solicitação',
-  ORCAMENTO:   'Orçamento enviado',
-  DOCUMENTOS:  'Documentos',
-  ASSINATURA:  'Assinatura',
-  CONCLUIDO:   'Concluído',
-  COMISSAO:    'Comissão',
+const STATUS_CONFIG = {
+  novo:           { label: 'Novo',           color: 'bg-blue-100 text-blue-700' },
+  contatado:      { label: 'Contatado',      color: 'bg-yellow-100 text-yellow-700' },
+  em_negociacao:  { label: 'Em negociação',  color: 'bg-purple-100 text-purple-700' },
+  convertido:     { label: 'Convertido',     color: 'bg-green-100 text-green-700' },
+  perdido:        { label: 'Perdido',        color: 'bg-gray-100 text-gray-500' },
 };
 
-const STATUS_COLOR = {
-  SOLICITACAO: 'bg-yellow-100 text-yellow-700',
-  ORCAMENTO:   'bg-blue-100 text-blue-700',
-  DOCUMENTOS:  'bg-purple-100 text-purple-700',
-  ASSINATURA:  'bg-orange-100 text-orange-700',
-  CONCLUIDO:   'bg-green-100 text-green-700',
-  COMISSAO:    'bg-emerald-100 text-emerald-700',
+const ORIGEM_CONFIG = {
+  manual:    { label: 'Manual',     icon: '👤' },
+  parceiro:  { label: 'Parceiro',   icon: '🤝' },
+  gi:        { label: 'Gi (chat)',  icon: '🤖' },
+  site:      { label: 'Site',       icon: '🌐' },
+  indicacao: { label: 'Indicação',  icon: '💬' },
+  ligacao:   { label: 'Ligação',    icon: '📞' },
 };
 
 const SEG_LABEL = {
@@ -34,300 +40,582 @@ const SEG_LABEL = {
   SAUDE_VIDA_ODONTO: 'Saúde/Vida/Odonto', AUTO_FROTA: 'Auto/Frota',
 };
 
+const SEGMENTOS = Object.keys(SEG_LABEL);
+const ESTADOS_BR = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+
 const tempoRelativo = (iso) => {
   if (!iso) return null;
   const diff = Date.now() - new Date(iso).getTime();
   const min = Math.floor(diff / 60000);
   if (min < 1) return 'agora';
-  if (min < 60) return `há ${min} min`;
+  if (min < 60) return `há ${min}min`;
   const h = Math.floor(min / 60);
   if (h < 24) return `há ${h}h`;
   const d = Math.floor(h / 24);
-  return `há ${d} dia${d > 1 ? 's' : ''}`;
+  return `há ${d}d`;
 };
 
-const isQuente = (iso) => {
-  if (!iso) return false;
-  return Date.now() - new Date(iso).getTime() < 60 * 60 * 1000;
+const formatDate = (iso) => {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('pt-BR');
 };
+
+const formatDatetime = (iso) => {
+  if (!iso) return '';
+  return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+};
+
+const formVazio = () => ({
+  nome: '', cpf: '', cnpj: '', nome_empresa: '', data_nascimento: '',
+  email: '', telefone: '', cidade: '', estado: '', segmento: '',
+  num_vidas: '', tem_plano_atual: false, plano_atual_operadora: '',
+  plano_atual_valor: '', origem: 'manual', status: 'novo',
+  responsavel: '', proximo_contato: '', observacoes: '',
+});
 
 const AdminLeadsPage = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expandido, setExpandido] = useState(null);
   const [busca, setBusca] = useState('');
   const [filtroStatus, setFiltroStatus] = useState('todos');
-  const [expandido, setExpandido] = useState(null);
+  const [filtroOrigem, setFiltroOrigem] = useState('todos');
+  const [filtroPeriodo, setFiltroPeriodo] = useState('todos');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [form, setForm] = useState(formVazio());
+  const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [acessosPorOrcamento, setAcessosPorOrcamento] = useState({});
 
-  const fetchLeads = async () => {
+  const fetchLeads = useCallback(async () => {
     setLoading(true);
-    const { data: orcamentos } = await supabase
-      .from('orcamentos')
-      .select('*, parceiros(nome_completo)')
-      .order('created_at', { ascending: false });
-
-    if (!orcamentos?.length) { setLeads([]); setLoading(false); return; }
-
-    const { data: acessos } = await supabase
-      .from('orcamento_acessos')
+    const { data } = await supabase
+      .from('leads')
       .select('*')
-      .in('orcamento_id', orcamentos.map(o => o.id))
-      .order('acessado_em', { ascending: false });
+      .order('created_at', { ascending: false });
+    const lista = data || [];
+    setLeads(lista);
 
-    const acessosPorId = {};
-    (acessos || []).forEach(a => {
-      if (!acessosPorId[a.orcamento_id]) acessosPorId[a.orcamento_id] = [];
-      acessosPorId[a.orcamento_id].push(a);
-    });
-
-    setLeads(orcamentos.map(o => ({
-      ...o,
-      acessos: acessosPorId[o.id] || [],
-    })));
+    const idsComOrcamento = lista.filter(l => l.orcamento_id).map(l => l.orcamento_id);
+    if (idsComOrcamento.length) {
+      const { data: acessos } = await supabase
+        .from('orcamento_acessos')
+        .select('*')
+        .in('orcamento_id', idsComOrcamento)
+        .order('acessado_em', { ascending: false });
+      const mapa = {};
+      (acessos || []).forEach(a => {
+        if (!mapa[a.orcamento_id]) mapa[a.orcamento_id] = [];
+        mapa[a.orcamento_id].push(a);
+      });
+      setAcessosPorOrcamento(mapa);
+    }
     setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchLeads(); }, [fetchLeads]);
+
+  const abrirNovo = () => { setEditId(null); setForm(formVazio()); setModalOpen(true); };
+
+  const abrirEditar = (lead) => {
+    setEditId(lead.id);
+    setForm({
+      nome: lead.nome || '',
+      cpf: lead.cpf || '',
+      cnpj: lead.cnpj || '',
+      nome_empresa: lead.nome_empresa || '',
+      data_nascimento: lead.data_nascimento || '',
+      email: lead.email || '',
+      telefone: lead.telefone || '',
+      cidade: lead.cidade || '',
+      estado: lead.estado || '',
+      segmento: lead.segmento || '',
+      num_vidas: lead.num_vidas || '',
+      tem_plano_atual: lead.tem_plano_atual || false,
+      plano_atual_operadora: lead.plano_atual_operadora || '',
+      plano_atual_valor: lead.plano_atual_valor || '',
+      origem: lead.origem || 'manual',
+      status: lead.status || 'novo',
+      responsavel: lead.responsavel || '',
+      proximo_contato: lead.proximo_contato ? lead.proximo_contato.slice(0, 16) : '',
+      observacoes: lead.observacoes || '',
+    });
+    setModalOpen(true);
   };
 
-  useEffect(() => { fetchLeads(); }, []);
+  const handleSalvar = async () => {
+    if (!form.nome.trim()) return toast({ variant: 'destructive', title: 'Nome obrigatório.' });
+    setSaving(true);
+    try {
+      const payload = {
+        ...form,
+        num_vidas: form.num_vidas ? parseInt(form.num_vidas) : null,
+        proximo_contato: form.proximo_contato || null,
+        data_nascimento: form.data_nascimento || null,
+        updated_at: new Date().toISOString(),
+      };
+      if (editId) {
+        await supabase.from('leads').update(payload).eq('id', editId);
+        toast({ title: 'Lead atualizado!' });
+      } else {
+        await supabase.from('leads').insert(payload);
+        toast({ title: 'Lead criado!' });
+      }
+      setModalOpen(false);
+      fetchLeads();
+    } catch {
+      toast({ variant: 'destructive', title: 'Erro ao salvar.' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleExcluir = async (id) => {
+    await supabase.from('leads').delete().eq('id', id);
+    setConfirmDelete(null);
+    setExpandido(null);
+    fetchLeads();
+    toast({ title: 'Lead excluído.' });
+  };
+
+  const handleAlterarStatus = async (id, novoStatus) => {
+    await supabase.from('leads').update({ status: novoStatus, updated_at: new Date().toISOString() }).eq('id', id);
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, status: novoStatus } : l));
+    toast({ title: `Status: ${STATUS_CONFIG[novoStatus]?.label}` });
+  };
+
+  const handleCriarOrcamento = (lead) => {
+    navigate('/admin/orcamentos', {
+      state: {
+        leadData: {
+          cliente_nome: lead.nome,
+          cliente_telefone: lead.telefone || '',
+          cliente_email: lead.email || '',
+          cliente_cpf: lead.cpf || '',
+          cliente_data_nascimento: lead.data_nascimento || '',
+          segmento: lead.segmento || '',
+          lead_id: lead.id,
+        },
+      },
+    });
+  };
+
+  const periodoOk = (lead) => {
+    if (filtroPeriodo === 'todos') return true;
+    const diff = Date.now() - new Date(lead.created_at).getTime();
+    if (filtroPeriodo === 'hoje') return diff < 86400000;
+    if (filtroPeriodo === 'semana') return diff < 7 * 86400000;
+    if (filtroPeriodo === 'mes') return diff < 30 * 86400000;
+    return true;
+  };
 
   const lista = leads.filter(l => {
     const q = busca.toLowerCase();
     const matchBusca = !q ||
-      l.cliente_nome?.toLowerCase().includes(q) ||
-      l.cliente_telefone?.includes(q) ||
-      l.cliente_email?.toLowerCase().includes(q) ||
-      l.parceiros?.nome_completo?.toLowerCase().includes(q) ||
-      l.segmento?.toLowerCase().includes(q);
-    const matchStatus = filtroStatus === 'todos' || l.status === filtroStatus;
-    return matchBusca && matchStatus;
+      l.nome?.toLowerCase().includes(q) ||
+      l.cpf?.includes(q) ||
+      l.cnpj?.includes(q) ||
+      l.email?.toLowerCase().includes(q) ||
+      l.telefone?.includes(q) ||
+      l.nome_empresa?.toLowerCase().includes(q);
+    return matchBusca &&
+      (filtroStatus === 'todos' || l.status === filtroStatus) &&
+      (filtroOrigem === 'todos' || l.origem === filtroOrigem) &&
+      periodoOk(l);
   });
 
   const quentesCount = leads.filter(l => {
-    const ultimo = l.acessos[0]?.acessado_em;
-    return isQuente(ultimo);
+    const acessos = acessosPorOrcamento[l.orcamento_id] || [];
+    return acessos[0] && (Date.now() - new Date(acessos[0].acessado_em).getTime() < 3600000);
   }).length;
 
-  const statusTabs = ['todos', 'SOLICITACAO', 'ORCAMENTO', 'DOCUMENTOS', 'ASSINATURA', 'CONCLUIDO', 'COMISSAO'];
+  const f = form;
+  const setF = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
 
   return (
     <>
       <Helmet><title>Leads — Ágil Seguros</title></Helmet>
       <DashboardLayout>
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="space-y-5">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }} className="space-y-4">
 
           {/* Header */}
           <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <Users className="h-6 w-6 text-white" />
               <h1 className="text-2xl font-bold tracking-tight text-white">Leads</h1>
-              <span className="text-white/60 text-sm">{leads.length} total</span>
+              <span className="text-white/50 text-sm">{leads.length} total</span>
               {quentesCount > 0 && (
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500 text-white text-xs font-bold animate-pulse">
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500 text-white text-xs font-bold animate-pulse">
                   <Flame className="h-3 w-3" /> {quentesCount} quente{quentesCount > 1 ? 's' : ''}
                 </span>
               )}
             </div>
-            <button onClick={fetchLeads} className="flex items-center gap-1.5 text-white/70 hover:text-white text-sm">
-              <RefreshCw className="h-4 w-4" /> Atualizar
-            </button>
+            <div className="flex gap-2 items-center">
+              <button onClick={fetchLeads} className="p-1.5 text-white/60 hover:text-white transition-colors">
+                <RefreshCw className="h-4 w-4" />
+              </button>
+              <Button onClick={abrirNovo} className="text-white font-semibold gap-1.5" style={{ background: '#003580' }}>
+                <Plus className="h-4 w-4" /> Novo lead
+              </Button>
+            </div>
           </div>
 
           {/* Busca */}
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Buscar por nome, telefone, email ou parceiro..."
+              placeholder="Nome, CPF, CNPJ, email, telefone ou empresa..."
               value={busca}
               onChange={e => setBusca(e.target.value)}
-              className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20"
+              className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/40"
             />
           </div>
 
-          {/* Filtro por status */}
-          <div className="flex gap-2 flex-wrap">
-            {statusTabs.map(s => (
-              <button
-                key={s}
-                onClick={() => setFiltroStatus(s)}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${filtroStatus === s ? 'bg-white text-[#003580]' : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'}`}
-              >
-                {s === 'todos' ? `Todos (${leads.length})` : `${STATUS_LABEL[s]} (${leads.filter(l => l.status === s).length})`}
+          {/* Filtros */}
+          <div className="space-y-2">
+            <div className="flex gap-1.5 flex-wrap">
+              {['todos', 'novo', 'contatado', 'em_negociacao', 'convertido', 'perdido'].map(s => (
+                <button key={s} onClick={() => setFiltroStatus(s)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${filtroStatus === s ? 'bg-white text-[#003580]' : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'}`}>
+                  {s === 'todos' ? `Todos (${leads.length})` : `${STATUS_CONFIG[s]?.label} (${leads.filter(l => l.status === s).length})`}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-1.5 flex-wrap">
+              <button onClick={() => setFiltroOrigem('todos')}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${filtroOrigem === 'todos' ? 'bg-white text-[#003580]' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}>
+                Toda origem
               </button>
-            ))}
+              {Object.entries(ORIGEM_CONFIG).map(([k, v]) => (
+                <button key={k} onClick={() => setFiltroOrigem(k)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${filtroOrigem === k ? 'bg-white text-[#003580]' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}>
+                  {v.icon} {v.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-1.5 flex-wrap">
+              {[
+                { key: 'todos', label: 'Todo período' },
+                { key: 'hoje', label: 'Hoje' },
+                { key: 'semana', label: 'Esta semana' },
+                { key: 'mes', label: 'Este mês' },
+              ].map(({ key, label }) => (
+                <button key={key} onClick={() => setFiltroPeriodo(key)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${filtroPeriodo === key ? 'bg-white text-[#003580]' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Lista */}
           {loading ? (
-            <div className="space-y-3">
-              {[1,2,3,4,5].map(i => <div key={i} className="h-20 rounded-xl bg-white/10 animate-pulse" />)}
+            <div className="space-y-2">
+              {[1,2,3,4].map(i => <div key={i} className="h-20 rounded-xl bg-white/10 animate-pulse" />)}
             </div>
           ) : lista.length === 0 ? (
             <Card><CardContent className="py-12 text-center text-gray-400">Nenhum lead encontrado.</CardContent></Card>
           ) : (
             <div className="space-y-2">
-              {lista.map(l => {
-                const ultimoAcesso = l.acessos[0];
-                const quente = isQuente(ultimoAcesso?.acessado_em);
-                const aceitou = l.acessos.some(a => a.aceitou_proposta);
-                const propostaClicada = l.acessos.find(a => a.proposta_clicada)?.proposta_clicada;
-                const device = ultimoAcesso?.device;
-                const aberto = expandido === l.id;
+              <AnimatePresence>
+                {lista.map(lead => {
+                  const acessos = acessosPorOrcamento[lead.orcamento_id] || [];
+                  const ultimoAcesso = acessos[0];
+                  const quente = ultimoAcesso && (Date.now() - new Date(ultimoAcesso.acessado_em).getTime() < 3600000);
+                  const aceitou = acessos.some(a => a.aceitou_proposta);
+                  const aberto = expandido === lead.id;
+                  const st = STATUS_CONFIG[lead.status] || STATUS_CONFIG.novo;
+                  const orig = ORIGEM_CONFIG[lead.origem] || ORIGEM_CONFIG.manual;
 
-                return (
-                  <motion.div key={l.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-                    <Card className={`transition-all ${quente ? 'ring-2 ring-orange-400 shadow-orange-100 shadow-md' : ''}`}>
-                      {/* Linha principal */}
-                      <CardContent className="py-3 px-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0 space-y-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              {quente && (
-                                <span className="flex items-center gap-0.5 text-[11px] font-bold text-orange-500 animate-pulse">
-                                  <Flame className="h-3 w-3" /> Quente
-                                </span>
-                              )}
-                              {aceitou && (
-                                <span className="text-[11px] font-bold text-green-600">✅ Aceitou proposta</span>
-                              )}
-                              <h3 className="text-sm font-semibold text-gray-900 truncate">{l.cliente_nome || '—'}</h3>
-                              <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${STATUS_COLOR[l.status] || 'bg-gray-100 text-gray-600'}`}>
-                                {STATUS_LABEL[l.status] || l.status}
-                              </span>
-                              <span className="text-[11px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                                {SEG_LABEL[l.segmento] || l.segmento}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-3 flex-wrap text-xs text-gray-500">
-                              {l.cliente_telefone && (
-                                <a href={`https://wa.me/55${l.cliente_telefone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer"
-                                  className="flex items-center gap-1 hover:text-green-600">
-                                  <Phone className="h-3 w-3" /> {l.cliente_telefone}
-                                </a>
-                              )}
-                              {l.parceiros?.nome_completo && (
-                                <span className="text-gray-400">Parceiro: {l.parceiros.nome_completo}</span>
-                              )}
-                              <span className="flex items-center gap-1 text-gray-400">
-                                <Calendar className="h-3 w-3" />
-                                {new Date(l.created_at).toLocaleDateString('pt-BR')}
-                              </span>
-                            </div>
-                            {/* Resumo de acesso */}
-                            {ultimoAcesso && (
-                              <div className="flex items-center gap-2 flex-wrap text-xs">
-                                <span className={`font-medium ${quente ? 'text-orange-500' : 'text-gray-500'}`}>
-                                  👁 {l.acessos.length} acesso{l.acessos.length > 1 ? 's' : ''} · último {tempoRelativo(ultimoAcesso.acessado_em)}
-                                </span>
-                                {device && (
-                                  <span className="text-gray-400 flex items-center gap-0.5">
-                                    {device === 'mobile' ? <Smartphone className="h-3 w-3" /> : <Monitor className="h-3 w-3" />}
-                                    {device === 'mobile' ? 'Mobile' : 'Desktop'}
+                  return (
+                    <motion.div key={lead.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                      <Card className={quente ? 'ring-2 ring-orange-400 shadow-md shadow-orange-100' : ''}>
+                        <CardContent className="py-3 px-4">
+
+                          {/* Linha principal */}
+                          <div className="flex items-start gap-3">
+                            <div className="flex-1 min-w-0 space-y-1.5">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {quente && <span className="flex items-center gap-0.5 text-[11px] font-bold text-orange-500 animate-pulse"><Flame className="h-3 w-3" /> Quente</span>}
+                                {aceitou && <span className="text-[11px] font-bold text-green-600">✅ Convertido</span>}
+                                <span className="text-sm font-semibold text-gray-900">{lead.nome}</span>
+                                {lead.nome_empresa && <span className="text-xs text-gray-400">· {lead.nome_empresa}</span>}
+                                <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${st.color}`}>{st.label}</span>
+                                {lead.segmento && (
+                                  <span className="text-[11px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                                    {SEG_LABEL[lead.segmento] || lead.segmento}
                                   </span>
                                 )}
-                                {propostaClicada && (
-                                  <span className="text-blue-500 font-medium">Clicou: {propostaClicada}</span>
+                              </div>
+                              <div className="flex items-center gap-3 flex-wrap text-xs text-gray-500">
+                                {lead.telefone && (
+                                  <a href={`https://wa.me/55${lead.telefone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer"
+                                    className="flex items-center gap-1 hover:text-green-600 transition-colors">
+                                    <Phone className="h-3 w-3" /> {lead.telefone}
+                                  </a>
+                                )}
+                                <span>{orig.icon} {orig.label}</span>
+                                <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{formatDate(lead.created_at)}</span>
+                                {lead.proximo_contato && (
+                                  <span className="flex items-center gap-1 text-blue-500 font-medium">
+                                    <Clock className="h-3 w-3" /> Próx: {formatDatetime(lead.proximo_contato)}
+                                  </span>
+                                )}
+                                {ultimoAcesso && (
+                                  <span className={`font-medium ${quente ? 'text-orange-500' : 'text-gray-400'}`}>
+                                    👁 {acessos.length} acesso{acessos.length > 1 ? 's' : ''} · {tempoRelativo(ultimoAcesso.acessado_em)}
+                                  </span>
                                 )}
                               </div>
-                            )}
-                            {!ultimoAcesso && l.slug && (
-                              <span className="text-xs text-gray-300">Link nunca aberto</span>
-                            )}
+                            </div>
+                            <button onClick={() => setExpandido(aberto ? null : lead.id)}
+                              className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-[#003580] hover:bg-gray-50 transition-colors">
+                              {aberto ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            </button>
                           </div>
 
-                          {/* Botão expandir */}
-                          <button
-                            onClick={() => setExpandido(aberto ? null : l.id)}
-                            className="shrink-0 p-1 rounded-lg text-gray-400 hover:text-[#003580] hover:bg-gray-50 transition-colors"
-                          >
-                            {aberto ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                          </button>
-                        </div>
+                          {/* Expandido */}
+                          <AnimatePresence>
+                            {aberto && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="mt-4 pt-4 border-t border-gray-100 space-y-4">
 
-                        {/* Detalhe expandido */}
-                        {aberto && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="mt-4 pt-4 border-t border-gray-100 space-y-3"
-                          >
-                            {/* Dados do cliente */}
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                              {l.cliente_email && (
-                                <div>
-                                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">Email</p>
-                                  <p className="text-xs text-gray-700">{l.cliente_email}</p>
-                                </div>
-                              )}
-                              {l.cliente_cpf && (
-                                <div>
-                                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">CPF</p>
-                                  <p className="text-xs text-gray-700">{l.cliente_cpf}</p>
-                                </div>
-                              )}
-                              {l.valor_mensalidade && (
-                                <div>
-                                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">Valor proposta</p>
-                                  <p className="text-xs font-semibold text-green-600">R$ {Number(l.valor_mensalidade).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                                </div>
-                              )}
-                              {l.operadora_escolhida && (
-                                <div>
-                                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">Operadora</p>
-                                  <p className="text-xs text-gray-700">{l.operadora_escolhida}</p>
-                                </div>
-                              )}
-                              {l.slug && (
-                                <div>
-                                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">Link</p>
-                                  <a href={`${window.location.origin}/orcamento/${l.slug}`} target="_blank" rel="noreferrer"
-                                    className="text-xs text-[#003580] hover:underline truncate block">
-                                    Ver proposta ↗
-                                  </a>
-                                </div>
-                              )}
-                            </div>
+                                  {/* Dados pessoais */}
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    {lead.email && <div><p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Email</p><p className="text-xs text-gray-700">{lead.email}</p></div>}
+                                    {lead.cpf && <div><p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">CPF</p><p className="text-xs text-gray-700">{lead.cpf}</p></div>}
+                                    {lead.cnpj && <div><p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">CNPJ</p><p className="text-xs text-gray-700">{lead.cnpj}</p></div>}
+                                    {lead.data_nascimento && <div><p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Nascimento</p><p className="text-xs text-gray-700">{formatDate(lead.data_nascimento)}</p></div>}
+                                    {(lead.cidade || lead.estado) && <div><p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Localização</p><p className="text-xs text-gray-700">{[lead.cidade, lead.estado].filter(Boolean).join(' — ')}</p></div>}
+                                    {lead.num_vidas && <div><p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Nº de vidas</p><p className="text-xs text-gray-700">{lead.num_vidas}</p></div>}
+                                    {lead.responsavel && <div><p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Responsável</p><p className="text-xs text-gray-700">{lead.responsavel}</p></div>}
+                                  </div>
 
-                            {/* Histórico de acessos */}
-                            {l.acessos.length > 0 && (
-                              <div>
-                                <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2">Histórico de acessos</p>
-                                <div className="space-y-1 max-h-32 overflow-y-auto">
-                                  {l.acessos.map((a, i) => (
-                                    <div key={i} className="flex items-center gap-3 text-xs text-gray-600 bg-gray-50 rounded px-2 py-1">
-                                      <span className="text-gray-400 shrink-0">
-                                        {new Date(a.acessado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                                      </span>
-                                      {a.device && (
-                                        <span className="flex items-center gap-0.5 text-gray-400">
-                                          {a.device === 'mobile' ? <Smartphone className="h-3 w-3" /> : <Monitor className="h-3 w-3" />}
-                                        </span>
-                                      )}
-                                      {a.proposta_clicada && <span className="text-blue-500">Clicou: {a.proposta_clicada}</span>}
-                                      {a.aceitou_proposta && <span className="text-green-600 font-semibold">✅ Aceitou</span>}
+                                  {/* Plano atual */}
+                                  {lead.tem_plano_atual && (
+                                    <div className="bg-blue-50 rounded-lg px-3 py-2">
+                                      <p className="text-[10px] text-blue-400 uppercase tracking-wide mb-1">Plano atual</p>
+                                      <p className="text-xs text-blue-700">
+                                        {lead.plano_atual_operadora || '—'}
+                                        {lead.plano_atual_valor && ` · R$ ${lead.plano_atual_valor}`}
+                                      </p>
                                     </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
+                                  )}
 
-                            {/* Observações */}
-                            {l.observacoes && (
-                              <div>
-                                <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Observações</p>
-                                <p className="text-xs text-gray-600 bg-gray-50 rounded px-2 py-1.5">{l.observacoes}</p>
-                              </div>
+                                  {/* Observações */}
+                                  {lead.observacoes && (
+                                    <div className="bg-gray-50 rounded-lg px-3 py-2">
+                                      <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Observações</p>
+                                      <p className="text-xs text-gray-600 whitespace-pre-line">{lead.observacoes}</p>
+                                    </div>
+                                  )}
+
+                                  {/* Histórico de acessos */}
+                                  {lead.orcamento_id && acessos.length > 0 && (
+                                    <div>
+                                      <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1.5">Histórico de acessos à proposta</p>
+                                      <div className="space-y-1 max-h-28 overflow-y-auto">
+                                        {acessos.map((a, i) => (
+                                          <div key={i} className="flex items-center gap-2 text-[11px] text-gray-600 bg-gray-50 rounded px-2 py-1">
+                                            <span className="text-gray-400 shrink-0">{formatDatetime(a.acessado_em)}</span>
+                                            {a.device === 'mobile' ? <Smartphone className="h-3 w-3 text-gray-400" /> : <Monitor className="h-3 w-3 text-gray-400" />}
+                                            {a.proposta_clicada && <span className="text-blue-500">Clicou: {a.proposta_clicada}</span>}
+                                            {a.aceitou_proposta && <span className="text-green-600 font-semibold">✅ Aceitou</span>}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Alterar status */}
+                                  <div>
+                                    <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1.5">Status</p>
+                                    <div className="flex gap-1.5 flex-wrap">
+                                      {Object.entries(STATUS_CONFIG).map(([k, v]) => (
+                                        <button key={k} onClick={() => handleAlterarStatus(lead.id, k)}
+                                          className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors border ${lead.status === k ? `${v.color} border-transparent` : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}>
+                                          {v.label}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* Botões */}
+                                  <div className="flex gap-2 flex-wrap pt-1">
+                                    <Button onClick={() => handleCriarOrcamento(lead)}
+                                      className="text-white font-semibold gap-1.5 text-sm" style={{ background: '#003580' }}>
+                                      <FileText className="h-4 w-4" /> Criar orçamento
+                                    </Button>
+                                    {lead.orcamento_id && (
+                                      <Button variant="outline" onClick={() => navigate('/admin/orcamentos')}
+                                        className="gap-1.5 text-sm text-[#003580] border-[#003580]">
+                                        <ExternalLink className="h-4 w-4" /> Ver orçamento
+                                      </Button>
+                                    )}
+                                    <Button variant="outline" onClick={() => abrirEditar(lead)} className="gap-1.5 text-sm">
+                                      <Pencil className="h-4 w-4" /> Editar
+                                    </Button>
+                                    {confirmDelete === lead.id ? (
+                                      <div className="flex gap-1.5 items-center">
+                                        <span className="text-xs text-red-500">Confirmar?</span>
+                                        <Button size="sm" variant="destructive" onClick={() => handleExcluir(lead.id)}>Sim</Button>
+                                        <Button size="sm" variant="outline" onClick={() => setConfirmDelete(null)}>Não</Button>
+                                      </div>
+                                    ) : (
+                                      <Button variant="outline" onClick={() => setConfirmDelete(lead.id)}
+                                        className="gap-1.5 text-sm text-red-500 border-red-200 hover:border-red-400">
+                                        <Trash2 className="h-4 w-4" /> Excluir
+                                      </Button>
+                                    )}
+                                  </div>
+
+                                </div>
+                              </motion.div>
                             )}
-                          </motion.div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                );
-              })}
+                          </AnimatePresence>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
             </div>
           )}
         </motion.div>
       </DashboardLayout>
+
+      {/* Modal Adicionar / Editar */}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editId ? 'Editar lead' : 'Novo lead'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <Label>Nome *</Label>
+                <Input value={f.nome} onChange={e => setF('nome', e.target.value)} placeholder="Nome completo" />
+              </div>
+              <div>
+                <Label>Telefone</Label>
+                <Input value={f.telefone} onChange={e => setF('telefone', e.target.value)} placeholder="(11) 99999-9999" />
+              </div>
+              <div>
+                <Label>Email</Label>
+                <Input value={f.email} onChange={e => setF('email', e.target.value)} placeholder="email@exemplo.com" />
+              </div>
+              <div>
+                <Label>CPF</Label>
+                <Input value={f.cpf} onChange={e => setF('cpf', e.target.value)} placeholder="000.000.000-00" />
+              </div>
+              <div>
+                <Label>Data de nascimento</Label>
+                <Input type="date" value={f.data_nascimento} onChange={e => setF('data_nascimento', e.target.value)} />
+              </div>
+              <div>
+                <Label>CNPJ</Label>
+                <Input value={f.cnpj} onChange={e => setF('cnpj', e.target.value)} placeholder="00.000.000/0000-00" />
+              </div>
+              <div>
+                <Label>Nome da empresa</Label>
+                <Input value={f.nome_empresa} onChange={e => setF('nome_empresa', e.target.value)} placeholder="Empresa Ltda" />
+              </div>
+              <div>
+                <Label>Cidade</Label>
+                <Input value={f.cidade} onChange={e => setF('cidade', e.target.value)} placeholder="São Paulo" />
+              </div>
+              <div>
+                <Label>Estado</Label>
+                <select value={f.estado} onChange={e => setF('estado', e.target.value)}
+                  className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background">
+                  <option value="">—</option>
+                  {ESTADOS_BR.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label>Segmento de interesse</Label>
+                <select value={f.segmento} onChange={e => setF('segmento', e.target.value)}
+                  className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background">
+                  <option value="">—</option>
+                  {SEGMENTOS.map(s => <option key={s} value={s}>{SEG_LABEL[s]}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label>Nº de vidas</Label>
+                <Input type="number" min="1" value={f.num_vidas} onChange={e => setF('num_vidas', e.target.value)} placeholder="1" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="tem_plano" checked={f.tem_plano_atual}
+                  onChange={e => setF('tem_plano_atual', e.target.checked)} className="rounded" />
+                <Label htmlFor="tem_plano">Tem plano atual</Label>
+              </div>
+              {f.tem_plano_atual && (
+                <div className="grid grid-cols-2 gap-3 pl-4">
+                  <div>
+                    <Label>Operadora atual</Label>
+                    <Input value={f.plano_atual_operadora} onChange={e => setF('plano_atual_operadora', e.target.value)} placeholder="Bradesco Saúde" />
+                  </div>
+                  <div>
+                    <Label>Valor atual (R$)</Label>
+                    <Input value={f.plano_atual_valor} onChange={e => setF('plano_atual_valor', e.target.value)} placeholder="350,00" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Origem</Label>
+                <select value={f.origem} onChange={e => setF('origem', e.target.value)}
+                  className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background">
+                  {Object.entries(ORIGEM_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.icon} {v.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label>Status</Label>
+                <select value={f.status} onChange={e => setF('status', e.target.value)}
+                  className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background">
+                  {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label>Responsável</Label>
+                <Input value={f.responsavel} onChange={e => setF('responsavel', e.target.value)} placeholder="Nome do ADM" />
+              </div>
+              <div>
+                <Label>Próximo contato</Label>
+                <Input type="datetime-local" value={f.proximo_contato} onChange={e => setF('proximo_contato', e.target.value)} />
+              </div>
+            </div>
+
+            <div>
+              <Label>Observações</Label>
+              <textarea value={f.observacoes} onChange={e => setF('observacoes', e.target.value)}
+                rows={3} placeholder="Anotações internas..."
+                className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-none" />
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <Button onClick={() => setModalOpen(false)} variant="outline" className="flex-1" disabled={saving}>Cancelar</Button>
+              <Button onClick={handleSalvar} disabled={saving} className="flex-1 text-white" style={{ background: '#003580' }}>
+                {saving ? 'Salvando...' : editId ? 'Salvar' : 'Criar lead'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import { Card, CardContent } from '@/components/ui/card';
@@ -356,6 +357,7 @@ const ToggleBtn = ({ value, onChange, labelFalse = 'Não', labelTrue = 'Sim', co
 
 const AdminParceirosPage = () => {
   const { toast } = useToast();
+  const location = useLocation();
   const compInputRef = useRef(null);
 
   const [orcamentos, setOrcamentos] = useState([]);
@@ -443,6 +445,22 @@ const AdminParceirosPage = () => {
     loadData();
     supabase.from('parceiros').select('id, nome_completo').order('nome_completo').then(({ data }) => setParceiros(data || []));
   }, []);
+
+  useEffect(() => {
+    const ld = location.state?.leadData;
+    if (!ld) return;
+    setNovoForm(f => ({
+      ...f,
+      cliente_nome: ld.cliente_nome || '',
+      cliente_telefone: ld.cliente_telefone || '',
+      cliente_email: ld.cliente_email || '',
+      cliente_cpf: ld.cliente_cpf || '',
+      cliente_data_nascimento: ld.cliente_data_nascimento || '',
+      segmento: ld.segmento || '',
+    }));
+    setCriarModal(true);
+    window.history.replaceState({}, document.title);
+  }, [location.state]);
 
   useEffect(() => {
     if (!criarModal) { setTemParceiro(false); setNovoForm(f => ({ ...f, parceiro_id: '' })); return; }
