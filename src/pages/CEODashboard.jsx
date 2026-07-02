@@ -668,14 +668,14 @@ const CEODashboard = () => {
                 <motion.div className="h-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
                   <Card className="h-full flex flex-col">
                     <CardHeader><CardTitle className="text-base">Top 5 Empresas — Maior Prêmio</CardTitle></CardHeader>
-                    <CardContent className="flex-1 min-h-0">
-                      <div className="h-full min-h-[300px] w-full">
+                    <CardContent className="flex-1 min-h-0 px-2 sm:px-6">
+                      <div className="h-full min-h-[260px] w-full">
                         {top5EmpresasPremio.length > 0 ? (
                           <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={[...top5EmpresasPremio].reverse()} layout="vertical" margin={{ left: 8, right: 24 }}>
+                            <BarChart data={[...top5EmpresasPremio].reverse()} layout="vertical" margin={{ left: 0, right: 16, top: 4, bottom: 4 }}>
                               <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis type="number" tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} />
-                              <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 11 }} />
+                              <XAxis type="number" tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
+                              <YAxis type="category" dataKey="name" width={72} tick={{ fontSize: 10 }} />
                               <Tooltip formatter={(v, name, props) => [formatCurrency(v), props.payload?.full_name || name]} />
                               <Bar dataKey="total" fill="#003580" name="Prêmio Total" radius={[0, 4, 4, 0]} />
                             </BarChart>
@@ -692,17 +692,19 @@ const CEODashboard = () => {
                 <motion.div className="h-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
                   <Card className="h-full">
                     <CardHeader><CardTitle className="text-base">Detalhes — Top 5 por Prêmio</CardTitle></CardHeader>
-                    <CardContent className="space-y-3">
+                    <CardContent className="space-y-2 px-3 sm:px-6">
                       {top5EmpresasPremio.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground text-sm">Sem dados de apólices</div>
                       ) : top5EmpresasPremio.map((emp, i) => (
-                        <div key={emp.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border">
-                          <span className="text-lg font-bold text-[#003580] w-6 flex-shrink-0">#{i + 1}</span>
+                        <div key={emp.id} className="flex gap-2 p-2.5 bg-gray-50 rounded-lg border">
+                          <span className="text-base font-bold text-[#003580] w-6 flex-shrink-0 pt-0.5">#{i + 1}</span>
                           <div className="min-w-0 flex-1">
-                            <p className="font-semibold text-gray-800 truncate">{emp.full_name}</p>
-                            <p className="text-xs text-gray-400">{formatCpfCnpj(emp.cnpj)} · {emp.apolicesCount} apólice(s) · {emp.beneficiariosCount} benef.</p>
+                            <div className="flex items-start justify-between gap-1">
+                              <p className="font-semibold text-gray-800 text-sm leading-tight truncate">{emp.full_name}</p>
+                              <span className="font-bold text-[#003580] text-xs flex-shrink-0 ml-1">{formatCurrency(emp.total)}</span>
+                            </div>
+                            <p className="text-[11px] text-gray-400 mt-0.5">{emp.apolicesCount} apólice(s) · {emp.beneficiariosCount} benef.</p>
                           </div>
-                          <span className="font-bold text-[#003580] text-sm flex-shrink-0">{formatCurrency(emp.total)}</span>
                         </div>
                       ))}
                     </CardContent>
