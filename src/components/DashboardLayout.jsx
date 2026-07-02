@@ -363,7 +363,7 @@ const DashboardLayout = ({ children }) => {
                   </NavLink>
                   <button onClick={() => { navigate('/ceo', { state: { tab: 'empresas' } }); setMobileMenuOpen(false); }}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors w-full">
-                    <Building2 className="h-5 w-5" /> Empresas
+                    <Building2 className="h-5 w-5" /> Clientes
                   </button>
                   <button onClick={() => { navigate('/ceo', { state: { tab: 'admins' } }); setMobileMenuOpen(false); }}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors w-full">
