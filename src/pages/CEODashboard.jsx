@@ -663,36 +663,36 @@ const CEODashboard = () => {
                 ))}
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-2 mt-4 items-stretch">
+              <div className="grid gap-4 lg:grid-cols-2 mt-4">
                 {/* Gráfico Top 5 por prêmio */}
-                <motion.div className="h-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                  <Card className="h-full flex flex-col">
-                    <CardHeader><CardTitle className="text-base">Top 5 Empresas — Maior Prêmio</CardTitle></CardHeader>
-                    <CardContent className="flex-1 min-h-0 px-2 sm:px-6">
-                      <div className="h-full min-h-[260px] w-full">
-                        {top5EmpresasPremio.length > 0 ? (
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                  <Card>
+                    <CardHeader className="pb-2"><CardTitle className="text-base">Top 5 Empresas — Maior Prêmio</CardTitle></CardHeader>
+                    <CardContent className="px-2 sm:px-6 pb-4">
+                      {top5EmpresasPremio.length > 0 ? (
+                        <div style={{ width: '100%', height: 240 }}>
                           <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={[...top5EmpresasPremio].reverse()} layout="vertical" margin={{ left: 0, right: 16, top: 4, bottom: 4 }}>
+                            <BarChart data={[...top5EmpresasPremio].reverse()} layout="vertical" margin={{ left: 0, right: 20, top: 4, bottom: 4 }}>
                               <CartesianGrid strokeDasharray="3 3" />
                               <XAxis type="number" tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
-                              <YAxis type="category" dataKey="name" width={72} tick={{ fontSize: 10 }} />
+                              <YAxis type="category" dataKey="name" width={68} tick={{ fontSize: 10 }} />
                               <Tooltip formatter={(v, name, props) => [formatCurrency(v), props.payload?.full_name || name]} />
                               <Bar dataKey="total" fill="#003580" name="Prêmio Total" radius={[0, 4, 4, 0]} />
                             </BarChart>
                           </ResponsiveContainer>
-                        ) : (
-                          <div className="flex h-full items-center justify-center text-muted-foreground">Sem dados de apólices</div>
-                        )}
-                      </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">Sem dados de apólices</div>
+                      )}
                     </CardContent>
                   </Card>
                 </motion.div>
 
                 {/* Card detalhado Top 5 */}
-                <motion.div className="h-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-                  <Card className="h-full">
-                    <CardHeader><CardTitle className="text-base">Detalhes — Top 5 por Prêmio</CardTitle></CardHeader>
-                    <CardContent className="space-y-2 px-3 sm:px-6">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                  <Card>
+                    <CardHeader className="pb-2"><CardTitle className="text-base">Detalhes — Top 5 por Prêmio</CardTitle></CardHeader>
+                    <CardContent className="space-y-2 px-3 sm:px-6 pb-4">
                       {top5EmpresasPremio.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground text-sm">Sem dados de apólices</div>
                       ) : top5EmpresasPremio.map((emp, i) => (
