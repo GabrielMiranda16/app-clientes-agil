@@ -374,10 +374,10 @@ const DashboardLayout = ({ children }) => {
                     className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
                     <FileText className="h-5 w-5" /> Orçamentos
                   </NavLink>
-                  <NavLink to="/admin/parceiros" onClick={() => setMobileMenuOpen(false)}
-                    className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
+                  <button onClick={() => { navigate('/ceo', { state: { tab: 'parceiros' } }); setMobileMenuOpen(false); }}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors w-full">
                     <Users2 className="h-5 w-5" /> Parceiros
-                  </NavLink>
+                  </button>
                   <NavLink to="/admin/leads" onClick={() => setMobileMenuOpen(false)}
                     className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
                     <Flame className="h-5 w-5" /> Leads
