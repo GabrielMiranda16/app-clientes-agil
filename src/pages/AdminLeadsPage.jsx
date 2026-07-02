@@ -24,12 +24,14 @@ const STATUS_CONFIG = {
 };
 
 const ORIGEM_CONFIG = {
-  manual:    { label: 'Manual',     icon: '👤' },
-  parceiro:  { label: 'Parceiro',   icon: '🤝' },
-  gi:        { label: 'Gi (chat)',  icon: '🤖' },
-  site:      { label: 'Site',       icon: '🌐' },
-  indicacao: { label: 'Indicação',  icon: '💬' },
-  ligacao:   { label: 'Ligação',    icon: '📞' },
+  manual:       { label: 'Manual',       icon: '👤' },
+  parceiro:     { label: 'Parceiro',     icon: '🤝' },
+  gi:           { label: 'Gi (chat)',    icon: '🤖' },
+  site:         { label: 'Site',         icon: '🌐' },
+  indicacao:    { label: 'Indicação',    icon: '💬' },
+  ligacao:      { label: 'Ligação',      icon: '📞' },
+  beneficiario: { label: 'Beneficiário', icon: '👥' },
+  cliente:      { label: 'Cliente',      icon: '🏢' },
 };
 
 const SEG_LABEL = {

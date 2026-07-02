@@ -34,6 +34,18 @@ export const empresasService = {
         .single();
 
       if (error) throw error;
+
+      supabase.from('leads').insert({
+        nome: data.nome_fantasia || data.razao_social,
+        nome_empresa: data.razao_social || null,
+        cnpj: data.cnpj || null,
+        email: data.email_cliente || null,
+        cidade: data.cidade || null,
+        estado: data.estado || null,
+        origem: 'cliente',
+        status: 'convertido',
+      }).catch(() => {});
+
       return data;
     } catch (error) {
       console.error('Erro ao criar empresa:', error);
