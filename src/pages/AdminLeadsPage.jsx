@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Flame, Users, Search, RefreshCw, Phone, Calendar, Monitor, Smartphone,
   ChevronDown, ChevronUp, Plus, Trash2, Pencil, FileText, ExternalLink, Clock,
+  SlidersHorizontal, X,
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -111,6 +112,8 @@ const AdminLeadsPage = () => {
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [filtroOrigem, setFiltroOrigem] = useState('todos');
   const [filtroPeriodo, setFiltroPeriodo] = useState('todos');
+  const [filtroOpen, setFiltroOpen] = useState(false);
+  const [filtroTemp, setFiltroTemp] = useState({ status: 'todos', origem: 'todos', periodo: 'todos' });
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(formVazio());
@@ -266,6 +269,8 @@ const AdminLeadsPage = () => {
     return acessos[0] && (Date.now() - new Date(acessos[0].acessado_em).getTime() < 3600000);
   }).length;
 
+  const filtrosAtivos = [filtroStatus !== 'todos', filtroOrigem !== 'todos', filtroPeriodo !== 'todos'].filter(Boolean).length;
+
   const f = form;
   const setF = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
 
@@ -297,53 +302,59 @@ const AdminLeadsPage = () => {
             </div>
           </div>
 
-          {/* Busca */}
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Nome, CPF, CNPJ, email, telefone ou empresa..."
-              value={busca}
-              onChange={e => setBusca(e.target.value)}
-              className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/40"
-            />
+          {/* Busca + Filtros */}
+          <div className="flex gap-2 items-center max-w-xl">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Nome, CPF, CNPJ, email, telefone ou empresa..."
+                value={busca}
+                onChange={e => setBusca(e.target.value)}
+                className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/40"
+              />
+            </div>
+            <button
+              onClick={() => { setFiltroTemp({ status: filtroStatus, origem: filtroOrigem, periodo: filtroPeriodo }); setFiltroOpen(true); }}
+              className={`relative flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${filtrosAtivos > 0 ? 'bg-white text-[#003580] border-white' : 'bg-white/10 border-white/20 text-white hover:bg-white/20'}`}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              Filtros
+              {filtrosAtivos > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-orange-500 text-white text-[10px] font-bold flex items-center justify-center">
+                  {filtrosAtivos}
+                </span>
+              )}
+            </button>
           </div>
 
-          {/* Filtros */}
-          <div className="space-y-2">
-            <div className="flex gap-1.5 flex-wrap">
-              {['todos', 'novo', 'contatado', 'em_negociacao', 'convertido', 'perdido'].map(s => (
-                <button key={s} onClick={() => setFiltroStatus(s)}
-                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${filtroStatus === s ? 'bg-white text-[#003580]' : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'}`}>
-                  {s === 'todos' ? `Todos (${leads.length})` : `${STATUS_CONFIG[s]?.label} (${leads.filter(l => l.status === s).length})`}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-1.5 flex-wrap">
-              <button onClick={() => setFiltroOrigem('todos')}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${filtroOrigem === 'todos' ? 'bg-white text-[#003580]' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}>
-                Toda origem
+          {/* Tags dos filtros ativos */}
+          {filtrosAtivos > 0 && (
+            <div className="flex gap-1.5 flex-wrap items-center">
+              <span className="text-white/50 text-xs">Filtrando:</span>
+              {filtroStatus !== 'todos' && (
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 text-white text-xs">
+                  {STATUS_CONFIG[filtroStatus]?.label}
+                  <button onClick={() => setFiltroStatus('todos')}><X className="h-3 w-3" /></button>
+                </span>
+              )}
+              {filtroOrigem !== 'todos' && (
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 text-white text-xs">
+                  {ORIGEM_CONFIG[filtroOrigem]?.icon} {ORIGEM_CONFIG[filtroOrigem]?.label}
+                  <button onClick={() => setFiltroOrigem('todos')}><X className="h-3 w-3" /></button>
+                </span>
+              )}
+              {filtroPeriodo !== 'todos' && (
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 text-white text-xs">
+                  {filtroPeriodo === 'hoje' ? 'Hoje' : filtroPeriodo === 'semana' ? 'Esta semana' : 'Este mês'}
+                  <button onClick={() => setFiltroPeriodo('todos')}><X className="h-3 w-3" /></button>
+                </span>
+              )}
+              <button onClick={() => { setFiltroStatus('todos'); setFiltroOrigem('todos'); setFiltroPeriodo('todos'); }}
+                className="text-white/50 hover:text-white text-xs underline">
+                Limpar tudo
               </button>
-              {Object.entries(ORIGEM_CONFIG).map(([k, v]) => (
-                <button key={k} onClick={() => setFiltroOrigem(k)}
-                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${filtroOrigem === k ? 'bg-white text-[#003580]' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}>
-                  {v.icon} {v.label}
-                </button>
-              ))}
             </div>
-            <div className="flex gap-1.5 flex-wrap">
-              {[
-                { key: 'todos', label: 'Todo período' },
-                { key: 'hoje', label: 'Hoje' },
-                { key: 'semana', label: 'Esta semana' },
-                { key: 'mes', label: 'Este mês' },
-              ].map(({ key, label }) => (
-                <button key={key} onClick={() => setFiltroPeriodo(key)}
-                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${filtroPeriodo === key ? 'bg-white text-[#003580]' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}>
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
+          )}
 
           {/* Lista */}
           {loading ? (
@@ -645,6 +656,78 @@ const AdminLeadsPage = () => {
               <Button onClick={() => setModalOpen(false)} variant="outline" className="flex-1" disabled={saving}>Cancelar</Button>
               <Button onClick={handleSalvar} disabled={saving} className="flex-1 text-white" style={{ background: '#003580' }}>
                 {saving ? 'Salvando...' : editId ? 'Salvar' : 'Criar lead'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Popup de filtros */}
+      <Dialog open={filtroOpen} onOpenChange={setFiltroOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <SlidersHorizontal className="h-4 w-4" /> Filtros
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-5 pt-1">
+            <div>
+              <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</Label>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {[{ k: 'todos', l: 'Todos' }, ...Object.entries(STATUS_CONFIG).map(([k, v]) => ({ k, l: v.label }))].map(({ k, l }) => (
+                  <button key={k} onClick={() => setFiltroTemp(p => ({ ...p, status: k }))}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors border ${filtroTemp.status === k ? 'bg-[#003580] text-white border-[#003580]' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Origem</Label>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                <button onClick={() => setFiltroTemp(p => ({ ...p, origem: 'todos' }))}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors border ${filtroTemp.origem === 'todos' ? 'bg-[#003580] text-white border-[#003580]' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>
+                  Todas
+                </button>
+                {Object.entries(ORIGEM_CONFIG).map(([k, v]) => (
+                  <button key={k} onClick={() => setFiltroTemp(p => ({ ...p, origem: k }))}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors border ${filtroTemp.origem === k ? 'bg-[#003580] text-white border-[#003580]' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>
+                    {v.icon} {v.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Período</Label>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {[
+                  { k: 'todos', l: 'Todo período' },
+                  { k: 'hoje', l: 'Hoje' },
+                  { k: 'semana', l: 'Esta semana' },
+                  { k: 'mes', l: 'Este mês' },
+                ].map(({ k, l }) => (
+                  <button key={k} onClick={() => setFiltroTemp(p => ({ ...p, periodo: k }))}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors border ${filtroTemp.periodo === k ? 'bg-[#003580] text-white border-[#003580]' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" className="flex-1" onClick={() => {
+                setFiltroTemp({ status: 'todos', origem: 'todos', periodo: 'todos' });
+                setFiltroStatus('todos'); setFiltroOrigem('todos'); setFiltroPeriodo('todos');
+                setFiltroOpen(false);
+              }}>
+                Limpar
+              </Button>
+              <Button className="flex-1 text-white" style={{ background: '#003580' }} onClick={() => {
+                setFiltroStatus(filtroTemp.status);
+                setFiltroOrigem(filtroTemp.origem);
+                setFiltroPeriodo(filtroTemp.periodo);
+                setFiltroOpen(false);
+              }}>
+                Aplicar
               </Button>
             </div>
           </div>
