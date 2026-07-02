@@ -92,12 +92,15 @@ const AdminLeadsPage = () => {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [acessosPorOrcamento, setAcessosPorOrcamento] = useState({});
 
+  const [debug, setDebug] = useState('');
+
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('leads')
       .select('*')
       .order('created_at', { ascending: false });
+    setDebug(`data: ${JSON.stringify(data?.length)} | error: ${JSON.stringify(error)}`);
     if (error) {
       console.error('Erro ao buscar leads:', error);
       toast({ variant: 'destructive', title: 'Erro ao carregar leads.', description: error.message });
@@ -270,6 +273,9 @@ const AdminLeadsPage = () => {
               </Button>
             </div>
           </div>
+
+          {/* Debug temporário */}
+          {debug && <div className="bg-yellow-100 text-yellow-900 text-xs px-3 py-2 rounded font-mono">{debug}</div>}
 
           {/* Busca */}
           <div className="relative max-w-md">
