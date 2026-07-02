@@ -996,7 +996,7 @@ const CEODashboard = () => {
                   <div><CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" />Gestão de Administradores</CardTitle><CardDescription>Adicione e gerencie os administradores do sistema.</CardDescription></div>
                   <div className="flex items-center gap-2">
                     <Button
-                      onClick={() => navigate('/admin/clientes')}
+                      onClick={() => navigate('/admin')}
                       variant="outline"
                       className="flex items-center gap-2"
                     >
