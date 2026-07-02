@@ -120,6 +120,8 @@ const AdminLeadsPage = () => {
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [acessosPorOrcamento, setAcessosPorOrcamento] = useState({});
+  const [pagina, setPagina] = useState(1);
+  const POR_PAGINA = 10;
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
@@ -262,7 +264,10 @@ const AdminLeadsPage = () => {
       (filtroStatus === 'todos' || l.status === filtroStatus) &&
       (filtroOrigem === 'todos' || l.origem === filtroOrigem) &&
       periodoOk(l);
-  });
+  }).sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR', { sensitivity: 'base' }));
+
+  const totalPaginas = Math.max(1, Math.ceil(lista.length / POR_PAGINA));
+  const listaPagina = lista.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
 
   const quentesCount = leads.filter(l => {
     const acessos = acessosPorOrcamento[l.orcamento_id] || [];
@@ -270,6 +275,8 @@ const AdminLeadsPage = () => {
   }).length;
 
   const filtrosAtivos = [filtroStatus !== 'todos', filtroOrigem !== 'todos', filtroPeriodo !== 'todos'].filter(Boolean).length;
+
+  useEffect(() => { setPagina(1); }, [busca, filtroStatus, filtroOrigem, filtroPeriodo]);
 
   const f = form;
   const setF = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
@@ -366,7 +373,7 @@ const AdminLeadsPage = () => {
           ) : (
             <div className="space-y-2">
               <AnimatePresence>
-                {lista.map(lead => {
+                {listaPagina.map(lead => {
                   const acessos = acessosPorOrcamento[lead.orcamento_id] || [];
                   const ultimoAcesso = acessos[0];
                   const quente = ultimoAcesso && (Date.now() - new Date(ultimoAcesso.acessado_em).getTime() < 3600000);
@@ -533,6 +540,47 @@ const AdminLeadsPage = () => {
                   );
                 })}
               </AnimatePresence>
+            </div>
+          )}
+
+          {/* Paginação */}
+          {!loading && totalPaginas > 1 && (
+            <div className="flex items-center justify-between pt-2">
+              <span className="text-white/50 text-xs">
+                {(pagina - 1) * POR_PAGINA + 1}–{Math.min(pagina * POR_PAGINA, lista.length)} de {lista.length}
+              </span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setPagina(p => Math.max(1, p - 1))}
+                  disabled={pagina === 1}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/10 text-white disabled:opacity-30 hover:bg-white/20 transition-colors"
+                >
+                  ← Anterior
+                </button>
+                {Array.from({ length: totalPaginas }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === totalPaginas || Math.abs(p - pagina) <= 1)
+                  .reduce((acc, p, idx, arr) => {
+                    if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
+                    acc.push(p);
+                    return acc;
+                  }, [])
+                  .map((p, i) => p === '...' ? (
+                    <span key={`dots-${i}`} className="px-2 py-1.5 text-white/30 text-xs">…</span>
+                  ) : (
+                    <button key={p} onClick={() => setPagina(p)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${pagina === p ? 'bg-white text-[#003580]' : 'bg-white/10 text-white hover:bg-white/20'}`}>
+                      {p}
+                    </button>
+                  ))
+                }
+                <button
+                  onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))}
+                  disabled={pagina === totalPaginas}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/10 text-white disabled:opacity-30 hover:bg-white/20 transition-colors"
+                >
+                  Próxima →
+                </button>
+              </div>
             </div>
           )}
         </motion.div>
