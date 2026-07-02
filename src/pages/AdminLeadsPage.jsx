@@ -545,10 +545,7 @@ const AdminLeadsPage = () => {
 
           {/* Paginação */}
           {!loading && totalPaginas > 1 && (
-            <div className="flex items-center justify-between pt-2">
-              <span className="text-white/50 text-xs">
-                {(pagina - 1) * POR_PAGINA + 1}–{Math.min(pagina * POR_PAGINA, lista.length)} de {lista.length}
-              </span>
+            <div className="flex flex-col items-center gap-2 pt-2">
               <div className="flex gap-1">
                 <button
                   onClick={() => setPagina(p => Math.max(1, p - 1))}
@@ -581,6 +578,9 @@ const AdminLeadsPage = () => {
                   Próxima →
                 </button>
               </div>
+              <span className="text-white/40 text-xs">
+                {(pagina - 1) * POR_PAGINA + 1}–{Math.min(pagina * POR_PAGINA, lista.length)} de {lista.length} leads
+              </span>
             </div>
           )}
         </motion.div>
