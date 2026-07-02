@@ -12,6 +12,7 @@ import AdminDashboard from '@/pages/AdminDashboard';
 import AdminSelecaoPage from '@/pages/AdminSelecaoPage';
 import AdminParceirosPage from '@/pages/AdminParceirosPage';
 import AdminLembretesPage from '@/pages/AdminLembretesPage';
+import AdminLeadsPage from '@/pages/AdminLeadsPage';
 import ParceiroDashboard from '@/pages/ParceiroDashboard';
 import AdminClientePage from '@/pages/AdminClientePage';
 import AdminSegmentoPage from '@/pages/AdminSegmentoPage';
@@ -103,6 +104,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRoles={['CEO', 'ADM']}>
             <AdminLembretesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/leads"
+        element={
+          <ProtectedRoute allowedRoles={['CEO', 'ADM']}>
+            <AdminLeadsPage />
           </ProtectedRoute>
         }
       />

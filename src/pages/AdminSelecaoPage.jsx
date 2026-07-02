@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, HeartHandshake, ClipboardList } from 'lucide-react';
+import { Users, HeartHandshake, ClipboardList, Flame } from 'lucide-react';
 import { Helmet } from 'react-helmet';
 import DashboardLayout from '@/components/DashboardLayout';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -10,6 +10,7 @@ const AdminSelecaoPage = () => {
   const navigate = useNavigate();
   const [pendentes, setPendentes] = useState(0);
   const [unreadCEO, setUnreadCEO] = useState(0);
+  const [leadsQuentes, setLeadsQuentes] = useState(0);
 
   useEffect(() => {
     supabase
@@ -26,6 +27,14 @@ const AdminSelecaoPage = () => {
       .eq('lida', false)
       .then(({ count }) => setUnreadCEO(count || 0))
       .catch(() => {});
+
+    const umaHoraAtras = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    supabase
+      .from('orcamento_acessos')
+      .select('orcamento_id', { count: 'exact', head: true })
+      .gte('acessado_em', umaHoraAtras)
+      .then(({ count }) => setLeadsQuentes(count || 0))
+      .catch(() => {});
   }, []);
 
   const cards = [
@@ -35,6 +44,7 @@ const AdminSelecaoPage = () => {
       description: 'Gerencie empresas, apólices, beneficiários e solicitações dos clientes.',
       route: '/admin/clientes',
       badge: null,
+      badgeLabel: null,
     },
     {
       icon: HeartHandshake,
@@ -42,6 +52,16 @@ const AdminSelecaoPage = () => {
       description: 'Gerencie orçamentos, documentos e comissões dos parceiros de vendas.',
       route: '/admin/orcamentos',
       badge: pendentes > 0 ? pendentes : null,
+      badgeLabel: pendentes > 0 ? `${pendentes} solicitação${pendentes > 1 ? 'ões' : ''} aguardando resposta` : null,
+    },
+    {
+      icon: Flame,
+      title: 'Leads',
+      description: 'Visualize todos os leads: orçamentos enviados, acessos, propostas aceitas e novos contatos.',
+      route: '/admin/leads',
+      badge: leadsQuentes > 0 ? leadsQuentes : null,
+      badgeLabel: leadsQuentes > 0 ? `${leadsQuentes} lead${leadsQuentes > 1 ? 's' : ''} quente${leadsQuentes > 1 ? 's' : ''} agora` : null,
+      badgeColor: 'bg-orange-500',
     },
     {
       icon: ClipboardList,
@@ -49,6 +69,7 @@ const AdminSelecaoPage = () => {
       description: 'Mensagens internas entre ADM e CEO.',
       route: '/admin/lembretes',
       badge: unreadCEO > 0 ? unreadCEO : null,
+      badgeLabel: unreadCEO > 0 ? `${unreadCEO} mensagem${unreadCEO > 1 ? 'ns' : ''} não lida${unreadCEO > 1 ? 's' : ''}` : null,
     },
   ];
 
@@ -64,8 +85,8 @@ const AdminSelecaoPage = () => {
         >
           <h1 className="text-2xl font-bold tracking-tight text-white">O que deseja gerenciar?</h1>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl">
-            {cards.map(({ icon: Icon, title, description, route, badge }, i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl">
+            {cards.map(({ icon: Icon, title, description, route, badge, badgeLabel, badgeColor }, i) => (
               <motion.button
                 key={title}
                 initial={{ opacity: 0, y: 20 }}
@@ -75,7 +96,7 @@ const AdminSelecaoPage = () => {
                 className="relative flex flex-col items-center justify-center gap-4 p-8 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all hover:scale-105 hover:shadow-xl cursor-pointer"
               >
                 {badge && (
-                  <span className="absolute top-3 right-3 flex items-center justify-center h-6 min-w-6 px-1.5 rounded-full bg-red-500 text-white text-xs font-bold animate-pulse">
+                  <span className={`absolute top-3 right-3 flex items-center justify-center h-6 min-w-6 px-1.5 rounded-full ${badgeColor || 'bg-red-500'} text-white text-xs font-bold animate-pulse`}>
                     {badge}
                   </span>
                 )}
@@ -85,14 +106,9 @@ const AdminSelecaoPage = () => {
                 <div className="text-center">
                   <p className="text-xl font-bold">{title}</p>
                   <p className="text-sm text-white/70 mt-1">{description}</p>
-                  {title === 'Orçamentos' && badge && (
-                    <p className="text-xs text-red-300 font-semibold mt-2">
-                      {badge} solicitação{badge > 1 ? 'ões' : ''} aguardando resposta
-                    </p>
-                  )}
-                  {title === 'Lembretes' && badge && (
-                    <p className="text-xs text-red-300 font-semibold mt-2">
-                      {badge} mensagem{badge > 1 ? 'ns' : ''} não lida{badge > 1 ? 's' : ''}
+                  {badgeLabel && (
+                    <p className={`text-xs font-semibold mt-2 ${badgeColor === 'bg-orange-500' ? 'text-orange-300' : 'text-red-300'}`}>
+                      {badgeLabel}
                     </p>
                   )}
                 </div>
