@@ -1015,6 +1015,11 @@ const CEODashboard = () => {
                       <div className="sm:hidden space-y-2">
                         {filteredEmpresas.map((empresa) => {
                           const isOpen = expandedEmpresaId === empresa.id;
+                          const isCpf = empresa.cnpj && empresa.cnpj.replace(/\D/g, '').length === 11;
+                          const isFilial = !!empresa.empresa_matriz_id;
+                          const displayName = isCpf
+                            ? (empresa.razao_social || empresa.nome_fantasia)
+                            : empresa.nome_fantasia;
                           return (
                             <div key={empresa.id} className="rounded-lg border bg-white overflow-hidden">
                               <button
@@ -1022,7 +1027,9 @@ const CEODashboard = () => {
                                 onClick={() => setExpandedEmpresaId(isOpen ? null : empresa.id)}
                               >
                                 <div className="min-w-0 flex-1">
-                                  <p className="font-semibold text-sm truncate">{empresa.nome_fantasia}</p>
+                                  <p className="font-semibold text-sm truncate">
+                                    {isFilial ? <span className="text-gray-400 mr-1">└─</span> : null}{displayName}
+                                  </p>
                                   <p className="text-xs text-muted-foreground truncate">{formatCpfCnpj(empresa.cnpj)}</p>
                                 </div>
                                 <div className="flex items-center gap-2 flex-shrink-0 ml-2">
@@ -1032,7 +1039,12 @@ const CEODashboard = () => {
                               </button>
                               {isOpen && (
                                 <div className="px-4 pb-4 border-t pt-3 space-y-2 bg-gray-50">
-                                  <div className="text-xs text-muted-foreground">{empresa.razao_social}</div>
+                                  {!isCpf && empresa.razao_social && empresa.razao_social !== displayName && (
+                                    <div className="text-xs text-muted-foreground">{empresa.razao_social}</div>
+                                  )}
+                                  {isFilial && empresa.matriz && (
+                                    <div className="text-xs text-muted-foreground">Matriz: {empresa.matriz.nome_fantasia || empresa.matriz.razao_social}</div>
+                                  )}
                                   <div className="grid grid-cols-2 gap-2 text-sm">
                                     <div><span className="text-xs text-muted-foreground block">Beneficiários</span><span className="font-semibold">{empresa.beneficiariosCount}</span></div>
                                     <div><span className="text-xs text-muted-foreground block">ADMs</span><span className="font-semibold">{empresa.adminsCount}</span></div>
