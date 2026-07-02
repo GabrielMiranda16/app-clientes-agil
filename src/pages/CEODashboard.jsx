@@ -1038,18 +1038,18 @@ const CEODashboard = () => {
                           return (
                             <div key={empresa.id} className="rounded-lg border bg-white overflow-hidden">
                               <button
-                                className="w-full flex items-center justify-between px-4 py-3 text-left"
+                                className="w-full px-4 py-3 text-left"
                                 onClick={() => setExpandedEmpresaId(isOpen ? null : empresa.id)}
                               >
-                                <div className="min-w-0 flex-1">
-                                  <p className="font-semibold text-sm truncate">
+                                <div className="flex items-start justify-between gap-2">
+                                  <p className="font-semibold text-sm leading-snug">
                                     {isFilial ? <span className="text-gray-400 mr-1">└─</span> : null}{displayName}
                                   </p>
-                                  <p className="text-xs text-muted-foreground truncate">{formatCpfCnpj(empresa.cnpj)}</p>
+                                  <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 mt-0.5 ${isOpen ? 'rotate-180' : ''}`} />
                                 </div>
-                                <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-xs text-muted-foreground">{formatCpfCnpj(empresa.cnpj)}</span>
                                   <Badge className={empresa.status === 'Ativa' ? 'bg-green-100 text-green-800 text-xs hover:bg-green-100 hover:text-green-800' : 'bg-red-100 text-red-800 text-xs hover:bg-red-100 hover:text-red-800'}>{empresa.status}</Badge>
-                                  <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                                 </div>
                               </button>
                               {isOpen && (
