@@ -40,10 +40,10 @@ const SEGMENTOS_CONFIG = {
 };
 
 const STATUS_COLORS = {
-  green:  { badge: 'bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800',  dot: 'bg-green-500',  card: 'bg-gray-50 border-gray-200'      },
-  yellow: { badge: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100 hover:text-yellow-800',dot: 'bg-yellow-500', card: 'bg-yellow-50 border-yellow-200'  },
-  red:    { badge: 'bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800',      dot: 'bg-red-500',    card: 'bg-red-50 border-red-200'        },
-  gray:   { badge: 'bg-gray-100 text-gray-600 hover:bg-gray-100 hover:text-gray-600',    dot: 'bg-gray-400',   card: 'bg-gray-50 border-gray-200'      },
+  green:  { badge: 'bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800',  dot: 'bg-green-500',  card: 'bg-white border-gray-200' },
+  yellow: { badge: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100 hover:text-yellow-800',dot: 'bg-yellow-500', card: 'bg-white border-gray-200' },
+  red:    { badge: 'bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800',      dot: 'bg-red-500',    card: 'bg-white border-gray-200' },
+  gray:   { badge: 'bg-gray-100 text-gray-600 hover:bg-gray-100 hover:text-gray-600',    dot: 'bg-gray-400',   card: 'bg-white border-gray-200' },
 };
 
 const emptyApoliceForm = { numero_apolice: '', seguradora: '', vigencia_inicio: '', vigencia_fim: '', valor_premio: '', descricao: '' };
@@ -446,7 +446,7 @@ const AdminSegmentoPage = () => {
                         </div>
                       ) : (
                         empApolices.map(ap => (
-                          <div key={ap.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-blue-50 rounded-xl border border-blue-100 hover:shadow-sm transition-shadow">
+                          <div key={ap.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-white rounded-xl border border-gray-200 hover:shadow-sm transition-shadow">
                             <div>
                               {(() => {
                                 const subs = ap.dados_adicionais?.sub_apolices?.filter(s => s.tipo || s.numero);
@@ -760,8 +760,8 @@ const AdminSegmentoPage = () => {
 
             {/* Show current PDF with delete option when editing */}
             {editingApolice?.contrato_url && (
-              <div className="flex items-center gap-2 p-2 bg-blue-50 rounded border border-blue-100">
-                <FileText className="h-4 w-4 text-blue-600 shrink-0" />
+              <div className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200">
+                <FileText className="h-4 w-4 text-[#003580] shrink-0" />
                 <a href={editingApolice.contrato_url} target="_blank" rel="noreferrer" className="text-sm text-blue-600 hover:underline flex-1 truncate">PDF atual</a>
                 <Button type="button" variant="ghost" size="sm" className="text-red-500 hover:text-red-700 h-7 px-2" onClick={handleDeleteContrato}>
                   <Trash2 className="h-3.5 w-3.5" />
