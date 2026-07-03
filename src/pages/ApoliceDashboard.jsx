@@ -362,7 +362,12 @@ const ApoliceDashboard = () => {
                   )}
 
                   <Card>
-                    <CardHeader><CardTitle className="flex items-center gap-2 text-base"><FileText className="h-4 w-4" /> Dados da Apólice</CardTitle></CardHeader>
+                    <CardHeader>
+                      <div className="flex items-start justify-between gap-4">
+                        <CardTitle className="flex items-center gap-2 text-base"><FileText className="h-4 w-4" /> Dados da Apólice</CardTitle>
+                        {!isSVD && (() => { const seg = SEGURADORAS.find(s => s.nome === apolice.seguradora); return seg?.logo ? <img src={seg.logo} alt={seg.nome} className="h-20 w-56 object-contain shrink-0" /> : null; })()}
+                      </div>
+                    </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div>
@@ -384,21 +389,18 @@ const ApoliceDashboard = () => {
                               {(() => {
                                 const seg = SEGURADORAS.find(s => s.nome === apolice.seguradora);
                                 return (
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div className="space-y-1.5">
-                                      <p className="font-semibold text-gray-800">{apolice.seguradora || '—'}</p>
-                                      {seg?.phone && (
-                                        <a href={`tel:${seg.phone.replace(/\D/g, '')}`} className="flex items-center gap-1.5 text-sm text-[#003580] hover:underline">
-                                          📞 {seg.phone}
-                                        </a>
-                                      )}
-                                      {seg?.website && (
-                                        <a href={seg.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-[#003580] hover:underline">
-                                          🌐 {seg.website.replace('https://www.', '')}
-                                        </a>
-                                      )}
-                                    </div>
-                                    {seg?.logo && <img src={seg.logo} alt={seg.nome} className="h-11 w-28 object-contain shrink-0" />}
+                                  <div className="space-y-1.5">
+                                    <p className="font-semibold text-gray-800">{apolice.seguradora || '—'}</p>
+                                    {seg?.phone && (
+                                      <a href={`tel:${seg.phone.replace(/\D/g, '')}`} className="flex items-center gap-1.5 text-sm text-[#003580] hover:underline">
+                                        📞 {seg.phone}
+                                      </a>
+                                    )}
+                                    {seg?.website && (
+                                      <a href={seg.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-[#003580] hover:underline">
+                                        🌐 {seg.website.replace('https://www.', '')}
+                                      </a>
+                                    )}
                                   </div>
                                 );
                               })()}
