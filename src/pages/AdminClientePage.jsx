@@ -260,7 +260,7 @@ const AdminClientePage = () => {
 
           {/* Client Info Card */}
           <Card className="border-0 shadow-md overflow-hidden">
-            <div className="bg-white p-5 border-b">
+            <div className="bg-white p-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="bg-[#003580]/10 p-2.5 rounded-xl">
