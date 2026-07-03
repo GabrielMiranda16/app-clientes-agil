@@ -63,19 +63,23 @@ serve(async (req) => {
       const data_lembrete = `${ap.vigencia_fim}T09:00:00-03:00`;
 
       try {
-        const res = await fetch(`${BOT_URL}/api/lembrete-externo`, {
+        // 1. Insere na aba Lembretes (lembretes_adm) — visível para CEO e ADM
+        await supabase
+          .from('lembretes_adm')
+          .insert({ texto: descricao, autor: 'sistema', lida: false });
+
+        // 2. Cria no bot (card Lembretes Ágil no Dashboard + notificação WhatsApp)
+        await fetch(`${BOT_URL}/api/lembrete-externo`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ descricao, token: TOKEN, empresa: 'agil', data_lembrete }),
         });
 
-        if (res.ok) {
-          await supabase
-            .from('apolices')
-            .update({ lembrete_vencimento_criado: true })
-            .eq('id', ap.id);
-          criados++;
-        }
+        await supabase
+          .from('apolices')
+          .update({ lembrete_vencimento_criado: true })
+          .eq('id', ap.id);
+        criados++;
       } catch (e) {
         console.error(`Erro na apólice ${ap.id}:`, e);
       }
