@@ -938,33 +938,42 @@ const CEODashboard = () => {
                                   <button onClick={() => setEditId(null)} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
                                 </div>
                               </div>
-                            ) : (
-                              <div className="flex items-center justify-between bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 group">
-                                <div className="min-w-0">
-                                  <p className="text-sm font-medium text-gray-800 truncate">{l.descricao}</p>
-                                  {l.data_lembrete && (
-                                    <p className="text-xs text-gray-400 mt-0.5">
-                                      📅 {new Date(l.data_lembrete).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                                    </p>
+                            ) : (() => {
+                              const isApolice = l.descricao.startsWith('⚠️ Apólice');
+                              return (
+                                <div className={`relative flex items-center justify-between rounded-lg px-3 py-2 group ${isApolice ? 'bg-orange-50 border border-orange-300' : 'bg-gray-50 border border-gray-100'}`}>
+                                  {isApolice && (
+                                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                      <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
+                                    </span>
                                   )}
+                                  <div className="min-w-0">
+                                    <p className={`text-sm font-medium truncate ${isApolice ? 'text-orange-900' : 'text-gray-800'}`}>{l.descricao}</p>
+                                    {l.data_lembrete && (
+                                      <p className={`text-xs mt-0.5 ${isApolice ? 'text-orange-600 font-medium' : 'text-gray-400'}`}>
+                                        📅 {new Date(l.data_lembrete).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 ml-3 shrink-0">
+                                    <button
+                                      onClick={() => { setEditId(l.id); setEditForm({ descricao: l.descricao, data: l.data_lembrete ? new Date(l.data_lembrete).toISOString().slice(0,16) : '' }); setAddOpen(false); }}
+                                      className="text-xs text-gray-400 hover:text-[#003580] opacity-0 group-hover:opacity-100 transition-opacity"
+                                      title="Editar"
+                                    >
+                                      <Pencil className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={() => concluirLembrete(l.id)}
+                                      className="text-xs text-green-600 hover:text-green-800 font-medium flex items-center gap-1"
+                                    >
+                                      <CheckCircle2 className="h-4 w-4" /> Concluir
+                                    </button>
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-2 ml-3 shrink-0">
-                                  <button
-                                    onClick={() => { setEditId(l.id); setEditForm({ descricao: l.descricao, data: l.data_lembrete ? new Date(l.data_lembrete).toISOString().slice(0,16) : '' }); setAddOpen(false); }}
-                                    className="text-xs text-gray-400 hover:text-[#003580] opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Editar"
-                                  >
-                                    <Pencil className="h-3.5 w-3.5" />
-                                  </button>
-                                  <button
-                                    onClick={() => concluirLembrete(l.id)}
-                                    className="text-xs text-green-600 hover:text-green-800 font-medium flex items-center gap-1"
-                                  >
-                                    <CheckCircle2 className="h-4 w-4" /> Concluir
-                                  </button>
-                                </div>
-                              </div>
-                            )}
+                              );
+                            })()}
                           </div>
                         ))}
                       </div>
