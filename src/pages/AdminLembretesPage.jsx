@@ -34,7 +34,7 @@ const estiloAlerta = {
 const corBadgeAlerta = {
   vencido:  'bg-red-100 text-red-600',
   hoje:     'bg-orange-100 text-orange-600',
-  em_breve: 'bg-yellow-100 text-yellow-700',
+  em_breve: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100 hover:text-yellow-700',
 };
 
 const labelAlerta = {

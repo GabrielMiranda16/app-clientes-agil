@@ -41,17 +41,17 @@ const SEGMENTO_ICONS = {
 };
 
 const STATUS_CONFIG = {
-  green:  { icon: CheckCircle,   color: 'text-green-500',  bg: 'bg-green-50',  badge: 'bg-green-100 text-green-800',  label: 'Ativa' },
-  yellow: { icon: Clock,         color: 'text-yellow-500', bg: 'bg-yellow-50', badge: 'bg-yellow-100 text-yellow-800', label: 'Vencendo em breve' },
-  red:    { icon: AlertTriangle, color: 'text-red-500',    bg: 'bg-red-50',    badge: 'bg-red-100 text-red-800',      label: 'Vencida' },
-  gray:   { icon: FileText,      color: 'text-gray-400',   bg: 'bg-gray-50',   badge: 'bg-gray-100 text-gray-600',    label: 'Sem vigência' },
+  green:  { icon: CheckCircle,   color: 'text-green-500',  bg: 'bg-green-50',  badge: 'bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800',  label: 'Ativa' },
+  yellow: { icon: Clock,         color: 'text-yellow-500', bg: 'bg-yellow-50', badge: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100 hover:text-yellow-800', label: 'Vencendo em breve' },
+  red:    { icon: AlertTriangle, color: 'text-red-500',    bg: 'bg-red-50',    badge: 'bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800',      label: 'Vencida' },
+  gray:   { icon: FileText,      color: 'text-gray-400',   bg: 'bg-gray-50',   badge: 'bg-gray-100 text-gray-600 hover:bg-gray-100 hover:text-gray-600',    label: 'Sem vigência' },
 };
 
 const STATUS_SOL_COLORS = {
-  'PENDENTE':          'bg-yellow-100 text-yellow-800',
-  'EM PROCESSAMENTO':  'bg-blue-100 text-blue-800',
-  'CONCLUIDA':         'bg-green-100 text-green-800',
-  'REJEITADA':         'bg-red-100 text-red-800',
+  'PENDENTE':          'bg-yellow-100 text-yellow-800 hover:bg-yellow-100 hover:text-yellow-800',
+  'EM PROCESSAMENTO':  'bg-blue-100 text-blue-800 hover:bg-blue-100 hover:text-blue-800',
+  'CONCLUIDA':         'bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800',
+  'REJEITADA':         'bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800',
 };
 
 const MES_OPTS = (() => {
@@ -740,7 +740,7 @@ const ApoliceDashboard = () => {
                                 <p className="font-medium text-gray-800">{s.tipo_solicitacao}</p>
                                 <p className="text-xs text-gray-400">{s.beneficiarios?.nome_completo || '—'}</p>
                               </div>
-                              <Badge className={STATUS_SOL_COLORS[s.status] || 'bg-gray-100 text-gray-600'}>{s.status}</Badge>
+                              <Badge className={STATUS_SOL_COLORS[s.status] || 'bg-gray-100 text-gray-600 hover:bg-gray-100 hover:text-gray-600'}>{s.status}</Badge>
                             </div>
                           ))}
                           {solicitacoes.length > 5 && (

@@ -19,12 +19,12 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { SEGURADORAS } from '@/data/seguradoras';
 
 const STATUS_CONFIG = {
-  SOLICITACAO: { label: 'Solicitação',        color: 'bg-gray-100 text-gray-700',    border: 'border-l-gray-400' },
-  ORCAMENTO:   { label: 'Orçamento',          color: 'bg-blue-100 text-blue-700',    border: 'border-l-blue-400' },
-  DOCUMENTOS:  { label: 'Documentos',         color: 'bg-blue-100 text-[#003580]',   border: 'border-l-[#003580]' },
-  ASSINATURA:  { label: 'Assinatura/Transmitida', color: 'bg-blue-100 text-[#003580]', border: 'border-l-[#003580]' },
-  CONCLUIDO:   { label: 'Concluído',          color: 'bg-blue-100 text-[#003580]',   border: 'border-l-[#003580]' },
-  COMISSAO:    { label: 'Comissão',           color: 'bg-blue-100 text-[#003580]',   border: 'border-l-[#003580]' },
+  SOLICITACAO: { label: 'Solicitação',        color: 'bg-gray-100 text-gray-700 hover:bg-gray-100 hover:text-gray-700',    border: 'border-l-gray-400' },
+  ORCAMENTO:   { label: 'Orçamento',          color: 'bg-blue-100 text-blue-700 hover:bg-blue-100 hover:text-blue-700',    border: 'border-l-blue-400' },
+  DOCUMENTOS:  { label: 'Documentos',         color: 'bg-blue-100 text-[#003580] hover:bg-blue-100 hover:text-[#003580]',   border: 'border-l-[#003580]' },
+  ASSINATURA:  { label: 'Assinatura/Transmitida', color: 'bg-blue-100 text-[#003580] hover:bg-blue-100 hover:text-[#003580]', border: 'border-l-[#003580]' },
+  CONCLUIDO:   { label: 'Concluído',          color: 'bg-blue-100 text-[#003580] hover:bg-blue-100 hover:text-[#003580]',   border: 'border-l-[#003580]' },
+  COMISSAO:    { label: 'Comissão',           color: 'bg-blue-100 text-[#003580] hover:bg-blue-100 hover:text-[#003580]',   border: 'border-l-[#003580]' },
 };
 const assinaturaLabel = seg => ['SAUDE', 'VIDA', 'ODONTOLOGICO', 'SAUDE_VIDA_ODONTO'].includes(seg) ? 'Assinatura' : 'Transmitida';
 
@@ -1460,7 +1460,7 @@ const AdminParceirosPage = () => {
                 <div className="flex items-center gap-2 mb-2">
                   <p className={`font-semibold uppercase tracking-wide ${total === 0 ? 'text-gray-400' : quente ? 'text-orange-700' : 'text-green-700'}`}>Atividade do cliente</p>
                   {quente && <span className="bg-orange-100 text-orange-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">🔥 Quente</span>}
-                  {total >= 3 && !quente && <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">👀 {total}x</span>}
+                  {total >= 3 && !quente && <span className="bg-blue-100 text-blue-700 hover:bg-blue-100 hover:text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">👀 {total}x</span>}
                 </div>
                 {total === 0 ? (
                   <p>Cliente ainda não acessou o link.</p>
@@ -1566,7 +1566,7 @@ const AdminParceirosPage = () => {
             ))}
           </div>
         )}
-        <Button onClick={() => handleAvancar('CONCLUIDO')} disabled={enviando} className="w-full rounded-xl text-white font-semibold gap-2 bg-green-600 hover:bg-green-700">
+        <Button onClick={() => handleAvancar('CONCLUIDO')} disabled={enviando} className="w-full rounded-xl text-white font-semibold gap-2 bg-green-600 hover:bg-green-600 hover:bg-green-700">
           {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
           Marcar como Assinado / Concluído
         </Button>

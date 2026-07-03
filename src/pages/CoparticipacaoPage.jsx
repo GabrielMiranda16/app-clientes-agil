@@ -898,7 +898,7 @@ const CoparticipacaoPage = () => {
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="cnpj_vinculado">CNPJ/CPF (Vinculado)</Label>
-                <Input id="cnpj_vinculado" value={formData.cnpj ? formatCpfCnpj(formData.cnpj) : ''} readOnly disabled className="bg-gray-100 text-gray-600" />
+                <Input id="cnpj_vinculado" value={formData.cnpj ? formatCpfCnpj(formData.cnpj) : ''} readOnly disabled className="bg-gray-100 text-gray-600 hover:bg-gray-100 hover:text-gray-600" />
               </div>
 
               <div className="grid gap-2">
@@ -1023,7 +1023,7 @@ const CoparticipacaoPage = () => {
                 </div>
                 <div className="overflow-auto flex-1 mt-2">
                   <table className="w-full text-xs text-left min-w-[700px]">
-                    <thead className="bg-gray-100 text-gray-700 uppercase">
+                    <thead className="bg-gray-100 text-gray-700 hover:bg-gray-100 hover:text-gray-700 uppercase">
                       <tr>
                         <th className="px-3 py-2">Status</th>
                         <th className="px-3 py-2">Nome Detectado</th>

@@ -404,7 +404,7 @@ const SolicitacoesPage = () => {
       toast({
         title: 'Solicitação Aceita',
         description: 'Status atualizado para Em Processamento.',
-        className: 'bg-green-600 text-white border-none'
+        className: 'bg-green-600 hover:bg-green-600 text-white border-none'
       });
     } catch (error) {
       console.error("Error accepting solicitacao:", error);
@@ -574,18 +574,18 @@ const SolicitacoesPage = () => {
 
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'PENDENTE': return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200"><Clock className="w-3 h-3 mr-1" /> Pendente</Badge>;
-      case 'EM PROCESSAMENTO': return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200"><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Em Processamento</Badge>;
-      case 'CONCLUIDA': return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200"><CheckCircle2 className="w-3 h-3 mr-1" /> Concluída</Badge>;
-      case 'REJEITADA': return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200"><XCircle className="w-3 h-3 mr-1" /> Rejeitada</Badge>;
-      case 'CANCELADA': return <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200"><XCircle className="w-3 h-3 mr-1" /> Cancelada</Badge>;
+      case 'PENDENTE': return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 hover:bg-yellow-50 hover:text-yellow-700 border-yellow-200"><Clock className="w-3 h-3 mr-1" /> Pendente</Badge>;
+      case 'EM PROCESSAMENTO': return <Badge variant="outline" className="bg-blue-50 text-blue-700 hover:bg-blue-50 hover:text-blue-700 border-blue-200"><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Em Processamento</Badge>;
+      case 'CONCLUIDA': return <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-50 hover:text-green-700 border-green-200"><CheckCircle2 className="w-3 h-3 mr-1" /> Concluída</Badge>;
+      case 'REJEITADA': return <Badge variant="outline" className="bg-red-50 text-red-700 hover:bg-red-50 hover:text-red-700 border-red-200"><XCircle className="w-3 h-3 mr-1" /> Rejeitada</Badge>;
+      case 'CANCELADA': return <Badge variant="outline" className="bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600 border-gray-200"><XCircle className="w-3 h-3 mr-1" /> Cancelada</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
     }
   };
 
   const getTipoBadge = (tipo) => {
     switch (tipo) {
-      case 'INCLUSAO': return <Badge variant="default" className="bg-green-600">Inclusão</Badge>;
+      case 'INCLUSAO': return <Badge variant="default" className="bg-green-600 hover:bg-green-600">Inclusão</Badge>;
       case 'EXCLUSAO': return <Badge variant="destructive">Exclusão</Badge>;
       case 'ALTERACAO': return <Badge variant="secondary">Alteração</Badge>;
       default: return <Badge variant="outline">{tipo}</Badge>;
@@ -673,7 +673,7 @@ const SolicitacoesPage = () => {
                               <TableCell className="text-right">
                                 <div className="flex justify-end gap-2">
                                   {solicitacao.status === 'PENDENTE' && (
-                                    <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => handleAccept(solicitacao)}>
+                                    <Button size="sm" className="bg-green-600 hover:bg-green-600 hover:bg-green-700 text-white" onClick={() => handleAccept(solicitacao)}>
                                       <CheckCircle2 className="w-4 h-4 mr-2" />Aceitar
                                     </Button>
                                   )}
@@ -733,7 +733,7 @@ const SolicitacoesPage = () => {
                               </div>
                               <div className="flex flex-col gap-2">
                                 {solicitacao.status === 'PENDENTE' && (
-                                  <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white w-full" onClick={() => handleAccept(solicitacao)}>
+                                  <Button size="sm" className="bg-green-600 hover:bg-green-600 hover:bg-green-700 text-white w-full" onClick={() => handleAccept(solicitacao)}>
                                     <CheckCircle2 className="w-4 h-4 mr-2" />Aceitar
                                   </Button>
                                 )}
@@ -1312,7 +1312,7 @@ const SolicitacoesPage = () => {
 
             <DialogFooter className="pt-4">
               <Button type="button" variant="outline" onClick={() => setIsEditBeneficiarioModalOpen(false)}>Cancelar</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-green-600 hover:bg-green-700">
+              <Button type="submit" disabled={isSubmitting} className="bg-green-600 hover:bg-green-600 hover:bg-green-700">
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Salvar e Concluir
               </Button>
