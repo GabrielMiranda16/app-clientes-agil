@@ -1377,17 +1377,16 @@ const ClientDashboard = () => {
           )}
 
           <div>
-            <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory md:grid md:grid-cols-2 md:overflow-visible md:pb-0 lg:grid-cols-4">
-               {isLoading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[108px] min-w-[calc(100vw-3rem)] md:min-w-0 snap-start" />) : (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+               {isLoading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[108px]" />) : (
                   <>
-                    <div className="min-w-[calc(100vw-3rem)] md:min-w-0 snap-start flex-shrink-0 md:flex-shrink"><MetricCard title="Total de Beneficiários" value={metrics.total} icon={Users} color="text-[#003580]" /></div>
-                    <div className="min-w-[calc(100vw-3rem)] md:min-w-0 snap-start flex-shrink-0 md:flex-shrink"><MetricCard title="Titulares" value={metrics.titulares} icon={User} color="text-[#003580]" /></div>
-                    <div className="min-w-[calc(100vw-3rem)] md:min-w-0 snap-start flex-shrink-0 md:flex-shrink"><MetricCard title="Dependentes" value={metrics.dependentes} icon={Users} color="text-[#003580]" /></div>
-                    <div className="min-w-[calc(100vw-3rem)] md:min-w-0 snap-start flex-shrink-0 md:flex-shrink"><MetricCard title="Beneficiários Ativos" value={metrics.ativos} icon={UserCheck} color="text-[#003580]" /></div>
+                    <MetricCard title="Total de Beneficiários" value={metrics.total} icon={Users} color="text-[#003580]" />
+                    <MetricCard title="Titulares" value={metrics.titulares} icon={User} color="text-[#003580]" />
+                    <MetricCard title="Dependentes" value={metrics.dependentes} icon={Users} color="text-[#003580]" />
+                    <MetricCard title="Beneficiários Ativos" value={metrics.ativos} icon={UserCheck} color="text-[#003580]" />
                   </>
                )}
             </div>
-            <p className="text-xs text-gray-400 text-center mt-1 md:hidden">arraste para ver mais →</p>
           </div>
           
           <Card>
