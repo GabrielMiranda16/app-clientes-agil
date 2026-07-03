@@ -653,7 +653,7 @@ const CEODashboard = () => {
                 {[
                   { value: 'dashboard',    label: 'Dashboard' },
                   { value: 'empresas',     label: 'Clientes' },
-                  { value: 'solicitacoes', label: 'Solicitações' },
+                  { value: 'solicitacoes', label: 'Gestão de Solicitações' },
                   { value: 'admins',       label: 'Admins' },
                   { value: 'parceiros',    label: 'Parceiros' },
                   { value: 'relatorios',   label: 'Relatórios' },
