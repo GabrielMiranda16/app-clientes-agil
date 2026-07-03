@@ -64,9 +64,10 @@ serve(async (req) => {
 
       try {
         // 1. Insere na aba Lembretes (lembretes_adm) — visível para CEO e ADM
-        await supabase
+        const { error: admErr } = await supabase
           .from('lembretes_adm')
-          .insert({ texto: descricao, autor: 'sistema', lida: false });
+          .insert({ texto: descricao, autor: 'adm', lida: false, concluido: false, data_alerta: data_lembrete });
+        if (admErr) console.error(`Erro lembretes_adm apólice ${ap.id}:`, admErr.message);
 
         // 2. Cria no bot (card Lembretes Ágil no Dashboard + notificação WhatsApp)
         await fetch(`${BOT_URL}/api/lembrete-externo`, {
