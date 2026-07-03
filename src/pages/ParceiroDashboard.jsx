@@ -545,7 +545,7 @@ const ParceiroDashboard = () => {
                 {metrics.map(({ label, value, icon: Icon, color }) => (
                   <Card key={label} className="border shadow-sm">
                     <CardContent className="p-4 flex items-center gap-3">
-                      <div className={`p-2 rounded-lg bg-gray-50 ${color}`}><Icon className="h-5 w-5" /></div>
+                      <div className="p-2 rounded-xl bg-[#003580]/10"><Icon className="h-5 w-5 text-[#003580]" /></div>
                       <div>
                         <p className="text-xs text-gray-500">{label}</p>
                         <p className="text-lg font-bold text-gray-800">{value}</p>
