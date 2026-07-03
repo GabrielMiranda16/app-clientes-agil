@@ -545,8 +545,8 @@ const AdminDashboard = () => {
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="bg-[#dbeeff] p-2.5 rounded-xl shrink-0">
-                          <Building className="h-5 w-5 text-blue-600" />
+                        <div className="bg-[#003580]/10 p-2.5 rounded-xl shrink-0">
+                          <Building className="h-5 w-5 text-[#003580]" />
                         </div>
                         <div className="min-w-0">
                           <p className="font-bold text-gray-900 truncate">{matriz.nome_fantasia || matriz.razao_social}</p>
