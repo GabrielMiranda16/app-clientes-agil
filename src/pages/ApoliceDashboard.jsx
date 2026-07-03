@@ -321,23 +321,23 @@ const ApoliceDashboard = () => {
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <Tabs defaultValue="dados" className="space-y-4">
-              <TabsList className={`bg-white/10 w-full ${showTabs ? 'flex overflow-x-auto sm:grid sm:grid-cols-4' : 'grid grid-cols-1'}`}>
-                <TabsTrigger value="dados" className="flex-shrink-0 text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
+              <TabsList className={`bg-white/10 w-full ${showTabs ? 'grid grid-cols-2 sm:grid-cols-4' : 'grid grid-cols-1'}`}>
+                <TabsTrigger value="dados" className="text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
                   <FileText className="h-4 w-4 mr-1.5" /> Apólice
                 </TabsTrigger>
                 {showTabs && (
                   <>
-                    <TabsTrigger value="beneficiarios" className="flex-shrink-0 text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
+                    <TabsTrigger value="beneficiarios" className="text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
                       <Users className="h-4 w-4 mr-1.5" />
                       Beneficiários
                       {isAdmin && !loadingBen && <span className="ml-1.5 bg-white/20 text-white text-xs px-1.5 py-0.5 rounded-full">{beneficiarios.length}</span>}
                     </TabsTrigger>
-                    <TabsTrigger value="solicitacoes" className="flex-shrink-0 text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
+                    <TabsTrigger value="solicitacoes" className="text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
                       <ClipboardList className="h-4 w-4 mr-1.5" />
                       Solicitações
                       {isAdmin && pendentes > 0 && <span className="ml-1.5 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{pendentes}</span>}
                     </TabsTrigger>
-                    <TabsTrigger value="coparticipacao" className="flex-shrink-0 text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
+                    <TabsTrigger value="coparticipacao" className="text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
                       <DollarSign className="h-4 w-4 mr-1.5" /> Coparticipação
                     </TabsTrigger>
                   </>
