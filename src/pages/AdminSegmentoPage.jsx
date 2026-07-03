@@ -27,6 +27,7 @@ import { empresasService } from '@/services/empresasService';
 import { beneficiariosService } from '@/services/beneficiariosService';
 import { solicitacoesService } from '@/services/solicitacoesService';
 import { apolicesService, SEGMENTOS } from '@/services/apolicesService';
+import { SEGURADORAS } from '@/data/seguradoras';
 
 const SEGMENTOS_CONFIG = {
   'saude-vida-odonto': { key: 'SAUDE_VIDA_ODONTO', label: 'Saúde, Vida e Odonto', Icon: Heart,     isSVD: true  },
@@ -626,7 +627,15 @@ const AdminSegmentoPage = () => {
                   </div>
                   <div>
                     <Label>Seguradora</Label>
-                    <Input value={apoliceForm.seguradora} onChange={e => setApoliceForm(p => ({ ...p, seguradora: e.target.value }))} placeholder="Ex: SulAmérica" />
+                    <select
+                      className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                      value={apoliceForm.seguradora}
+                      onChange={e => setApoliceForm(p => ({ ...p, seguradora: e.target.value }))}
+                    >
+                      <option value="">Selecione...</option>
+                      {SEGURADORAS.map(s => <option key={s.nome} value={s.nome}>{s.nome}</option>)}
+                    </select>
+                    {apoliceForm.seguradora && (() => { const s = SEGURADORAS.find(x => x.nome === apoliceForm.seguradora); return s ? <img src={s.logo} alt={s.nome} className="mt-2 h-8 object-contain" /> : null; })()}
                   </div>
                 </div>
                 {/* Pet Saúde: sem vigência (plano mensal) */}
@@ -706,16 +715,19 @@ const AdminSegmentoPage = () => {
                       </div>
                       <div>
                         <Label className="text-xs">Seguradora</Label>
-                        <Input
-                          className="mt-1 h-8 text-sm"
+                        <select
+                          className="w-full mt-1 h-8 px-2 rounded-md border border-input bg-background text-sm"
                           value={sub.seguradora || ''}
                           onChange={e => setDadosAdicionais(p => {
                             const arr = [...(p.sub_apolices || [])];
                             arr[i] = { ...arr[i], seguradora: e.target.value };
                             return { ...p, sub_apolices: arr };
                           })}
-                          placeholder="Ex: SulAmérica"
-                        />
+                        >
+                          <option value="">Selecione...</option>
+                          {SEGURADORAS.map(s => <option key={s.nome} value={s.nome}>{s.nome}</option>)}
+                        </select>
+                        {sub.seguradora && (() => { const s = SEGURADORAS.find(x => x.nome === sub.seguradora); return s ? <img src={s.logo} alt={s.nome} className="mt-1 h-6 object-contain" /> : null; })()}
                       </div>
                       <div>
                         <Label className="text-xs">Prêmio (R$)</Label>
