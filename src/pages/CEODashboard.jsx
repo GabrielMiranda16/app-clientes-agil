@@ -1254,7 +1254,7 @@ const CEODashboard = () => {
           <TabsContent value="relatorios">
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }}>
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                <Card className="hover:shadow-lg transition-all border-l-4 border-l-blue-500">
+                <Card className="hover:shadow-lg transition-all">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Empresas</CardTitle>
                     <Building className="h-4 w-4 text-muted-foreground" />
@@ -1265,7 +1265,7 @@ const CEODashboard = () => {
                     <Button onClick={exportEmpresas} className="w-full" variant="outline"><FileSpreadsheet className="mr-2 h-4 w-4" /> Exportar CSV</Button>
                   </CardContent>
                 </Card>
-                <Card className="hover:shadow-lg transition-all border-l-4 border-l-green-500">
+                <Card className="hover:shadow-lg transition-all">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Clientes</CardTitle>
                     <UserCheck className="h-4 w-4 text-muted-foreground" />
@@ -1276,7 +1276,7 @@ const CEODashboard = () => {
                     <Button onClick={() => exportToCSV(users.filter(u => u.perfil === 'CLIENTE').map(u => ({ 'Email': u.email, 'Perfil': u.perfil, 'Ativo': u.ativo ? 'Sim' : 'Não' })), 'relatorio_clientes')} className="w-full" variant="outline"><FileSpreadsheet className="mr-2 h-4 w-4" /> Exportar CSV</Button>
                   </CardContent>
                 </Card>
-                <Card className="hover:shadow-lg transition-all border-l-4 border-l-purple-500">
+                <Card className="hover:shadow-lg transition-all">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Beneficiários</CardTitle>
                     <Users className="h-4 w-4 text-muted-foreground" />
@@ -1287,7 +1287,7 @@ const CEODashboard = () => {
                     <Button onClick={() => exportToCSV(beneficiarios.map(b => ({ 'Nome': b.nome_completo, 'CPF': b.cpf || '—', 'Tipo': b.tipo_beneficiario || '—', 'Situação': b.situacao || '—', 'Empresa ID': b.empresa_id })), 'relatorio_beneficiarios')} className="w-full" variant="outline"><FileSpreadsheet className="mr-2 h-4 w-4" /> Exportar CSV</Button>
                   </CardContent>
                 </Card>
-                <Card className="hover:shadow-lg transition-all border-l-4 border-l-orange-500">
+                <Card className="hover:shadow-lg transition-all">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Apólices</CardTitle>
                     <FileText className="h-4 w-4 text-muted-foreground" />
