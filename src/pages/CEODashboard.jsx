@@ -1167,14 +1167,12 @@ const CEODashboard = () => {
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
-                  <div><CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" />Gestão de Administradores</CardTitle><CardDescription>Adicione e gerencie os administradores do sistema.</CardDescription></div>
+                  <div><CardTitle>Gestão de Administradores</CardTitle><CardDescription>Adicione e gerencie os administradores do sistema.</CardDescription></div>
                   <div className="flex items-center gap-2">
                     <Button
                       onClick={() => navigate('/admin')}
                       variant="outline"
-                      className="flex items-center gap-2"
                     >
-                      <Shield className="h-4 w-4" />
                       Administração
                     </Button>
                   <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
