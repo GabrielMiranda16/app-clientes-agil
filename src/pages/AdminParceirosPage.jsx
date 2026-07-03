@@ -1020,7 +1020,7 @@ const AdminParceirosPage = () => {
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold text-gray-700">Propostas ({propostas.length})</p>
           <Button size="sm" variant="outline" onClick={addProposta} className="h-7 text-xs border-dashed border-[#003580]/40 text-[#003580] hover:bg-[#f0f7ff]">
-            <Plus className="h-3 w-3 mr-1" /> Adicionar
+             Adicionar
           </Button>
         </div>
 
@@ -1174,7 +1174,7 @@ const AdminParceirosPage = () => {
                     <div className="flex items-center justify-between">
                       <Label className="text-xs text-gray-500">Planos *</Label>
                       <button type="button" onClick={() => addPlano(pi)} className="text-xs text-[#003580] hover:underline flex items-center gap-0.5">
-                        <Plus className="h-3 w-3" /> plano
+                         plano
                       </button>
                     </div>
                     {p.planos.map((pl, pli) => (
@@ -2058,7 +2058,7 @@ const AdminParceirosPage = () => {
                               onClick={() => { if (!atingiuTotal) setSegData(d => ({ ...d, [key]: String(val + 1) })); }}
                               disabled={atingiuTotal}
                               className="w-6 h-6 rounded-md border border-gray-200 bg-white flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-100">
-                              <Plus className="h-3 w-3 text-gray-600" />
+                              
                             </button>
                           </div>
                         </div>
@@ -2074,7 +2074,7 @@ const AdminParceirosPage = () => {
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Cenário atual do cliente</p>
                   <button type="button" onClick={addCenarioCriar} className="text-xs text-[#003580] hover:underline flex items-center gap-1">
-                    <Plus className="h-3 w-3" /> Adicionar plano
+                     Adicionar plano
                   </button>
                 </div>
                 {(() => {
@@ -2208,7 +2208,7 @@ const AdminParceirosPage = () => {
             <div className="flex gap-3 px-6 pt-2 pb-6 shrink-0">
               <Button variant="outline" className="flex-1" onClick={() => setCriarModal(false)}>Cancelar</Button>
               <Button onClick={handleCriarOrcamento} disabled={criando} className="flex-1 text-white font-semibold gap-2" style={{ background: '#003580' }}>
-                {criando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                {criando && <Loader2 className="h-4 w-4 animate-spin" />}
                 {criando ? 'Criando...' : 'Criar orçamento'}
               </Button>
             </div>

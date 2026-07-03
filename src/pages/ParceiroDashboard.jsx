@@ -559,7 +559,7 @@ const ParceiroDashboard = () => {
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base font-semibold text-gray-800">Em andamento</CardTitle>
                     <Button size="sm" onClick={abrirModal} className="bg-[#003580] hover:bg-[#002060] text-white rounded-lg gap-1.5">
-                      <Plus className="h-4 w-4" /> Solicitar
+                       Solicitar
                     </Button>
                   </div>
                 </CardHeader>
@@ -583,7 +583,7 @@ const ParceiroDashboard = () => {
               <div className="flex items-center justify-between">
                 <p className="text-sm text-white/70">{orcamentos.length} orçamento{orcamentos.length !== 1 ? 's' : ''} no total</p>
                 <Button onClick={abrirModal} variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white border border-white/20 rounded-lg">
-                  <Plus className="mr-1.5 h-4 w-4" /> Solicitar orçamento
+                   Solicitar orçamento
                 </Button>
               </div>
               <div className="space-y-3">
@@ -970,7 +970,7 @@ const ParceiroDashboard = () => {
                               onClick={() => { if (!atingiuTotal) setExtra(key, String(val + 1)); }}
                               disabled={atingiuTotal}
                               className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-100 active:enabled:scale-95">
-                              <Plus className="h-3 w-3 text-gray-600" />
+                              
                             </button>
                           </div>
                         </div>
@@ -990,7 +990,7 @@ const ParceiroDashboard = () => {
                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Cenário atual do cliente</p>
                         <button type="button" onClick={addCenarioSolic}
                           className="text-xs text-[#003580] hover:underline flex items-center gap-1">
-                          <Plus className="h-3 w-3" /> Adicionar plano
+                           Adicionar plano
                         </button>
                       </div>
                       {cenariosSolic.map((c, ci) => (
@@ -1051,7 +1051,7 @@ const ParceiroDashboard = () => {
                                           <span className="w-6 text-center text-sm font-semibold text-gray-800">{val}</span>
                                           <button type="button" onClick={() => { if (!atingiuLimite) updCenarioSolicVidas(ci, id, val + 1); }} disabled={atingiuLimite}
                                             className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-100 active:enabled:scale-95">
-                                            <Plus className="h-3 w-3 text-gray-600" />
+                                            
                                           </button>
                                         </div>
                                       </div>

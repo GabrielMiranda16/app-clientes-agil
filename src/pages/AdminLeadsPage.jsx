@@ -304,7 +304,7 @@ const AdminLeadsPage = () => {
                 <RefreshCw className="h-4 w-4" />
               </button>
               <Button onClick={abrirNovo} className="text-white font-semibold gap-1.5" style={{ background: '#003580' }}>
-                <Plus className="h-4 w-4" /> Novo lead
+                 Novo lead
               </Button>
             </div>
           </div>
