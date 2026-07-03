@@ -445,8 +445,8 @@ const AdminDashboard = () => {
 
           {/* Metric Cards */}
           <div>
-            <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory sm:grid sm:grid-cols-3 sm:overflow-visible sm:pb-0">
-              <div className="min-w-[calc(100vw-3rem)] sm:min-w-0 snap-start flex-shrink-0 sm:flex-shrink">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
                 <Card
                   className={`bg-white border border-gray-100 shadow-sm transition-all ${totalPendentes > 0 ? 'cursor-pointer hover:shadow-md' : ''}`}
                   onClick={() => totalPendentes > 0 && navigate('/solicitacoes')}
@@ -466,7 +466,7 @@ const AdminDashboard = () => {
                 </Card>
               </div>
 
-              <div className="min-w-[calc(100vw-3rem)] sm:min-w-0 snap-start flex-shrink-0 sm:flex-shrink">
+              <div>
                 <Card className="bg-white border border-gray-100 shadow-sm">
                   <CardContent className="pt-6 pb-6">
                     <div className="flex items-center justify-between">
@@ -481,7 +481,7 @@ const AdminDashboard = () => {
                 </Card>
               </div>
 
-              <div className="min-w-[calc(100vw-3rem)] sm:min-w-0 snap-start flex-shrink-0 sm:flex-shrink">
+              <div>
                 <Card className="bg-white border border-gray-100 shadow-sm">
                   <CardContent className="pt-6 pb-6">
                     <div className="flex items-center justify-between">
