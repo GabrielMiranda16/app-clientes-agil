@@ -114,11 +114,13 @@ const TermosAceite = () => {
 
         <div className="bg-white/95 rounded-3xl shadow-2xl overflow-hidden">
           {/* Header */}
-          <div className="bg-[#003580] px-6 py-5 flex items-center gap-3">
-            <ShieldCheck className="h-7 w-7 text-white shrink-0" />
+          <div className="bg-white px-6 py-5 flex items-center gap-3">
+            <div className="bg-[#003580]/10 p-2 rounded-xl shrink-0">
+              <ShieldCheck className="h-7 w-7 text-[#003580]" />
+            </div>
             <div>
-              <h1 className="text-white font-bold text-lg leading-tight">Termos de Uso e Privacidade</h1>
-              <p className="text-white/70 text-xs mt-0.5">Versão {TERMS_VERSION} — Leia com atenção antes de continuar</p>
+              <h1 className="text-gray-900 font-bold text-lg leading-tight">Termos de Uso e Privacidade</h1>
+              <p className="text-gray-500 text-xs mt-0.5">Versão {TERMS_VERSION} — Leia com atenção antes de continuar</p>
             </div>
           </div>
 

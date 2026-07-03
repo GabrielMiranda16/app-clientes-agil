@@ -694,13 +694,13 @@ const ParceiroDashboard = () => {
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden">
               {/* Header */}
-              <div className="px-5 py-4 flex items-start justify-between rounded-t-2xl shrink-0 bg-[#003580]">
+              <div className="px-5 py-4 flex items-start justify-between rounded-t-2xl shrink-0 bg-white">
                 <div>
-                  <p className="text-white font-bold text-base">{detalhe.cliente_nome}</p>
-                  <p className="text-white/80 text-xs">{SEGMENTO_LABEL[detalhe.segmento] || detalhe.segmento}</p>
+                  <p className="text-gray-900 font-bold text-base">{detalhe.cliente_nome}</p>
+                  <p className="text-gray-500 text-xs">{SEGMENTO_LABEL[detalhe.segmento] || detalhe.segmento}</p>
                   <Badge className={`mt-1 text-xs ${STATUS_CONFIG[detalhe.status]?.color}`}>{detalhe.status === 'ASSINATURA' ? assinaturaLabel(detalhe.segmento) : STATUS_CONFIG[detalhe.status]?.label}</Badge>
                 </div>
-                <button onClick={() => setDetalhe(null)} className="text-white/70 hover:text-white p-1 rounded-lg hover:bg-white/10">
+                <button onClick={() => setDetalhe(null)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100">
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -829,12 +829,12 @@ const ParceiroDashboard = () => {
             <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden overscroll-contain">
-              <div className="bg-[#003580] px-6 py-4 flex items-center justify-between rounded-t-2xl shrink-0">
+              <div className="bg-white px-6 py-4 flex items-center justify-between rounded-t-2xl shrink-0">
                 <div>
-                  <h2 className="text-white font-bold text-lg">Solicitar Orçamento</h2>
-                  <p className="text-white/70 text-xs mt-0.5">Preencha os dados do cliente e do seguro</p>
+                  <h2 className="text-gray-900 font-bold text-lg">Solicitar Orçamento</h2>
+                  <p className="text-gray-500 text-xs mt-0.5">Preencha os dados do cliente e do seguro</p>
                 </div>
-                <button onClick={() => setModalAberto(false)} className="text-white/70 hover:text-white p-1 rounded-lg hover:bg-white/10">
+                <button onClick={() => setModalAberto(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100">
                   <X className="h-5 w-5" />
                 </button>
               </div>
