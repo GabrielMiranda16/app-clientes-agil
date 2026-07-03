@@ -441,7 +441,6 @@ const ApoliceDashboard = () => {
                                             <a href={seg.website} target="_blank" rel="noopener noreferrer" className="block text-xs text-[#003580] hover:underline">🌐 {seg.website.replace('https://www.', '')}</a>
                                           )}
                                         </div>
-                                        {seg?.logo && <img src={seg.logo} alt={seg.nome} className="h-14 w-44 object-contain object-right shrink-0" />}
                                       </div>
                                     );
                                   })()}
