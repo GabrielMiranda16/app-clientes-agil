@@ -321,7 +321,7 @@ const ApoliceDashboard = () => {
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <Tabs defaultValue="dados" className="space-y-4">
-              <TabsList className={`bg-white/10 w-full ${showTabs ? 'grid grid-cols-2 sm:grid-cols-4' : 'grid grid-cols-1'}`}>
+              <TabsList className={`bg-white/10 w-full h-auto p-1 gap-1 ${showTabs ? 'grid grid-cols-2 sm:grid-cols-4' : 'grid grid-cols-1'}`}>
                 <TabsTrigger value="dados" className="text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
                   <FileText className="h-4 w-4 mr-1.5" /> Apólice
                 </TabsTrigger>
