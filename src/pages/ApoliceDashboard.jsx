@@ -363,9 +363,9 @@ const ApoliceDashboard = () => {
 
                   <Card>
                     <CardHeader>
-                      <div className="flex items-start justify-between gap-4">
-                        <CardTitle className="flex items-center gap-2 text-base"><FileText className="h-4 w-4" /> Dados da Apólice</CardTitle>
+                      <div className="flex items-center gap-4">
                         {!isSVD && (() => { const seg = SEGURADORAS.find(s => s.nome === apolice.seguradora); return seg?.logo ? <img src={seg.logo} alt={seg.nome} className="h-20 w-56 object-contain shrink-0" /> : null; })()}
+                        <CardTitle className="flex items-center gap-2 text-base"><FileText className="h-4 w-4" /> Dados da Apólice</CardTitle>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
