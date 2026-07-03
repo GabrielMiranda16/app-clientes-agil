@@ -1421,7 +1421,7 @@ const CEODashboard = () => {
                           <p className="text-xs text-gray-400 mt-1.5">
                             📅 {new Date(l.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             <span className="mx-1.5 text-gray-300">·</span>
-                            {l.autor === 'sistema' ? 'Sistema' : l.autor === 'ceo' ? 'CEO' : 'ADM'}
+                            {l.autor === 'ceo' ? 'CEO' : l.autor === 'bot' || l.autor === 'sistema' ? 'BOT' : 'ADM'}
                           </p>
                         </div>
                         <button
