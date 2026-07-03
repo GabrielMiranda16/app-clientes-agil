@@ -260,18 +260,18 @@ const AdminClientePage = () => {
 
           {/* Client Info Card */}
           <Card className="border-0 shadow-md overflow-hidden">
-            <div className="bg-[#003580] p-5 text-white">
+            <div className="bg-white p-5 border-b">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="bg-white/20 p-2.5 rounded-xl">
-                    <Building className="h-6 w-6 text-white" />
+                  <div className="bg-[#003580]/10 p-2.5 rounded-xl">
+                    <Building className="h-6 w-6 text-[#003580]" />
                   </div>
                   <div>
-                    <h1 className="text-xl font-bold text-white">{matriz.nome_fantasia || matriz.razao_social}</h1>
-                    {matriz.nome_fantasia && <p className="text-blue-100 text-sm">{matriz.razao_social}</p>}
+                    <h1 className="text-xl font-bold text-gray-900">{matriz.nome_fantasia || matriz.razao_social}</h1>
+                    {matriz.nome_fantasia && <p className="text-gray-500 text-sm">{matriz.razao_social}</p>}
                   </div>
                 </div>
-                <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/20 text-white text-xs font-semibold self-start sm:self-center">
+                <span className="inline-flex items-center px-3 py-1 rounded-full bg-[#003580]/10 text-[#003580] text-xs font-semibold self-start sm:self-center">
                   MATRIZ
                 </span>
               </div>
