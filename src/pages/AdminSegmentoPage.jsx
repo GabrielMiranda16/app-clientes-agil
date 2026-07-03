@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { motion } from 'framer-motion';
-import { applyCnpjMask } from '@/lib/masks';
+import { applyCnpjMask, applyCpfMask } from '@/lib/masks';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -434,7 +434,7 @@ const AdminSegmentoPage = () => {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-400 hidden sm:block">{applyCnpjMask(empresa.cnpj)}</p>
+                  <p className="text-xs text-gray-400 hidden sm:block">{empresa.cnpj && empresa.cnpj.replace(/\D/g, '').length === 11 ? applyCpfMask(empresa.cnpj) : applyCnpjMask(empresa.cnpj)}</p>
                 </div>
 
                 <CardContent className="pt-4 pb-4">
