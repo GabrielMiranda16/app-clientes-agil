@@ -1405,15 +1405,23 @@ const CEODashboard = () => {
                 </Card>
               ) : (
                 <div className="space-y-2">
-                  {lembretesAdm.map(l => (
-                    <Card key={l.id} className="group hover:shadow-md transition-shadow">
+                  {lembretesAdm.map(l => {
+                    const isApolice = l.texto?.startsWith('⚠️ Apólice');
+                    return (
+                    <Card key={l.id} className={`group hover:shadow-md transition-shadow relative ${isApolice ? 'border-orange-300 bg-orange-50' : ''}`}>
+                      {isApolice && (
+                        <span className="absolute -top-1 -right-1 flex h-3 w-3 z-10">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
+                        </span>
+                      )}
                       <CardContent className="py-3 px-4 flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-800 whitespace-pre-wrap">{l.texto}</p>
+                          <p className={`text-sm whitespace-pre-wrap ${isApolice ? 'text-orange-900 font-medium' : 'text-gray-800'}`}>{l.texto}</p>
                           <p className="text-xs text-gray-400 mt-1.5">
                             📅 {new Date(l.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             <span className="mx-1.5 text-gray-300">·</span>
-                            {l.autor === 'ceo' ? 'CEO' : 'ADM'}
+                            {l.autor === 'sistema' ? 'Sistema' : l.autor === 'ceo' ? 'CEO' : 'ADM'}
                           </p>
                         </div>
                         <button
@@ -1424,7 +1432,7 @@ const CEODashboard = () => {
                         </button>
                       </CardContent>
                     </Card>
-                  ))}
+                  );})}
                 </div>
               )}
             </motion.div>
