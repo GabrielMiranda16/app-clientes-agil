@@ -354,49 +354,26 @@ const DashboardLayout = ({ children }) => {
             </div>
             <div className="border-t border-white/10 pt-2 space-y-1">
 
-              {/* CEO nav */}
+              {/* CEO nav — mesmos itens das abas do CEO Dashboard */}
               {user?.perfil === 'CEO' && (
                 <>
-                  <NavLink to="/ceo" end onClick={() => setMobileMenuOpen(false)}
-                    className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
-                    <LayoutDashboard className="h-5 w-5" /> Dashboard
-                  </NavLink>
-                  <button onClick={() => { navigate('/ceo', { state: { tab: 'empresas' } }); setMobileMenuOpen(false); }}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors w-full">
-                    <Building2 className="h-5 w-5" /> Gestão de Clientes
-                  </button>
-                  <button onClick={() => { navigate('/ceo', { state: { tab: 'admins' } }); setMobileMenuOpen(false); }}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors w-full">
-                    <ShieldCheck className="h-5 w-5" /> Admins
-                  </button>
-                  <button onClick={() => { navigate('/ceo', { state: { tab: 'relatorios' } }); setMobileMenuOpen(false); }}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors w-full">
-                    <BarChart3 className="h-5 w-5" /> Relatórios
-                  </button>
-                  <NavLink to="/admin/clientes" onClick={() => setMobileMenuOpen(false)}
-                    className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
-                    <Users className="h-5 w-5" /> Clientes
-                  </NavLink>
-                  <NavLink to="/admin/orcamentos" onClick={() => setMobileMenuOpen(false)}
-                    className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
-                    <FileText className="h-5 w-5" /> Orçamentos
-                  </NavLink>
-                  <button onClick={() => { navigate('/ceo', { state: { tab: 'parceiros' } }); setMobileMenuOpen(false); }}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors w-full">
-                    <Users2 className="h-5 w-5" /> Parceiros
-                  </button>
-                  <NavLink to="/admin/leads" onClick={() => setMobileMenuOpen(false)}
-                    className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
-                    <Flame className="h-5 w-5" /> Leads
-                  </NavLink>
-                  <NavLink to="/admin/lembretes" onClick={() => setMobileMenuOpen(false)}
-                    className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
-                    <Bell className="h-5 w-5" /> Lembretes
-                  </NavLink>
-                  <button onClick={() => { navigate('/ceo', { state: { tab: 'solicitacoes' } }); setMobileMenuOpen(false); }}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors w-full">
-                    <ClipboardList className="h-5 w-5" /> Gestão de Solicitações
-                  </button>
+                  {[
+                    { tab: 'dashboard',     icon: LayoutDashboard, label: 'Dashboard' },
+                    { tab: 'empresas',      icon: Building2,       label: 'Clientes' },
+                    { tab: 'solicitacoes',  icon: ClipboardList,   label: 'Gestão de Solicitações' },
+                    { tab: 'admins',        icon: ShieldCheck,     label: 'Admins' },
+                    { tab: 'parceiros',     icon: Users2,          label: 'Parceiros' },
+                    { tab: 'relatorios',    icon: BarChart3,       label: 'Relatórios' },
+                    { tab: 'lembretes_adm', icon: Bell,            label: 'Lembretes' },
+                  ].map(({ tab, icon: Icon, label }) => (
+                    <button
+                      key={tab}
+                      onClick={() => { navigate('/ceo', { state: { tab } }); setMobileMenuOpen(false); }}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors w-full"
+                    >
+                      <Icon className="h-5 w-5" /> {label}
+                    </button>
+                  ))}
                 </>
               )}
 
