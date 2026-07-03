@@ -275,7 +275,7 @@ const AdminLembretesPage = () => {
                           <div className="space-y-0.5 min-w-0 flex-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <p className="text-[11px] font-semibold text-[#003580] uppercase tracking-wide">
-                                {l.autor === 'ceo' ? 'CEO' : l.autor === 'sistema' ? 'Sistema' : 'ADM'}
+                                {l.autor === 'ceo' ? 'CEO' : l.autor === 'bot' || l.autor === 'sistema' ? 'BOT' : 'ADM'}
                               </p>
                               {alerta && (
                                 <span className={`flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${corBadgeAlerta[alerta]}`}>
