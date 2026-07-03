@@ -362,11 +362,9 @@ const ApoliceDashboard = () => {
                   )}
 
                   <Card>
-                    <CardHeader>
-                      <div className="flex items-center gap-4">
-                        {!isSVD && (() => { const seg = SEGURADORAS.find(s => s.nome === apolice.seguradora); return seg?.logo ? <img src={seg.logo} alt={seg.nome} className="h-20 w-56 object-contain shrink-0" /> : null; })()}
-                        <CardTitle className="flex items-center gap-2 text-base"><FileText className="h-4 w-4" /> Dados da Apólice</CardTitle>
-                      </div>
+                    <CardHeader className="relative">
+                      <CardTitle className="flex items-center gap-2 text-base"><FileText className="h-4 w-4" /> Dados da Apólice</CardTitle>
+                      {!isSVD && (() => { const seg = SEGURADORAS.find(s => s.nome === apolice.seguradora); return seg?.logo ? <img src={seg.logo} alt={seg.nome} className="absolute top-3 right-6 h-10 w-36 object-contain" /> : null; })()}
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
