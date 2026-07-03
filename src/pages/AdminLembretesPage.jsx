@@ -249,7 +249,7 @@ const AdminLembretesPage = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="space-y-2">
               <AnimatePresence>
                 {listaPage.map(l => {
                   const alerta = l.concluido ? null : statusAlerta(l.data_alerta);
@@ -257,9 +257,9 @@ const AdminLembretesPage = () => {
                   return (
                     <motion.div
                       key={l.id}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ duration: 0.15 }}
                       className="relative"
                     >
@@ -269,34 +269,54 @@ const AdminLembretesPage = () => {
                           <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
                         </span>
                       )}
-                      <Card className={`flex flex-col h-44 transition-all ${l.concluido ? 'opacity-60' : ''} ${isApolice ? 'border-orange-300 bg-orange-50' : ''} ${alerta ? estiloAlerta[alerta] : ''} ${alerta === 'vencido' || alerta === 'hoje' ? 'animate-pulse' : ''}`}>
-                        {/* Topo — informações */}
-                        <div className="flex items-start justify-between px-4 pt-3 pb-2 border-b border-gray-100">
-                          <div className="space-y-0.5 min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <p className="text-[11px] font-semibold text-[#003580] uppercase tracking-wide">
-                                {l.autor === 'ceo' ? 'CEO' : l.autor === 'bot' || l.autor === 'sistema' ? 'BOT' : 'ADM'}
-                              </p>
-                              {alerta && (
-                                <span className={`flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${corBadgeAlerta[alerta]}`}>
-                                  <Bell className="h-2.5 w-2.5" />
-                                  {labelAlerta[alerta]}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-[11px] text-gray-400">
-                              {l.updated_at
-                                ? `Editado ${fmtData(l.updated_at)}`
-                                : fmtData(l.created_at)}
-                            </p>
-                            {l.data_alerta && (
-                              <p className={`text-[11px] font-medium ${alerta ? (alerta === 'vencido' ? 'text-red-500' : alerta === 'hoje' ? 'text-orange-500' : 'text-yellow-600') : 'text-gray-400'}`}>
-                                🔔 {fmtData(l.data_alerta)}
-                              </p>
+                      <Card className={`group hover:shadow-md transition-shadow ${l.concluido ? 'opacity-60' : ''} ${isApolice ? 'border-orange-300 bg-orange-50' : ''} ${alerta ? estiloAlerta[alerta] : ''} ${alerta === 'vencido' || alerta === 'hoje' ? 'animate-pulse' : ''}`}>
+                        <CardContent className="py-3 px-4 flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            {editId === l.id ? (
+                              <div className="space-y-2">
+                                <textarea
+                                  autoFocus
+                                  value={editTexto}
+                                  onChange={e => setEditTexto(e.target.value)}
+                                  onKeyDown={e => { if (e.key === 'Escape') setEditId(null); }}
+                                  rows={3}
+                                  className="w-full rounded border border-[#003580] bg-blue-50 px-2 py-1 text-sm focus:outline-none resize-none"
+                                />
+                                <div className="flex items-center gap-2">
+                                  <Bell className="h-3.5 w-3.5 text-orange-400 shrink-0" />
+                                  <input
+                                    type="datetime-local"
+                                    value={editDataAlerta}
+                                    onChange={e => setEditDataAlerta(e.target.value)}
+                                    className="flex-1 rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs focus:outline-none focus:border-[#003580]"
+                                  />
+                                </div>
+                                <div className="flex gap-2">
+                                  <button onClick={() => setEditId(null)} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
+                                  <button onClick={() => salvarEdicao(l.id)} className="text-xs text-[#003580] font-semibold hover:underline">Salvar</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <p className={`text-sm whitespace-pre-wrap ${isApolice ? 'text-orange-900 font-medium' : l.concluido ? 'text-gray-400 line-through' : 'text-gray-800'}`}>{l.texto}</p>
+                                <p className="text-xs text-gray-400 mt-1.5 flex items-center gap-1.5 flex-wrap">
+                                  <span>📅 {l.updated_at ? `Editado ${fmtData(l.updated_at)}` : fmtData(l.created_at)}</span>
+                                  <span className="text-gray-300">·</span>
+                                  <span>{l.autor === 'ceo' ? 'CEO' : l.autor === 'bot' || l.autor === 'sistema' ? 'BOT' : 'ADM'}</span>
+                                  {l.data_alerta && (
+                                    <>
+                                      <span className="text-gray-300">·</span>
+                                      <span className={`flex items-center gap-0.5 ${alerta ? (alerta === 'vencido' ? 'text-red-500' : alerta === 'hoje' ? 'text-orange-500' : 'text-yellow-600') : 'text-gray-400'}`}>
+                                        🔔 {fmtData(l.data_alerta)}
+                                        {alerta && <span className={`ml-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${corBadgeAlerta[alerta]}`}>{labelAlerta[alerta]}</span>}
+                                      </span>
+                                    </>
+                                  )}
+                                </p>
+                              </>
                             )}
                           </div>
                           <div className="flex items-center gap-1 shrink-0 ml-2">
-                            {/* Concluir / Reabrir */}
                             {l.concluido ? (
                               <button onClick={() => reabrir(l.id)} className="p-1 rounded hover:bg-gray-100 text-green-500 hover:text-gray-500 transition-colors" title="Reabrir">
                                 <Check className="h-3.5 w-3.5" />
@@ -306,64 +326,26 @@ const AdminLembretesPage = () => {
                                 <Check className="h-3.5 w-3.5" />
                               </button>
                             )}
-                            {/* Editar */}
-                            {!l.concluido && (
+                            {!l.concluido && editId !== l.id && (
                               <button
-                                onClick={() => {
-                                  setEditId(l.id);
-                                  setEditTexto(l.texto);
-                                  setEditDataAlerta(l.data_alerta ? new Date(l.data_alerta).toISOString().slice(0, 16) : '');
-                                }}
-                                className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-[#003580] transition-colors"
+                                onClick={() => { setEditId(l.id); setEditTexto(l.texto); setEditDataAlerta(l.data_alerta ? new Date(l.data_alerta).toISOString().slice(0, 16) : ''); }}
+                                className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-[#003580] opacity-0 group-hover:opacity-100 transition-all"
                                 title="Editar"
                               >
                                 <Pencil className="h-3.5 w-3.5" />
                               </button>
                             )}
-                            {/* Excluir */}
                             {confirmDelete === l.id ? (
                               <div className="flex items-center gap-1">
                                 <button onClick={() => excluir(l.id)} className="text-[11px] text-red-600 font-semibold hover:underline">Sim</button>
                                 <button onClick={() => setConfirmDelete(null)} className="text-[11px] text-gray-400 hover:text-gray-600">Não</button>
                               </div>
                             ) : (
-                              <button onClick={() => setConfirmDelete(l.id)} className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors" title="Excluir">
+                              <button onClick={() => setConfirmDelete(l.id)} className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all" title="Excluir">
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
                             )}
                           </div>
-                        </div>
-
-                        {/* Corpo — texto */}
-                        <CardContent className="flex-1 px-4 py-3 overflow-hidden">
-                          {editId === l.id ? (
-                            <div className="space-y-1.5 h-full flex flex-col">
-                              <textarea
-                                autoFocus
-                                value={editTexto}
-                                onChange={e => setEditTexto(e.target.value)}
-                                onKeyDown={e => { if (e.key === 'Escape') setEditId(null); }}
-                                className="flex-1 w-full rounded border border-[#003580] bg-blue-50 px-2 py-1 text-sm focus:outline-none resize-none"
-                              />
-                              <div className="flex items-center gap-2">
-                                <Bell className="h-3.5 w-3.5 text-orange-400 shrink-0" />
-                                <input
-                                  type="datetime-local"
-                                  value={editDataAlerta}
-                                  onChange={e => setEditDataAlerta(e.target.value)}
-                                  className="flex-1 rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs focus:outline-none focus:border-[#003580]"
-                                />
-                              </div>
-                              <div className="flex gap-2 justify-end">
-                                <button onClick={() => setEditId(null)} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
-                                <button onClick={() => salvarEdicao(l.id)} className="text-xs text-[#003580] font-semibold hover:underline">Salvar</button>
-                              </div>
-                            </div>
-                          ) : (
-                            <p className={`text-sm leading-relaxed line-clamp-4 ${l.concluido ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
-                              {l.texto}
-                            </p>
-                          )}
                         </CardContent>
                       </Card>
                     </motion.div>
