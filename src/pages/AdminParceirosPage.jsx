@@ -1736,7 +1736,7 @@ const AdminParceirosPage = () => {
                 const step = FUNIL.indexOf(o.status);
                 const isExpanded = expandedId === o.id;
                 return (
-                  <Card key={o.id} className={`border shadow-sm border-l-4 ${cfg.border} transition-all`}>
+                  <Card key={o.id} className="border shadow-sm transition-all">
                     {/* Header do card */}
                     <CardContent
                       className="p-4 cursor-pointer select-none"
