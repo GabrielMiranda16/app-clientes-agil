@@ -384,21 +384,21 @@ const ApoliceDashboard = () => {
                               {(() => {
                                 const seg = SEGURADORAS.find(s => s.nome === apolice.seguradora);
                                 return (
-                                  <div className="space-y-2">
-                                    <div className="flex items-center gap-2">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="space-y-1.5">
                                       <p className="font-semibold text-gray-800">{apolice.seguradora || '—'}</p>
-                                      {seg?.logo && <img src={seg.logo} alt={seg.nome} className="h-6 object-contain" />}
+                                      {seg?.phone && (
+                                        <a href={`tel:${seg.phone.replace(/\D/g, '')}`} className="flex items-center gap-1.5 text-sm text-[#003580] hover:underline">
+                                          📞 {seg.phone}
+                                        </a>
+                                      )}
+                                      {seg?.website && (
+                                        <a href={seg.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-[#003580] hover:underline">
+                                          🌐 {seg.website.replace('https://www.', '')}
+                                        </a>
+                                      )}
                                     </div>
-                                    {seg?.phone && (
-                                      <a href={`tel:${seg.phone.replace(/\D/g, '')}`} className="flex items-center gap-1.5 text-sm text-[#003580] hover:underline">
-                                        📞 {seg.phone}
-                                      </a>
-                                    )}
-                                    {seg?.website && (
-                                      <a href={seg.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-[#003580] hover:underline">
-                                        🌐 {seg.website.replace('https://www.', '')}
-                                      </a>
-                                    )}
+                                    {seg?.logo && <img src={seg.logo} alt={seg.nome} className="h-11 w-28 object-contain shrink-0" />}
                                   </div>
                                 );
                               })()}
@@ -425,17 +425,17 @@ const ApoliceDashboard = () => {
                                   {(() => {
                                     const seg = SEGURADORAS.find(s => s.nome === sub.seguradora);
                                     return (
-                                      <div className="space-y-1">
-                                        <div className="flex items-center gap-2">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="space-y-1">
                                           <p className="font-semibold text-gray-800">{sub.seguradora || '—'}</p>
-                                          {seg?.logo && <img src={seg.logo} alt={seg.nome} className="h-5 object-contain" />}
+                                          {seg?.phone && (
+                                            <a href={`tel:${seg.phone.replace(/\D/g, '')}`} className="block text-xs text-[#003580] hover:underline">📞 {seg.phone}</a>
+                                          )}
+                                          {seg?.website && (
+                                            <a href={seg.website} target="_blank" rel="noopener noreferrer" className="block text-xs text-[#003580] hover:underline">🌐 {seg.website.replace('https://www.', '')}</a>
+                                          )}
                                         </div>
-                                        {seg?.phone && (
-                                          <a href={`tel:${seg.phone.replace(/\D/g, '')}`} className="block text-xs text-[#003580] hover:underline">📞 {seg.phone}</a>
-                                        )}
-                                        {seg?.website && (
-                                          <a href={seg.website} target="_blank" rel="noopener noreferrer" className="block text-xs text-[#003580] hover:underline">🌐 {seg.website.replace('https://www.', '')}</a>
-                                        )}
+                                        {seg?.logo && <img src={seg.logo} alt={seg.nome} className="h-11 w-28 object-contain shrink-0" />}
                                       </div>
                                     );
                                   })()}
