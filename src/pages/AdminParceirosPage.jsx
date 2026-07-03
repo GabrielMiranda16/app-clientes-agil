@@ -1682,8 +1682,8 @@ const AdminParceirosPage = () => {
 
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold tracking-tight text-white">Orçamentos</h1>
-            <Button onClick={() => setCriarModal(true)} className="gap-2 text-white font-semibold" style={{ background: '#003580' }}>
-              <Plus className="h-4 w-4" /> Novo orçamento
+            <Button onClick={() => setCriarModal(true)} variant="ghost" className="text-white font-semibold border border-white/40 bg-white/10 hover:bg-white/20 hover:text-white">
+              Novo orçamento
             </Button>
           </div>
 
