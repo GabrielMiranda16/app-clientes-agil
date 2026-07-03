@@ -253,6 +253,7 @@ const AdminLembretesPage = () => {
               <AnimatePresence>
                 {listaPage.map(l => {
                   const alerta = l.concluido ? null : statusAlerta(l.data_alerta);
+                  const isApolice = !l.concluido && l.texto?.startsWith('⚠️ Apólice');
                   return (
                     <motion.div
                       key={l.id}
@@ -260,14 +261,21 @@ const AdminLembretesPage = () => {
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.9 }}
                       transition={{ duration: 0.15 }}
+                      className="relative"
                     >
-                      <Card className={`flex flex-col h-44 transition-all ${l.concluido ? 'opacity-60' : ''} ${alerta ? estiloAlerta[alerta] : ''} ${alerta === 'vencido' || alerta === 'hoje' ? 'animate-pulse' : ''}`}>
+                      {isApolice && (
+                        <span className="absolute -top-1 -right-1 flex h-3 w-3 z-10">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
+                        </span>
+                      )}
+                      <Card className={`flex flex-col h-44 transition-all ${l.concluido ? 'opacity-60' : ''} ${isApolice ? 'border-orange-300 bg-orange-50' : ''} ${alerta ? estiloAlerta[alerta] : ''} ${alerta === 'vencido' || alerta === 'hoje' ? 'animate-pulse' : ''}`}>
                         {/* Topo — informações */}
                         <div className="flex items-start justify-between px-4 pt-3 pb-2 border-b border-gray-100">
                           <div className="space-y-0.5 min-w-0 flex-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <p className="text-[11px] font-semibold text-[#003580] uppercase tracking-wide">
-                                {l.autor === 'ceo' ? 'CEO' : 'ADM'}
+                                {l.autor === 'ceo' ? 'CEO' : l.autor === 'sistema' ? 'Sistema' : 'ADM'}
                               </p>
                               {alerta && (
                                 <span className={`flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${corBadgeAlerta[alerta]}`}>
