@@ -419,9 +419,7 @@ const AdminSegmentoPage = () => {
                 {/* Empresa Header */}
                 <div className="px-5 py-3.5 flex items-center justify-between gap-3 bg-white">
                   <div className="flex items-center gap-2.5">
-                    <div className="bg-[#003580]/10 p-1.5 rounded-lg">
-                      <Building className="h-4 w-4 text-[#003580]" />
-                    </div>
+                    <Building className="h-4 w-4 text-[#003580]" />
                     <div>
                       <span className="font-semibold text-gray-800 text-sm">{empresa.nome_fantasia || empresa.razao_social}</span>
                       <span className={`ml-2 text-xs font-medium px-1.5 py-0.5 rounded ${empresa.isMatriz ? 'bg-blue-100 text-blue-700 hover:bg-blue-100 hover:text-blue-700' : 'bg-gray-200 text-gray-600'}`}>
