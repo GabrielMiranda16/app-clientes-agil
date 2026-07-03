@@ -21,9 +21,10 @@ import {
   Users, Building, UserCheck, UserPlus, Trash2, ToggleLeft, ToggleRight,
   Loader2, Edit, FileText, Briefcase, ClipboardList, Shield,
   Clock, CheckCircle2, DollarSign, MoreHorizontal, ChevronLeft, ChevronRight,
-  AlertCircle, TrendingUp, AlertTriangle, Download, FileSpreadsheet, HeartHandshake, Plus, Bot, Pencil, ChevronDown
+  AlertCircle, TrendingUp, AlertTriangle, Download, FileSpreadsheet, HeartHandshake, Plus, Bot, Pencil, ChevronDown,
+  Check, Bell, X
 } from 'lucide-react';
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { formatCurrency } from '@/lib/utils';
@@ -38,6 +39,29 @@ import { authService } from '@/services/authService';
 import { apolicesService } from '@/services/apolicesService';
 import { sendWelcomeEmail, generateTempPassword } from '@/services/emailService';
 import { formatCpfCnpj } from '@/lib/masks';
+
+const statusAlertaAdm = (data_alerta) => {
+  if (!data_alerta) return null;
+  const agora = new Date();
+  const alerta = new Date(data_alerta);
+  const diffMs = alerta - agora;
+  const diffDias = diffMs / (1000 * 60 * 60 * 24);
+  if (diffMs < 0) return 'vencido';
+  if (diffDias <= 1) return 'hoje';
+  if (diffDias <= 3) return 'em_breve';
+  return null;
+};
+const estiloAlertaAdm = {
+  vencido:  'ring-2 ring-red-400 shadow-red-200 shadow-lg',
+  hoje:     'ring-2 ring-orange-400 shadow-orange-200 shadow-lg',
+  em_breve: 'ring-2 ring-yellow-400 shadow-yellow-100 shadow-md',
+};
+const corBadgeAlertaAdm = {
+  vencido:  'bg-red-100 text-red-600',
+  hoje:     'bg-orange-100 text-orange-600',
+  em_breve: 'bg-yellow-100 text-yellow-700',
+};
+const labelAlertaAdm = { vencido: 'Alerta vencido', hoje: 'Hoje!', em_breve: 'Em breve' };
 
 const CEODashboard = () => {
   const { toast } = useToast();
@@ -180,11 +204,19 @@ const CEODashboard = () => {
   const [textoNovoCEO, setTextoNovoCEO] = useState('');
   const [savingCEO, setSavingCEO] = useState(false);
   const [addOpenAdm, setAddOpenAdm] = useState(false);
+  const [dataAlertaAdm, setDataAlertaAdm] = useState('');
+  const [filtroAdm, setFiltroAdm] = useState('pendentes');
+  const [editIdAdm, setEditIdAdm] = useState(null);
+  const [editTextoAdm, setEditTextoAdm] = useState('');
+  const [editDataAlertaAdm, setEditDataAlertaAdm] = useState('');
+  const [confirmDeleteAdm, setConfirmDeleteAdm] = useState(null);
+  const [paginaAdm, setPaginaAdm] = useState(1);
+  const fmtDataAdm = (iso) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
   const fetchLembretesAdm = async () => {
-    const { data } = await supabaseClient.from('lembretes_adm').select('*').order('created_at', { ascending: true });
+    const { data } = await supabaseClient.from('lembretes_adm').select('*').order('created_at', { ascending: false });
     setLembretesAdm(data || []);
-    const unread = (data || []).filter(l => l.autor === 'adm' && !l.lida);
+    const unread = (data || []).filter(l => l.autor !== 'ceo' && !l.lida);
     if (unread.length > 0) {
       setUnreadAdm(0);
       await supabaseClient.from('lembretes_adm').update({ lida: true }).in('id', unread.map(l => l.id));
@@ -194,8 +226,12 @@ const CEODashboard = () => {
   const enviarLembreteCEO = async () => {
     if (!textoNovoCEO.trim() || savingCEO) return;
     setSavingCEO(true);
-    await supabaseClient.from('lembretes_adm').insert({ texto: textoNovoCEO.trim(), autor: 'ceo', lida: false });
+    const payload = { texto: textoNovoCEO.trim(), autor: 'ceo', lida: false, concluido: false };
+    if (dataAlertaAdm) payload.data_alerta = new Date(dataAlertaAdm).toISOString();
+    await supabaseClient.from('lembretes_adm').insert(payload);
     setTextoNovoCEO('');
+    setDataAlertaAdm('');
+    setAddOpenAdm(false);
     await fetchLembretesAdm();
     setSavingCEO(false);
   };
@@ -203,6 +239,28 @@ const CEODashboard = () => {
   const excluirMensagemCEO = async (id) => {
     await supabaseClient.from('lembretes_adm').delete().eq('id', id);
     setLembretesAdm(prev => prev.filter(l => l.id !== id));
+    setConfirmDeleteAdm(null);
+  };
+
+  const concluirLembreteAdm = async (id) => {
+    await supabaseClient.from('lembretes_adm').update({ concluido: true }).eq('id', id);
+    setLembretesAdm(prev => prev.map(l => l.id === id ? { ...l, concluido: true } : l));
+  };
+
+  const reabrirLembreteAdm = async (id) => {
+    await supabaseClient.from('lembretes_adm').update({ concluido: false }).eq('id', id);
+    setLembretesAdm(prev => prev.map(l => l.id === id ? { ...l, concluido: false } : l));
+  };
+
+  const salvarEdicaoLembreteAdm = async (id) => {
+    if (!editTextoAdm.trim()) return;
+    await supabaseClient.from('lembretes_adm').update({
+      texto: editTextoAdm.trim(),
+      updated_at: new Date().toISOString(),
+      data_alerta: editDataAlertaAdm ? new Date(editDataAlertaAdm).toISOString() : null,
+    }).eq('id', id);
+    setEditIdAdm(null);
+    await fetchLembretesAdm();
   };
 
   // Parceiros state
@@ -1356,85 +1414,250 @@ const CEODashboard = () => {
           </TabsContent>
           {/* ── Lembretes ADM ── */}
           <TabsContent value="lembretes_adm">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }} className="max-w-2xl space-y-3">
-              <div className="flex items-center justify-between">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }} className="space-y-4">
+
+              {/* Header */}
+              <div className="flex items-center justify-between flex-wrap gap-3">
                 <p className="text-sm text-white/70">Lembretes internos — visíveis para CEO e ADM.</p>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <button onClick={fetchLembretesAdm} className="text-xs text-white/60 hover:text-white hover:underline">Atualizar</button>
                   <button
-                    onClick={() => { setAddOpenAdm(o => !o); setTextoNovoCEO(''); }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-[#003580] text-xs font-semibold hover:bg-white/90"
+                    onClick={() => { setAddOpenAdm(true); setTextoNovoCEO(''); setDataAlertaAdm(''); }}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white text-[#003580] text-sm font-semibold hover:bg-white/90 transition-colors"
                   >
-                     Adicionar
+                     Adicionar lembrete
                   </button>
                 </div>
               </div>
 
-              {addOpenAdm && (
-                <Card>
-                  <CardContent className="pt-4 space-y-3">
+              {/* Dialog de adicionar */}
+              <Dialog open={addOpenAdm} onOpenChange={setAddOpenAdm}>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Novo lembrete</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-1">
                     <textarea
                       autoFocus
                       placeholder="Escreva o lembrete..."
                       value={textoNovoCEO}
                       onChange={e => setTextoNovoCEO(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarLembreteCEO(); } }}
-                      rows={3}
+                      rows={4}
                       className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:border-[#003580] resize-none"
                     />
-                    <div className="flex justify-end gap-2">
-                      <button onClick={() => setAddOpenAdm(false)} className="px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:text-gray-700">Cancelar</button>
+                    <div>
+                      <label className="flex items-center gap-1.5 text-sm text-gray-500 mb-1.5">
+                        <Bell className="h-4 w-4 text-orange-400" /> Me lembre em (opcional)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="datetime-local"
+                          value={dataAlertaAdm}
+                          onChange={e => setDataAlertaAdm(e.target.value)}
+                          className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:border-[#003580]"
+                        />
+                        {dataAlertaAdm && (
+                          <button onClick={() => setDataAlertaAdm('')} className="text-gray-300 hover:text-gray-500">
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-1">
+                      <button onClick={() => setAddOpenAdm(false)} className="px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-gray-700 border border-gray-200">Cancelar</button>
                       <button
                         onClick={enviarLembreteCEO}
                         disabled={savingCEO || !textoNovoCEO.trim()}
-                        className="px-4 py-1.5 rounded-lg bg-[#003580] text-white text-sm font-medium hover:bg-[#002060] disabled:opacity-50"
+                        className="px-4 py-2 rounded-lg bg-[#003580] text-white text-sm font-medium hover:bg-[#002060] disabled:opacity-50"
                       >
-                        {savingCEO ? 'Salvando...' : 'Salvar'}
+                        {savingCEO ? 'Salvando...' : 'Salvar lembrete'}
                       </button>
                     </div>
-                  </CardContent>
-                </Card>
-              )}
+                  </div>
+                </DialogContent>
+              </Dialog>
 
-              {lembretesAdm.length === 0 ? (
-                <Card>
-                  <CardContent className="py-10 text-center">
-                    <ClipboardList className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                    <p className="text-sm text-gray-400">Nenhum lembrete ainda.</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="space-y-2">
-                  {lembretesAdm.map(l => {
-                    const isApolice = l.texto?.startsWith('⚠️ Apólice');
-                    return (
-                    <Card key={l.id} className={`group hover:shadow-md transition-shadow relative ${isApolice ? 'border-orange-300 bg-orange-50' : ''}`}>
-                      {isApolice && (
-                        <span className="absolute -top-1 -right-1 flex h-3 w-3 z-10">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
-                        </span>
-                      )}
-                      <CardContent className="py-3 px-4 flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm whitespace-pre-wrap ${isApolice ? 'text-orange-900 font-medium' : 'text-gray-800'}`}>{l.texto}</p>
-                          <p className="text-xs text-gray-400 mt-1.5">
-                            📅 {new Date(l.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                            <span className="mx-1.5 text-gray-300">·</span>
-                            {l.autor === 'ceo' ? 'CEO' : l.autor === 'bot' || l.autor === 'sistema' ? 'BOT' : 'ADM'}
+              {/* Filtros */}
+              {(() => {
+                const pendentesCount = lembretesAdm.filter(l => !l.concluido).length;
+                const concluidosCount = lembretesAdm.filter(l => l.concluido).length;
+                const listaAdm = lembretesAdm.filter(l => filtroAdm === 'pendentes' ? !l.concluido : l.concluido);
+                const porPaginaAdm = 12;
+                const totalPaginasAdm = Math.max(1, Math.ceil(listaAdm.length / porPaginaAdm));
+                const paginaAtualAdm = Math.min(paginaAdm, totalPaginasAdm);
+                const listaPageAdm = listaAdm.slice((paginaAtualAdm - 1) * porPaginaAdm, paginaAtualAdm * porPaginaAdm);
+                return (
+                  <>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { setFiltroAdm('pendentes'); setPaginaAdm(1); }}
+                        className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${filtroAdm === 'pendentes' ? 'bg-white text-[#003580]' : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'}`}
+                      >
+                        Pendentes {pendentesCount > 0 && <span className="ml-1 text-xs">({pendentesCount})</span>}
+                      </button>
+                      <button
+                        onClick={() => { setFiltroAdm('concluidos'); setPaginaAdm(1); }}
+                        className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${filtroAdm === 'concluidos' ? 'bg-white text-[#003580]' : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'}`}
+                      >
+                        Concluídos {concluidosCount > 0 && <span className="ml-1 text-xs">({concluidosCount})</span>}
+                      </button>
+                    </div>
+
+                    {/* Grid de cards */}
+                    {listaAdm.length === 0 ? (
+                      <Card>
+                        <CardContent className="py-14 text-center">
+                          <ClipboardList className="h-10 w-10 mx-auto mb-3 text-gray-300" />
+                          <p className="text-sm text-gray-400">
+                            {filtroAdm === 'pendentes' ? 'Nenhum lembrete pendente.' : 'Nenhum lembrete concluído.'}
                           </p>
-                        </div>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        <AnimatePresence>
+                          {listaPageAdm.map(l => {
+                            const alerta = l.concluido ? null : statusAlertaAdm(l.data_alerta);
+                            const isApolice = !l.concluido && l.texto?.startsWith('⚠️ Apólice');
+                            return (
+                              <motion.div
+                                key={l.id}
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                transition={{ duration: 0.15 }}
+                                className="relative"
+                              >
+                                {isApolice && (
+                                  <span className="absolute -top-1 -right-1 flex h-3 w-3 z-10">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
+                                  </span>
+                                )}
+                                <Card className={`flex flex-col h-44 transition-all ${l.concluido ? 'opacity-60' : ''} ${isApolice ? 'border-orange-300 bg-orange-50' : ''} ${alerta ? estiloAlertaAdm[alerta] : ''} ${alerta === 'vencido' || alerta === 'hoje' ? 'animate-pulse' : ''}`}>
+                                  <div className="flex items-start justify-between px-4 pt-3 pb-2 border-b border-gray-100">
+                                    <div className="space-y-0.5 min-w-0 flex-1">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <p className="text-[11px] font-semibold text-[#003580] uppercase tracking-wide">
+                                          {l.autor === 'ceo' ? 'CEO' : l.autor === 'bot' || l.autor === 'sistema' ? 'BOT' : 'ADM'}
+                                        </p>
+                                        {alerta && (
+                                          <span className={`flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${corBadgeAlertaAdm[alerta]}`}>
+                                            <Bell className="h-2.5 w-2.5" />
+                                            {labelAlertaAdm[alerta]}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="text-[11px] text-gray-400">
+                                        {l.updated_at ? `Editado ${fmtDataAdm(l.updated_at)}` : fmtDataAdm(l.created_at)}
+                                      </p>
+                                      {l.data_alerta && (
+                                        <p className={`text-[11px] font-medium ${alerta ? (alerta === 'vencido' ? 'text-red-500' : alerta === 'hoje' ? 'text-orange-500' : 'text-yellow-600') : 'text-gray-400'}`}>
+                                          🔔 {fmtDataAdm(l.data_alerta)}
+                                        </p>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0 ml-2">
+                                      {l.concluido ? (
+                                        <button onClick={() => reabrirLembreteAdm(l.id)} className="p-1 rounded hover:bg-gray-100 text-green-500 hover:text-gray-500 transition-colors" title="Reabrir">
+                                          <Check className="h-3.5 w-3.5" />
+                                        </button>
+                                      ) : (
+                                        <button onClick={() => concluirLembreteAdm(l.id)} className="p-1 rounded hover:bg-green-50 text-gray-400 hover:text-green-600 transition-colors" title="Concluir">
+                                          <Check className="h-3.5 w-3.5" />
+                                        </button>
+                                      )}
+                                      {!l.concluido && (
+                                        <button
+                                          onClick={() => { setEditIdAdm(l.id); setEditTextoAdm(l.texto); setEditDataAlertaAdm(l.data_alerta ? new Date(l.data_alerta).toISOString().slice(0, 16) : ''); }}
+                                          className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-[#003580] transition-colors"
+                                          title="Editar"
+                                        >
+                                          <Pencil className="h-3.5 w-3.5" />
+                                        </button>
+                                      )}
+                                      {confirmDeleteAdm === l.id ? (
+                                        <div className="flex items-center gap-1">
+                                          <button onClick={() => excluirMensagemCEO(l.id)} className="text-[11px] text-red-600 font-semibold hover:underline">Sim</button>
+                                          <button onClick={() => setConfirmDeleteAdm(null)} className="text-[11px] text-gray-400 hover:text-gray-600">Não</button>
+                                        </div>
+                                      ) : (
+                                        <button onClick={() => setConfirmDeleteAdm(l.id)} className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors" title="Excluir">
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <CardContent className="flex-1 px-4 py-3 overflow-hidden">
+                                    {editIdAdm === l.id ? (
+                                      <div className="space-y-1.5 h-full flex flex-col">
+                                        <textarea
+                                          autoFocus
+                                          value={editTextoAdm}
+                                          onChange={e => setEditTextoAdm(e.target.value)}
+                                          onKeyDown={e => { if (e.key === 'Escape') setEditIdAdm(null); }}
+                                          className="flex-1 w-full rounded border border-[#003580] bg-blue-50 px-2 py-1 text-sm focus:outline-none resize-none"
+                                        />
+                                        <div className="flex items-center gap-2">
+                                          <Bell className="h-3.5 w-3.5 text-orange-400 shrink-0" />
+                                          <input
+                                            type="datetime-local"
+                                            value={editDataAlertaAdm}
+                                            onChange={e => setEditDataAlertaAdm(e.target.value)}
+                                            className="flex-1 rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs focus:outline-none focus:border-[#003580]"
+                                          />
+                                        </div>
+                                        <div className="flex gap-2 justify-end">
+                                          <button onClick={() => setEditIdAdm(null)} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
+                                          <button onClick={() => salvarEdicaoLembreteAdm(l.id)} className="text-xs text-[#003580] font-semibold hover:underline">Salvar</button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <p className={`text-sm leading-relaxed line-clamp-4 ${l.concluido ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
+                                        {l.texto}
+                                      </p>
+                                    )}
+                                  </CardContent>
+                                </Card>
+                              </motion.div>
+                            );
+                          })}
+                        </AnimatePresence>
+                      </div>
+                    )}
+
+                    {/* Paginação */}
+                    {totalPaginasAdm > 1 && (
+                      <div className="flex items-center justify-center gap-2 pt-2">
                         <button
-                          onClick={() => excluirMensagemCEO(l.id)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-300 hover:text-red-400 shrink-0"
+                          onClick={() => setPaginaAdm(p => Math.max(1, p - 1))}
+                          disabled={paginaAtualAdm === 1}
+                          className="p-1.5 rounded-lg bg-white/10 text-white hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <ChevronLeft className="h-4 w-4" />
                         </button>
-                      </CardContent>
-                    </Card>
-                  );})}
-                </div>
-              )}
+                        {Array.from({ length: totalPaginasAdm }, (_, i) => i + 1).map(p => (
+                          <button
+                            key={p}
+                            onClick={() => setPaginaAdm(p)}
+                            className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${p === paginaAtualAdm ? 'bg-white text-[#003580]' : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'}`}
+                          >
+                            {p}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => setPaginaAdm(p => Math.min(totalPaginasAdm, p + 1))}
+                          disabled={paginaAtualAdm === totalPaginasAdm}
+                          className="p-1.5 rounded-lg bg-white/10 text-white hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </motion.div>
           </TabsContent>
 
