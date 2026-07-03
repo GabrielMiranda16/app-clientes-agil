@@ -496,7 +496,6 @@ const AdminDashboard = () => {
                 </Card>
               </div>
             </div>
-            <p className="text-xs text-gray-400 text-center mt-1 sm:hidden">arraste para ver mais →</p>
           </div>
 
           {/* Search */}
