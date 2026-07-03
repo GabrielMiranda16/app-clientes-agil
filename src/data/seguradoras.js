@@ -78,6 +78,7 @@ export const SEGURADORAS = [
     logo: 'https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/8908a7bf8f2f73e887d23c1ec49c4a8c.png',
     phone: '4004-0101',
     website: 'https://www.mapfre.com.br',
+    logoSize: 'h-20 w-52',
     categorias: ['AUTO', 'VIDA', 'RESIDENCIAL', 'EMPRESARIAL', 'VIAGEM'],
     diferenciais: [],
     auto_diferenciais: [
