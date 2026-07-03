@@ -2,6 +2,8 @@ export const SEGURADORAS = [
   {
     nome: 'Porto Seguro',
     logo: 'https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/98628d373b854cded1b0cc4802e2b525.webp',
+    phone: '3337-6786',
+    website: 'https://www.portoseguro.com.br',
     categorias: ['AUTO', 'RESIDENCIAL', 'EMPRESARIAL', 'VIDA', 'VIAGEM', 'EQUIPAMENTOS', 'SAUDE'],
     diferenciais: [
       { titulo: 'Rede própria ampla', descricao: 'A Porto Seguro Saúde conta com hospitais, clínicas e laboratórios próprios distribuídos pela Grande São Paulo, oferecendo estrutura completa com tecnologia de ponta, corpo clínico qualificado e atendimento humanizado. Você tem acesso a uma rede que combina comodidade e alta qualidade em um só lugar.' },
@@ -22,6 +24,8 @@ export const SEGURADORAS = [
   {
     nome: 'Bradesco Seguros',
     logo: 'https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/7c13fef88ddc338767c659624a045728.png',
+    phone: '4004-2700',
+    website: 'https://www.bradescoseguros.com.br',
     categorias: ['SAUDE', 'ODONTOLOGICO', 'VIDA', 'AUTO', 'RESIDENCIAL', 'EMPRESARIAL'],
     auto_diferenciais: [
       { titulo: 'Assistência 24h com guincho ilimitado', descricao: 'O Bradesco Seguros Auto oferece assistência 24 horas com guincho sem limite de quilometragem, socorro mecânico, pane seca, troca de pneu, recarga de bateria e chaveiro. Você aciona pelo app Bradesco Seguros ou pela central de atendimento e o prestador chega ao local indicado onde quer que você esteja.' },
@@ -50,6 +54,8 @@ export const SEGURADORAS = [
   {
     nome: 'SulAmérica',
     logo: 'https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/98a9dfbe0977ac2bb4bc32e39bca4243.webp',
+    phone: '4004-5900',
+    website: 'https://www.sulamerica.com.br',
     categorias: ['SAUDE', 'ODONTOLOGICO', 'VIDA'],
     diferenciais: [
       { titulo: 'Rede de excelência certificada', descricao: 'A SulAmérica seleciona seus parceiros com critérios rigorosos de qualidade assistencial. A rede inclui hospitais premiados e reconhecidos por entidades como o CBA e o JCI, garantindo que você seja atendido em locais que comprovadamente entregam resultados superiores em segurança e experiência do paciente.' },
@@ -70,6 +76,8 @@ export const SEGURADORAS = [
   {
     nome: 'MAPFRE',
     logo: 'https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/8908a7bf8f2f73e887d23c1ec49c4a8c.png',
+    phone: '4004-0101',
+    website: 'https://www.mapfre.com.br',
     categorias: ['AUTO', 'VIDA', 'RESIDENCIAL', 'EMPRESARIAL', 'VIAGEM'],
     diferenciais: [],
     auto_diferenciais: [
@@ -84,6 +92,8 @@ export const SEGURADORAS = [
   {
     nome: 'Tokio Marine',
     logo: 'https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/354ba9725cac042504cffde77ee418ba.png',
+    phone: '4004-0101',
+    website: 'https://www.tokiomarine.com.br',
     categorias: ['AUTO', 'RESIDENCIAL', 'EMPRESARIAL', 'VIDA', 'VIAGEM'],
     diferenciais: [],
     auto_diferenciais: [
@@ -98,6 +108,8 @@ export const SEGURADORAS = [
   {
     nome: 'Amil',
     logo: 'https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/c09379a6199ac9bdf2c86484ef116c78.png',
+    phone: '3004-1000',
+    website: 'https://www.amil.com.br',
     categorias: ['SAUDE', 'ODONTOLOGICO'],
     diferenciais: [
       { titulo: 'Hospitais próprios UnitedHealth', descricao: 'Como parte do grupo UnitedHealth — o maior conglomerado de saúde do mundo — a Amil conta com hospitais e clínicas próprias no Brasil com infraestrutura de última geração, equipamentos de alta tecnologia e processos assistenciais baseados em evidências internacionais. É uma rede que combina excelência médica com padrões globais de segurança.' },
@@ -117,6 +129,8 @@ export const SEGURADORAS = [
   {
     nome: 'Omint',
     logo: 'https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/2faabe78afdb57930ea06103c94e28f8.png',
+    phone: '0800-727-0000',
+    website: 'https://www.omint.com.br',
     categorias: ['SAUDE', 'ODONTOLOGICO', 'VIAGEM'],
     diferenciais: [
       { titulo: 'Atendimento premium e humanizado', descricao: 'A Omint é reconhecida no mercado por oferecer um padrão de atendimento diferenciado, com foco total na experiência do beneficiário. Isso significa menos tempo de espera, acesso a profissionais renomados, instalações de alto padrão e uma postura de cuidado integral que trata cada paciente como único. É a escolha de quem não abre mão de qualidade.' },
@@ -136,6 +150,8 @@ export const SEGURADORAS = [
   {
     nome: 'Unimed',
     logo: 'https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/32901ec5a038833cb64bb6e65116bd86.png',
+    phone: '0800-024-4633',
+    website: 'https://www.unimed.coop.br',
     categorias: ['SAUDE', 'ODONTOLOGICO', 'EMPRESARIAL'],
     diferenciais: [
       { titulo: 'Maior cooperativa médica do mundo', descricao: 'A Unimed é formada por médicos cooperados, o que significa que os próprios profissionais de saúde são donos do negócio. Esse modelo cooperativista cria um alinhamento natural entre qualidade do atendimento e sustentabilidade da operadora, resultando em médicos mais comprometidos com o resultado dos pacientes e com a reputação da cooperativa.' },
@@ -155,6 +171,8 @@ export const SEGURADORAS = [
   {
     nome: 'São Cristóvão Saúde',
     logo: 'https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/e36b5933ce4837709a6aead633b55041.png',
+    phone: '2029-7000',
+    website: 'https://www.saocristovao.com.br',
     categorias: ['SAUDE'],
     diferenciais: [
       { titulo: 'Especialista em pequenas e médias empresas', descricao: 'A São Cristóvão Saúde desenvolveu seu portfólio pensando especificamente nas necessidades das PMEs. Isso se traduz em condições comerciais competitivas, flexibilidade na formatação dos planos, processos de adesão simplificados e um atendimento que entende a realidade de empresas que não têm departamento de RH estruturado.' },
@@ -167,6 +185,8 @@ export const SEGURADORAS = [
   {
     nome: 'Plena Saúde',
     logo: 'https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/6d6d03a7e95c90ade857163b0dd5b3b3.png',
+    phone: '2135-0035',
+    website: 'https://www.plenasaude.com.br',
     categorias: ['SAUDE', 'ODONTOLOGICO', 'EMPRESARIAL'],
     diferenciais: [
       { titulo: 'Melhor custo-benefício do mercado', descricao: 'A Plena Saúde se posiciona como a opção mais inteligente para empresas que precisam oferecer um benefício de saúde de qualidade sem comprometer o orçamento. As mensalidades são competitivas e a cobertura abrange os principais serviços de saúde, entregando o máximo de valor para cada real investido pela empresa e pelos colaboradores.' },
@@ -186,6 +206,8 @@ export const SEGURADORAS = [
   {
     nome: 'Azul Seguros',
     logo: 'https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/339cc23c1b148e40cbac6128b3e125df.png',
+    phone: '4004-3700',
+    website: 'https://www.azulseguros.com.br',
     categorias: ['AUTO'],
     diferenciais: [],
     auto_diferenciais: [
@@ -200,6 +222,8 @@ export const SEGURADORAS = [
   {
     nome: 'Itaú Seguros',
     logo: 'https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/d0a3a89d4366fa869b4c571072ef687e.png',
+    phone: '4004-4828',
+    website: 'https://www.itau.com.br/seguros',
     categorias: ['VIDA', 'RESIDENCIAL', 'AUTO'],
     diferenciais: [],
     auto_diferenciais: [
@@ -214,18 +238,24 @@ export const SEGURADORAS = [
   {
     nome: 'Petlove Saúde',
     logo: 'https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/5e902989669136b1c9eb330eb6e9a85b.png',
+    phone: '3003-7387',
+    website: 'https://www.petlove.com.br',
     categorias: ['PET_SAUDE', 'PET_SEGURO'],
     diferenciais: [],
   },
   {
     nome: 'Akad Seguros',
     logo: 'https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/46d762823eca5de4430b9efa9d8d1a08.png',
+    phone: '0800-777-2523',
+    website: 'https://www.akadseguros.com.br',
     categorias: ['EMPRESARIAL', 'CARGAS', 'EQUIPAMENTOS', 'FROTA'],
     diferenciais: [],
   },
   {
     nome: 'Hapvida',
     logo: 'https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/28126b3a3ba8bd1705127066b1f20e10.png',
+    phone: '4002-3633',
+    website: 'https://www.hapvida.com.br',
     categorias: ['SAUDE', 'ODONTOLOGICO', 'EMPRESARIAL'],
     diferenciais: [
       { titulo: 'Maior operadora vertical do Brasil', descricao: 'A Hapvida controla toda a cadeia de atendimento: hospitais, clínicas, laboratórios e centros de imagem são próprios do grupo, distribuídos em mais de 80 unidades pelo Brasil. Esse modelo vertical reduz intermediários, garante mais agilidade no atendimento e permite um controle de qualidade direto em cada etapa do cuidado ao paciente.' },
@@ -245,6 +275,8 @@ export const SEGURADORAS = [
   {
     nome: 'Zurich Seguros',
     logo: 'https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/870d306de888ee372303c49b288368db.png',
+    phone: '4020-4345',
+    website: 'https://www.zurich.com.br',
     categorias: ['AUTO', 'RESIDENCIAL', 'EMPRESARIAL', 'VIDA'],
     diferenciais: [],
     auto_diferenciais: [
@@ -259,6 +291,8 @@ export const SEGURADORAS = [
   {
     nome: 'Alice Saúde',
     logo: 'https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/edd2dc23bf5549bc75f109c4e44891f9.png',
+    phone: '0800-887-0451',
+    website: 'https://www.alice.com.br',
     categorias: ['SAUDE'],
     diferenciais: [
       { titulo: 'Medicina preventiva digital pioneira', descricao: 'A Alice foi construída com a missão de mudar a relação das pessoas com a saúde, colocando a prevenção no centro de tudo. Pelo aplicativo, uma equipe de saúde primária está disponível 24 horas por dia para orientações, triagem de sintomas, acompanhamento de condições crônicas e indicação do próximo passo mais adequado, seja uma teleconsulta, exame ou visita presencial.' },

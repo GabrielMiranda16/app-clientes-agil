@@ -28,6 +28,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatCpfCnpj } from '@/lib/masks';
+import { SEGURADORAS } from '@/data/seguradoras';
 
 const SEGMENTO_ICONS = {
   AUTO_FROTA:        Car,
@@ -380,10 +381,27 @@ const ApoliceDashboard = () => {
                             </div>
                             <div>
                               <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Seguradora</p>
-                              <div className="flex items-center gap-2">
-                                <Building className="h-4 w-4 text-gray-400" />
-                                <p className="font-semibold text-gray-800">{apolice.seguradora || '—'}</p>
-                              </div>
+                              {(() => {
+                                const seg = SEGURADORAS.find(s => s.nome === apolice.seguradora);
+                                return (
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                      {seg?.logo && <img src={seg.logo} alt={seg.nome} className="h-6 object-contain" />}
+                                      <p className="font-semibold text-gray-800">{apolice.seguradora || '—'}</p>
+                                    </div>
+                                    {seg?.phone && (
+                                      <a href={`tel:${seg.phone.replace(/\D/g, '')}`} className="flex items-center gap-1.5 text-sm text-[#003580] hover:underline">
+                                        📞 {seg.phone}
+                                      </a>
+                                    )}
+                                    {seg?.website && (
+                                      <a href={seg.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-[#003580] hover:underline">
+                                        🌐 {seg.website.replace('https://www.', '')}
+                                      </a>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </div>
                           </>
                         )}
@@ -404,7 +422,23 @@ const ApoliceDashboard = () => {
                                 </div>
                                 <div>
                                   <p className="text-xs text-gray-400 uppercase mb-1">Seguradora</p>
-                                  <p className="font-semibold text-gray-800">{sub.seguradora || '—'}</p>
+                                  {(() => {
+                                    const seg = SEGURADORAS.find(s => s.nome === sub.seguradora);
+                                    return (
+                                      <div className="space-y-1">
+                                        <div className="flex items-center gap-2">
+                                          {seg?.logo && <img src={seg.logo} alt={seg.nome} className="h-5 object-contain" />}
+                                          <p className="font-semibold text-gray-800">{sub.seguradora || '—'}</p>
+                                        </div>
+                                        {seg?.phone && (
+                                          <a href={`tel:${seg.phone.replace(/\D/g, '')}`} className="block text-xs text-[#003580] hover:underline">📞 {seg.phone}</a>
+                                        )}
+                                        {seg?.website && (
+                                          <a href={seg.website} target="_blank" rel="noopener noreferrer" className="block text-xs text-[#003580] hover:underline">🌐 {seg.website.replace('https://www.', '')}</a>
+                                        )}
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                                 <div>
                                   <p className="text-xs text-gray-400 uppercase mb-1">Prêmio</p>
