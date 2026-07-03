@@ -369,7 +369,7 @@ const ApoliceDashboard = () => {
                           ? (apolice.dados_adicionais?.sub_apolices || []).find(s => s.seguradora)?.seguradora
                           : apolice.seguradora;
                         const seg = SEGURADORAS.find(s => s.nome === nomeSeg);
-                        return seg?.logo ? <img src={seg.logo} alt={seg.nome} className="absolute top-3 right-2 h-14 w-44 object-contain object-right" /> : null;
+                        return seg?.logo ? <img src={seg.logo} alt={seg.nome} className={`absolute top-3 right-2 object-contain object-right ${seg.logoSize || 'h-14 w-44'}`} /> : null;
                       })()}
                     </CardHeader>
                     <CardContent className="space-y-4">
