@@ -26,7 +26,7 @@ serve(async (req) => {
 
   const { data: o } = await supabase
     .from('orcamentos')
-    .select('cliente_nome, cliente_telefone, segmento, slug')
+    .select('cliente_nome, cliente_telefone, segmento, slug, numero_protocolo')
     .eq('id', orcamento_id)
     .single();
 
@@ -44,6 +44,7 @@ serve(async (req) => {
   const link = o.slug ? `https://www.agilseguros.app/orcamento/${o.slug}` : '';
   const propostaClicada = propostaBody || lastAcesso?.proposta_clicada || '';
   const ord = ordinal(num_acessos);
+  const protocolo = o.numero_protocolo || '';
 
   const BOT_TOKEN = 'agil-lembretes-2026';
 
@@ -60,6 +61,7 @@ serve(async (req) => {
       proposta_clicada: propostaClicada,
       link,
       aceitou,
+      protocolo,
     }),
   }).catch(() => {});
 
@@ -70,21 +72,31 @@ serve(async (req) => {
     const subject = isAceitou
       ? `✅ Proposta aceita: ${o.cliente_nome} (${segLabel}${propostaClicada ? ` — ${propostaClicada}` : ''})`
       : `🔥 Lead quente: ${o.cliente_nome} (${segLabel} — ${ord} acesso)`;
+
+    const protocoloHtml = protocolo
+      ? `<p style="margin:0 0 8px">🔖 Protocolo: <strong style="color:#003580;font-family:monospace">${protocolo}</strong></p>`
+      : '';
+    const propostaHtml = propostaClicada
+      ? `<p style="margin:0 0 8px">💡 ${isAceitou ? 'Plano escolhido' : 'Clicou em'}: <strong>${propostaClicada}</strong></p>`
+      : '';
+    const telefoneHtml = o.cliente_telefone
+      ? `<p style="margin:0 0 8px">📞 <strong>${o.cliente_telefone}</strong></p>`
+      : '';
+    const linkHtml = link
+      ? `<p style="margin:16px 0"><a href="${link}" style="background:#003580;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600">Ver proposta</a></p>`
+      : '';
+
     const html = isAceitou
       ? `<div style="font-family:sans-serif;max-width:500px">
           <h2 style="color:#003580;margin-bottom:4px">✅ Proposta Aceita!</h2>
           <p style="margin:0 0 12px"><strong>${o.cliente_nome}</strong> aceitou o orçamento de <strong>${segLabel}</strong>.</p>
-          ${propostaClicada ? `<p style="margin:0 0 8px">💡 Plano escolhido: <strong>${propostaClicada}</strong></p>` : ''}
-          ${o.cliente_telefone ? `<p style="margin:0 0 8px">📞 <strong>${o.cliente_telefone}</strong></p>` : ''}
-          ${link ? `<p style="margin:16px 0"><a href="${link}" style="background:#003580;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600">Ver proposta</a></p>` : ''}
+          ${propostaHtml}${telefoneHtml}${protocoloHtml}${linkHtml}
           <p style="color:#999;font-size:11px;margin-top:20px">Ágil Seguros — Portal do Parceiro</p>
         </div>`
       : `<div style="font-family:sans-serif;max-width:500px">
           <h2 style="color:#003580;margin-bottom:4px">🔥 Lead Quente!</h2>
           <p style="margin:0 0 12px"><strong>${o.cliente_nome}</strong> acessou o orçamento de <strong>${segLabel}</strong> pela <strong>${ord} vez</strong>.</p>
-          ${propostaClicada ? `<p style="margin:0 0 8px">💡 Clicou em: <strong>${propostaClicada}</strong></p>` : ''}
-          ${o.cliente_telefone ? `<p style="margin:0 0 8px">📞 <strong>${o.cliente_telefone}</strong></p>` : ''}
-          ${link ? `<p style="margin:16px 0"><a href="${link}" style="background:#003580;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600">Ver proposta</a></p>` : ''}
+          ${propostaHtml}${telefoneHtml}${protocoloHtml}${linkHtml}
           <p style="color:#999;font-size:11px;margin-top:20px">Ágil Seguros — Portal do Parceiro</p>
         </div>`;
 

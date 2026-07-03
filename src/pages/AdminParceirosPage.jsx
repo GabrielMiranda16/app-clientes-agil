@@ -340,6 +340,18 @@ const generateSlug = () => {
   return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 };
 
+const gerarProtocolo = async (supabaseClient) => {
+  const agora = new Date();
+  const ano = agora.getFullYear();
+  const mes = String(agora.getMonth() + 1).padStart(2, '0');
+  const prefixo = `AGI-${ano}${mes}`;
+  const { count } = await supabaseClient
+    .from('orcamentos')
+    .select('id', { count: 'exact', head: true })
+    .like('numero_protocolo', `${prefixo}-%`);
+  return `${prefixo}-${String((count || 0) + 1).padStart(4, '0')}`;
+};
+
 const ToggleBtn = ({ value, onChange, labelFalse = 'Não', labelTrue = 'Sim', color = '#003580' }) => (
   <div className="flex rounded-lg overflow-hidden border border-gray-200 text-xs">
     <button type="button" onClick={() => onChange(false)}
@@ -640,12 +652,14 @@ const AdminParceirosPage = () => {
     setEnviando(true);
     try {
       const slug = generateSlug();
+      const protocolo = await gerarProtocolo(supabase);
       const dest = valid.find(p => p.destaque) || valid[0];
       const pl0 = dest.planos?.find(pl => pl.valor) || dest.planos?.[0];
       const validComDestaque = valid.map(p => ({ ...p, destaque: p === dest }));
       const { error } = await supabase.from('orcamentos').update({
         status: 'ORCAMENTO',
         slug,
+        numero_protocolo: protocolo,
         valor_mensalidade: parseBRL(pl0?.valor) || null,
         descricao_orcamento: `${dest.operadora}${!isViagem && pl0?.nome ? ` — ${pl0.nome}` : ''}`,
         propostas: validComDestaque,
@@ -654,7 +668,7 @@ const AdminParceirosPage = () => {
         data_orcamento: new Date().toISOString(),
       }).eq('id', expandedId);
       if (error) throw error;
-      toast({ title: 'Orçamento enviado!', description: 'Link gerado com sucesso.' });
+      toast({ title: 'Orçamento enviado!', description: `Link gerado — Protocolo ${protocolo}` });
 
       const parceiroTel = selected?.parceiros?.telefone;
       const segLabel = SEGMENTO_LABEL[selected.segmento] || selected.segmento;
@@ -662,7 +676,7 @@ const AdminParceirosPage = () => {
         supabase.functions.invoke('send-whatsapp', {
           body: {
             phone: parceiroTel,
-            message: `📋 *Orçamento pronto!*\n\nOlá, ${selected.parceiros?.nome_completo?.split(' ')[0] || 'Parceiro'}! O orçamento para *${selected.cliente_nome}* (${segLabel}) está pronto.\n\n🔗 ${window.location.origin}/orcamento/${slug}`,
+            message: `📋 *Orçamento pronto!*\n\nOlá, ${selected.parceiros?.nome_completo?.split(' ')[0] || 'Parceiro'}! O orçamento para *${selected.cliente_nome}* (${segLabel}) está pronto.\n\n🔖 Protocolo: *${protocolo}*\n🔗 ${window.location.origin}/orcamento/${slug}`,
           },
         }).catch(() => {});
       }
@@ -693,6 +707,9 @@ const AdminParceirosPage = () => {
     </div>
     <p style="font-size:13px;color:#888;border-top:1px solid #eee;padding-top:16px;margin-top:8px;">
       Ou copie o link: <a href="${linkOrcamento}" style="color:#003580;">${linkOrcamento}</a>
+    </p>
+    <p style="font-size:13px;color:#bbb;margin-top:8px;">
+      🔖 Protocolo: <strong style="color:#003580;">${protocolo}</strong>
     </p>
     <p style="font-size:13px;color:#aaa;margin-top:16px;">
       Ágil Seguros · SUSEP 252166308 · <a href="mailto:contato@segurosagil.com.br" style="color:#003580;">contato@segurosagil.com.br</a>
@@ -1426,6 +1443,11 @@ const AdminParceirosPage = () => {
       if (novaPropostaMode) return renderBuilder('nova');
       return (
         <div className="space-y-4">
+          {selected.numero_protocolo && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-semibold px-3 py-1.5 rounded-lg" style={{ background: '#003580', color: '#fff' }}>🔖 {selected.numero_protocolo}</span>
+            </div>
+          )}
           <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
             <p className="text-xs font-semibold text-blue-700 mb-1.5">Link público para o cliente</p>
             <div className="flex items-center gap-2">
@@ -1746,6 +1768,9 @@ const AdminParceirosPage = () => {
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-gray-800 truncate">{o.cliente_nome || 'Cliente não informado'}</p>
                           <p className="text-xs text-gray-400">{SEGMENTO_LABEL[o.segmento] || o.segmento}</p>
+                          {o.numero_protocolo && (
+                            <p className="text-xs font-mono font-semibold mt-0.5" style={{ color: '#003580' }}>🔖 {o.numero_protocolo}</p>
+                          )}
                           <p className="text-xs text-gray-500 mt-0.5">Parceiro: <span className="font-medium">{o.parceiros?.nome_completo || '—'}</span></p>
                           {o.valor_mensalidade && (
                             <p className="text-xs text-gray-500 mt-0.5">{['AUTO', 'VIAGEM'].includes(o.segmento) ? 'Valor do seguro' : 'Mensalidade'}: R$ {fmtBRL(o.valor_mensalidade)}</p>
