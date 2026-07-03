@@ -29,12 +29,12 @@ const maskBRL = (v) => {
 };
 
 const STATUS_CONFIG = {
-  SOLICITACAO:  { label: 'Solicitação',        color: 'bg-gray-100 text-gray-700',    desc: 'Aguardando resposta do ADM' },
-  ORCAMENTO:    { label: 'Orçamento',          color: 'bg-blue-100 text-blue-700',    desc: 'Link pronto — envie para o cliente' },
-  DOCUMENTOS:   { label: 'Documentos',         color: 'bg-blue-100 text-[#003580]',   desc: 'Cliente aceitou — enviando documentos' },
-  ASSINATURA:   { label: 'Assinatura/Transmitida', color: 'bg-blue-100 text-[#003580]', desc: null },
-  CONCLUIDO:    { label: 'Concluído',          color: 'bg-blue-100 text-[#003580]',   desc: 'Contrato assinado — aguardando comissão' },
-  COMISSAO:     { label: 'Comissão',           color: 'bg-blue-100 text-[#003580]',   desc: 'Comissão registrada' },
+  SOLICITACAO:  { label: 'Solicitação',        color: 'bg-gray-100 text-gray-700 hover:bg-gray-100 hover:text-gray-700',    desc: 'Aguardando resposta do ADM' },
+  ORCAMENTO:    { label: 'Orçamento',          color: 'bg-blue-100 text-blue-700 hover:bg-blue-100 hover:text-blue-700',    desc: 'Link pronto — envie para o cliente' },
+  DOCUMENTOS:   { label: 'Documentos',         color: 'bg-blue-100 text-[#003580] hover:bg-blue-100 hover:text-[#003580]',   desc: 'Cliente aceitou — enviando documentos' },
+  ASSINATURA:   { label: 'Assinatura/Transmitida', color: 'bg-blue-100 text-[#003580] hover:bg-blue-100 hover:text-[#003580]', desc: null },
+  CONCLUIDO:    { label: 'Concluído',          color: 'bg-blue-100 text-[#003580] hover:bg-blue-100 hover:text-[#003580]',   desc: 'Contrato assinado — aguardando comissão' },
+  COMISSAO:     { label: 'Comissão',           color: 'bg-blue-100 text-[#003580] hover:bg-blue-100 hover:text-[#003580]',   desc: 'Comissão registrada' },
 };
 const assinaturaLabel = seg => ['SAUDE', 'VIDA', 'ODONTOLOGICO', 'SAUDE_VIDA_ODONTO'].includes(seg) ? 'Assinatura' : 'Transmitida';
 const assinaturaDesc  = seg => ['SAUDE', 'VIDA', 'ODONTOLOGICO', 'SAUDE_VIDA_ODONTO'].includes(seg) ? 'Documentos recebidos — em assinatura' : 'Proposta transmitida — aguardando conclusão';
@@ -662,7 +662,7 @@ const ParceiroDashboard = () => {
                           </div>
                           <div className="text-right">
                             <p className="text-lg font-bold text-[#003580]">R$ {Number(c.valor_comissao || 0).toFixed(2).replace('.', ',')}</p>
-                            <Badge className={c.status === 'PAGO' ? 'bg-blue-100 text-[#003580]' : 'bg-blue-100 text-blue-800'}>
+                            <Badge className={c.status === 'PAGO' ? 'bg-blue-100 text-[#003580] hover:bg-blue-100 hover:text-[#003580]' : 'bg-blue-100 text-blue-800 hover:bg-blue-100 hover:text-blue-800'}>
                               {c.status === 'PAGO' ? 'Pago' : 'Pendente'}
                             </Badge>
                             {c.data_pagamento && <p className="text-xs text-gray-400 mt-1">{fmtData(c.data_pagamento)}</p>}
@@ -801,7 +801,7 @@ const ParceiroDashboard = () => {
                             R$ {Number(detalheComissao.valor_comissao || 0).toFixed(2).replace('.', ',')}
                           </p>
                         </div>
-                        <Badge className={detalheComissao.status === 'PAGO' ? 'bg-blue-100 text-[#003580]' : 'bg-blue-100 text-blue-800'}>
+                        <Badge className={detalheComissao.status === 'PAGO' ? 'bg-blue-100 text-[#003580] hover:bg-blue-100 hover:text-[#003580]' : 'bg-blue-100 text-blue-800 hover:bg-blue-100 hover:text-blue-800'}>
                           {detalheComissao.status === 'PAGO' ? 'Pago ✓' : 'Pendente'}
                         </Badge>
                       </div>

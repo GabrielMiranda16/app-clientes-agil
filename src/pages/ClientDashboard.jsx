@@ -94,10 +94,10 @@ const getTempoDecorrido = (dataStr) => {
 
 const getStatusColor = (status) => {
   switch (status) {
-    case 'PENDENTE': return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100 border-yellow-200';
-    case 'EM PROCESSAMENTO': return 'bg-blue-100 text-blue-800 hover:bg-blue-100 border-blue-200';
-    case 'CONCLUIDA': return 'bg-green-100 text-green-800 hover:bg-green-100 border-green-200';
-    case 'REJEITADA': return 'bg-red-100 text-red-800 hover:bg-red-100 border-red-200';
+    case 'PENDENTE': return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100 hover:text-yellow-800 hover:bg-yellow-100 border-yellow-200';
+    case 'EM PROCESSAMENTO': return 'bg-blue-100 text-blue-800 hover:bg-blue-100 hover:text-blue-800 hover:bg-blue-100 border-blue-200';
+    case 'CONCLUIDA': return 'bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800 hover:bg-green-100 border-green-200';
+    case 'REJEITADA': return 'bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800 hover:bg-red-100 border-red-200';
     default: return 'bg-gray-100 text-gray-800';
   }
 };
@@ -243,7 +243,7 @@ const ModalFormContent = React.memo(({ formData, setFormData, age, titulares, is
             <FormField id="cep" label="CEP">
               <div className="flex gap-2">
                 <Input id="cep" value={formData.cep} placeholder="00000-000" maxLength={9} onChange={handleInputChange} onBlur={handleCepBlur} />
-                <button type="button" onClick={() => buscarCep(formData.cep)} disabled={isCepLoading} className="px-3 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 flex items-center gap-1 text-sm">
+                <button type="button" onClick={() => buscarCep(formData.cep)} disabled={isCepLoading} className="px-3 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600 flex items-center gap-1 text-sm">
                   {isCepLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                 </button>
               </div>
@@ -857,7 +857,7 @@ const ClientDashboard = () => {
                     <h3 className="font-semibold text-sm text-gray-900">{label}</h3>
                  </div>
                  <div className="flex items-center justify-between">
-                    <Badge variant="secondary" className="bg-blue-100 text-[#003580] border-blue-200 hover:bg-blue-100 shadow-none">
+                    <Badge variant="secondary" className="bg-blue-100 text-[#003580] hover:bg-blue-100 hover:text-[#003580] border-blue-200 hover:bg-blue-100 shadow-none">
                         {solicitacao.status === 'PENDENTE' ? 'Solicitação Pendente' : 'Em Processamento'}
                     </Badge>
                     <span className="text-xs text-gray-500 font-medium">
@@ -965,7 +965,7 @@ const ClientDashboard = () => {
         return (
           <Card className="mb-4 overflow-hidden border-l-4 border-l-[#003580]">
              <CardHeader className="p-4 pb-2">
-                <div className="flex items-center gap-2"><div className="p-2 rounded-full bg-[#003580]/10"><Icon className="h-5 w-5 text-[#003580]" /></div><div><h4 className="font-bold text-sm flex items-center gap-2">{label}</h4><Badge variant="outline" className="w-fit bg-blue-100 text-[#003580] border-blue-200">Ativo</Badge></div></div>
+                <div className="flex items-center gap-2"><div className="p-2 rounded-full bg-[#003580]/10"><Icon className="h-5 w-5 text-[#003580]" /></div><div><h4 className="font-bold text-sm flex items-center gap-2">{label}</h4><Badge variant="outline" className="w-fit bg-blue-100 text-[#003580] hover:bg-blue-100 hover:text-[#003580] border-blue-200">Ativo</Badge></div></div>
              </CardHeader>
              <CardContent className="p-4 pt-2">
                 <div className="text-sm text-gray-600">Este plano está ativo.</div>
@@ -1260,9 +1260,9 @@ const ClientDashboard = () => {
 
   const getBadgeClass = (situacao) => {
     switch (situacao) { 
-        case 'ATIVO': return 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100'; 
-        case 'INATIVO': return 'bg-red-100 text-red-800 border-red-200 hover:bg-red-100'; 
-        case 'AFASTADO': return 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100'; 
+        case 'ATIVO': return 'bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800 border-green-200 hover:bg-green-100'; 
+        case 'INATIVO': return 'bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800 border-red-200 hover:bg-red-100'; 
+        case 'AFASTADO': return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100 hover:text-yellow-800 border-yellow-200 hover:bg-yellow-100'; 
         default: return 'bg-gray-100 text-gray-800 border-gray-200'; 
     } 
   };
@@ -1487,9 +1487,9 @@ const ClientDashboard = () => {
                                             <TableCell>{b.parentesco}</TableCell>
                                             <TableCell>
                                                 <div className="flex gap-2">
-                                                    {isPlanAtivo(b, 'saude') && <Badge variant="outline" className="bg-blue-50 text-[#003580] border-blue-200">Saúde</Badge>}
-                                                    {isPlanAtivo(b, 'vida') && <Badge variant="outline" className="bg-blue-50 text-[#003580] border-blue-200">Vida</Badge>}
-                                                    {isPlanAtivo(b, 'odonto') && <Badge variant="outline" className="bg-blue-50 text-[#003580] border-blue-200">Odonto</Badge>}
+                                                    {isPlanAtivo(b, 'saude') && <Badge variant="outline" className="bg-blue-50 text-[#003580] hover:bg-blue-50 hover:text-[#003580] border-blue-200">Saúde</Badge>}
+                                                    {isPlanAtivo(b, 'vida') && <Badge variant="outline" className="bg-blue-50 text-[#003580] hover:bg-blue-50 hover:text-[#003580] border-blue-200">Vida</Badge>}
+                                                    {isPlanAtivo(b, 'odonto') && <Badge variant="outline" className="bg-blue-50 text-[#003580] hover:bg-blue-50 hover:text-[#003580] border-blue-200">Odonto</Badge>}
                                                     {!isPlanAtivo(b, 'saude') && !isPlanAtivo(b, 'vida') && !isPlanAtivo(b, 'odonto') && <span className="text-gray-400 text-xs">-</span>}
                                                 </div>
                                             </TableCell>
@@ -1562,19 +1562,19 @@ const ClientDashboard = () => {
                       {todasSolicitacoesDaEmpresa.slice(0, 10).map(s => {
                         const ben = beneficiarios.find(b => b.id === s.beneficiario_id);
                         const statusColors = {
-                          'PENDENTE': 'bg-yellow-100 text-yellow-800',
-                          'EM PROCESSAMENTO': 'bg-blue-100 text-blue-800',
-                          'CONCLUIDA': 'bg-green-100 text-green-800',
-                          'REJEITADA': 'bg-red-100 text-red-800',
-                          'CANCELADA': 'bg-gray-100 text-gray-600',
+                          'PENDENTE': 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100 hover:text-yellow-800',
+                          'EM PROCESSAMENTO': 'bg-blue-100 text-blue-800 hover:bg-blue-100 hover:text-blue-800',
+                          'CONCLUIDA': 'bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800',
+                          'REJEITADA': 'bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800',
+                          'CANCELADA': 'bg-gray-100 text-gray-600 hover:bg-gray-100 hover:text-gray-600',
                         };
-                        const tipoColors = { 'INCLUSAO': 'bg-green-600', 'EXCLUSAO': 'bg-red-600', 'ALTERACAO': 'bg-blue-600' };
+                        const tipoColors = { 'INCLUSAO': 'bg-green-600 hover:bg-green-600', 'EXCLUSAO': 'bg-red-600', 'ALTERACAO': 'bg-blue-600' };
                         return (
                           <TableRow key={s.id}>
                             <TableCell className="font-medium">{ben?.nome_completo || '—'}</TableCell>
                             <TableCell className="capitalize">{s.tipo_plano}</TableCell>
                             <TableCell><Badge className={`text-white ${tipoColors[s.tipo_solicitacao] || 'bg-gray-500'}`}>{s.tipo_solicitacao}</Badge></TableCell>
-                            <TableCell><Badge className={statusColors[s.status] || 'bg-gray-100 text-gray-600'}>{s.status}</Badge></TableCell>
+                            <TableCell><Badge className={statusColors[s.status] || 'bg-gray-100 text-gray-600 hover:bg-gray-100 hover:text-gray-600'}>{s.status}</Badge></TableCell>
                             <TableCell className="text-sm text-gray-500">{formatDate(s.data_solicitacao)}</TableCell>
                           </TableRow>
                         );
@@ -1719,7 +1719,7 @@ const ClientDashboard = () => {
                           <td className="px-3 py-2 text-gray-500 max-w-[130px] truncate">{row.nome_titular || '—'}</td>
                           <td className="px-3 py-2 text-center">
                             <div className="flex items-center justify-center gap-1">
-                              {[['S','saude_ativo','bg-blue-100 text-blue-700'],['O','odonto_ativo','bg-purple-100 text-purple-700'],['V','vida_ativo','bg-green-100 text-green-700']].map(([lbl, key, cls]) => (
+                              {[['S','saude_ativo','bg-blue-100 text-blue-700 hover:bg-blue-100 hover:text-blue-700'],['O','odonto_ativo','bg-purple-100 text-purple-700'],['V','vida_ativo','bg-green-100 text-green-700 hover:bg-green-100 hover:text-green-700']].map(([lbl, key, cls]) => (
                                 <button key={key} onClick={() => setImportedRows(prev => prev.map((r,j) => j===i ? {...r, [key]: !r[key]} : r))}
                                   className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-opacity ${row[key] ? cls : 'bg-gray-100 text-gray-400'}`}>
                                   {lbl}
@@ -1816,7 +1816,7 @@ const ClientDashboard = () => {
                 return (
                   <div className="space-y-4">
                     <div className="flex items-center gap-3 text-sm">
-                      <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">{matched.length} encontrado(s)</span>
+                      <span className="bg-green-100 text-green-700 hover:bg-green-100 hover:text-green-700 px-2 py-0.5 rounded-full font-medium">{matched.length} encontrado(s)</span>
                       {notFound.length > 0 && <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{notFound.length} não encontrado(s)</span>}
                     </div>
                     <div className="overflow-x-auto rounded-lg border border-gray-200">

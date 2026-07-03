@@ -312,7 +312,7 @@ const AdminClientePage = () => {
                             <span className="font-medium">{f.nome_fantasia || f.razao_social}</span>
                             <span className="ml-2 text-gray-400 text-xs">{applyCnpjMask(f.cnpj)}</span>
                             {pend > 0 && (
-                              <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-semibold">
+                              <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 hover:bg-red-100 hover:text-red-700 text-xs font-semibold">
                                 <AlertTriangle className="h-3 w-3" /> {pend}
                               </span>
                             )}
@@ -408,20 +408,20 @@ const AdminClientePage = () => {
                   <Label>CEP</Label>
                   <div className="flex gap-2">
                     <Input id="cep" placeholder="00000-000" maxLength={9} value={filialFormData.cep} onChange={handleInputChange} onBlur={() => buscarCep(filialFormData.cep)} />
-                    <button type="button" onClick={() => buscarCep(filialFormData.cep)} disabled={isCepLoading} className="px-3 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 flex items-center gap-1 text-sm">
+                    <button type="button" onClick={() => buscarCep(filialFormData.cep)} disabled={isCepLoading} className="px-3 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600 flex items-center gap-1 text-sm">
                       {isCepLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
-                  <div className="col-span-2"><Label>Rua</Label><Input id="rua" value={filialFormData.rua} readOnly className="bg-gray-50 text-gray-600" /></div>
+                  <div className="col-span-2"><Label>Rua</Label><Input id="rua" value={filialFormData.rua} readOnly className="bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600" /></div>
                   <div><Label>Número</Label><Input id="numero" placeholder="123" value={filialFormData.numero} onChange={handleInputChange} /></div>
                 </div>
                 <div><Label>Complemento</Label><Input id="complemento" placeholder="Apto, bloco..." value={filialFormData.complemento} onChange={handleInputChange} /></div>
                 <div className="grid grid-cols-3 gap-2">
-                  <div><Label>Bairro</Label><Input id="bairro" value={filialFormData.bairro} readOnly className="bg-gray-50 text-gray-600" /></div>
-                  <div><Label>Cidade</Label><Input id="cidade" value={filialFormData.cidade} readOnly className="bg-gray-50 text-gray-600" /></div>
-                  <div><Label>UF</Label><Input id="estado" value={filialFormData.estado} readOnly className="bg-gray-50 text-gray-600" /></div>
+                  <div><Label>Bairro</Label><Input id="bairro" value={filialFormData.bairro} readOnly className="bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600" /></div>
+                  <div><Label>Cidade</Label><Input id="cidade" value={filialFormData.cidade} readOnly className="bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600" /></div>
+                  <div><Label>UF</Label><Input id="estado" value={filialFormData.estado} readOnly className="bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600" /></div>
                 </div>
               </div>
             </div>
@@ -458,20 +458,20 @@ const AdminClientePage = () => {
                   <Label>CEP</Label>
                   <div className="flex gap-2">
                     <Input id="cep" placeholder="00000-000" maxLength={9} value={filialFormData.cep} onChange={handleInputChange} onBlur={() => buscarCep(filialFormData.cep)} />
-                    <button type="button" onClick={() => buscarCep(filialFormData.cep)} disabled={isCepLoading} className="px-3 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 flex items-center gap-1 text-sm">
+                    <button type="button" onClick={() => buscarCep(filialFormData.cep)} disabled={isCepLoading} className="px-3 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600 flex items-center gap-1 text-sm">
                       {isCepLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
-                  <div className="col-span-2"><Label>Rua</Label><Input id="rua" value={filialFormData.rua} readOnly className="bg-gray-50 text-gray-600" /></div>
+                  <div className="col-span-2"><Label>Rua</Label><Input id="rua" value={filialFormData.rua} readOnly className="bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600" /></div>
                   <div><Label>Número</Label><Input id="numero" placeholder="123" value={filialFormData.numero} onChange={handleInputChange} /></div>
                 </div>
                 <div><Label>Complemento</Label><Input id="complemento" placeholder="Apto, bloco..." value={filialFormData.complemento} onChange={handleInputChange} /></div>
                 <div className="grid grid-cols-3 gap-2">
-                  <div><Label>Bairro</Label><Input id="bairro" value={filialFormData.bairro} readOnly className="bg-gray-50 text-gray-600" /></div>
-                  <div><Label>Cidade</Label><Input id="cidade" value={filialFormData.cidade} readOnly className="bg-gray-50 text-gray-600" /></div>
-                  <div><Label>UF</Label><Input id="estado" value={filialFormData.estado} readOnly className="bg-gray-50 text-gray-600" /></div>
+                  <div><Label>Bairro</Label><Input id="bairro" value={filialFormData.bairro} readOnly className="bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600" /></div>
+                  <div><Label>Cidade</Label><Input id="cidade" value={filialFormData.cidade} readOnly className="bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600" /></div>
+                  <div><Label>UF</Label><Input id="estado" value={filialFormData.estado} readOnly className="bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600" /></div>
                 </div>
               </div>
             </div>

@@ -40,10 +40,10 @@ const SEGMENTOS_CONFIG = {
 };
 
 const STATUS_COLORS = {
-  green:  { badge: 'bg-green-100 text-green-800',  dot: 'bg-green-500',  card: 'bg-gray-50 border-gray-200'      },
-  yellow: { badge: 'bg-yellow-100 text-yellow-800',dot: 'bg-yellow-500', card: 'bg-yellow-50 border-yellow-200'  },
-  red:    { badge: 'bg-red-100 text-red-800',      dot: 'bg-red-500',    card: 'bg-red-50 border-red-200'        },
-  gray:   { badge: 'bg-gray-100 text-gray-600',    dot: 'bg-gray-400',   card: 'bg-gray-50 border-gray-200'      },
+  green:  { badge: 'bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800',  dot: 'bg-green-500',  card: 'bg-gray-50 border-gray-200'      },
+  yellow: { badge: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100 hover:text-yellow-800',dot: 'bg-yellow-500', card: 'bg-yellow-50 border-yellow-200'  },
+  red:    { badge: 'bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800',      dot: 'bg-red-500',    card: 'bg-red-50 border-red-200'        },
+  gray:   { badge: 'bg-gray-100 text-gray-600 hover:bg-gray-100 hover:text-gray-600',    dot: 'bg-gray-400',   card: 'bg-gray-50 border-gray-200'      },
 };
 
 const emptyApoliceForm = { numero_apolice: '', seguradora: '', vigencia_inicio: '', vigencia_fim: '', valor_premio: '', descricao: '' };
@@ -422,12 +422,12 @@ const AdminSegmentoPage = () => {
                     <Building className={`h-4 w-4 ${empresa.isMatriz ? 'text-blue-600' : 'text-gray-500'}`} />
                     <div>
                       <span className="font-semibold text-gray-800 text-sm">{empresa.nome_fantasia || empresa.razao_social}</span>
-                      <span className={`ml-2 text-xs font-medium px-1.5 py-0.5 rounded ${empresa.isMatriz ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'}`}>
+                      <span className={`ml-2 text-xs font-medium px-1.5 py-0.5 rounded ${empresa.isMatriz ? 'bg-blue-100 text-blue-700 hover:bg-blue-100 hover:text-blue-700' : 'bg-gray-200 text-gray-600'}`}>
                         {empresa.isMatriz ? 'Matriz' : 'Filial'}
                       </span>
                     </div>
                     {pendentes > 0 && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-semibold">
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-700 hover:bg-red-100 hover:text-red-700 text-xs font-semibold">
                         <AlertTriangle className="h-3 w-3" /> {pendentes} pendente{pendentes !== 1 ? 's' : ''}
                       </span>
                     )}
@@ -842,7 +842,7 @@ const AdminSegmentoPage = () => {
                         onBlur={() => buscarCepApolice(dadosAdicionais.cep || '')}
                       />
                       <button type="button" onClick={() => buscarCepApolice(dadosAdicionais.cep || '')} disabled={isCepApoliceLoading}
-                        className="px-3 py-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 flex items-center gap-1 text-sm">
+                        className="px-3 py-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600 flex items-center gap-1 text-sm">
                         {isCepApoliceLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                       </button>
                     </div>
@@ -853,11 +853,11 @@ const AdminSegmentoPage = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div><Label className="text-xs">Complemento</Label><Input className="h-8 text-sm" value={dadosAdicionais.complemento || ''} onChange={e => setDadosAdicionais(p => ({ ...p, complemento: e.target.value }))} placeholder="Apto, bloco..." /></div>
-                    <div><Label className="text-xs">Bairro</Label><Input className="h-8 text-sm bg-gray-50 text-gray-600" readOnly value={dadosAdicionais.bairro || ''} /></div>
+                    <div><Label className="text-xs">Bairro</Label><Input className="h-8 text-sm bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600" readOnly value={dadosAdicionais.bairro || ''} /></div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div><Label className="text-xs">Cidade</Label><Input className="h-8 text-sm bg-gray-50 text-gray-600" readOnly value={dadosAdicionais.cidade || ''} /></div>
-                    <div><Label className="text-xs">Estado</Label><Input className="h-8 text-sm bg-gray-50 text-gray-600" readOnly value={dadosAdicionais.estado || ''} /></div>
+                    <div><Label className="text-xs">Cidade</Label><Input className="h-8 text-sm bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600" readOnly value={dadosAdicionais.cidade || ''} /></div>
+                    <div><Label className="text-xs">Estado</Label><Input className="h-8 text-sm bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600" readOnly value={dadosAdicionais.estado || ''} /></div>
                   </div>
                 </div>
               </div>

@@ -17,10 +17,10 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 
 const STATUS_CONFIG = {
-  novo:           { label: 'Novo',           color: 'bg-blue-100 text-blue-700' },
-  contatado:      { label: 'Contatado',      color: 'bg-yellow-100 text-yellow-700' },
+  novo:           { label: 'Novo',           color: 'bg-blue-100 text-blue-700 hover:bg-blue-100 hover:text-blue-700' },
+  contatado:      { label: 'Contatado',      color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100 hover:text-yellow-700' },
   em_negociacao:  { label: 'Em negociação',  color: 'bg-purple-100 text-purple-700' },
-  convertido:     { label: 'Convertido',     color: 'bg-green-100 text-green-700' },
+  convertido:     { label: 'Convertido',     color: 'bg-green-100 text-green-700 hover:bg-green-100 hover:text-green-700' },
   perdido:        { label: 'Perdido',        color: 'bg-gray-100 text-gray-500' },
 };
 

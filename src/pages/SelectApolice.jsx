@@ -13,10 +13,10 @@ import { ptBR } from 'date-fns/locale';
 import { formatCpfCnpj } from '@/lib/masks';
 
 const STATUS_STYLE = {
-  green:  { badge: 'bg-green-100 text-green-800 border-green-200',   label: 'Ativa',             card: 'bg-white border-gray-100'   },
-  yellow: { badge: 'bg-yellow-100 text-yellow-800 border-yellow-200', label: 'Vencendo em breve', card: 'bg-yellow-50 border-yellow-200' },
-  red:    { badge: 'bg-red-100 text-red-800 border-red-200',          label: 'Vencida',           card: 'bg-red-50 border-red-200'   },
-  gray:   { badge: 'bg-gray-100 text-gray-600 border-gray-200',       label: 'Sem vigência',      card: 'bg-white border-gray-100'   },
+  green:  { badge: 'bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800 border-green-200',   label: 'Ativa',             card: 'bg-white border-gray-100'   },
+  yellow: { badge: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100 hover:text-yellow-800 border-yellow-200', label: 'Vencendo em breve', card: 'bg-yellow-50 border-yellow-200' },
+  red:    { badge: 'bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800 border-red-200',          label: 'Vencida',           card: 'bg-red-50 border-red-200'   },
+  gray:   { badge: 'bg-gray-100 text-gray-600 hover:bg-gray-100 hover:text-gray-600 border-gray-200',       label: 'Sem vigência',      card: 'bg-white border-gray-100'   },
 };
 
 const TIPO_LABELS = {
@@ -126,7 +126,7 @@ const SelectApolice = () => {
                             <div>
                               <p className="text-sm font-semibold text-gray-700 leading-tight">
                                 {apolice.empresa.nome_fantasia || apolice.empresa.razao_social}
-                                <span className={`ml-2 text-xs font-medium px-1.5 py-0.5 rounded-full ${apolice.empresa.tipo === 'MATRIZ' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
+                                <span className={`ml-2 text-xs font-medium px-1.5 py-0.5 rounded-full ${apolice.empresa.tipo === 'MATRIZ' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100 hover:text-blue-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-100 hover:text-gray-600'}`}>
                                   {apolice.empresa.tipo === 'MATRIZ' ? 'Matriz' : 'Filial'}
                                 </span>
                               </p>

@@ -660,7 +660,7 @@ const AdminDashboard = () => {
                         type="button"
                         onClick={() => buscarCep(newEmpresa.cep)}
                         disabled={isCepLoading}
-                        className="px-3 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 flex items-center gap-1 text-sm"
+                        className="px-3 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600 flex items-center gap-1 text-sm"
                       >
                         {isCepLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                       </button>
@@ -672,7 +672,7 @@ const AdminDashboard = () => {
                   </div>
                   <div className="md:col-span-2">
                     <Label htmlFor="rua">Rua</Label>
-                    <Input id="rua" value={newEmpresa.rua} readOnly className="bg-gray-50 text-gray-600" />
+                    <Input id="rua" value={newEmpresa.rua} readOnly className="bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600" />
                   </div>
                   <div>
                     <Label htmlFor="complemento">Complemento</Label>
@@ -680,15 +680,15 @@ const AdminDashboard = () => {
                   </div>
                   <div>
                     <Label htmlFor="bairro">Bairro</Label>
-                    <Input id="bairro" value={newEmpresa.bairro} readOnly className="bg-gray-50 text-gray-600" />
+                    <Input id="bairro" value={newEmpresa.bairro} readOnly className="bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600" />
                   </div>
                   <div>
                     <Label htmlFor="cidade">Cidade</Label>
-                    <Input id="cidade" value={newEmpresa.cidade} readOnly className="bg-gray-50 text-gray-600" />
+                    <Input id="cidade" value={newEmpresa.cidade} readOnly className="bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600" />
                   </div>
                   <div>
                     <Label htmlFor="estado">Estado</Label>
-                    <Input id="estado" value={newEmpresa.estado} readOnly className="bg-gray-50 text-gray-600" />
+                    <Input id="estado" value={newEmpresa.estado} readOnly className="bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600" />
                   </div>
                 </div>
               ) : (
@@ -720,7 +720,7 @@ const AdminDashboard = () => {
                         type="button"
                         onClick={() => buscarCep(newEmpresa.cep)}
                         disabled={isCepLoading}
-                        className="px-3 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 flex items-center gap-1 text-sm"
+                        className="px-3 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600 flex items-center gap-1 text-sm"
                       >
                         {isCepLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                       </button>
@@ -732,7 +732,7 @@ const AdminDashboard = () => {
                   </div>
                   <div className="md:col-span-2">
                     <Label htmlFor="rua">Rua</Label>
-                    <Input id="rua" value={newEmpresa.rua} readOnly className="bg-gray-50 text-gray-600" />
+                    <Input id="rua" value={newEmpresa.rua} readOnly className="bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600" />
                   </div>
                   <div>
                     <Label htmlFor="complemento">Complemento</Label>
@@ -740,15 +740,15 @@ const AdminDashboard = () => {
                   </div>
                   <div>
                     <Label htmlFor="bairro">Bairro</Label>
-                    <Input id="bairro" value={newEmpresa.bairro} readOnly className="bg-gray-50 text-gray-600" />
+                    <Input id="bairro" value={newEmpresa.bairro} readOnly className="bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600" />
                   </div>
                   <div>
                     <Label htmlFor="cidade">Cidade</Label>
-                    <Input id="cidade" value={newEmpresa.cidade} readOnly className="bg-gray-50 text-gray-600" />
+                    <Input id="cidade" value={newEmpresa.cidade} readOnly className="bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600" />
                   </div>
                   <div>
                     <Label htmlFor="estado">Estado</Label>
-                    <Input id="estado" value={newEmpresa.estado} readOnly className="bg-gray-50 text-gray-600" />
+                    <Input id="estado" value={newEmpresa.estado} readOnly className="bg-gray-50 text-gray-600 hover:bg-gray-50 hover:text-gray-600" />
                   </div>
                 </div>
               )}
