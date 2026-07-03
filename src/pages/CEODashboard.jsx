@@ -100,6 +100,7 @@ const CEODashboard = () => {
   // Gi métricas
   const [giMetricas, setGiMetricas] = useState(null);
   const [expandedEmpresaId, setExpandedEmpresaId] = useState(null);
+  const [expandedSolId, setExpandedSolId] = useState(null);
   const [isLoadingGi, setIsLoadingGi] = useState(true);
 
   // Orcamentos da semana
@@ -1103,15 +1104,60 @@ const CEODashboard = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                   {filteredSolicitacoes.length > 0 ? (
-                    <div className="rounded-md border">
-                      <Table>
-                        <TableHeader><TableRow><TableHead className="w-[80px]">ID</TableHead><TableHead>Empresa</TableHead><TableHead>Beneficiário</TableHead><TableHead>Tipo</TableHead><TableHead>Status</TableHead><TableHead>Data</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
-                        <TableBody>{paginatedSolicitacoes.map((solicitacao) => (<TableRow key={solicitacao.id}><TableCell className="font-mono text-xs">{String(solicitacao.id).substring(0,8)}...</TableCell><TableCell>{solicitacao.empresa?.nome_fantasia || 'N/A'}</TableCell><TableCell>{solicitacao.beneficiario?.nome_completo || 'N/A'}</TableCell><TableCell>{solicitacao.tipo_solicitacao}</TableCell><TableCell><Badge variant={solicitacao.status === 'REJEITADA' ? 'destructive' : solicitacao.status === 'CONCLUIDA' ? 'default' : 'outline'} className={solicitacao.status === 'CONCLUIDA' ? 'bg-green-100 text-green-800 border-green-200' : solicitacao.status === 'PENDENTE' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' : solicitacao.status === 'EM PROCESSAMENTO' ? 'bg-blue-100 text-blue-800 border-blue-200' : ''}>{solicitacao.status}</Badge></TableCell><TableCell>{formatDate(solicitacao.data_solicitacao)}</TableCell><TableCell className="text-right"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Abrir menu</span><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => handleViewSolicitacao(solicitacao)}>Visualizar</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell></TableRow>))}</TableBody>
-                      </Table>
-                      <div className="flex items-center justify-between px-4 py-4 border-t"><div className="flex-1 text-sm text-muted-foreground">Página {solicitacaoCurrentPage} de {totalSolicitacaoPages > 0 ? totalSolicitacaoPages : 1}</div><div className="flex items-center space-x-2"><Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={solicitacaoCurrentPage === 1}><ChevronLeft className="h-4 w-4 mr-2" />Anterior</Button><Button variant="outline" size="sm" onClick={handleNextPage} disabled={solicitacaoCurrentPage >= totalSolicitacaoPages}>Próximo<ChevronRight className="h-4 w-4 ml-2" /></Button></div></div>
-                    </div>
-                   ) : (<div className="text-center py-12 text-muted-foreground"><p>Nenhuma solicitação encontrada.</p></div>)}
+                  {filteredSolicitacoes.length > 0 ? (
+                    <>
+                      {/* Desktop */}
+                      <div className="hidden sm:block rounded-md border">
+                        <Table>
+                          <TableHeader><TableRow><TableHead className="w-[80px]">ID</TableHead><TableHead>Empresa</TableHead><TableHead>Beneficiário</TableHead><TableHead>Tipo</TableHead><TableHead>Status</TableHead><TableHead>Data</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
+                          <TableBody>{paginatedSolicitacoes.map((solicitacao) => (<TableRow key={solicitacao.id}><TableCell className="font-mono text-xs">{String(solicitacao.id).substring(0,8)}...</TableCell><TableCell>{solicitacao.empresa?.nome_fantasia || 'N/A'}</TableCell><TableCell>{solicitacao.beneficiario?.nome_completo || 'N/A'}</TableCell><TableCell>{solicitacao.tipo_solicitacao}</TableCell><TableCell><Badge variant="outline" className={solicitacao.status === 'CONCLUIDA' ? 'bg-green-100 text-green-800 border-green-200' : solicitacao.status === 'PENDENTE' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' : solicitacao.status === 'EM PROCESSAMENTO' ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-red-100 text-red-800 border-red-200'}>{solicitacao.status}</Badge></TableCell><TableCell>{formatDate(solicitacao.data_solicitacao)}</TableCell><TableCell className="text-right"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Abrir menu</span><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => handleViewSolicitacao(solicitacao)}>Visualizar</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell></TableRow>))}</TableBody>
+                        </Table>
+                        <div className="flex items-center justify-between px-4 py-4 border-t"><div className="flex-1 text-sm text-muted-foreground">Página {solicitacaoCurrentPage} de {totalSolicitacaoPages > 0 ? totalSolicitacaoPages : 1}</div><div className="flex items-center space-x-2"><Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={solicitacaoCurrentPage === 1}><ChevronLeft className="h-4 w-4 mr-2" />Anterior</Button><Button variant="outline" size="sm" onClick={handleNextPage} disabled={solicitacaoCurrentPage >= totalSolicitacaoPages}>Próximo<ChevronRight className="h-4 w-4 ml-2" /></Button></div></div>
+                      </div>
+
+                      {/* Mobile cards */}
+                      <div className="sm:hidden space-y-2">
+                        {paginatedSolicitacoes.map((sol) => {
+                          const isOpen = expandedSolId === sol.id;
+                          const badgeClass = sol.status === 'CONCLUIDA' ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100 hover:text-green-800'
+                            : sol.status === 'PENDENTE' ? 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100 hover:text-yellow-800'
+                            : sol.status === 'EM PROCESSAMENTO' ? 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-100 hover:text-blue-800'
+                            : 'bg-red-100 text-red-800 border-red-200 hover:bg-red-100 hover:text-red-800';
+                          return (
+                            <div key={sol.id} className="rounded-lg border bg-white overflow-hidden">
+                              <button className="w-full px-4 py-3 text-left" onClick={() => setExpandedSolId(isOpen ? null : sol.id)}>
+                                <div className="flex items-start justify-between gap-2">
+                                  <p className="font-semibold text-sm leading-snug">{sol.beneficiario?.nome_completo || 'N/A'}</p>
+                                  <ChevronDown className={`h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                                </div>
+                                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                  <span className="text-xs text-muted-foreground">{sol.empresa?.nome_fantasia || 'N/A'}</span>
+                                  <Badge variant="outline" className={`text-xs ${badgeClass}`}>{sol.status}</Badge>
+                                </div>
+                              </button>
+                              {isOpen && (
+                                <div className="px-4 pb-4 border-t pt-3 space-y-2 bg-gray-50 text-sm">
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div><p className="text-xs text-muted-foreground">Tipo</p><p className="font-medium">{sol.tipo_solicitacao || '—'}</p></div>
+                                    <div><p className="text-xs text-muted-foreground">Data</p><p className="font-medium">{formatDate(sol.data_solicitacao)}</p></div>
+                                  </div>
+                                  <div><p className="text-xs text-muted-foreground">ID</p><p className="font-mono text-xs">{String(sol.id).substring(0,8)}...</p></div>
+                                  <Button size="sm" variant="outline" className="w-full mt-2" onClick={() => handleViewSolicitacao(sol)}>Visualizar</Button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        <div className="flex items-center justify-between pt-2">
+                          <span className="text-sm text-muted-foreground">Pág. {solicitacaoCurrentPage} de {totalSolicitacaoPages > 0 ? totalSolicitacaoPages : 1}</span>
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={solicitacaoCurrentPage === 1}><ChevronLeft className="h-4 w-4" /></Button>
+                            <Button variant="outline" size="sm" onClick={handleNextPage} disabled={solicitacaoCurrentPage >= totalSolicitacaoPages}><ChevronRight className="h-4 w-4" /></Button>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  ) : (<div className="text-center py-12 text-muted-foreground"><p>Nenhuma solicitação encontrada.</p></div>)}
                 </CardContent>
               </Card>
             </motion.div>
