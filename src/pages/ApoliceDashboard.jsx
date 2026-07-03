@@ -386,8 +386,8 @@ const ApoliceDashboard = () => {
                                 return (
                                   <div className="space-y-2">
                                     <div className="flex items-center gap-2">
-                                      {seg?.logo && <img src={seg.logo} alt={seg.nome} className="h-6 object-contain" />}
                                       <p className="font-semibold text-gray-800">{apolice.seguradora || '—'}</p>
+                                      {seg?.logo && <img src={seg.logo} alt={seg.nome} className="h-6 object-contain" />}
                                     </div>
                                     {seg?.phone && (
                                       <a href={`tel:${seg.phone.replace(/\D/g, '')}`} className="flex items-center gap-1.5 text-sm text-[#003580] hover:underline">
@@ -427,8 +427,8 @@ const ApoliceDashboard = () => {
                                     return (
                                       <div className="space-y-1">
                                         <div className="flex items-center gap-2">
-                                          {seg?.logo && <img src={seg.logo} alt={seg.nome} className="h-5 object-contain" />}
                                           <p className="font-semibold text-gray-800">{sub.seguradora || '—'}</p>
+                                          {seg?.logo && <img src={seg.logo} alt={seg.nome} className="h-5 object-contain" />}
                                         </div>
                                         {seg?.phone && (
                                           <a href={`tel:${seg.phone.replace(/\D/g, '')}`} className="block text-xs text-[#003580] hover:underline">📞 {seg.phone}</a>
