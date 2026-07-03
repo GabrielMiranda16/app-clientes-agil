@@ -322,7 +322,7 @@ const ModalFormContent = React.memo(({ formData, setFormData, age, titulares, is
         <div className="flex items-center justify-between mb-4">
             <h4 className="font-semibold">Solicitar Inclusão e Exclusão</h4>
             <Button type="button" onClick={openSolicitacaoDialog} className="bg-[#003580] hover:bg-[#002060] text-white shadow-md hover:shadow-lg transition-all">
-               <Plus className="mr-2 h-4 w-4" /> Solicitações
+                Solicitações
             </Button>
         </div>
 
@@ -926,7 +926,7 @@ const ClientDashboard = () => {
                     onClick={() => { setIsSolicitacaoDialogOpen(false); setPendingInclusaoBenefId(editingBeneficiario.id); setPendingInclusaoPlanos([type]); setInclusaoData({ motivo: '', dataInclusao: '', observacao: '' }); setIsInclusaoDetalheOpen(true); }}
                     className="w-full h-8 text-xs border-blue-200 text-[#003580] hover:bg-blue-100 hover:text-[#002060] bg-transparent"
                 >
-                    <Plus className="h-3.5 w-3.5 mr-1.5" />Solicitar Inclusão
+                    Solicitar Inclusão
                 </Button>
             </div>
         );
@@ -1428,7 +1428,7 @@ const ClientDashboard = () => {
                                 <SelectItem value="AFASTADO">Afastados</SelectItem>
                             </SelectContent>
                         </Select>
-                        <Button onClick={openModalToAdd} className="w-full sm:w-auto bg-[#003580] hover:bg-[#002060] text-white"><Plus className="mr-2 h-4 w-4" /> Adicionar</Button>
+                        <Button onClick={openModalToAdd} className="w-full sm:w-auto bg-[#003580] hover:bg-[#002060] text-white"> Adicionar</Button>
                     </div>
                 </div>
             </CardHeader>

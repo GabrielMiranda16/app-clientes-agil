@@ -868,7 +868,7 @@ const CEODashboard = () => {
                           onClick={() => { setAddOpen(o => !o); setEditId(null); }}
                           className="flex items-center gap-1 text-xs font-medium text-white bg-[#003580] hover:bg-[#002060] rounded-md px-2 py-1"
                         >
-                          <Plus className="h-3.5 w-3.5" /> Adicionar
+                           Adicionar
                         </button>
                       </div>
                     </div>
@@ -1238,7 +1238,7 @@ const CEODashboard = () => {
                   Gerenciar
                 </Button>
                 <Button variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white border border-white/20 rounded-lg" onClick={() => setIsNovoParceiro(true)}>
-                  <Plus className="mr-1.5 h-4 w-4" /> Novo Parceiro
+                   Novo Parceiro
                 </Button>
               </div>
             </div>
@@ -1358,7 +1358,7 @@ const CEODashboard = () => {
                     onClick={() => { setAddOpenAdm(o => !o); setTextoNovoCEO(''); }}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-[#003580] text-xs font-semibold hover:bg-white/90"
                   >
-                    <Plus className="h-3.5 w-3.5" /> Adicionar
+                     Adicionar
                   </button>
                 </div>
               </div>

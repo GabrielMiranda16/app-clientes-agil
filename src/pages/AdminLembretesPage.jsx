@@ -162,7 +162,7 @@ const AdminLembretesPage = () => {
               onClick={() => { setAddOpen(true); setTexto(''); setDataAlerta(''); }}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white text-[#003580] text-sm font-semibold hover:bg-white/90 transition-colors"
             >
-              <Plus className="h-4 w-4" /> Adicionar lembrete
+               Adicionar lembrete
             </button>
           </div>
 

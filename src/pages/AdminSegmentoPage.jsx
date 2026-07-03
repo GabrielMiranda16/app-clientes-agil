@@ -402,7 +402,7 @@ const AdminSegmentoPage = () => {
                   </Button>
                 )}
                 <Button variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white border border-white/20 rounded-lg" onClick={() => openNewApolice(todasEmpresas[0]?.id)}>
-                  <Plus className="mr-1.5 h-4 w-4" /> Nova Apólice
+                   Nova Apólice
                 </Button>
               </div>
             )}
@@ -657,7 +657,7 @@ const AdminSegmentoPage = () => {
                       sub_apolices: [...(p.sub_apolices || []), { tipo: '', numero: '', seguradora: '' }]
                     }))}
                   >
-                    <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
+                     Adicionar
                   </Button>
                 </div>
                 {(dadosAdicionais.sub_apolices || []).length === 0 && (
@@ -777,7 +777,7 @@ const AdminSegmentoPage = () => {
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-semibold">Veículos</Label>
                   <Button type="button" size="sm" variant="outline" onClick={() => setDadosAdicionais(p => ({ ...p, veiculos: [...(p.veiculos || []), { placa: '', marca: '', modelo: '', cor: '', ano: '' }] }))}>
-                    <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
+                     Adicionar
                   </Button>
                 </div>
                 {(dadosAdicionais.veiculos || []).map((v, i) => (
@@ -806,7 +806,7 @@ const AdminSegmentoPage = () => {
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-semibold">Segurados</Label>
                   <Button type="button" size="sm" variant="outline" onClick={() => setDadosAdicionais(p => ({ ...p, segurados: [...(p.segurados || []), { nome: '', cpf: '' }] }))}>
-                    <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
+                     Adicionar
                   </Button>
                 </div>
                 {(dadosAdicionais.segurados || []).map((s, i) => (
