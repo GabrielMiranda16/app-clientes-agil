@@ -74,7 +74,7 @@ serve(async (req) => {
       : `🔥 Lead quente: ${o.cliente_nome} (${segLabel} — ${ord} acesso)`;
 
     const protocoloHtml = protocolo
-      ? `<p style="margin:0 0 8px">🔖 Protocolo: <strong style="color:#003580;font-family:monospace">${protocolo}</strong></p>`
+      ? `<p style="margin:0 0 8px">Protocolo: <strong style="color:#003580;font-family:monospace">${protocolo}</strong></p>`
       : '';
     const propostaHtml = propostaClicada
       ? `<p style="margin:0 0 8px">💡 ${isAceitou ? 'Plano escolhido' : 'Clicou em'}: <strong>${propostaClicada}</strong></p>`
