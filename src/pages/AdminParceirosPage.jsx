@@ -676,7 +676,7 @@ const AdminParceirosPage = () => {
         supabase.functions.invoke('send-whatsapp', {
           body: {
             phone: parceiroTel,
-            message: `📋 *Orçamento pronto!*\n\nOlá, ${selected.parceiros?.nome_completo?.split(' ')[0] || 'Parceiro'}! O orçamento para *${selected.cliente_nome}* (${segLabel}) está pronto.\n\n🔖 Protocolo: *${protocolo}*\n🔗 ${window.location.origin}/orcamento/${slug}`,
+            message: `📋 *Orçamento pronto!*\n\nOlá, ${selected.parceiros?.nome_completo?.split(' ')[0] || 'Parceiro'}! O orçamento para *${selected.cliente_nome}* (${segLabel}) está pronto.\n\nProtocolo: *${protocolo}*\n🔗 ${window.location.origin}/orcamento/${slug}`,
           },
         }).catch(() => {});
       }
@@ -709,7 +709,7 @@ const AdminParceirosPage = () => {
       Ou copie o link: <a href="${linkOrcamento}" style="color:#003580;">${linkOrcamento}</a>
     </p>
     <p style="font-size:13px;color:#bbb;margin-top:8px;">
-      🔖 Protocolo: <strong style="color:#003580;">${protocolo}</strong>
+      Protocolo: <strong style="color:#003580;">${protocolo}</strong>
     </p>
     <p style="font-size:13px;color:#aaa;margin-top:16px;">
       Ágil Seguros · SUSEP 252166308 · <a href="mailto:contato@segurosagil.com.br" style="color:#003580;">contato@segurosagil.com.br</a>
@@ -1445,7 +1445,7 @@ const AdminParceirosPage = () => {
         <div className="space-y-4">
           {selected.numero_protocolo && (
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono font-semibold px-3 py-1.5 rounded-lg" style={{ background: '#003580', color: '#fff' }}>🔖 {selected.numero_protocolo}</span>
+              <span className="text-xs font-mono font-semibold px-3 py-1.5 rounded-lg" style={{ background: '#003580', color: '#fff' }}>{selected.numero_protocolo}</span>
             </div>
           )}
           <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
@@ -1769,7 +1769,7 @@ const AdminParceirosPage = () => {
                           <p className="font-semibold text-gray-800 truncate">{o.cliente_nome || 'Cliente não informado'}</p>
                           <p className="text-xs text-gray-400">{SEGMENTO_LABEL[o.segmento] || o.segmento}</p>
                           {o.numero_protocolo && (
-                            <p className="text-xs font-mono font-semibold mt-0.5" style={{ color: '#003580' }}>🔖 {o.numero_protocolo}</p>
+                            <p className="text-xs font-mono font-semibold mt-0.5" style={{ color: '#003580' }}>{o.numero_protocolo}</p>
                           )}
                           <p className="text-xs text-gray-500 mt-0.5">Parceiro: <span className="font-medium">{o.parceiros?.nome_completo || '—'}</span></p>
                           {o.valor_mensalidade && (

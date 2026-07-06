@@ -497,7 +497,7 @@ const OrcamentoPublicoPage = () => {
               </p>
               {orcamento?.numero_protocolo && (
                 <p className="text-sm text-gray-500 font-mono pb-10 sm:pb-16">
-                  🔖 Protocolo: <span className="font-semibold text-[#003580]">{orcamento.numero_protocolo}</span>
+                  Protocolo:<span className="font-semibold text-[#003580]">{orcamento.numero_protocolo}</span>
                 </p>
               )}
             </div>
