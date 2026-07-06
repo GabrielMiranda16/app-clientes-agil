@@ -943,10 +943,12 @@ const OrcamentoPublicoPage = () => {
                               <div className="divide-y divide-white/10">
                                 {segmento === 'AUTO' ? (
                                   <>
-                                    {p.franquia && (
+                                    {(p.franquia_valor || p.franquia_percentual || p.franquia) && (
                                       <div className="flex items-center justify-between px-5 py-3">
                                         <span className="text-sm text-white/60">Franquia</span>
-                                        <span className="text-sm font-medium text-white">R$ {p.franquia}</span>
+                                        <span className="text-sm font-semibold text-white">
+                                          {p.franquia_percentual ? `${p.franquia_percentual} — ` : ''}R$ {p.franquia_valor || p.franquia}
+                                        </span>
                                       </div>
                                     )}
                                     <div className="flex items-center justify-between px-5 py-3">
@@ -1493,6 +1495,11 @@ const PropostaCard = ({ proposta, isSaude, isAuto = false, isViagem = false, cen
             {isAuto && proposta.cobertura_tipo && (
               <p className={`text-sm font-medium mt-0.5 ${d ? 'text-[#003580]/70' : 'text-white/70'}`}>Cobertura {proposta.cobertura_tipo}</p>
             )}
+            {isAuto && (proposta.franquia_valor || proposta.franquia_percentual || proposta.franquia) && (
+              <p className={`text-sm mt-0.5 ${d ? 'text-[#003580]/60' : 'text-white/60'}`}>
+                Franquia: <span className="font-semibold">{proposta.franquia_percentual ? `${proposta.franquia_percentual} — ` : ''}R$ {proposta.franquia_valor || proposta.franquia}</span>
+              </p>
+            )}
             {isSaude && proposta.abrangencia && (
               <p className={`text-sm mt-0.5 ${d ? 'text-[#003580]/60' : 'text-white/60'}`}>{proposta.abrangencia} · {proposta.acomodacao || 'Sem acomodação'}</p>
             )}
@@ -1603,6 +1610,28 @@ const PropostaCard = ({ proposta, isSaude, isAuto = false, isViagem = false, cen
             {expanded ? <><ChevronUp className="h-4 w-4" /> Ocultar faixas</> : <><ChevronDown className="h-4 w-4" /> Ver todos os valores</>}
           </button>
         </>
+      )}
+
+      {/* Chips — AUTO */}
+      {isAuto && (proposta.franquia_valor || proposta.franquia_percentual || proposta.franquia || proposta.cobertura_tipo || proposta.assistencia_24h || proposta.carro_reserva) && (
+        <div className={`px-6 py-4 flex flex-wrap gap-2 border-b ${d ? 'border-gray-100' : 'border-white/15'}`}>
+          {(proposta.franquia_valor || proposta.franquia_percentual || proposta.franquia) && (
+            <span className={`text-sm font-semibold rounded-full px-4 py-1.5 flex items-center gap-1.5 ${d ? 'bg-[#003580] text-white' : 'bg-white/20 text-white'}`}>
+              🔒 Franquia: {proposta.franquia_percentual ? `${proposta.franquia_percentual} — ` : ''}R$&nbsp;{proposta.franquia_valor || proposta.franquia}
+            </span>
+          )}
+          {proposta.cobertura_tipo && (
+            <span className={`text-sm rounded-full px-3 py-1.5 ${d ? 'bg-blue-50 text-[#003580]/80' : 'bg-white/15 text-white/80'}`}>{proposta.cobertura_tipo}</span>
+          )}
+          {proposta.assistencia_24h && (
+            <span className={`text-sm rounded-full px-3 py-1.5 ${d ? 'bg-green-50 text-green-700' : 'bg-green-400/20 text-green-300'}`}>✓ Assistência 24h</span>
+          )}
+          {proposta.carro_reserva && (
+            <span className={`text-sm rounded-full px-3 py-1.5 ${d ? 'bg-green-50 text-green-700' : 'bg-green-400/20 text-green-300'}`}>
+              ✓ Carro reserva{proposta.carro_reserva_dias ? ` ${proposta.carro_reserva_dias}d` : ''}
+            </span>
+          )}
+        </div>
       )}
 
       {/* Chips — SAUDE */}
