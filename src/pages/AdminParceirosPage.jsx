@@ -400,6 +400,9 @@ const AdminParceirosPage = () => {
   const [clienteForm, setClienteForm] = useState({ cliente_nome: '', cliente_telefone: '', cliente_email: '', cliente_cpf: '' });
   const [acessos, setAcessos] = useState([]);
   const [selectedComissao, setSelectedComissao] = useState(null);
+  const [clienteOnline, setClienteOnline] = useState(false);
+  const realtimeSubRef = useRef(null);
+  const onlineTimeoutRef = useRef(null);
 
   // Criar orçamento
   const [parceiros, setParceiros] = useState([]);
@@ -518,6 +521,26 @@ const AdminParceirosPage = () => {
     }
   };
 
+  const subscribeAcessos = (orcamentoId) => {
+    if (realtimeSubRef.current) supabase.removeChannel(realtimeSubRef.current);
+    const channel = supabase
+      .channel(`acessos-${orcamentoId}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orcamento_acessos', filter: `orcamento_id=eq.${orcamentoId}` }, (payload) => {
+        setClienteOnline(true);
+        setAcessos(prev => prev.map(a => a.id === payload.new.id ? { ...a, ...payload.new } : a));
+        if (onlineTimeoutRef.current) clearTimeout(onlineTimeoutRef.current);
+        onlineTimeoutRef.current = setTimeout(() => setClienteOnline(false), 10000);
+      })
+      .subscribe();
+    realtimeSubRef.current = channel;
+  };
+
+  const unsubscribeAcessos = () => {
+    if (realtimeSubRef.current) { supabase.removeChannel(realtimeSubRef.current); realtimeSubRef.current = null; }
+    if (onlineTimeoutRef.current) { clearTimeout(onlineTimeoutRef.current); onlineTimeoutRef.current = null; }
+    setClienteOnline(false);
+  };
+
   const toggleExpand = async (o) => {
     if (expandedId === o.id) {
       setExpandedId(null);
@@ -525,6 +548,7 @@ const AdminParceirosPage = () => {
       setDocs([]);
       setAcessos([]);
       setConfirmDelete(false);
+      unsubscribeAcessos();
       return;
     }
     setExpandedId(o.id);
@@ -559,6 +583,7 @@ const AdminParceirosPage = () => {
     ]);
     setDocs(docData || []);
     setAcessos(acessoData || []);
+    subscribeAcessos(o.id);
     if (o.status === 'COMISSAO') {
       const { data: comData } = await supabase.from('comissoes').select('*').eq('orcamento_id', o.id).maybeSingle();
       setSelectedComissao(comData || null);
@@ -1442,6 +1467,14 @@ const AdminParceirosPage = () => {
     const tempoUltimo = ultimo?.tempo_pagina || 0;
     const tempoTotal = acessos.reduce((sum, a) => sum + (a.tempo_pagina || 0), 0);
     const fmtTempo = (s) => s >= 60 ? `${Math.floor(s / 60)}min ${s % 60}s` : `${s}s`;
+    const score = Math.min(100,
+      Math.min(30, total * 10) +
+      Math.min(30, Math.floor(tempoTotal / 30)) +
+      (leuTudo ? 20 : 0) +
+      (propostaClicada ? 20 : 0)
+    );
+    const scoreCor = score >= 61 ? 'bg-green-500' : score >= 31 ? 'bg-yellow-400' : 'bg-red-400';
+    const scoreLabel = score >= 61 ? 'Quente 🔥' : score >= 31 ? 'Morno' : 'Frio';
     const tempoRelativo = (d) => {
       if (!d) return '';
       const diff = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
@@ -1455,13 +1488,31 @@ const AdminParceirosPage = () => {
       <div className={`rounded-xl p-3 text-xs border ${total === 0 ? 'bg-gray-50 border-gray-100 text-gray-400' : quente ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-100'}`}>
         <div className="flex items-center gap-2 mb-2">
           <p className={`font-semibold uppercase tracking-wide ${total === 0 ? 'text-gray-400' : quente ? 'text-orange-700' : 'text-green-700'}`}>Atividade do cliente</p>
-          {quente && <span className="bg-orange-100 text-orange-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">🔥 Quente</span>}
+          {clienteOnline && (
+            <span className="flex items-center gap-1 text-green-600 text-[10px] font-bold">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+              Online agora
+            </span>
+          )}
+          {quente && !clienteOnline && <span className="bg-orange-100 text-orange-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">🔥 Quente</span>}
           {total >= 3 && !quente && <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">👀 {total}x</span>}
         </div>
         {total === 0 ? (
           <p>Cliente ainda não acessou o link.</p>
         ) : (
           <div className="space-y-1 text-gray-600">
+            <div className="mb-2">
+              <div className="flex justify-between text-[10px] mb-0.5">
+                <span className="text-gray-400">Score de interesse</span>
+                <span className={`font-bold ${score >= 61 ? 'text-green-600' : score >= 31 ? 'text-yellow-600' : 'text-red-500'}`}>{scoreLabel} ({score})</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-1.5">
+                <div className={`h-1.5 rounded-full transition-all ${scoreCor}`} style={{ width: `${score}%` }} />
+              </div>
+            </div>
             <p><span className="text-gray-400">Acessos:</span> <strong className={total >= 3 ? 'text-orange-600' : ''}>{total}x</strong></p>
             <p><span className="text-gray-400">Último acesso:</span> <strong>{tempoRelativo(ultimo?.acessado_em)}</strong></p>
             {tempoUltimo > 0 && <p><span className="text-gray-400">Última sessão:</span> {fmtTempo(tempoUltimo)}</p>}
