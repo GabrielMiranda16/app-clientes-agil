@@ -1633,41 +1633,74 @@ const ClientDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="rounded-md border overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Beneficiário</TableHead>
-                        <TableHead>Plano</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Data</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {todasSolicitacoesDaEmpresa.slice(0, 10).map(s => {
+                {(() => {
+                  const solicitacoes = todasSolicitacoesDaEmpresa.slice(0, 10);
+                  const statusColors = {
+                    'PENDENTE': 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100 hover:text-yellow-800',
+                    'EM PROCESSAMENTO': 'bg-blue-100 text-blue-800 hover:bg-blue-100 hover:text-blue-800',
+                    'CONCLUIDA': 'bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800',
+                    'REJEITADA': 'bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800',
+                    'CANCELADA': 'bg-gray-100 text-gray-600 hover:bg-gray-100 hover:text-gray-600',
+                  };
+                  const tipoColors = { 'INCLUSAO': 'bg-green-600 hover:bg-green-600', 'EXCLUSAO': 'bg-red-600', 'ALTERACAO': 'bg-blue-600' };
+                  return (<>
+                    {/* Mobile: cards accordion */}
+                    <div className="sm:hidden space-y-2">
+                      {solicitacoes.map(s => {
                         const ben = beneficiarios.find(b => b.id === s.beneficiario_id);
-                        const statusColors = {
-                          'PENDENTE': 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100 hover:text-yellow-800',
-                          'EM PROCESSAMENTO': 'bg-blue-100 text-blue-800 hover:bg-blue-100 hover:text-blue-800',
-                          'CONCLUIDA': 'bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800',
-                          'REJEITADA': 'bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800',
-                          'CANCELADA': 'bg-gray-100 text-gray-600 hover:bg-gray-100 hover:text-gray-600',
-                        };
-                        const tipoColors = { 'INCLUSAO': 'bg-green-600 hover:bg-green-600', 'EXCLUSAO': 'bg-red-600', 'ALTERACAO': 'bg-blue-600' };
+                        const isOpen = expandedBenefId === `sol-${s.id}`;
                         return (
-                          <TableRow key={s.id}>
-                            <TableCell className="font-medium">{ben?.nome_completo || '—'}</TableCell>
-                            <TableCell className="capitalize">{s.tipo_plano}</TableCell>
-                            <TableCell><Badge className={`text-white ${tipoColors[s.tipo_solicitacao] || 'bg-gray-500'}`}>{s.tipo_solicitacao}</Badge></TableCell>
-                            <TableCell><Badge className={statusColors[s.status] || 'bg-gray-100 text-gray-600 hover:bg-gray-100 hover:text-gray-600'}>{s.status}</Badge></TableCell>
-                            <TableCell className="text-sm text-gray-500">{formatDate(s.data_solicitacao)}</TableCell>
-                          </TableRow>
+                          <div key={s.id} className="rounded-lg border border-gray-200 bg-white">
+                            <button className="w-full flex items-center justify-between px-4 py-3 text-left" onClick={() => setExpandedBenefId(isOpen ? null : `sol-${s.id}`)}>
+                              <div className="min-w-0">
+                                <p className="font-medium text-sm text-gray-900 truncate">{ben?.nome_completo || '—'}</p>
+                                <p className="text-xs text-gray-400 mt-0.5">{formatDate(s.data_solicitacao)}</p>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0 ml-2">
+                                <Badge className={`text-white text-xs ${tipoColors[s.tipo_solicitacao] || 'bg-gray-500'}`}>{s.tipo_solicitacao}</Badge>
+                                {isOpen ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
+                              </div>
+                            </button>
+                            {isOpen && (
+                              <div className="px-4 pb-4 border-t border-gray-100 pt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                                <div><span className="text-xs text-gray-400 block">Plano</span><span className="font-medium capitalize">{s.tipo_plano}</span></div>
+                                <div><span className="text-xs text-gray-400 block">Status</span><Badge className={`text-xs mt-0.5 ${statusColors[s.status] || 'bg-gray-100 text-gray-600'}`}>{s.status}</Badge></div>
+                              </div>
+                            )}
+                          </div>
                         );
                       })}
-                    </TableBody>
-                  </Table>
-                </div>
+                    </div>
+                    {/* Desktop: tabela */}
+                    <div className="hidden sm:block rounded-md border overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Beneficiário</TableHead>
+                            <TableHead>Plano</TableHead>
+                            <TableHead>Tipo</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Data</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {solicitacoes.map(s => {
+                            const ben = beneficiarios.find(b => b.id === s.beneficiario_id);
+                            return (
+                              <TableRow key={s.id}>
+                                <TableCell className="font-medium">{ben?.nome_completo || '—'}</TableCell>
+                                <TableCell className="capitalize">{s.tipo_plano}</TableCell>
+                                <TableCell><Badge className={`text-white ${tipoColors[s.tipo_solicitacao] || 'bg-gray-500'}`}>{s.tipo_solicitacao}</Badge></TableCell>
+                                <TableCell><Badge className={statusColors[s.status] || 'bg-gray-100 text-gray-600 hover:bg-gray-100 hover:text-gray-600'}>{s.status}</Badge></TableCell>
+                                <TableCell className="text-sm text-gray-500">{formatDate(s.data_solicitacao)}</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </>);
+                })()}
               </CardContent>
             </Card>
           )}
