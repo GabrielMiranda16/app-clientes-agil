@@ -372,6 +372,7 @@ const ClientDashboard = () => {
   const [filter, setFilter] = useState('Todos');
   const [sortAge, setSortAge] = useState(null);
   const [age, setAge] = useState('');
+  const [expandedBenefId, setExpandedBenefId] = useState(null);
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -1450,7 +1451,79 @@ const ClientDashboard = () => {
                      </div>
                 ) : filteredBeneficiarios.length > 0 ? (
                     <>
-                        <div className="rounded-md border overflow-x-auto">
+                        {/* Mobile: cards accordion */}
+                        <div className="sm:hidden space-y-2">
+                            {currentBeneficiarios.map((b) => {
+                                const isOpen = expandedBenefId === b.id;
+                                return (
+                                    <div key={b.id} className={`rounded-lg border ${selectedIds.has(b.id) ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white'}`}>
+                                        <button
+                                            className="w-full flex items-center justify-between px-4 py-3 text-left"
+                                            onClick={() => setExpandedBenefId(isOpen ? null : b.id)}
+                                        >
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <Checkbox
+                                                    checked={selectedIds.has(b.id)}
+                                                    onCheckedChange={(v) => setSelectedIds(prev => {
+                                                        const next = new Set(prev);
+                                                        v ? next.add(b.id) : next.delete(b.id);
+                                                        return next;
+                                                    })}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                />
+                                                <div className="min-w-0">
+                                                    <p className="font-medium text-sm text-gray-900 truncate">{b.nome_completo}</p>
+                                                    {b.parentesco !== 'TITULAR' && <p className="text-xs text-gray-400 truncate">Titular: {b.nome_titular}</p>}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2 shrink-0 ml-2">
+                                                <Badge className={getBadgeClass(b.situacao)} variant="secondary">{b.situacao}</Badge>
+                                                {isOpen ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
+                                            </div>
+                                        </button>
+                                        {isOpen && (
+                                            <div className="px-4 pb-4 border-t border-gray-100 pt-3 space-y-2">
+                                                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                                                    <div><span className="text-xs text-gray-400 block">CPF</span><span className="font-medium">{formatCpfCnpj(b.cpf)}</span></div>
+                                                    <div><span className="text-xs text-gray-400 block">Parentesco</span><span className="font-medium">{b.parentesco}</span></div>
+                                                    <div><span className="text-xs text-gray-400 block">Idade</span><span className="font-medium">{b.data_nascimento ? `${calculateAge(b.data_nascimento)} anos` : <span className="text-gray-400">-</span>}</span></div>
+                                                    <div>
+                                                        <span className="text-xs text-gray-400 block">Planos</span>
+                                                        <div className="flex flex-wrap gap-1 mt-0.5">
+                                                            {isPlanAtivo(b, 'saude') && <Badge variant="outline" className="text-xs bg-blue-50 text-[#003580] border-blue-200">Saúde</Badge>}
+                                                            {isPlanAtivo(b, 'vida') && <Badge variant="outline" className="text-xs bg-blue-50 text-[#003580] border-blue-200">Vida</Badge>}
+                                                            {isPlanAtivo(b, 'odonto') && <Badge variant="outline" className="text-xs bg-blue-50 text-[#003580] border-blue-200">Odonto</Badge>}
+                                                            {!isPlanAtivo(b, 'saude') && !isPlanAtivo(b, 'vida') && !isPlanAtivo(b, 'odonto') && <span className="text-gray-400 text-xs">-</span>}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2 pt-1">
+                                                    <Button variant="outline" size="sm" className="flex-1 text-[#003580] border-[#003580]" onClick={() => openModalToEdit(b)}><Edit className="h-3.5 w-3.5 mr-1" />Editar</Button>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button variant="outline" size="sm" className="flex-1 text-red-600 border-red-300"><Trash2 className="h-3.5 w-3.5 mr-1" />Excluir</Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                                                                <AlertDialogDescription>Esta ação é permanente e não pode ser desfeita. Tem certeza que deseja excluir <strong>{b.nome_completo}</strong>?</AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => deleteBeneficiario(b.id)} className={buttonVariants({ variant: "destructive" })}>Excluir</AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Desktop: tabela */}
+                        <div className="hidden sm:block rounded-md border overflow-x-auto">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -1532,7 +1605,7 @@ const ClientDashboard = () => {
                                 </TableBody>
                             </Table>
                         </div>
-                        
+
                         {/* Pagination Controls */}
                         <div className="flex items-center justify-end space-x-2 py-4">
                             <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1}>Anterior</Button>
