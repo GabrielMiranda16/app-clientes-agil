@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useNavigate, useParams, useLocation, Navigate } from 'react-router-dom';
 import { Download, FileText, ArrowLeft, Calendar, Loader2, Search, ChevronRight, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useCompany } from '@/contexts/CompanyContext';
@@ -50,11 +50,12 @@ const CoparticipacaoClientePage = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        const empresaIdNum = parseInt(empresaId);
         const [copData, benData, empData, apolData] = await Promise.all([
-          coparticipacaoService.getAllCoparticipacoes(),
-          beneficiariosService.getAllBeneficiarios(),
+          coparticipacaoService.getCoparticipacoesByEmpresa(empresaIdNum),
+          beneficiariosService.getBeneficiariosByEmpresa(empresaIdNum),
           empresasService.getEmpresas(),
-          apolicesService.getAllApolices()
+          apolicesService.getApolicesByEmpresa(empresaIdNum)
         ]);
         setCoparticipacoes(copData);
         setBeneficiarios(benData);
@@ -278,6 +279,16 @@ const CoparticipacaoClientePage = () => {
         </div>
       </DashboardLayout>
     );
+  }
+
+  if (user?.perfil === 'CLIENTE' && empresas.length > 0) {
+    const matrizId = user.empresa_matriz_id || user.empresa_id;
+    const acessiveis = empresas
+      .filter(e => e.id === matrizId || e.empresa_matriz_id === matrizId)
+      .map(e => e.id);
+    if (!acessiveis.includes(parseInt(empresaId))) {
+      return <Navigate to="/select-segmento" replace />;
+    }
   }
 
   const tipoLabel = tipoFiltro === 'saude' ? 'Saúde' : 'Odonto';
