@@ -111,6 +111,7 @@ const OrcamentoPublicoPage = () => {
   const startTimeRef = useRef(Date.now());
   const scrolledRef = useRef(false);
   const acessoIdRef = useRef(null);
+  const intervaloTempoRef = useRef(null);
 
   const [stage, setStage] = useState('loading');
   const [orcamento, setOrcamento] = useState(null);
@@ -153,12 +154,11 @@ const OrcamentoPublicoPage = () => {
     const onVisibility = () => { if (document.visibilityState === 'hidden') salvarTempo(); };
     document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener('pagehide', salvarTempo);
-    const intervalo = setInterval(salvarTempo, 30000);
     return () => {
       salvarTempo();
+      if (intervaloTempoRef.current) clearInterval(intervaloTempoRef.current);
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('pagehide', salvarTempo);
-      clearInterval(intervalo);
     };
   }, []);
 
@@ -249,6 +249,8 @@ const OrcamentoPublicoPage = () => {
       }).select().maybeSingle();
       if (acesso) acessoIdRef.current = acesso.id;
       startTimeRef.current = Date.now();
+      if (intervaloTempoRef.current) clearInterval(intervaloTempoRef.current);
+      intervaloTempoRef.current = setInterval(salvarTempo, 5000);
 
       // verificar se é lead quente (2º+ acesso)
       const { count } = await supabase.from('orcamento_acessos')
