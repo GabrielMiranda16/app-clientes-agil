@@ -143,12 +143,20 @@ const OrcamentoPublicoPage = () => {
     return () => observer.disconnect();
   }, [stage]);
 
+  const salvarTempo = () => {
+    if (!acessoIdRef.current) return;
+    const tempo = Math.round((Date.now() - startTimeRef.current) / 1000);
+    supabase.from('orcamento_acessos').update({ tempo_pagina: tempo }).eq('id', acessoIdRef.current).then(() => {});
+  };
+
   useEffect(() => {
+    const onVisibility = () => { if (document.visibilityState === 'hidden') salvarTempo(); };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', salvarTempo);
     return () => {
-      if (acessoIdRef.current) {
-        const tempo = Math.round((Date.now() - startTimeRef.current) / 1000);
-        supabase.from('orcamento_acessos').update({ tempo_pagina: tempo }).eq('id', acessoIdRef.current).then(() => {});
-      }
+      salvarTempo();
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', salvarTempo);
     };
   }, []);
 
