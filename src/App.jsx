@@ -28,6 +28,7 @@ const CoparticipacaoClientePage = lazy(() => import('@/pages/CoparticipacaoClien
 const ForceChangePassword      = lazy(() => import('@/pages/ForceChangePassword'));
 const TermosAceite             = lazy(() => import('@/pages/TermosAceite'));
 const OrcamentoPublicoPage     = lazy(() => import('@/pages/OrcamentoPublicoPage'));
+const NotFound                 = lazy(() => import('@/pages/NotFound'));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-soft-gradient">
@@ -78,7 +79,7 @@ const AppRoutes = () => {
         <Route path="/force-change-password" element={<ProtectedRoute allowedRoles={['CEO','ADM','CLIENTE','PARCEIRO']}><ForceChangePassword /></ProtectedRoute>} />
         <Route path="/orcamento/:slug" element={<OrcamentoPublicoPage />} />
         <Route path="/" element={<Navigate to={getHomeRoute()} replace />} />
-        <Route path="*" element={<Navigate to={getHomeRoute()} replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
   );
