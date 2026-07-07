@@ -370,6 +370,7 @@ const ClientDashboard = () => {
   const [formData, setFormData] = useState(emptyBeneficiario);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('Todos');
+  const [sortAge, setSortAge] = useState(null);
   const [age, setAge] = useState('');
   
   // Pagination State
@@ -484,10 +485,13 @@ const ClientDashboard = () => {
   );
 
   const filteredBeneficiarios = useMemo(() => {
-    return beneficiariosDaEmpresa
+    let result = beneficiariosDaEmpresa
       .filter(b => (filter === 'Todos' || b.situacao === filter))
       .filter(b => (b.nome_completo || '').toLowerCase().includes(searchTerm.toLowerCase()) || (b.cpf || '').includes(searchTerm) || (b.saude_numero_carteirinha || '').includes(searchTerm) || (b.vida_numero_carteirinha || '').includes(searchTerm) || (b.odonto_numero_carteirinha || '').includes(searchTerm));
-  }, [beneficiariosDaEmpresa, filter, searchTerm]);
+    if (sortAge === 'asc') result = [...result].sort((a, b) => new Date(b.data_nascimento || 0) - new Date(a.data_nascimento || 0));
+    if (sortAge === 'desc') result = [...result].sort((a, b) => new Date(a.data_nascimento || 0) - new Date(b.data_nascimento || 0));
+    return result;
+  }, [beneficiariosDaEmpresa, filter, searchTerm, sortAge]);
   
   useEffect(() => {
     setCurrentPage(1);
@@ -1427,6 +1431,14 @@ const ClientDashboard = () => {
                                 <SelectItem value="AFASTADO">Afastados</SelectItem>
                             </SelectContent>
                         </Select>
+                        <div className="flex gap-1">
+                          <Button variant="outline" size="sm" onClick={() => setSortAge(v => v === 'asc' ? null : 'asc')}
+                            className={`text-xs px-2 ${sortAge === 'asc' ? 'bg-[#003580] text-white border-[#003580]' : ''}`}
+                            title="Idade: menor → maior">↑ Idade</Button>
+                          <Button variant="outline" size="sm" onClick={() => setSortAge(v => v === 'desc' ? null : 'desc')}
+                            className={`text-xs px-2 ${sortAge === 'desc' ? 'bg-[#003580] text-white border-[#003580]' : ''}`}
+                            title="Idade: maior → menor">↓ Idade</Button>
+                        </div>
                         <Button onClick={openModalToAdd} className="w-full sm:w-auto bg-[#003580] hover:bg-[#002060] text-white"> Adicionar</Button>
                     </div>
                 </div>
