@@ -1439,7 +1439,8 @@ const AdminParceirosPage = () => {
     const leuTudo = acessos.some(a => a.scroll_fim);
     const propostaClicada = acessos.find(a => a.proposta_clicada)?.proposta_clicada;
     const device = ultimo?.device;
-    const maiorTempo = acessos.reduce((max, a) => Math.max(max, a.tempo_pagina || 0), 0);
+    const tempoUltimo = ultimo?.tempo_pagina || 0;
+    const tempoTotal = acessos.reduce((sum, a) => sum + (a.tempo_pagina || 0), 0);
     const fmtTempo = (s) => s >= 60 ? `${Math.floor(s / 60)}min ${s % 60}s` : `${s}s`;
     const tempoRelativo = (d) => {
       if (!d) return '';
@@ -1463,7 +1464,8 @@ const AdminParceirosPage = () => {
           <div className="space-y-1 text-gray-600">
             <p><span className="text-gray-400">Acessos:</span> <strong className={total >= 3 ? 'text-orange-600' : ''}>{total}x</strong></p>
             <p><span className="text-gray-400">Último acesso:</span> <strong>{tempoRelativo(ultimo?.acessado_em)}</strong></p>
-            {maiorTempo > 0 && <p><span className="text-gray-400">Tempo na página:</span> {fmtTempo(maiorTempo)}</p>}
+            {tempoUltimo > 0 && <p><span className="text-gray-400">Última sessão:</span> {fmtTempo(tempoUltimo)}</p>}
+            {tempoTotal > 0 && <p><span className="text-gray-400">Tempo total:</span> {fmtTempo(tempoTotal)}</p>}
             <p><span className="text-gray-400">Leu até o fim:</span> {leuTudo ? '✅ Sim' : '❌ Não'}</p>
             {device && <p><span className="text-gray-400">Dispositivo:</span> {device === 'mobile' ? '📱 Mobile' : '💻 Desktop'}</p>}
             {propostaClicada && <p className="mt-1 font-semibold text-green-700">💡 Clicou em: {propostaClicada}</p>}
