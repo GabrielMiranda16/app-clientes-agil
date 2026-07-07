@@ -1470,6 +1470,7 @@ const ClientDashboard = () => {
                                         <TableHead>Nome Completo</TableHead>
                                         <TableHead>CPF</TableHead>
                                         <TableHead>Parentesco</TableHead>
+                                        <TableHead>Idade</TableHead>
                                         <TableHead>Planos Ativos</TableHead>
                                         <TableHead>Situação</TableHead>
                                         <TableHead className="text-right">Ações</TableHead>
@@ -1496,6 +1497,7 @@ const ClientDashboard = () => {
                                             </TableCell>
                                             <TableCell>{formatCpfCnpj(b.cpf)}</TableCell>
                                             <TableCell>{b.parentesco}</TableCell>
+                                            <TableCell>{b.data_nascimento ? `${calculateAge(b.data_nascimento)} anos` : <span className="text-gray-400 text-xs">-</span>}</TableCell>
                                             <TableCell>
                                                 <div className="flex gap-2">
                                                     {isPlanAtivo(b, 'saude') && <Badge variant="outline" className="bg-blue-50 text-[#003580] hover:bg-blue-50 hover:text-[#003580] border-blue-200">Saúde</Badge>}
