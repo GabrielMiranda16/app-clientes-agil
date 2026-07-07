@@ -1432,6 +1432,47 @@ const AdminParceirosPage = () => {
     </div>
   );};
 
+  const renderAtividade = () => {
+    if (!selected?.slug || acessos === undefined) return null;
+    const ultimo = acessos[0];
+    const total = acessos.length;
+    const leuTudo = acessos.some(a => a.scroll_fim);
+    const propostaClicada = acessos.find(a => a.proposta_clicada)?.proposta_clicada;
+    const device = ultimo?.device;
+    const maiorTempo = acessos.reduce((max, a) => Math.max(max, a.tempo_pagina || 0), 0);
+    const fmtTempo = (s) => s >= 60 ? `${Math.floor(s / 60)}min ${s % 60}s` : `${s}s`;
+    const tempoRelativo = (d) => {
+      if (!d) return '';
+      const diff = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
+      if (diff < 60) return 'agora mesmo';
+      if (diff < 3600) return `há ${Math.floor(diff / 60)} min`;
+      if (diff < 86400) return `há ${Math.floor(diff / 3600)}h`;
+      return `há ${Math.floor(diff / 86400)} dias`;
+    };
+    const quente = total > 0 && (Date.now() - new Date(ultimo?.acessado_em).getTime()) < 3600000;
+    return (
+      <div className={`rounded-xl p-3 text-xs border ${total === 0 ? 'bg-gray-50 border-gray-100 text-gray-400' : quente ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-100'}`}>
+        <div className="flex items-center gap-2 mb-2">
+          <p className={`font-semibold uppercase tracking-wide ${total === 0 ? 'text-gray-400' : quente ? 'text-orange-700' : 'text-green-700'}`}>Atividade do cliente</p>
+          {quente && <span className="bg-orange-100 text-orange-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">🔥 Quente</span>}
+          {total >= 3 && !quente && <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">👀 {total}x</span>}
+        </div>
+        {total === 0 ? (
+          <p>Cliente ainda não acessou o link.</p>
+        ) : (
+          <div className="space-y-1 text-gray-600">
+            <p><span className="text-gray-400">Acessos:</span> <strong className={total >= 3 ? 'text-orange-600' : ''}>{total}x</strong></p>
+            <p><span className="text-gray-400">Último acesso:</span> <strong>{tempoRelativo(ultimo?.acessado_em)}</strong></p>
+            {maiorTempo > 0 && <p><span className="text-gray-400">Tempo na página:</span> {fmtTempo(maiorTempo)}</p>}
+            <p><span className="text-gray-400">Leu até o fim:</span> {leuTudo ? '✅ Sim' : '❌ Não'}</p>
+            {device && <p><span className="text-gray-400">Dispositivo:</span> {device === 'mobile' ? '📱 Mobile' : '💻 Desktop'}</p>}
+            {propostaClicada && <p className="mt-1 font-semibold text-green-700">💡 Clicou em: {propostaClicada}</p>}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderActionPanel = () => {
     if (!selected) return null;
     const s = selected.status;
@@ -1460,45 +1501,7 @@ const AdminParceirosPage = () => {
           </div>
 
           {/* Atividade do cliente */}
-          {(() => {
-            const ultimo = acessos[0];
-            const total = acessos.length;
-            const leuTudo = acessos.some(a => a.scroll_fim);
-            const propostaClicada = acessos.find(a => a.proposta_clicada)?.proposta_clicada;
-            const device = ultimo?.device;
-            const maiorTempo = acessos.reduce((max, a) => Math.max(max, a.tempo_pagina || 0), 0);
-            const fmtTempo = (s) => s >= 60 ? `${Math.floor(s / 60)}min ${s % 60}s` : `${s}s`;
-            const tempoRelativo = (d) => {
-              if (!d) return '';
-              const diff = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
-              if (diff < 60) return 'agora mesmo';
-              if (diff < 3600) return `há ${Math.floor(diff / 60)} min`;
-              if (diff < 86400) return `há ${Math.floor(diff / 3600)}h`;
-              return `há ${Math.floor(diff / 86400)} dias`;
-            };
-            const quente = total > 0 && (Date.now() - new Date(ultimo?.acessado_em).getTime()) < 3600000;
-            return (
-              <div className={`rounded-xl p-3 text-xs border ${total === 0 ? 'bg-gray-50 border-gray-100 text-gray-400' : quente ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-100'}`}>
-                <div className="flex items-center gap-2 mb-2">
-                  <p className={`font-semibold uppercase tracking-wide ${total === 0 ? 'text-gray-400' : quente ? 'text-orange-700' : 'text-green-700'}`}>Atividade do cliente</p>
-                  {quente && <span className="bg-orange-100 text-orange-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">🔥 Quente</span>}
-                  {total >= 3 && !quente && <span className="bg-blue-100 text-blue-700 hover:bg-blue-100 hover:text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">👀 {total}x</span>}
-                </div>
-                {total === 0 ? (
-                  <p>Cliente ainda não acessou o link.</p>
-                ) : (
-                  <div className="space-y-1 text-gray-600">
-                    <p><span className="text-gray-400">Acessos:</span> <strong className={total >= 3 ? 'text-orange-600' : ''}>{total}x</strong></p>
-                    <p><span className="text-gray-400">Último acesso:</span> <strong>{tempoRelativo(ultimo?.acessado_em)}</strong></p>
-                    {maiorTempo > 0 && <p><span className="text-gray-400">Tempo na página:</span> {fmtTempo(maiorTempo)}</p>}
-                    <p><span className="text-gray-400">Leu até o fim:</span> {leuTudo ? '✅ Sim' : '❌ Não'}</p>
-                    {device && <p><span className="text-gray-400">Dispositivo:</span> {device === 'mobile' ? '📱 Mobile' : '💻 Desktop'}</p>}
-                    {propostaClicada && <p className="mt-1 font-semibold text-green-700">💡 Clicou em: {propostaClicada}</p>}
-                  </div>
-                )}
-              </div>
-            );
-          })()}
+          {renderAtividade()}
 
           <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-600">
             <div className="flex items-start justify-between gap-2 mb-2">
@@ -1550,6 +1553,7 @@ const AdminParceirosPage = () => {
 
     if (s === 'DOCUMENTOS') return (
       <div className="space-y-3">
+        {renderAtividade()}
         <p className="text-sm font-semibold text-gray-700 border-b pb-2">Documentos enviados pelo cliente</p>
         {docs.length === 0 ? (
           <p className="text-xs text-gray-400 text-center py-4">Nenhum documento recebido ainda.</p>
@@ -1575,6 +1579,7 @@ const AdminParceirosPage = () => {
 
     if (s === 'ASSINATURA') return (
       <div className="space-y-3">
+        {renderAtividade()}
         <p className="text-sm font-semibold text-gray-700 border-b pb-2">Aguardando assinatura da proposta</p>
         {docs.length > 0 && (
           <div className="space-y-2">
@@ -1597,6 +1602,7 @@ const AdminParceirosPage = () => {
 
     if (s === 'CONCLUIDO') return (
       <div className="space-y-4">
+        {renderAtividade()}
         {!selected.parceiro_id ? (
           <div className="bg-green-50 border border-green-100 rounded-xl p-4 text-center">
             <p className="text-2xl mb-1">🎉</p>
@@ -1639,6 +1645,7 @@ const AdminParceirosPage = () => {
 
     if (s === 'COMISSAO') return (
       <div className="space-y-3">
+        {renderAtividade()}
         <p className="text-sm font-semibold text-gray-700 border-b pb-2">Comissão registrada</p>
         <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
           <p className="text-xs text-gray-500">Parceiro: {selected.parceiros?.nome_completo}</p>
