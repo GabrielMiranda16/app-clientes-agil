@@ -212,7 +212,12 @@ const OrcamentoPublicoPage = () => {
   }, [stage]);
 
   const loadOrcamento = async () => {
-    const { data, error } = await supabase.from('orcamentos').select('*').eq('slug', slug).maybeSingle();
+    const { data, error } = await supabase
+      .from('orcamentos')
+      .select('id, created_at, status, slug, cliente_nome, cliente_cpf, segmento, modalidade, observacoes, descricao_orcamento, propostas, cenarios_atuais, lista_documentos, docs_extras, data_orcamento, valor_mensalidade, operadora_escolhida, numero_protocolo, perfil_vidas')
+      .eq('slug', slug)
+      .neq('status', 'CANCELADA')
+      .maybeSingle();
     if (error || !data) { setStage('erro'); return; }
     setOrcamento(data);
     if (['ASSINATURA', 'CONCLUIDO', 'COMISSAO'].includes(data.status)) {

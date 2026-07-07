@@ -432,8 +432,8 @@ const ClientDashboard = () => {
 
        const [empresasResult, beneficiariosResult, solicitacoesResult] = await Promise.allSettled([
            empresasService.getEmpresas(),
-           beneficiariosService.getAllBeneficiarios(),
-           solicitacoesService.getAllSolicitacoes()
+           beneficiariosService.getBeneficiariosByEmpresa(empresaId_num),
+           solicitacoesService.getSolicitacoesByEmpresa(empresaId_num)
        ]);
 
        setEmpresas(empresasResult.status === 'fulfilled' ? (empresasResult.value || []) : []);
@@ -1281,11 +1281,12 @@ const ClientDashboard = () => {
     return <Navigate to="/select-segmento" />;
   }
 
-  if (user.perfil === 'CLIENTE') {
-    const matriz = empresas.find(e => e.id === user.empresa_matriz_id);
-    const filiais = empresas.filter(e => e.empresa_matriz_id === user.empresa_matriz_id);
-    const accessibleEmpresasIds = [matriz?.id, ...filiais.map(f => f.id)].filter(Boolean);
-    if (empresas.length > 0 && !accessibleEmpresasIds.includes(empresaId)) { return <Navigate to="/select-segmento" replace />; }
+  if (user.perfil === 'CLIENTE' && empresas.length > 0) {
+    const matrizId = user.empresa_matriz_id || user.empresa_id;
+    const accessibleEmpresasIds = empresas
+      .filter(e => e.id === matrizId || e.empresa_matriz_id === matrizId)
+      .map(e => e.id);
+    if (!accessibleEmpresasIds.includes(empresaId)) { return <Navigate to="/select-segmento" replace />; }
   }
 
   if (!empresa && !isLoading && empresas.length > 0) { 
