@@ -153,10 +153,12 @@ const OrcamentoPublicoPage = () => {
     const onVisibility = () => { if (document.visibilityState === 'hidden') salvarTempo(); };
     document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener('pagehide', salvarTempo);
+    const intervalo = setInterval(salvarTempo, 30000);
     return () => {
       salvarTempo();
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('pagehide', salvarTempo);
+      clearInterval(intervalo);
     };
   }, []);
 
