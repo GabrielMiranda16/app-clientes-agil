@@ -346,7 +346,7 @@ const ParceiroDashboard = () => {
         origem: 'parceiro',
         status: 'novo',
         orcamento_id: orcData.id,
-      }).catch(() => {});
+      }).then(null, () => {});
       toast({ title: 'Orçamento solicitado!', description: 'O ADM será notificado e responderá em breve.' });
 
       // Notifica grupo Ágil no WhatsApp via bot
