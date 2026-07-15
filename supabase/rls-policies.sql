@@ -15,15 +15,17 @@
 -- ---------------------------------------------------------------------------
 
 CREATE OR REPLACE FUNCTION public.current_user_perfil()
-RETURNS text LANGUAGE sql SECURITY DEFINER STABLE AS $$
-  SELECT perfil FROM public.users WHERE email = (auth.jwt() ->> 'email')
+RETURNS text LANGUAGE sql SECURITY DEFINER STABLE
+SET search_path = public AS $$
+  SELECT u.perfil FROM public.users u WHERE u.email = (auth.jwt() ->> 'email')
 $$;
 
 CREATE OR REPLACE FUNCTION public.current_user_empresa_matriz_id()
-RETURNS int LANGUAGE sql SECURITY DEFINER STABLE AS $$
-  SELECT COALESCE(empresa_matriz_id, empresa_id)::int
-  FROM public.users
-  WHERE email = (auth.jwt() ->> 'email')
+RETURNS int LANGUAGE sql SECURITY DEFINER STABLE
+SET search_path = public AS $$
+  SELECT COALESCE(u.empresa_matriz_id, u.empresa_id)::int
+  FROM public.users u
+  WHERE u.email = (auth.jwt() ->> 'email')
 $$;
 
 -- ---------------------------------------------------------------------------
@@ -147,6 +149,36 @@ CREATE POLICY "apolices_cliente_select" ON public.apolices
   );
 
 -- ---------------------------------------------------------------------------
+-- Função auxiliar: retorna o parceiros.id do usuário autenticado (ou NULL)
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.current_parceiro_id()
+RETURNS int LANGUAGE sql SECURITY DEFINER STABLE
+SET search_path = public AS $$
+  SELECT p.id FROM public.parceiros p
+  JOIN public.users u ON u.id = p.user_id
+  WHERE u.email = (auth.jwt() ->> 'email')
+  LIMIT 1
+$$;
+
+-- ---------------------------------------------------------------------------
+-- Tabela: parceiros (parceiro vê apenas o próprio registro)
+-- ---------------------------------------------------------------------------
+ALTER TABLE public.parceiros ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "parceiros_admin" ON public.parceiros;
+CREATE POLICY "parceiros_admin" ON public.parceiros
+  FOR ALL USING (current_user_perfil() IN ('CEO', 'ADM'));
+
+DROP POLICY IF EXISTS "parceiros_self_select" ON public.parceiros;
+CREATE POLICY "parceiros_self_select" ON public.parceiros
+  FOR SELECT USING (
+    current_user_perfil() = 'PARCEIRO' AND
+    user_id = (
+      SELECT u.id FROM public.users u WHERE u.email = (auth.jwt() ->> 'email')
+    )
+  );
+
+-- ---------------------------------------------------------------------------
 -- Tabela: orcamentos (acesso público por slug + ADM/CEO/PARCEIRO)
 -- ---------------------------------------------------------------------------
 ALTER TABLE public.orcamentos ENABLE ROW LEVEL SECURITY;
@@ -155,17 +187,24 @@ DROP POLICY IF EXISTS "orcamentos_admin" ON public.orcamentos;
 CREATE POLICY "orcamentos_admin" ON public.orcamentos
   FOR ALL USING (current_user_perfil() IN ('CEO', 'ADM'));
 
+-- Parceiro: SELECT — só os seus próprios (parceiro_id = seu id)
+DROP POLICY IF EXISTS "orcamentos_parceiro_select" ON public.orcamentos;
 DROP POLICY IF EXISTS "orcamentos_parceiro" ON public.orcamentos;
-CREATE POLICY "orcamentos_parceiro" ON public.orcamentos
+CREATE POLICY "orcamentos_parceiro_select" ON public.orcamentos
   FOR SELECT USING (
     current_user_perfil() = 'PARCEIRO' AND
-    parceiro_id IN (
-      SELECT id FROM public.parceiros
-      WHERE email = (auth.jwt() ->> 'email')
-    )
+    parceiro_id = current_parceiro_id()
   );
 
--- Acesso anon por slug (página pública) — apenas orcamentos não cancelados
+-- Parceiro: INSERT — só pode criar orçamento vinculado ao próprio id
+DROP POLICY IF EXISTS "orcamentos_parceiro_insert" ON public.orcamentos;
+CREATE POLICY "orcamentos_parceiro_insert" ON public.orcamentos
+  FOR INSERT WITH CHECK (
+    current_user_perfil() = 'PARCEIRO' AND
+    parceiro_id = current_parceiro_id()
+  );
+
+-- Acesso anon por slug (página pública) — apenas orcamentos não cancelados e com slug
 DROP POLICY IF EXISTS "orcamentos_public_slug" ON public.orcamentos;
 CREATE POLICY "orcamentos_public_slug" ON public.orcamentos
   FOR SELECT USING (
