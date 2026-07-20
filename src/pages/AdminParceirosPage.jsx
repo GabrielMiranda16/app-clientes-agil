@@ -2067,6 +2067,12 @@ const AdminParceirosPage = () => {
                                   </div>
                                   {editandoSolicitacao ? (
                                     <div className="space-y-2 pt-1">
+                                      <div className="flex justify-end">
+                                        <button type="button" onClick={() => setSegData({})}
+                                          className="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1">
+                                          <Trash2 className="h-3.5 w-3.5" /> Limpar dados
+                                        </button>
+                                      </div>
                                       {renderCamposSegmento(selected.segmento, 'Editar dados')}
                                       <div className="flex gap-2 pt-1">
                                         <button type="button" onClick={() => setEditandoSolicitacao(false)} disabled={enviando}
