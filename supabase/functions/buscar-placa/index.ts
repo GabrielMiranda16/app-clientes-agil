@@ -31,17 +31,29 @@ serve(async (req) => {
     });
 
     const text = await res.text();
+    console.log(`[buscar-placa] placa=${placa} status=${res.status} body=${text.slice(0, 300)}`);
+
     let data: Record<string, unknown>;
     try {
       data = JSON.parse(text);
     } catch {
-      return new Response(JSON.stringify({ error: 'Resposta inválida da API' }), {
+      return new Response(JSON.stringify({ error: 'Resposta inválida da API de placas' }), {
         status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    if (!res.ok) {
+      const msg = (data?.message || data?.error) as string | undefined;
+      const amigavel = res.status === 429 || res.status === 403
+        ? 'Limite diário de consultas da API de placas foi atingido.'
+        : (msg || 'Placa não encontrada na base da API.');
+      return new Response(JSON.stringify({ error: amigavel, status_origem: res.status }), {
+        status: res.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     return new Response(JSON.stringify(data), {
-      status: res.ok ? 200 : res.status,
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
