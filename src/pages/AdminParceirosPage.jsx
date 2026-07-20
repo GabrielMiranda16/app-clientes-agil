@@ -450,8 +450,16 @@ const AdminParceirosPage = () => {
             origem: json.origem || d.origem || '',
             logo_marca: json.logo || d.logo_marca || '',
           }));
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Placa não encontrada',
+            description: json?.error || 'Não foi possível consultar essa placa agora. Preencha os dados manualmente.',
+          });
         }
-      } catch {}
+      } catch {
+        toast({ variant: 'destructive', title: 'Falha ao consultar placa', description: 'Preencha os dados manualmente.' });
+      }
       finally { setBuscandoPlaca(false); }
     }
   };
