@@ -243,7 +243,12 @@ const ParceiroDashboard = () => {
   const setField = (key, value) => setForm(f => ({ ...f, [key]: value }));
   const setExtra = async (key, value) => {
     const val = key === 'placa' ? value.toUpperCase().replace(/[^A-Z0-9]/g, '') : value;
-    setForm(f => ({ ...f, extras: { ...f.extras, [key]: val } }));
+    if (key === 'placa') {
+      // limpa dados derivados da placa anterior — só reaparecem se a busca desta placa der certo
+      setForm(f => ({ ...f, extras: { ...f.extras, placa: val, chassi: '', modelo_veiculo: '', ano_fabricacao: '', cor: '', municipio: '', origem: '', logo_marca: '' } }));
+    } else {
+      setForm(f => ({ ...f, extras: { ...f.extras, [key]: val } }));
+    }
 
     if (key === 'cep') {
       const digits = val.replace(/\D/g, '');
