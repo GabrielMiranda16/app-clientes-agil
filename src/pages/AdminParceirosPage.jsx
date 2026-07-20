@@ -398,6 +398,7 @@ const AdminParceirosPage = () => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editandoCliente, setEditandoCliente] = useState(false);
   const [clienteForm, setClienteForm] = useState({ cliente_nome: '', cliente_telefone: '', cliente_email: '', cliente_cpf: '' });
+  const [editandoSolicitacao, setEditandoSolicitacao] = useState(false);
   const [acessos, setAcessos] = useState([]);
   const [selectedComissao, setSelectedComissao] = useState(null);
   const [clienteOnline, setClienteOnline] = useState(false);
@@ -462,6 +463,46 @@ const AdminParceirosPage = () => {
       }
       finally { setBuscandoPlaca(false); }
     }
+  };
+
+  const renderCamposSegmento = (segmento, titulo) => {
+    const campos = CAMPOS_SEGMENTO[segmento] || [];
+    if (!campos.length) return null;
+    return (
+      <div className="space-y-2 border border-blue-100 rounded-xl p-3 bg-blue-50">
+        <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">{titulo || `Dados do ${SEGMENTO_LABEL[segmento]}`}</p>
+        {campos.map(campo => {
+          if (campo.hidden) return null;
+          const vazio = !campo.optional && !String(segData[campo.key] || '').trim();
+          return (
+            <React.Fragment key={campo.key}>
+              {campo.header && (
+                <p className="text-xs font-semibold text-[#003580] uppercase tracking-wide pt-2">{campo.header}</p>
+              )}
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-600">
+                  {campo.label} {!campo.optional && <span className="text-red-500">*</span>}
+                  {campo.key === 'placa' && buscandoPlaca && <span className="text-[#003580] ml-1">buscando...</span>}
+                </Label>
+                {campo.type === 'select' ? (
+                  <select value={segData[campo.key] || ''} onChange={e => handleSegDataChange(campo.key, e.target.value)}
+                    className={`w-full rounded-lg border bg-white px-2 py-1.5 text-sm focus:outline-none focus:border-[#003580] ${vazio ? 'border-red-300' : 'border-gray-200'}`}>
+                    <option value="">Selecionar...</option>
+                    {campo.options.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                ) : (
+                  <Input value={segData[campo.key] || ''} onChange={e => handleSegDataChange(campo.key, campo.money ? maskBRL(e.target.value) : e.target.value)}
+                    type={['cep','plate'].includes(campo.type) ? 'text' : campo.type}
+                    maxLength={campo.type === 'cep' ? 9 : campo.type === 'plate' ? 7 : undefined}
+                    placeholder={campo.placeholder}
+                    className={`bg-white focus:border-[#003580] h-8 text-sm ${vazio ? 'border-red-300' : 'border-gray-200'}`} />
+                )}
+              </div>
+            </React.Fragment>
+          );
+        })}
+      </div>
+    );
   };
 
   useEffect(() => {
@@ -565,6 +606,7 @@ const AdminParceirosPage = () => {
     setNovaPropostaMode(false);
     setConfirmDelete(false);
     setEditandoCliente(false);
+    setEditandoSolicitacao(false);
     setFormR({
       docsBase: o.lista_documentos || DOCS_POR_SEGMENTO[o.segmento] || [],
       docExtra: '',
@@ -913,6 +955,7 @@ const AdminParceirosPage = () => {
       cliente_email: selected.cliente_email || '',
       cliente_cpf: selected.cliente_cpf || '',
     });
+    setEditandoSolicitacao(false);
     setEditandoCliente(true);
   };
 
@@ -933,6 +976,51 @@ const AdminParceirosPage = () => {
       setOrcamentos(prev => prev.map(o => o.id === selected.id ? updated : o));
       setEditandoCliente(false);
       toast({ title: 'Dados do cliente atualizados.' });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro ao salvar.', description: err?.message });
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  const handleAbrirEditarSolicitacao = () => {
+    const campos = CAMPOS_SEGMENTO[selected.segmento] || [];
+    const parsed = {};
+    (selected.observacoes || '').split('\n').forEach(line => {
+      const idx = line.indexOf(': ');
+      if (idx === -1) return;
+      const label = line.slice(0, idx).trim();
+      const campo = campos.find(c => c.label === label);
+      if (campo) parsed[campo.key] = line.slice(idx + 2).trim();
+    });
+    setSegData(parsed);
+    setEditandoCliente(false);
+    setEditandoSolicitacao(true);
+  };
+
+  const handleSalvarSolicitacao = async () => {
+    const campos = CAMPOS_SEGMENTO[selected.segmento] || [];
+    const campoFaltando = campos.find(c => !c.optional && !String(segData[c.key] || '').trim());
+    if (campoFaltando) return toast({ variant: 'destructive', title: `Informe: ${campoFaltando.label}.` });
+    setEnviando(true);
+    try {
+      const labels = new Set(campos.map(c => c.label));
+      const outrasLinhas = (selected.observacoes || '').split('\n').filter(line => {
+        const idx = line.indexOf(': ');
+        if (idx === -1) return true;
+        return !labels.has(line.slice(0, idx).trim());
+      }).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+      const obsSegmento = campos.filter(f => segData[f.key]).map(f => `${f.label}: ${segData[f.key]}`).join('\n');
+      const obsCompleto = [obsSegmento, outrasLinhas].filter(Boolean).join('\n\n');
+      const payload = { observacoes: obsCompleto || null };
+      if (['SAUDE', 'ODONTOLOGICO'].includes(selected.segmento)) payload.modalidade = segData.tipo || null;
+      const { error } = await supabase.from('orcamentos').update(payload).eq('id', selected.id);
+      if (error) throw error;
+      const updated = { ...selected, ...payload };
+      setSelected(updated);
+      setOrcamentos(prev => prev.map(o => o.id === selected.id ? updated : o));
+      setEditandoSolicitacao(false);
+      toast({ title: 'Dados da solicitação atualizados.' });
     } catch (err) {
       toast({ variant: 'destructive', title: 'Erro ao salvar.', description: err?.message });
     } finally {
@@ -1772,7 +1860,7 @@ const AdminParceirosPage = () => {
 
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold tracking-tight text-white">Orçamentos</h1>
-            <Button onClick={() => setCriarModal(true)} variant="ghost" className="text-white font-semibold border border-white/40 bg-white/10 hover:bg-white/20 hover:text-white">
+            <Button onClick={() => { setSegData({}); setCriarModal(true); }} variant="ghost" className="text-white font-semibold border border-white/40 bg-white/10 hover:bg-white/20 hover:text-white">
               Novo orçamento
             </Button>
           </div>
@@ -1966,10 +2054,35 @@ const AdminParceirosPage = () => {
                                   {selected.cliente_cpf && <p><span className="text-gray-400">CPF/CNPJ:</span> {selected.cliente_cpf}</p>}
                                 </>
                               )}
-                              {selected.observacoes && (
+                              {(selected.observacoes || (CAMPOS_SEGMENTO[selected.segmento] || []).length > 0) && (
                                 <div className="mt-2 pt-2 border-t border-gray-200">
-                                  <p className="text-xs text-gray-500 font-medium mb-0.5">Dados da solicitação</p>
-                                  <pre className="text-xs text-gray-600 whitespace-pre-wrap font-sans">{selected.observacoes}</pre>
+                                  <div className="flex items-center justify-between mb-0.5">
+                                    <p className="text-xs text-gray-500 font-medium">Dados da solicitação</p>
+                                    {!editandoSolicitacao && (CAMPOS_SEGMENTO[selected.segmento] || []).length > 0 && (
+                                      <button type="button" onClick={handleAbrirEditarSolicitacao}
+                                        className="text-xs text-[#003580] hover:text-[#002060] transition-colors flex items-center gap-1">
+                                        <Edit2 className="h-3.5 w-3.5" /> Editar
+                                      </button>
+                                    )}
+                                  </div>
+                                  {editandoSolicitacao ? (
+                                    <div className="space-y-2 pt-1">
+                                      {renderCamposSegmento(selected.segmento, 'Editar dados')}
+                                      <div className="flex gap-2 pt-1">
+                                        <button type="button" onClick={() => setEditandoSolicitacao(false)} disabled={enviando}
+                                          className="flex-1 text-xs border border-gray-300 rounded-lg py-1.5 text-gray-600 hover:bg-gray-100 transition-colors">
+                                          Cancelar
+                                        </button>
+                                        <button type="button" onClick={handleSalvarSolicitacao} disabled={enviando}
+                                          className="flex-1 text-xs rounded-lg py-1.5 text-white font-semibold transition-colors disabled:opacity-50"
+                                          style={{ background: '#003580' }}>
+                                          {enviando ? 'Salvando...' : 'Salvar'}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    selected.observacoes && <pre className="text-xs text-gray-600 whitespace-pre-wrap font-sans">{selected.observacoes}</pre>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -2083,41 +2196,7 @@ const AdminParceirosPage = () => {
               </div>
 
               {/* Campos específicos do segmento */}
-              {novoForm.segmento && (CAMPOS_SEGMENTO[novoForm.segmento] || []).length > 0 && (
-                <div className="space-y-2 border border-blue-100 rounded-xl p-3 bg-blue-50">
-                  <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Dados do {SEGMENTO_LABEL[novoForm.segmento]}</p>
-                  {(CAMPOS_SEGMENTO[novoForm.segmento] || []).map(campo => {
-                    if (campo.hidden) return null;
-                    const vazio = !campo.optional && !String(segData[campo.key] || '').trim();
-                    return (
-                      <React.Fragment key={campo.key}>
-                        {campo.header && (
-                          <p className="text-xs font-semibold text-[#003580] uppercase tracking-wide pt-2">{campo.header}</p>
-                        )}
-                        <div className="space-y-1">
-                          <Label className="text-xs text-gray-600">
-                            {campo.label} {!campo.optional && <span className="text-red-500">*</span>}
-                            {campo.key === 'placa' && buscandoPlaca && <span className="text-[#003580] ml-1">buscando...</span>}
-                          </Label>
-                          {campo.type === 'select' ? (
-                            <select value={segData[campo.key] || ''} onChange={e => handleSegDataChange(campo.key, e.target.value)}
-                              className={`w-full rounded-lg border bg-white px-2 py-1.5 text-sm focus:outline-none focus:border-[#003580] ${vazio ? 'border-red-300' : 'border-gray-200'}`}>
-                              <option value="">Selecionar...</option>
-                              {campo.options.map(o => <option key={o} value={o}>{o}</option>)}
-                            </select>
-                          ) : (
-                            <Input value={segData[campo.key] || ''} onChange={e => handleSegDataChange(campo.key, campo.money ? maskBRL(e.target.value) : e.target.value)}
-                              type={['cep','plate'].includes(campo.type) ? 'text' : campo.type}
-                              maxLength={campo.type === 'cep' ? 9 : campo.type === 'plate' ? 7 : undefined}
-                              placeholder={campo.placeholder}
-                              className={`bg-white focus:border-[#003580] h-8 text-sm ${vazio ? 'border-red-300' : 'border-gray-200'}`} />
-                          )}
-                        </div>
-                      </React.Fragment>
-                    );
-                  })}
-                </div>
-              )}
+              {novoForm.segmento && renderCamposSegmento(novoForm.segmento)}
 
               {/* Faixas etárias — igual ao formulário do parceiro */}
               {['SAUDE', 'ODONTOLOGICO'].includes(novoForm.segmento) && parseInt(segData.vidas || '0') > 0 && (() => {
