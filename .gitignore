@@ -24,3 +24,4 @@ supabase/.temp/
 
 # Arquivos de teste / prints locais
 Prints/
+.env*
