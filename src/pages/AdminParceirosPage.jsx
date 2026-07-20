@@ -421,7 +421,12 @@ const AdminParceirosPage = () => {
 
   const handleSegDataChange = async (key, value) => {
     const val = key === 'placa' ? value.toUpperCase().replace(/[^A-Z0-9]/g, '') : value;
-    setSegData(d => ({ ...d, [key]: val }));
+    if (key === 'placa') {
+      // limpa dados derivados da placa anterior — só reaparecem se a busca desta placa der certo
+      setSegData(d => ({ ...d, placa: val, chassi: '', modelo_veiculo: '', ano_fabricacao: '', cor: '', municipio: '', origem: '', logo_marca: '' }));
+    } else {
+      setSegData(d => ({ ...d, [key]: val }));
+    }
 
     if (key === 'cep') {
       const digits = val.replace(/\D/g, '');
