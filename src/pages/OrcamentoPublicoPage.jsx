@@ -874,7 +874,7 @@ const OrcamentoPublicoPage = () => {
                         ...proposalBars,
                       ];
                       if (bars.length < 2) return null;
-                      const max = Math.max(...bars.filter(b => b.tipo !== 'atual').map(b => b.valor), 1);
+                      const max = Math.max(...bars.filter(b => b.tipo !== 'atual').map(b => b.valor), totalAtualValor, 1);
                       return (
                         <div className="px-6 sm:px-8 py-6">
                           <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block">Comparação de Custo</span>
