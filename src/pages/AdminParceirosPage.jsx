@@ -1647,6 +1647,9 @@ const AdminParceirosPage = () => {
             <p className="text-xs font-semibold text-blue-700 mb-1.5">Link público para o cliente</p>
             <div className="flex items-center gap-2">
               <span className="text-xs text-blue-600 truncate flex-1 font-mono">{window.location.origin}/orcamento/{selected.slug}</span>
+              <Button size="sm" variant="ghost" className="h-7 shrink-0" onClick={() => window.open(`${window.location.origin}/orcamento/${selected.slug}?preview=1`, '_blank')} title="Ver como o cliente vê, sem contar acesso">
+                <Eye className="h-3.5 w-3.5" />
+              </Button>
               <Button size="sm" variant="ghost" className="h-7 shrink-0" onClick={() => copyLink(selected.slug)}>
                 {copiedSlug === selected.slug ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
               </Button>

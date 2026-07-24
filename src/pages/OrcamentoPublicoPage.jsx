@@ -107,6 +107,7 @@ const cardBg = { background: 'linear-gradient(to top right, #6b9fd4, #2a6db5, #0
 
 const OrcamentoPublicoPage = () => {
   const { slug } = useParams();
+  const previewMode = new URLSearchParams(window.location.search).get('preview') === '1';
   const bottomRef = useRef(null);
   const startTimeRef = useRef(Date.now());
   const scrolledRef = useRef(false);
@@ -227,7 +228,7 @@ const OrcamentoPublicoPage = () => {
       setDocsEnviados((sent || []).map(d => d.tipo_documento));
       setStage('documentos');
     } else if (data.status === 'ORCAMENTO') {
-      setStage('verificacao');
+      setStage(previewMode ? 'proposta' : 'verificacao');
     } else {
       setStage('erro');
     }
@@ -276,6 +277,10 @@ const OrcamentoPublicoPage = () => {
   };
 
   const handleAceitarProposta = async (proposta = null) => {
+    if (previewMode) {
+      window.alert('Pré-visualização (ADM): o aceite fica desabilitado para não alterar o orçamento real do cliente.');
+      return;
+    }
     setAceitando(true);
     try {
       const isAuto = segmento === 'AUTO';
@@ -484,6 +489,12 @@ const OrcamentoPublicoPage = () => {
 
   return (
     <div className="min-h-screen bg-white">
+
+      {previewMode && (
+        <div className="sticky top-0 z-50 bg-amber-400 text-amber-950 text-xs sm:text-sm font-semibold text-center py-1.5 px-4">
+          🔍 Pré-visualização (ADM) — este acesso não é contabilizado e o aceite fica desabilitado
+        </div>
+      )}
 
       {/* ── Hero ── */}
       <div
