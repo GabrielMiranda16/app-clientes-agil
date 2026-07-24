@@ -874,7 +874,7 @@ const OrcamentoPublicoPage = () => {
                         ...proposalBars,
                       ];
                       if (bars.length < 2) return null;
-                      const max = Math.max(...bars.filter(b => b.tipo !== 'atual').map(b => b.valor), totalAtualValor, 1);
+                      const max = Math.max(...bars.filter(b => b.tipo !== 'atual').map(b => b.valor), 1);
                       return (
                         <div className="px-6 sm:px-8 py-6">
                           <span className="text-sm font-semibold text-blue-300 uppercase tracking-widest block">Comparação de Custo</span>
@@ -909,11 +909,17 @@ const OrcamentoPublicoPage = () => {
                                 {b.tipo === 'atual' && i < bars.length - 1 && (
                                   <div className="border-t border-white/15 mt-3" />
                                 )}
-                                {b.tipo !== 'atual' && (
+                                {b.tipo !== 'atual' && (() => {
+                                  const baseWidth = Math.max((1 - Math.min((1 - b.valor / max) * 4, 0.9)) * 100, b.economia > 0 ? 40 : 10);
+                                  const isMaisCaro = b.valor === max;
+                                  const widthPct = (isMaisCaro && totalAtualValor > 0 && b.valor < totalAtualValor)
+                                    ? baseWidth * (b.valor / totalAtualValor)
+                                    : baseWidth;
+                                  return (
                                   <div className="h-5 bg-white/10 rounded-full overflow-hidden">
                                     <motion.div
                                       initial={{ width: 0 }}
-                                      animate={{ width: `${Math.max((1 - Math.min((1 - b.valor / max) * 4, 0.9)) * 100, b.economia > 0 ? 40 : 10)}%` }}
+                                      animate={{ width: `${widthPct}%` }}
                                       transition={{ duration: 0.7, delay: i * 0.12 }}
                                       className="h-full rounded-full flex items-center px-4 overflow-hidden"
                                       style={{
@@ -929,7 +935,8 @@ const OrcamentoPublicoPage = () => {
                                       )}
                                     </motion.div>
                                   </div>
-                                )}
+                                  );
+                                })()}
                               </div>
                             ))}
                           </div>
