@@ -909,27 +909,38 @@ const OrcamentoPublicoPage = () => {
                                 {b.tipo === 'atual' && i < bars.length - 1 && (
                                   <div className="border-t border-white/15 mt-3" />
                                 )}
-                                {b.tipo !== 'atual' && (
-                                  <div className="h-5 bg-white/10 rounded-full overflow-hidden">
-                                    <motion.div
-                                      initial={{ width: 0 }}
-                                      animate={{ width: `${Math.max((1 - Math.min((1 - b.valor / max) * 4, 0.9)) * 100, 10)}%` }}
-                                      transition={{ duration: 0.7, delay: i * 0.12 }}
-                                      className="h-full rounded-full flex items-center px-4 overflow-hidden"
-                                      style={{
-                                        background: b.destaque
-                                          ? 'linear-gradient(90deg, #facc15, #eab308)'
-                                          : 'rgba(255,255,255,1)',
-                                      }}
-                                    >
-                                      {b.economia > 0 && (
-                                        <span className="text-xs font-bold whitespace-nowrap" style={{ color: '#003580' }}>
+                                {b.tipo !== 'atual' && (() => {
+                                  const widthPct = Math.max((1 - Math.min((1 - b.valor / max) * 4, 0.9)) * 100, 10);
+                                  const labelFitsInside = widthPct >= 38;
+                                  return (
+                                    <div className="flex items-center gap-2">
+                                      <div className="h-5 bg-white/10 rounded-full overflow-hidden flex-1">
+                                        <motion.div
+                                          initial={{ width: 0 }}
+                                          animate={{ width: `${widthPct}%` }}
+                                          transition={{ duration: 0.7, delay: i * 0.12 }}
+                                          className="h-full rounded-full flex items-center px-4 overflow-hidden"
+                                          style={{
+                                            background: b.destaque
+                                              ? 'linear-gradient(90deg, #facc15, #eab308)'
+                                              : 'rgba(255,255,255,1)',
+                                          }}
+                                        >
+                                          {b.economia > 0 && labelFitsInside && (
+                                            <span className="text-xs font-bold whitespace-nowrap" style={{ color: '#003580' }}>
+                                              Economiza {fmtValor(b.economia)}/mês
+                                            </span>
+                                          )}
+                                        </motion.div>
+                                      </div>
+                                      {b.economia > 0 && !labelFitsInside && (
+                                        <span className="text-xs font-bold text-white/90 whitespace-nowrap shrink-0">
                                           Economiza {fmtValor(b.economia)}/mês
                                         </span>
                                       )}
-                                    </motion.div>
-                                  </div>
-                                )}
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             ))}
                           </div>
