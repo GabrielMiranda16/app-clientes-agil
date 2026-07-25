@@ -1,6 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
-import { authService } from '@/services/authService';
 
 const AuthContext = createContext({});
 
@@ -70,22 +69,20 @@ export const AuthProvider = ({ children }) => {
       return profile;
     }
 
-    // 2. Supabase Auth falhou — tenta bcrypt (usuário ainda não migrado)
-    const userData = await authService.loginUser(email, password); // lança se errado
+    // 2. Supabase Auth falhou — usuário ainda não migrado do bcrypt legado.
+    // A verificação da senha acontece no servidor (edge function), nunca no navegador.
+    const { error: syncError } = await supabase.functions.invoke('sync-auth-password', { body: { email, password } });
+    if (syncError) throw new Error('Credenciais inválidas.');
 
-    // 3. Sincroniza com Supabase Auth via Edge Function (usa chave de admin no servidor)
-    try {
-      await supabase.functions.invoke('sync-auth-password', { body: { email, password } });
-      // 4. Agora tenta login com Supabase Auth — deve funcionar após o sync
-      await supabase.auth.signInWithPassword({ email, password });
-    } catch {
-      // Não crítico — app continua funcionando
-    }
+    // 3. Agora tenta login com Supabase Auth — deve funcionar após o sync
+    const { error: retryError } = await supabase.auth.signInWithPassword({ email, password });
+    if (retryError) throw new Error('Credenciais inválidas.');
 
-    const { password: _, ...safeUser } = userData;
-    sessionStorage.setItem('agil_session_user', JSON.stringify(safeUser));
-    setUser(safeUser);
-    return safeUser;
+    const profile = await fetchProfile(email);
+    if (!profile) throw new Error('Usuário não encontrado.');
+    sessionStorage.setItem('agil_session_user', JSON.stringify(profile));
+    setUser(profile);
+    return profile;
   };
 
   const logout = async () => {

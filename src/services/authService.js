@@ -6,43 +6,7 @@ const SALT_ROUNDS = 10;
 
 export const hashPassword = (password) => bcrypt.hash(password, SALT_ROUNDS);
 
-const comparePassword = async (plain, stored) => {
-  // Try bcrypt first (hashed passwords)
-  const isBcrypt = stored && stored.startsWith('$2');
-  if (isBcrypt) return bcrypt.compare(plain, stored);
-  // Fallback: plain text comparison (legacy — migrates automatically on login)
-  return plain === stored;
-};
-
 export const authService = {
-  async loginUser(email, password) {
-    try {
-      // Query by email only — never compare passwords in the query
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) throw new Error('Credenciais inválidas.');
-
-      const isValid = await comparePassword(password, data.password);
-      if (!isValid) throw new Error('Credenciais inválidas.');
-
-      // Auto-migrate plain text password to bcrypt hash on first login
-      if (data.password && !data.password.startsWith('$2')) {
-        const hashed = await hashPassword(password);
-        await supabase.from('users').update({ password: hashed }).eq('id', data.id);
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
-    }
-  },
-
   async createUser(userData) {
     try {
       const rawPassword = userData.password;
@@ -112,31 +76,11 @@ export const authService = {
   },
 
   async resetPassword(email) {
-    try {
-      const { data: userData, error: fetchError } = await supabase
-        .from('users')
-        .select('id, email, name')
-        .eq('email', email)
-        .maybeSingle();
-      if (fetchError) throw fetchError;
-      if (!userData) throw new Error('E-mail não encontrado.');
-
-      const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#!';
-      let tempPassword = '';
-      for (let i = 0; i < 10; i++) tempPassword += chars.charAt(Math.floor(Math.random() * chars.length));
-
-      const hashed = await hashPassword(tempPassword);
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ password: hashed, must_change_password: true })
-        .eq('id', userData.id);
-      if (updateError) throw updateError;
-
-      return { user: userData, tempPassword };
-    } catch (error) {
-      console.error('Reset password error:', error);
-      throw error;
-    }
+    // A verificação do e-mail e a geração/gravação da senha temporária
+    // acontecem no servidor (edge function), nunca com a chave anon no navegador.
+    const { data, error } = await supabase.functions.invoke('request-password-reset', { body: { email } });
+    if (error || data?.error) throw new Error(data?.error || 'E-mail não encontrado.');
+    return data; // { user: { id, email, name }, tempPassword }
   },
 
   logoutUser() {
