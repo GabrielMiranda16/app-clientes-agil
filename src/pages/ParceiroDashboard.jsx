@@ -364,17 +364,15 @@ const ParceiroDashboard = () => {
 
       // Notifica grupo Ágil no WhatsApp via bot
       const segLabel = SEGMENTOS.find(s => s.value === form.segmento)?.label || form.segmento;
-      fetch('https://agil-instagram.fly.dev/api/nova-solicitacao', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token: 'agil-lembretes-2026',
+      supabase.functions.invoke('bot-notificacoes', {
+        body: {
+          action: 'nova_solicitacao',
           parceiro_nome: parceiro.nome_completo,
           cliente_nome: form.cliente_nome.trim(),
           segmento: segLabel,
           cliente_telefone: form.cliente_telefone.trim(),
           observacoes: form.observacoes.trim(),
-        }),
+        },
       }).catch(() => {});
 
       // Notifica ADM via WhatsApp

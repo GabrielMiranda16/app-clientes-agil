@@ -366,17 +366,15 @@ const SolicitacoesPage = () => {
         }).catch(() => {});
 
         // WhatsApp no grupo Alertas Gi
-        fetch('https://agil-instagram.fly.dev/api/alerta-gestao', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            token: 'agil-lembretes-2026',
+        supabase.functions.invoke('bot-notificacoes', {
+          body: {
+            action: 'alerta_gestao',
             empresa: empresa?.nome_empresa || '',
             beneficiario: beneficiario.nome,
             tipo_plano: tipoPlanoLabel,
             tipo_solicitacao: tipoSolicLabel,
             observacoes: formData.observacoes || '',
-          }),
+          },
         }).catch(() => {});
       }
       setIsModalOpen(false);
