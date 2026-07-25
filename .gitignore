@@ -24,4 +24,20 @@ supabase/.temp/
 
 # Arquivos de teste / prints locais
 Prints/
+
+# Scripts legados com secrets
+salvar.sh
+puxar.sh
+
+# Memory files
+CLAUDE.md
+*.memory.md
+
+# Keys
+*.pem
+*.key
+
+# OS
+Thumbs.db
+
 .env*
