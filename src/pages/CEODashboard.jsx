@@ -141,18 +141,14 @@ const CEODashboard = () => {
 
   const fetchLembretes = async () => {
     try {
-      const r = await fetch('https://agil-instagram.fly.dev/api/lembretes?token=agil-lembretes-2026&empresa=agil');
-      if (r.ok) setLembretes(await r.json());
+      const { data, error } = await supabaseClient.functions.invoke('bot-notificacoes', { body: { action: 'listar_lembretes', empresa: 'agil' } });
+      if (!error) setLembretes(data);
     } catch {}
     setLoadingLembretes(false);
   };
 
   const concluirLembrete = async (id) => {
-    await fetch(`https://agil-instagram.fly.dev/api/lembretes/${id}/concluir`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: 'agil-lembretes-2026' }),
-    });
+    await supabaseClient.functions.invoke('bot-notificacoes', { body: { action: 'concluir_lembrete', id } });
     setLembretes(prev => prev.filter(l => l.id !== id));
   };
 
@@ -160,14 +156,10 @@ const CEODashboard = () => {
     if (!addForm.descricao.trim() || savingLembrete) return;
     setSavingLembrete(true);
     try {
-      const body = { token: 'agil-lembretes-2026', empresa: 'agil', descricao: addForm.descricao.trim() };
+      const body = { action: 'criar_lembrete', empresa: 'agil', descricao: addForm.descricao.trim() };
       if (addForm.data) body.data_lembrete = new Date(addForm.data).toISOString();
-      const r = await fetch('https://agil-instagram.fly.dev/api/lembretes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (r.ok) {
+      const { error } = await supabaseClient.functions.invoke('bot-notificacoes', { body });
+      if (!error) {
         setAddForm({ descricao: '', data: '' });
         setAddOpen(false);
         await fetchLembretes();
@@ -181,16 +173,13 @@ const CEODashboard = () => {
     setSavingLembrete(true);
     try {
       const body = {
-        token: 'agil-lembretes-2026',
+        action: 'editar_lembrete',
+        id: editId,
         descricao: editForm.descricao.trim(),
         data_lembrete: editForm.data ? new Date(editForm.data).toISOString() : null,
       };
-      const r = await fetch(`https://agil-instagram.fly.dev/api/lembretes/${editId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (r.ok) {
+      const { error } = await supabaseClient.functions.invoke('bot-notificacoes', { body });
+      if (!error) {
         setEditId(null);
         await fetchLembretes();
       }
