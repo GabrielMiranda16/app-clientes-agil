@@ -213,18 +213,14 @@ const OrcamentoPublicoPage = () => {
   }, [stage]);
 
   const loadOrcamento = async () => {
-    const { data, error } = await supabase
-      .from('orcamentos')
-      .select('id, created_at, status, slug, cliente_nome, cliente_cpf, segmento, modalidade, observacoes, descricao_orcamento, propostas, cenarios_atuais, lista_documentos, docs_extras, data_orcamento, valor_mensalidade, operadora_escolhida, numero_protocolo, perfil_vidas')
-      .eq('slug', slug)
-      .neq('status', 'CANCELADA')
-      .maybeSingle();
+    const { data: rows, error } = await supabase.rpc('get_orcamento_publico', { p_slug: slug });
+    const data = Array.isArray(rows) ? rows[0] : rows;
     if (error || !data) { setStage('erro'); return; }
     setOrcamento(data);
     if (['ASSINATURA', 'CONCLUIDO', 'COMISSAO'].includes(data.status)) {
       setStage('encerrado');
     } else if (data.status === 'DOCUMENTOS') {
-      const { data: sent } = await supabase.from('orcamento_documentos').select('tipo_documento').eq('orcamento_id', data.id);
+      const { data: sent } = await supabase.rpc('listar_tipos_documentos_publico', { p_orcamento_id: data.id });
       setDocsEnviados((sent || []).map(d => d.tipo_documento));
       setStage('documentos');
     } else if (data.status === 'ORCAMENTO') {
@@ -286,14 +282,21 @@ const OrcamentoPublicoPage = () => {
       const isAuto = segmento === 'AUTO';
       const skipDocs = isAuto || segmento === 'VIAGEM';
       const novoStatus = skipDocs ? 'ASSINATURA' : 'DOCUMENTOS';
-      const updateData = { status: novoStatus, data_documentos: new Date().toISOString() };
+      let valorMensalidade = null, descricaoOrcamento = null, operadoraEscolhida = null;
       if (proposta) {
         const pl0 = proposta.planos?.find(pl => pl.valor) || proposta.planos?.[0];
-        updateData.valor_mensalidade = parseValor(pl0?.valor);
-        updateData.descricao_orcamento = `${proposta.operadora}${pl0?.nome ? ` — ${pl0.nome}` : ''}`;
-        updateData.operadora_escolhida = proposta.operadora || null;
+        valorMensalidade = parseValor(pl0?.valor);
+        descricaoOrcamento = `${proposta.operadora}${pl0?.nome ? ` — ${pl0.nome}` : ''}`;
+        operadoraEscolhida = proposta.operadora || null;
       }
-      await supabase.from('orcamentos').update(updateData).eq('id', orcamento.id);
+      const { error: rpcError } = await supabase.rpc('aceitar_proposta_publico', {
+        p_slug: slug,
+        p_novo_status: novoStatus,
+        p_valor_mensalidade: valorMensalidade,
+        p_descricao_orcamento: descricaoOrcamento,
+        p_operadora_escolhida: operadoraEscolhida,
+      });
+      if (rpcError) throw rpcError;
       if (acessoIdRef.current) {
         const acessoUpdate = { aceitou_proposta: true, aceitou_em: new Date().toISOString() };
         if (proposta?.operadora) acessoUpdate.proposta_clicada = proposta.operadora;
