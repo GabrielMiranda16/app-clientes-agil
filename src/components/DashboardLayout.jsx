@@ -54,10 +54,8 @@ import {
 import ChatWidget from '@/components/ChatWidget';
 import { empresasService } from '@/services/empresasService';
 import { solicitacoesService } from '@/services/solicitacoesService';
-import { authService } from '@/services/authService';
 import { validatePasswordStrength } from '@/lib/userValidator';
 import { supabaseClient } from '@/lib/supabase';
-import bcrypt from 'bcryptjs';
 
 const DashboardLayout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -68,7 +66,6 @@ const DashboardLayout = ({ children }) => {
   
   const [empresas, setEmpresas] = useState([]);
   const [solicitacoes, setSolicitacoes] = useState([]);
-  const [currentUserData, setCurrentUserData] = useState(null);
   const [loadingData, setLoadingData] = useState(true);
 
   const { formattedDate, formattedTime } = useDateTime('America/Sao_Paulo');
@@ -77,17 +74,13 @@ const DashboardLayout = ({ children }) => {
     const loadData = async () => {
       setLoadingData(true);
       try {
-        const [empData, solData, userResult] = await Promise.allSettled([
+        const [empData, solData] = await Promise.allSettled([
           empresasService.getEmpresas(),
           solicitacoesService.getAllSolicitacoes(),
-          supabaseClient.from('users').select('*').eq('id', user?.id).single()
         ]);
 
         setEmpresas(empData.status === 'fulfilled' ? (empData.value || []) : []);
         setSolicitacoes(solData.status === 'fulfilled' ? (solData.value || []) : []);
-        if (userResult.status === 'fulfilled' && userResult.value?.data) {
-          setCurrentUserData(userResult.value.data);
-        }
       } catch (error) {
         console.error("Error loading dashboard data:", error);
       } finally {
@@ -197,22 +190,6 @@ const DashboardLayout = ({ children }) => {
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    if (!currentUserData) {
-      toast({ variant: 'destructive', title: 'Erro', description: 'Usuário não encontrado.' });
-      return;
-    }
-
-    // Suporta senhas em bcrypt (novas) e texto puro (legado)
-    const storedPassword = currentUserData.password || '';
-    const isBcrypt = storedPassword.startsWith('$2');
-    const isOldCorrect = isBcrypt
-      ? await bcrypt.compare(oldPassword, storedPassword)
-      : oldPassword === storedPassword;
-
-    if (!isOldCorrect) {
-      toast({ variant: 'destructive', title: 'Erro', description: 'Senha antiga incorreta.' });
-      return;
-    }
     const passErrors = validatePasswordStrength(newPassword);
     if (passErrors.length > 0) {
       toast({ variant: 'destructive', title: 'Senha fraca', description: passErrors[0] });
@@ -225,7 +202,15 @@ const DashboardLayout = ({ children }) => {
 
     setIsPassSubmitting(true);
     try {
-      await authService.updateUser(user.id, { password: newPassword });
+      // A senha antiga é conferida no servidor (edge function) — o hash
+      // nunca precisa trafegar pro navegador.
+      const { data, error } = await supabaseClient.functions.invoke('change-own-password', {
+        body: { oldPassword, newPassword },
+      });
+      if (error || data?.error) {
+        toast({ variant: 'destructive', title: 'Erro', description: data?.error || 'Senha antiga incorreta.' });
+        return;
+      }
       toast({ title: 'Sucesso', description: 'Senha alterada com sucesso.' });
       setIsPasswordModalOpen(false);
       setOldPassword('');

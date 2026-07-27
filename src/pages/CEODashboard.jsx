@@ -279,7 +279,7 @@ const CEODashboard = () => {
         beneficiariosService.getAllBeneficiarios(),
         solicitacoesService.getAllSolicitacoes(),
         coparticipacaoService.getAllCoparticipacoes(),
-        supabaseClient.from('users').select('*'),
+        supabaseClient.from('users').select('id, email, name, perfil, empresa_id, empresa_matriz_id, ativo, created_at, updated_at, must_change_password, aceite_termos, aceite_whatsapp, aceite_email, data_aceite_termos, ip_aceite, versao_termos'),
         supabaseClient.from('parceiros').select('*, users(name, email, ativo)').order('created_at', { ascending: false }),
       ]);
 
@@ -591,19 +591,20 @@ const CEODashboard = () => {
   const openEditModal = (admin) => {
     setEditingAdminId(admin.id);
     setEditAdminEmail(admin.email);
-    setEditAdminPassword(admin.password);
+    setEditAdminPassword('');
     setIsEditModalOpen(true);
   };
 
   const handleEditAdmin = async (e) => {
     e.preventDefault();
     if (!editAdminEmail) return toast({ variant: 'destructive', title: 'Erro', description: 'O e-mail é obrigatório.' });
-    if (!editAdminPassword || editAdminPassword.length < 6) return toast({ variant: 'destructive', title: 'Erro', description: 'A senha deve ter pelo menos 6 caracteres.' });
-    
+    if (editAdminPassword && editAdminPassword.length < 6) return toast({ variant: 'destructive', title: 'Erro', description: 'A senha deve ter pelo menos 6 caracteres.' });
+
     setIsSubmitting(true);
     try {
-      await authService.updateUser(editingAdminId, { email: editAdminEmail, password: editAdminPassword });
-      setUsers(users.map(u => u.id === editingAdminId ? { ...u, email: editAdminEmail, password: editAdminPassword } : u));
+      const payload = { email: editAdminEmail, ...(editAdminPassword ? { password: editAdminPassword } : {}) };
+      await authService.updateUser(editingAdminId, payload);
+      setUsers(users.map(u => u.id === editingAdminId ? { ...u, email: editAdminEmail } : u));
       toast({ title: 'Sucesso', description: 'Administrador atualizado com sucesso.' });
       setIsEditModalOpen(false);
       setEditingAdminId(null);
@@ -1785,7 +1786,7 @@ const CEODashboard = () => {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}><DialogContent className="sm:max-w-[425px]"><DialogHeader><DialogTitle>Editar Administrador</DialogTitle></DialogHeader><form onSubmit={handleEditAdmin}><div className="grid gap-4 py-4"><div className="space-y-2"><Label htmlFor="edit-email">Email</Label><Input id="edit-email" type="email" value={editAdminEmail} onChange={e => setEditAdminEmail(e.target.value)} /></div><div className="space-y-2"><Label htmlFor="edit-password">Senha</Label><Input id="edit-password" type="password" value={editAdminPassword} onChange={e => setEditAdminPassword(e.target.value)} /></div></div><DialogFooter><Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancelar</Button><Button type="submit" disabled={isSubmitting} className="bg-[#003580] hover:bg-[#002060] text-white">{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar Alterações</Button></DialogFooter></form></DialogContent></Dialog>
+        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}><DialogContent className="sm:max-w-[425px]"><DialogHeader><DialogTitle>Editar Administrador</DialogTitle></DialogHeader><form onSubmit={handleEditAdmin}><div className="grid gap-4 py-4"><div className="space-y-2"><Label htmlFor="edit-email">Email</Label><Input id="edit-email" type="email" value={editAdminEmail} onChange={e => setEditAdminEmail(e.target.value)} /></div><div className="space-y-2"><Label htmlFor="edit-password">Nova senha (opcional)</Label><Input id="edit-password" type="password" placeholder="Deixe em branco para manter a senha atual" value={editAdminPassword} onChange={e => setEditAdminPassword(e.target.value)} /></div></div><DialogFooter><Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancelar</Button><Button type="submit" disabled={isSubmitting} className="bg-[#003580] hover:bg-[#002060] text-white">{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar Alterações</Button></DialogFooter></form></DialogContent></Dialog>
         
         <Dialog open={!isLoading && empresas.length === 0 && isWelcomeModalOpen} onOpenChange={(open) => setIsWelcomeModalOpen(open)}>
           <DialogContent className="sm:max-w-[425px]">

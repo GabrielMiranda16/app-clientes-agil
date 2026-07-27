@@ -4,6 +4,9 @@ import bcrypt from 'bcryptjs';
 
 const SALT_ROUNDS = 10;
 
+// Nunca incluir 'password' aqui — a coluna guarda hash e não deve trafegar pro browser.
+const USER_SAFE_COLUMNS = 'id, email, name, perfil, empresa_id, empresa_matriz_id, ativo, created_at, updated_at, must_change_password, aceite_termos, aceite_whatsapp, aceite_email, data_aceite_termos, ip_aceite, versao_termos';
+
 export const hashPassword = (password) => bcrypt.hash(password, SALT_ROUNDS);
 
 export const authService = {
@@ -18,7 +21,7 @@ export const authService = {
       const { data, error } = await supabase
         .from('users')
         .insert([cleanedData])
-        .select()
+        .select(USER_SAFE_COLUMNS)
         .single();
 
       if (error) throw error;
@@ -46,7 +49,7 @@ export const authService = {
         .from('users')
         .update(payload)
         .eq('id', id)
-        .select()
+        .select(USER_SAFE_COLUMNS)
         .single();
 
       if (error) throw error;
