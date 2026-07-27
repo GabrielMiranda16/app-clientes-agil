@@ -3,6 +3,9 @@ import { supabase } from '@/lib/customSupabaseClient';
 
 const AuthContext = createContext({});
 
+// Nunca incluir 'password' aqui — a coluna guarda hash e não deve trafegar pro browser.
+const USER_SAFE_COLUMNS = 'id, email, name, perfil, empresa_id, empresa_matriz_id, ativo, created_at, updated_at, must_change_password, aceite_termos, aceite_whatsapp, aceite_email, data_aceite_termos, ip_aceite, versao_termos';
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -10,12 +13,10 @@ export const AuthProvider = ({ children }) => {
   const fetchProfile = async (email) => {
     const { data } = await supabase
       .from('users')
-      .select('*')
+      .select(USER_SAFE_COLUMNS)
       .eq('email', email)
       .maybeSingle();
-    if (!data) return null;
-    const { password: _, ...safe } = data;
-    return safe;
+    return data ?? null;
   };
 
   // Restaura sessão ao montar
@@ -30,12 +31,11 @@ export const AuthProvider = ({ children }) => {
             return;
           }
         }
-        // Fallback: usuários ainda não migrados para Supabase Auth não têm sessão JWT,
-        // então restauramos do sessionStorage para não deslogar no F5.
-        const stored = sessionStorage.getItem('agil_session_user');
-        if (stored) {
-          try { setUser(JSON.parse(stored)); } catch { sessionStorage.removeItem('agil_session_user'); }
-        }
+        // Sem sessão JWT válida = deslogado. O login() sempre estabelece uma
+        // sessão real do Supabase Auth antes de gravar qualquer coisa em
+        // sessionStorage, então getSession() já cobre todo usuário legítimo
+        // que já logou uma vez — não confiar em dado não assinado do browser.
+        sessionStorage.removeItem('agil_session_user');
       } catch (e) {
         console.error('[Auth] Erro ao restaurar sessão:', e);
       } finally {
@@ -64,7 +64,6 @@ export const AuthProvider = ({ children }) => {
     if (!authError) {
       const profile = await fetchProfile(email);
       if (!profile) throw new Error('Usuário não encontrado.');
-      sessionStorage.setItem('agil_session_user', JSON.stringify(profile));
       setUser(profile);
       return profile;
     }
@@ -80,21 +79,17 @@ export const AuthProvider = ({ children }) => {
 
     const profile = await fetchProfile(email);
     if (!profile) throw new Error('Usuário não encontrado.');
-    sessionStorage.setItem('agil_session_user', JSON.stringify(profile));
     setUser(profile);
     return profile;
   };
 
   const logout = async () => {
     try { await supabase.auth.signOut(); } catch { /* ignora */ }
-    sessionStorage.removeItem('agil_session_user');
     setUser(null);
   };
 
   const updateUser = (userData) => {
     setUser(userData);
-    if (userData) sessionStorage.setItem('agil_session_user', JSON.stringify(userData));
-    else sessionStorage.removeItem('agil_session_user');
   };
 
   return (

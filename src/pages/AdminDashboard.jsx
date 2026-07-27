@@ -64,7 +64,7 @@ const AdminDashboard = () => {
         empresasService.getEmpresas(),
         beneficiariosService.getAllBeneficiarios(),
         solicitacoesService.getAllSolicitacoes(),
-        supabaseClient.from('users').select('*'),
+        supabaseClient.from('users').select('id, email, name, perfil, empresa_id, empresa_matriz_id, ativo, created_at, updated_at, must_change_password, aceite_termos, aceite_whatsapp, aceite_email, data_aceite_termos, ip_aceite, versao_termos'),
       ]);
       setEmpresas(empresasResult.status === 'fulfilled' ? (empresasResult.value || []) : []);
       setBeneficiarios(beneficiariosResult.status === 'fulfilled' ? (beneficiariosResult.value || []) : []);
