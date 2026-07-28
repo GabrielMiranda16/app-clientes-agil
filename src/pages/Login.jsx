@@ -11,7 +11,6 @@ import { motion } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
 import { Helmet } from 'react-helmet';
 import { authService } from '@/services/authService';
-import { sendWelcomeEmail } from '@/services/emailService';
 
 const LoginPage = () => {
   const savedEmail = localStorage.getItem('agil_remember_email') || '';
@@ -68,17 +67,10 @@ const LoginPage = () => {
     e.preventDefault();
     setIsSendingReset(true);
     try {
-      const { user, tempPassword } = await authService.resetPassword(forgotEmail);
-      const emailResult = await sendWelcomeEmail({
-        nomeCliente: user.name || user.email,
-        emailCliente: user.email,
-        senhaTemporaria: tempPassword,
-      });
-      if (emailResult.ok) {
-        toast({ title: 'E-mail enviado!', description: 'Verifique sua caixa de entrada com a senha temporária.' });
-      } else {
-        toast({ variant: 'destructive', title: 'E-mail não enviado', description: 'Sua senha foi redefinida, mas não conseguimos enviar o e-mail com a senha temporária. Anote: entre em contato com o suporte para receber sua nova senha.', duration: 10000 });
-      }
+      // O envio do e-mail com a senha temporária acontece no servidor —
+      // a resposta nunca traz a senha de volta pro navegador.
+      await authService.resetPassword(forgotEmail);
+      toast({ title: 'E-mail enviado!', description: 'Se o e-mail estiver cadastrado, você vai receber uma nova senha em instantes.' });
       setIsForgotOpen(false);
       setForgotEmail('');
     } catch (err) {

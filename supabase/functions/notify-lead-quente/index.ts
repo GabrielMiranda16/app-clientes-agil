@@ -12,9 +12,14 @@ const SEG_LABEL: Record<string, string> = {
 const ordinal = (n: number) =>
   ({ 2: '2ª', 3: '3ª', 4: '4ª', 5: '5ª' }[n] ?? `${n}ª`);
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': 'https://www.agilseguros.app',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' } });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   const { orcamento_id, num_acessos, aceitou = false, proposta_clicada: propostaBody = '' } = await req.json();
@@ -30,7 +35,7 @@ serve(async (req) => {
     .eq('id', orcamento_id)
     .single();
 
-  if (!o) return new Response('not found', { status: 404 });
+  if (!o) return new Response('not found', { status: 404, headers: corsHeaders });
 
   const { data: lastAcesso } = await supabase
     .from('orcamento_acessos')
@@ -46,7 +51,7 @@ serve(async (req) => {
   const ord = ordinal(num_acessos);
   const protocolo = o.numero_protocolo || '';
 
-  const BOT_TOKEN = 'agil-lembretes-2026';
+  const BOT_TOKEN = Deno.env.get('BOT_LEMBRETES_TOKEN');
 
   // WhatsApp via bot
   fetch('https://agil-instagram.fly.dev/api/lead-quente', {
@@ -113,6 +118,6 @@ serve(async (req) => {
   }
 
   return new Response(JSON.stringify({ ok: true }), {
-    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
 });

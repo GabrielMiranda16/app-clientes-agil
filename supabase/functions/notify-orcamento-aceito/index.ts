@@ -2,12 +2,12 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://www.agilseguros.app',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 const EVOLUTION_URL = 'https://evolution-agil.fly.dev';
-const EVOLUTION_KEY = 'ljzRG5XQPhbJiMV7grrPBd6b_9uAfv6HyZpvy0IMvTA';
+const EVOLUTION_KEY = Deno.env.get('EVOLUTION_KEY') ?? '';
 const EVOLUTION_INSTANCE = 'agil-seguros';
 const ADM_PHONE = '5511999996863';
 
