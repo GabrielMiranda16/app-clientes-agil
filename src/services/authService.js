@@ -79,11 +79,12 @@ export const authService = {
   },
 
   async resetPassword(email) {
-    // A verificação do e-mail e a geração/gravação da senha temporária
-    // acontecem no servidor (edge function), nunca com a chave anon no navegador.
+    // A verificação do e-mail, a geração da senha temporária e o envio do
+    // e-mail acontecem inteiramente no servidor — a resposta nunca traz a
+    // senha nem confirma se aquele e-mail existe na base.
     const { data, error } = await supabase.functions.invoke('request-password-reset', { body: { email } });
-    if (error || data?.error) throw new Error(data?.error || 'E-mail não encontrado.');
-    return data; // { user: { id, email, name }, tempPassword }
+    if (error || data?.error) throw new Error(data?.error || 'Não foi possível processar o pedido.');
+    return data; // { ok: true }
   },
 
   logoutUser() {
