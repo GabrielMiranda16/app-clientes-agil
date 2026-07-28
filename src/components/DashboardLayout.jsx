@@ -163,7 +163,7 @@ const DashboardLayout = ({ children }) => {
 
   const pendingCount = solicitacoes.filter(s => s.status === 'PENDENTE').length;
 
-  const logoUrl = "https://horizons-cdn.hostinger.com/2e9adf63-57d2-437e-87b2-25ae49f4c5b7/dc37b5512fc0e73a5c418dd52548e59c.png";
+  const logoUrl = "/logo.png";
 
   const getHomeLink = () => {
     if (!user) return '/login';

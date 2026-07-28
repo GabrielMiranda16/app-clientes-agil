@@ -26,7 +26,7 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const logoUrl = "https://horizons-cdn.hostinger.com/2e9adf63-57d2-437e-87b2-25ae49f4c5b7/dc37b5512fc0e73a5c418dd52548e59c.png";
+  const logoUrl = "/logo.png";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
