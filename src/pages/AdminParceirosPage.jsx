@@ -2236,15 +2236,15 @@ const AdminParceirosPage = () => {
                             <button type="button"
                               onClick={() => setSegData(d => ({ ...d, [key]: String(Math.max(0, val - 1)) }))}
                               disabled={val === 0}
-                              className="w-6 h-6 rounded-md border border-gray-200 bg-white flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-100">
-                              <Minus className="h-3 w-3 text-gray-600" />
+                              className="w-6 h-6 rounded-md border border-gray-300 bg-gray-200 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-300">
+                              <Minus className="h-3 w-3 text-gray-700" />
                             </button>
                             <span className="w-5 text-center text-sm font-semibold text-gray-800">{val}</span>
                             <button type="button"
                               onClick={() => { if (!atingiuTotal) setSegData(d => ({ ...d, [key]: String(val + 1) })); }}
                               disabled={atingiuTotal}
-                              className="w-6 h-6 rounded-md border border-gray-200 bg-white flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-100">
-                              
+                              className="w-6 h-6 rounded-md border border-gray-300 bg-gray-200 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-300">
+                              <Plus className="h-3 w-3 text-gray-700" />
                             </button>
                           </div>
                         </div>
