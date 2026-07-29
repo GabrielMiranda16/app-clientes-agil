@@ -973,15 +973,15 @@ const ParceiroDashboard = () => {
                             <button type="button"
                               onClick={() => setExtra(key, String(Math.max(0, val - 1)))}
                               disabled={val === 0}
-                              className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-100 active:enabled:scale-95">
-                              <Minus className="h-3 w-3 text-gray-600" />
+                              className="w-7 h-7 rounded-lg border border-gray-300 bg-gray-200 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-300 active:enabled:scale-95">
+                              <Minus className="h-3 w-3 text-gray-700" />
                             </button>
                             <span className="w-6 text-center text-sm font-semibold text-gray-800">{val}</span>
                             <button type="button"
                               onClick={() => { if (!atingiuTotal) setExtra(key, String(val + 1)); }}
                               disabled={atingiuTotal}
-                              className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-100 active:enabled:scale-95">
-                              
+                              className="w-7 h-7 rounded-lg border border-gray-300 bg-gray-200 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-300 active:enabled:scale-95">
+                              <Plus className="h-3 w-3 text-gray-700" />
                             </button>
                           </div>
                         </div>
@@ -1056,13 +1056,13 @@ const ParceiroDashboard = () => {
                                         <span className="text-xs text-gray-400 shrink-0">{totalFaixa}/{meta}</span>
                                         <div className="flex items-center gap-2 shrink-0">
                                           <button type="button" onClick={() => updCenarioSolicVidas(ci, id, Math.max(0, val - 1))} disabled={val === 0}
-                                            className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-100 active:enabled:scale-95">
-                                            <Minus className="h-3 w-3 text-gray-600" />
+                                            className="w-7 h-7 rounded-lg border border-gray-300 bg-gray-200 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-300 active:enabled:scale-95">
+                                            <Minus className="h-3 w-3 text-gray-700" />
                                           </button>
                                           <span className="w-6 text-center text-sm font-semibold text-gray-800">{val}</span>
                                           <button type="button" onClick={() => { if (!atingiuLimite) updCenarioSolicVidas(ci, id, val + 1); }} disabled={atingiuLimite}
-                                            className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-100 active:enabled:scale-95">
-                                            
+                                            className="w-7 h-7 rounded-lg border border-gray-300 bg-gray-200 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:enabled:bg-gray-300 active:enabled:scale-95">
+                                            <Plus className="h-3 w-3 text-gray-700" />
                                           </button>
                                         </div>
                                       </div>
