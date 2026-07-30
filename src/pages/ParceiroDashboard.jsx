@@ -268,19 +268,23 @@ const ParceiroDashboard = () => {
       try {
         const { data: json, error } = await supabase.functions.invoke('buscar-placa', { body: { placa: val } });
         if (!error && json && !json.error) {
-          setForm(f => ({
-            ...f,
-            extras: {
-              ...f.extras,
-              chassi: json.chassi || f.extras.chassi || '',
-              modelo_veiculo: [json.marca || json.MARCA, json.modelo || json.MODELO].filter(Boolean).join(' ').trim() || f.extras.modelo_veiculo || '',
-              ano_fabricacao: String(json.extra?.ano_fabricacao || json.ano || f.extras.ano_fabricacao || ''),
-              cor: json.cor || f.extras.cor || '',
-              municipio: json.municipio ? `${json.municipio}${json.uf ? ' - ' + json.uf : ''}` : f.extras.municipio || '',
-              origem: json.origem || f.extras.origem || '',
-              logo_marca: json.logo || f.extras.logo_marca || '',
-            },
-          }));
+          setForm(f => {
+            // Ignora resposta atrasada se o usuário já mudou a placa enquanto a busca corria
+            if (f.extras.placa !== val) return f;
+            return {
+              ...f,
+              extras: {
+                ...f.extras,
+                chassi: json.chassi || f.extras.chassi || '',
+                modelo_veiculo: [json.marca || json.MARCA, json.modelo || json.MODELO].filter(Boolean).join(' ').trim() || f.extras.modelo_veiculo || '',
+                ano_fabricacao: String(json.extra?.ano_fabricacao || json.ano || f.extras.ano_fabricacao || ''),
+                cor: json.cor || f.extras.cor || '',
+                municipio: json.municipio ? `${json.municipio}${json.uf ? ' - ' + json.uf : ''}` : f.extras.municipio || '',
+                origem: json.origem || f.extras.origem || '',
+                logo_marca: json.logo || f.extras.logo_marca || '',
+              },
+            };
+          });
         } else {
           toast({
             variant: 'destructive',

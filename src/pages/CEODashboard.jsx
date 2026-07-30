@@ -148,7 +148,8 @@ const CEODashboard = () => {
   };
 
   const concluirLembrete = async (id) => {
-    await supabaseClient.functions.invoke('bot-notificacoes', { body: { action: 'concluir_lembrete', id } });
+    const { error } = await supabaseClient.functions.invoke('bot-notificacoes', { body: { action: 'concluir_lembrete', id } });
+    if (error) return toast({ variant: 'destructive', title: 'Erro ao concluir lembrete', description: 'Tente novamente.' });
     setLembretes(prev => prev.filter(l => l.id !== id));
   };
 
@@ -226,18 +227,21 @@ const CEODashboard = () => {
   };
 
   const excluirMensagemCEO = async (id) => {
-    await supabaseClient.from('lembretes_adm').delete().eq('id', id);
+    const { error } = await supabaseClient.from('lembretes_adm').delete().eq('id', id);
+    if (error) { toast({ variant: 'destructive', title: 'Erro ao excluir', description: 'Tente novamente.' }); return; }
     setLembretesAdm(prev => prev.filter(l => l.id !== id));
     setConfirmDeleteAdm(null);
   };
 
   const concluirLembreteAdm = async (id) => {
-    await supabaseClient.from('lembretes_adm').update({ concluido: true }).eq('id', id);
+    const { error } = await supabaseClient.from('lembretes_adm').update({ concluido: true }).eq('id', id);
+    if (error) return toast({ variant: 'destructive', title: 'Erro ao concluir', description: 'Tente novamente.' });
     setLembretesAdm(prev => prev.map(l => l.id === id ? { ...l, concluido: true } : l));
   };
 
   const reabrirLembreteAdm = async (id) => {
-    await supabaseClient.from('lembretes_adm').update({ concluido: false }).eq('id', id);
+    const { error } = await supabaseClient.from('lembretes_adm').update({ concluido: false }).eq('id', id);
+    if (error) return toast({ variant: 'destructive', title: 'Erro ao reabrir', description: 'Tente novamente.' });
     setLembretesAdm(prev => prev.map(l => l.id === id ? { ...l, concluido: false } : l));
   };
 

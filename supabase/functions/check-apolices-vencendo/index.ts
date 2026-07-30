@@ -34,7 +34,6 @@ serve(async (req) => {
       .from('apolices')
       .select('id, empresa_id, segmento, seguradora, numero_apolice, vigencia_inicio, vigencia_fim, empresas(nome_fantasia)')
       .lte('vigencia_fim', em30diasStr)
-      .gte('vigencia_fim', hojeStr)
       .or('ativo.is.null,ativo.eq.true')
       .or('lembrete_vencimento_criado.is.null,lembrete_vencimento_criado.eq.false');
 

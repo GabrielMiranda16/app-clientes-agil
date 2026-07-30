@@ -26,12 +26,13 @@ serve(async (req) => {
     const hoje = new Date();
     const em30dias = new Date(hoje);
     em30dias.setDate(hoje.getDate() + 30);
-    const dataAlvo = em30dias.toISOString().slice(0, 10);
+    const em30diasStr = em30dias.toISOString().slice(0, 10);
 
     const { data: vencendo, error } = await supabase
       .from('orcamentos')
       .select('id, cliente_nome, cliente_email, cliente_telefone, segmento, operadora_escolhida, numero_apolice, data_vencimento, parceiros(nome_completo)')
-      .eq('data_vencimento', dataAlvo)
+      .lte('data_vencimento', em30diasStr)
+      .eq('alerta_vencimento_enviado', false)
       .in('status', ['CONCLUIDO', 'COMISSAO']);
 
     if (error) throw error;
@@ -81,6 +82,7 @@ serve(async (req) => {
           html,
         }),
       });
+      await supabase.from('orcamentos').update({ alerta_vencimento_enviado: true }).eq('id', orc.id);
       enviados++;
     }
 
