@@ -444,12 +444,16 @@ const ParceiroDashboard = () => {
   const emAndamento = orcamentos.filter(o => !['CONCLUIDO', 'COMISSAO'].includes(o.status));
   const concluidos = orcamentos.filter(o => ['CONCLUIDO', 'COMISSAO'].includes(o.status));
   const agora = new Date();
-  const comissoesMes = comissoes.filter(c => {
-    const d = new Date(c.created_at);
+  const mesmoMes = (dataStr) => {
+    const d = new Date(dataStr);
     return d.getMonth() === agora.getMonth() && d.getFullYear() === agora.getFullYear();
-  });
-  const comissaoPendente = comissoesMes.filter(c => c.status === 'PENDENTE').reduce((s, c) => s + Number(c.valor_comissao || 0), 0);
-  const comissaoRecebida = comissoesMes.filter(c => c.status === 'PAGO').reduce((s, c) => s + Number(c.valor_comissao || 0), 0);
+  };
+  const comissaoPendente = comissoes
+    .filter(c => c.status === 'PENDENTE' && mesmoMes(c.created_at))
+    .reduce((s, c) => s + Number(c.valor_comissao || 0), 0);
+  const comissaoRecebida = comissoes
+    .filter(c => c.status === 'PAGO' && mesmoMes(c.data_pagamento || c.created_at))
+    .reduce((s, c) => s + Number(c.valor_comissao || 0), 0);
 
   const metrics = [
     { label: 'Em andamento', value: emAndamento.length, icon: Clock, color: 'text-blue-600' },
@@ -855,7 +859,7 @@ const ParceiroDashboard = () => {
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-gray-700">Segmento <span className="text-red-500">*</span></Label>
                   <select value={form.segmento}
-                    onChange={e => { setField('segmento', e.target.value); setForm(f => ({ ...f, extras: {} })); }}
+                    onChange={e => { setField('segmento', e.target.value); setForm(f => ({ ...f, extras: {} })); setCenariosSolic([{ tem_plano: false, operadora: '', valor: '', vidas: {} }]); }}
                     className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-[#003580] focus:ring-1 focus:ring-[#003580]">
                     <option value="">Selecione o segmento...</option>
                     {SEGMENTOS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}

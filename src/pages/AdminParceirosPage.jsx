@@ -727,8 +727,8 @@ const AdminParceirosPage = () => {
   // ── Enviar orçamento ──
   const handleResponder = async () => {
     const isViagem = selected?.segmento === 'VIAGEM';
-    const valid = propostas.filter(p => isViagem ? p.operadora : (p.operadora && p.planos.some(pl => pl.valor)));
-    if (valid.length === 0) return toast({ variant: 'destructive', title: isViagem ? 'Informe ao menos uma proposta com operadora.' : 'Informe ao menos uma proposta com operadora e valor.' });
+    const valid = propostas.filter(p => p.operadora && p.planos.some(pl => pl.valor));
+    if (valid.length === 0) return toast({ variant: 'destructive', title: 'Informe ao menos uma proposta com operadora e valor.' });
     setEnviando(true);
     try {
       const slug = generateSlug();
@@ -812,8 +812,8 @@ const AdminParceirosPage = () => {
 
   const handleEditarProposta = async () => {
     const isViagem = selected?.segmento === 'VIAGEM';
-    const valid = propostas.filter(p => isViagem ? p.operadora : (p.operadora && p.planos.some(pl => pl.valor)));
-    if (valid.length === 0) return toast({ variant: 'destructive', title: isViagem ? 'Informe ao menos uma proposta com operadora.' : 'Informe ao menos uma proposta com operadora e valor.' });
+    const valid = propostas.filter(p => p.operadora && p.planos.some(pl => pl.valor));
+    if (valid.length === 0) return toast({ variant: 'destructive', title: 'Informe ao menos uma proposta com operadora e valor.' });
     setEnviando(true);
     try {
       const dest = valid.find(p => p.destaque) || valid[0];

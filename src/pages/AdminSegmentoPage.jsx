@@ -260,8 +260,8 @@ const AdminSegmentoPage = () => {
         ativo: true,
         dados_adicionais: dadosAdicionais,
       };
-      // Remove valor_premio and descricao for SVD
-      if (isSVD) { delete payload.valor_premio; delete payload.vigencia_inicio; delete payload.vigencia_fim; delete payload.descricao; }
+      // Remove valor_premio and descricao for SVD (vigencia é mantida: usada pelo alerta de vencimento)
+      if (isSVD) { delete payload.valor_premio; delete payload.descricao; }
       // Remove vigência for PET_SAUDE (plano mensal sem data fim)
       if (segConfig.key === 'PET_SAUDE') { delete payload.vigencia_inicio; delete payload.vigencia_fim; }
 
@@ -668,6 +668,10 @@ const AdminSegmentoPage = () => {
                   >
                      Adicionar
                   </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div><Label>Vigência Início</Label><Input type="date" value={apoliceForm.vigencia_inicio} onChange={e => setApoliceForm(p => ({ ...p, vigencia_inicio: e.target.value }))} /></div>
+                  <div><Label>Vigência Fim</Label><Input type="date" value={apoliceForm.vigencia_fim} onChange={e => setApoliceForm(p => ({ ...p, vigencia_fim: e.target.value }))} /></div>
                 </div>
                 {(dadosAdicionais.sub_apolices || []).length === 0 && (
                   <p className="text-xs text-gray-400 text-center py-2">

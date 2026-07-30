@@ -364,7 +364,7 @@ const OrcamentoPublicoPage = () => {
   const diferenciais = (segmento === 'ODONTOLOGICO' ? segData?.diferenciais_odonto : null) || segData?.diferenciais || [];
 
   const destaqueCombinarCom = propostaDestaque?.combinar_com || [];
-  const destaqueValorProposta = (propostaDestaque?.planos || []).reduce((sum, pl) => sum + parseValor(pl.valor), 0);
+  const destaqueValorProposta = getPropostaValor(propostaDestaque);
   const destaqueValorCombinados = destaqueCombinarCom.reduce((sum, c) => sum + parseValor(c.valor), 0);
   const destaqueTotalComCombinados = destaqueValorProposta + destaqueValorCombinados;
 
@@ -632,7 +632,7 @@ const OrcamentoPublicoPage = () => {
                               <div className="flex flex-col gap-3">
                                 {propostas.filter(p => !p.destaque).map((p, i) => {
                                   const pCombinarCom = p.combinar_com || [];
-                                  const pValorProposta = (p.planos || []).reduce((sum, pl) => sum + parseValor(pl.valor), 0);
+                                  const pValorProposta = getPropostaValor(p);
                                   const pValorCombinados = pCombinarCom.reduce((sum, c) => sum + parseValor(c.valor), 0);
                                   const pTotalComCombinados = pValorProposta + pValorCombinados;
                                   return (
@@ -764,7 +764,7 @@ const OrcamentoPublicoPage = () => {
                             );
                           })}
                           {cenarios.length > 1 && cenarios.some(c => c.valor) && (() => {
-                            const total = cenarios.reduce((acc, c) => acc + (parseFloat(String(c.valor || '0').replace(',', '.')) || 0), 0);
+                            const total = cenarios.reduce((acc, c) => acc + parseBRL(c.valor), 0);
                             return (
                               <div className="flex items-center justify-between px-4 py-4 bg-white/5 rounded-xl border border-white/10 reveal-item">
                                 <span className="text-base font-bold text-white">Total atual</span>
@@ -1489,7 +1489,7 @@ const PropostaCard = ({ proposta, isSaude, isAuto = false, isViagem = false, cen
 
   const combinarCom = proposta.combinar_com || [];
   const totalAtual = cenarios.reduce((sum, c) => sum + parseValor(c.valor), 0);
-  const valorProposta = (proposta.planos || []).reduce((sum, pl) => sum + parseValor(pl.valor), 0);
+  const valorProposta = parseValor(primeiroValor || '0');
   const valorCombinados = combinarCom.reduce((sum, c) => sum + parseValor(c.valor), 0);
   const totalComCombinados = valorProposta + valorCombinados;
   const baseComparacao = totalAtual > 0 ? totalAtual : 0;
