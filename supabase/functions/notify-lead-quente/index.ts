@@ -22,7 +22,8 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  const { orcamento_id, num_acessos, aceitou = false, proposta_clicada: propostaBody = '' } = await req.json();
+  const { slug, num_acessos, aceitou = false, proposta_clicada: propostaBody = '' } = await req.json();
+  if (!slug) return new Response('slug required', { status: 400, headers: corsHeaders });
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
@@ -31,8 +32,8 @@ serve(async (req) => {
 
   const { data: o } = await supabase
     .from('orcamentos')
-    .select('cliente_nome, cliente_telefone, segmento, slug, numero_protocolo')
-    .eq('id', orcamento_id)
+    .select('id, cliente_nome, cliente_telefone, segmento, slug, numero_protocolo')
+    .eq('slug', slug)
     .single();
 
   if (!o) return new Response('not found', { status: 404, headers: corsHeaders });
@@ -40,7 +41,7 @@ serve(async (req) => {
   const { data: lastAcesso } = await supabase
     .from('orcamento_acessos')
     .select('proposta_clicada')
-    .eq('orcamento_id', orcamento_id)
+    .eq('orcamento_id', o.id)
     .order('acessado_em', { ascending: false })
     .limit(1)
     .maybeSingle();

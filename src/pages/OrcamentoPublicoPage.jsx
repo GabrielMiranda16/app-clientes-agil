@@ -220,7 +220,7 @@ const OrcamentoPublicoPage = () => {
     if (['ASSINATURA', 'CONCLUIDO', 'COMISSAO'].includes(data.status)) {
       setStage('encerrado');
     } else if (data.status === 'DOCUMENTOS') {
-      const { data: sent } = await supabase.rpc('listar_tipos_documentos_publico', { p_orcamento_id: data.id });
+      const { data: sent } = await supabase.rpc('listar_tipos_documentos_publico', { p_slug: data.slug });
       setDocsEnviados((sent || []).map(d => d.tipo_documento));
       setStage('documentos');
     } else if (data.status === 'ORCAMENTO') {
@@ -260,7 +260,7 @@ const OrcamentoPublicoPage = () => {
         .eq('orcamento_id', orcamento.id);
       if (count >= 2) {
         supabase.functions.invoke('notify-lead-quente', {
-          body: { orcamento_id: orcamento.id, num_acessos: count },
+          body: { slug: orcamento.slug, num_acessos: count },
         }).catch(() => {});
       }
 
@@ -302,9 +302,9 @@ const OrcamentoPublicoPage = () => {
         if (proposta?.operadora) acessoUpdate.proposta_clicada = proposta.operadora;
         await supabase.from('orcamento_acessos').update(acessoUpdate).eq('id', acessoIdRef.current);
       }
-      supabase.functions.invoke('notify-orcamento-aceito', { body: { orcamento_id: orcamento.id } }).catch(() => {});
+      supabase.functions.invoke('notify-orcamento-aceito', { body: { slug: orcamento.slug } }).catch(() => {});
       supabase.functions.invoke('notify-lead-quente', {
-        body: { orcamento_id: orcamento.id, num_acessos: 0, aceitou: true, proposta_clicada: proposta?.operadora || '' },
+        body: { slug: orcamento.slug, num_acessos: 0, aceitou: true, proposta_clicada: proposta?.operadora || '' },
       }).catch(() => {});
       setPropostaEscolhida(proposta);
       setOrcamento(prev => ({ ...prev, status: novoStatus }));

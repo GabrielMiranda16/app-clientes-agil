@@ -204,10 +204,11 @@ export const apolicesService = {
 
   getStatusApolice(vigencia_fim) {
     if (!vigencia_fim) return { label: 'Sem vigência', color: 'gray' };
-    const hoje = new Date();
-    const fim = new Date(vigencia_fim);
+    const hojeStr = new Date().toLocaleDateString('en-CA');
+    const hoje = new Date(`${hojeStr}T00:00:00Z`);
+    const fim = new Date(`${String(vigencia_fim).slice(0, 10)}T00:00:00Z`);
     if (isNaN(fim.getTime())) return { label: 'Sem vigência', color: 'gray' };
-    const diasRestantes = Math.floor((fim - hoje) / (1000 * 60 * 60 * 24));
+    const diasRestantes = Math.round((fim - hoje) / (1000 * 60 * 60 * 24));
 
     if (diasRestantes < 0)  return { label: 'Vencida',           color: 'red',    dias: diasRestantes };
     if (diasRestantes <= 30) return { label: 'Vencendo em breve', color: 'yellow', dias: diasRestantes };

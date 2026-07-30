@@ -447,7 +447,9 @@ const AdminParceirosPage = () => {
       try {
         const { data: json, error } = await supabase.functions.invoke('buscar-placa', { body: { placa: val } });
         if (!error && json && !json.error) {
-          setSegData(d => ({
+          setSegData(d => {
+            if (d.placa !== val) return d;
+            return {
             ...d,
             chassi: json.chassi || d.chassi || '',
             modelo_veiculo: [json.marca || json.MARCA, json.modelo || json.MODELO].filter(Boolean).join(' ').trim() || d.modelo_veiculo || '',
@@ -456,7 +458,8 @@ const AdminParceirosPage = () => {
             municipio: json.municipio ? `${json.municipio}${json.uf ? ' - ' + json.uf : ''}` : d.municipio || '',
             origem: json.origem || d.origem || '',
             logo_marca: json.logo || d.logo_marca || '',
-          }));
+            };
+          });
         } else {
           toast({
             variant: 'destructive',
@@ -881,15 +884,18 @@ const AdminParceirosPage = () => {
       const base = parseBRL(formC.valor_base);
       const pct = parseFloat(formC.comissao_percentual);
       if (existente) {
-        await supabase.from('comissoes').update({ valor_base: base, comissao_percentual: pct, status: 'PENDENTE' }).eq('id', existente.id);
+        const { error } = await supabase.from('comissoes').update({ valor_base: base, comissao_percentual: pct, status: 'PENDENTE' }).eq('id', existente.id);
+        if (error) throw error;
       } else {
-        await supabase.from('comissoes').insert({ orcamento_id: expandedId, parceiro_id: selected.parceiro_id, valor_base: base, comissao_percentual: pct, status: 'PENDENTE' });
+        const { error } = await supabase.from('comissoes').insert({ orcamento_id: expandedId, parceiro_id: selected.parceiro_id, valor_base: base, comissao_percentual: pct, status: 'PENDENTE' });
+        if (error) throw error;
       }
-      await supabase.from('orcamentos').update({
+      const { error: orcError } = await supabase.from('orcamentos').update({
         status: 'COMISSAO',
         ...(formC.numero_apolice ? { numero_apolice: formC.numero_apolice } : {}),
         ...(formC.data_vencimento ? { data_vencimento: formC.data_vencimento } : {}),
       }).eq('id', expandedId);
+      if (orcError) throw orcError;
       toast({ title: 'Comissão registrada!' });
 
       const parceiroTel = selected?.parceiros?.telefone;
@@ -926,7 +932,8 @@ const AdminParceirosPage = () => {
       const novoPath = novoArray.length === 0 ? null : JSON.stringify(novoArray);
       const updates = { comprovante_path: novoPath };
       if (novoArray.length === 0) updates.status = 'PENDENTE';
-      await supabase.from('comissoes').update(updates).eq('id', com.id);
+      const { error } = await supabase.from('comissoes').update(updates).eq('id', com.id);
+      if (error) throw error;
       toast({ title: 'Comprovante removido.' });
       await loadData();
       await refreshSelected(expandedId);
@@ -948,7 +955,8 @@ const AdminParceirosPage = () => {
       if (com) {
         const existentes = parseComprovantes(com.comprovante_path);
         const novoArray = [...existentes, publicUrl];
-        await supabase.from('comissoes').update({ comprovante_path: JSON.stringify(novoArray), status: 'PAGO', data_pagamento: new Date().toISOString() }).eq('id', com.id);
+        const { error: updError } = await supabase.from('comissoes').update({ comprovante_path: JSON.stringify(novoArray), status: 'PAGO', data_pagamento: new Date().toISOString() }).eq('id', com.id);
+        if (updError) throw updError;
       }
       toast({ title: 'Comprovante enviado!' });
       await loadData();

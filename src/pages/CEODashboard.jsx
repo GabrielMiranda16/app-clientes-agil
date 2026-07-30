@@ -218,7 +218,12 @@ const CEODashboard = () => {
     setSavingCEO(true);
     const payload = { texto: textoNovoCEO.trim(), autor: 'ceo', lida: false, concluido: false };
     if (dataAlertaAdm) payload.data_alerta = new Date(dataAlertaAdm).toISOString();
-    await supabaseClient.from('lembretes_adm').insert(payload);
+    const { error } = await supabaseClient.from('lembretes_adm').insert(payload);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Erro ao salvar lembrete', description: 'Tente novamente.' });
+      setSavingCEO(false);
+      return;
+    }
     setTextoNovoCEO('');
     setDataAlertaAdm('');
     setAddOpenAdm(false);
@@ -247,11 +252,15 @@ const CEODashboard = () => {
 
   const salvarEdicaoLembreteAdm = async (id) => {
     if (!editTextoAdm.trim()) return;
-    await supabaseClient.from('lembretes_adm').update({
+    const { error } = await supabaseClient.from('lembretes_adm').update({
       texto: editTextoAdm.trim(),
       updated_at: new Date().toISOString(),
       data_alerta: editDataAlertaAdm ? new Date(editDataAlertaAdm).toISOString() : null,
     }).eq('id', id);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Erro ao salvar edição', description: 'Tente novamente.' });
+      return;
+    }
     setEditIdAdm(null);
     await fetchLembretesAdm();
   };
