@@ -26,8 +26,8 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const { orcamento_id } = await req.json();
-    if (!orcamento_id) return new Response(JSON.stringify({ error: 'orcamento_id required' }), { status: 400, headers: corsHeaders });
+    const { slug } = await req.json();
+    if (!slug) return new Response(JSON.stringify({ error: 'slug required' }), { status: 400, headers: corsHeaders });
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -37,7 +37,7 @@ serve(async (req) => {
     const { data: orc } = await supabase
       .from('orcamentos')
       .select('*, parceiros(nome_completo)')
-      .eq('id', orcamento_id)
+      .eq('slug', slug)
       .maybeSingle();
 
     if (!orc) return new Response(JSON.stringify({ error: 'orcamento not found' }), { status: 404, headers: corsHeaders });

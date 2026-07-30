@@ -26,9 +26,10 @@ export const authService = {
 
       if (error) throw error;
 
-      // Cria conta no Supabase Auth silenciosamente
+      // Cria conta no Supabase Auth via edge function (checa perfil CEO/ADM do
+      // chamador no servidor — cadastro público direto está desativado no projeto)
       if (rawPassword && cleanedData.email) {
-        try { await supabase.auth.signUp({ email: cleanedData.email, password: rawPassword }); } catch { /* não crítico */ }
+        try { await supabase.functions.invoke('create-auth-user', { body: { email: cleanedData.email, password: rawPassword } }); } catch { /* não crítico */ }
       }
 
       return data;
