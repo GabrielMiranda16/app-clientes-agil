@@ -345,11 +345,12 @@ const gerarProtocolo = async (supabaseClient) => {
   const ano = agora.getFullYear();
   const mes = String(agora.getMonth() + 1).padStart(2, '0');
   const prefixo = `AGI-${ano}${mes}`;
-  const { count } = await supabaseClient
-    .from('orcamentos')
-    .select('id', { count: 'exact', head: true })
-    .like('numero_protocolo', `${prefixo}-%`);
-  return `${prefixo}-${String((count || 0) + 1).padStart(4, '0')}`;
+  // Numeração atômica via função no banco (proximo_numero_protocolo) — imune a
+  // corrida entre envios simultâneos e a reuso de número após exclusão de orçamento
+  // (o antigo COUNT() recontava as linhas existentes a cada chamada).
+  const { data, error } = await supabaseClient.rpc('proximo_numero_protocolo', { p_prefixo: prefixo });
+  if (error) throw error;
+  return data;
 };
 
 const ToggleBtn = ({ value, onChange, labelFalse = 'Não', labelTrue = 'Sim', color = '#003580' }) => (
@@ -732,21 +733,27 @@ const AdminParceirosPage = () => {
     setEnviando(true);
     try {
       const slug = generateSlug();
-      const protocolo = await gerarProtocolo(supabase);
       const dest = valid.find(p => p.destaque) || valid[0];
       const pl0 = dest.planos?.find(pl => pl.valor) || dest.planos?.[0];
       const validComDestaque = valid.map(p => ({ ...p, destaque: p === dest }));
-      const { error } = await supabase.from('orcamentos').update({
-        status: 'ORCAMENTO',
-        slug,
-        numero_protocolo: protocolo,
-        valor_mensalidade: parseBRL(pl0?.valor) || null,
-        descricao_orcamento: `${dest.operadora}${!isViagem && pl0?.nome ? ` — ${pl0.nome}` : ''}`,
-        propostas: validComDestaque,
-        lista_documentos: DOCS_POR_MODALIDADE[selected?.segmento]?.[selected?.modalidade] || DOCS_POR_MODALIDADE[selected?.segmento]?.['INDIVIDUAL'] || DOCS_POR_SEGMENTO[selected?.segmento] || [],
-        docs_extras: ['PME', 'PJ'].includes(selected?.modalidade) ? ['Declaração de Saúde (DS) — beneficiários acima de 59 anos (preenchida pelo próprio beneficiário)'] : [],
-        data_orcamento: new Date().toISOString(),
-      }).eq('id', expandedId);
+
+      // Retry com protocolo novo em caso de colisão (dois envios quase simultâneos)
+      let protocolo, error;
+      for (let tentativa = 0; tentativa < 3; tentativa++) {
+        protocolo = await gerarProtocolo(supabase);
+        ({ error } = await supabase.from('orcamentos').update({
+          status: 'ORCAMENTO',
+          slug,
+          numero_protocolo: protocolo,
+          valor_mensalidade: parseBRL(pl0?.valor) || null,
+          descricao_orcamento: `${dest.operadora}${!isViagem && pl0?.nome ? ` — ${pl0.nome}` : ''}`,
+          propostas: validComDestaque,
+          lista_documentos: DOCS_POR_MODALIDADE[selected?.segmento]?.[selected?.modalidade] || DOCS_POR_MODALIDADE[selected?.segmento]?.['INDIVIDUAL'] || DOCS_POR_SEGMENTO[selected?.segmento] || [],
+          docs_extras: ['PME', 'PJ'].includes(selected?.modalidade) ? ['Declaração de Saúde (DS) — beneficiários acima de 59 anos (preenchida pelo próprio beneficiário)'] : [],
+          data_orcamento: new Date().toISOString(),
+        }).eq('id', expandedId));
+        if (!error || error.code !== '23505') break;
+      }
       if (error) throw error;
       toast({ title: 'Orçamento enviado!', description: `Link gerado — Protocolo ${protocolo}` });
 
