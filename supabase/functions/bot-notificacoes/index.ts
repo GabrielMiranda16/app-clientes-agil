@@ -35,7 +35,7 @@ serve(async (req) => {
 
     switch (action) {
       case 'listar_lembretes':
-        botPath = `/api/lembretes?token=${encodeURIComponent(TOKEN)}&empresa=${encodeURIComponent(params.empresa || 'agil')}`;
+        botPath = `/api/lembretes?empresa=${encodeURIComponent(params.empresa || 'agil')}`;
         botMethod = 'GET';
         break;
 
@@ -79,7 +79,10 @@ serve(async (req) => {
 
     const resp = await fetch(`${BOT_URL}${botPath}`, {
       method: botMethod,
-      headers: botBody ? { 'Content-Type': 'application/json' } : undefined,
+      headers: {
+        ...(botBody ? { 'Content-Type': 'application/json' } : {}),
+        'Authorization': `Bearer ${TOKEN}`,
+      },
       body: botBody ? JSON.stringify(botBody) : undefined,
     });
     const data = await resp.json().catch(() => ({}));
