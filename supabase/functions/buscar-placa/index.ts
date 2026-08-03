@@ -37,14 +37,12 @@ serve(async (req) => {
       });
     }
 
-    const res = await fetch(`https://apiplacas.com.br/api/v1/placa/${placa.toUpperCase()}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-      },
+    const res = await fetch(`https://wdapi2.com.br/consulta/${placa.toUpperCase()}/${token}`, {
+      headers: { Accept: 'application/json' },
     });
 
     const text = await res.text();
+    // Nunca logar a URL completa aqui — o token da ApiPlacas vai no path da requisição.
     console.log(`[buscar-placa] placa=${placa} status=${res.status} body=${text.slice(0, 300)}`);
 
     let data: Record<string, unknown>;
