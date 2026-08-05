@@ -1729,7 +1729,7 @@ const AdminParceirosPage = () => {
         {selected.operadora_escolhida && (
           <div className="bg-green-50 border border-green-100 rounded-xl p-3 flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
-            <p className="text-sm text-green-800">Proposta aceita: <strong>{selected.operadora_escolhida}</strong></p>
+            <p className="text-sm text-green-800">Proposta aceita: <strong>{selected.descricao_orcamento || selected.operadora_escolhida}</strong></p>
           </div>
         )}
         <p className="text-sm font-semibold text-gray-700 border-b pb-2">Documentos enviados pelo cliente</p>
@@ -1761,7 +1761,7 @@ const AdminParceirosPage = () => {
         {selected.operadora_escolhida && (
           <div className="bg-green-50 border border-green-100 rounded-xl p-3 flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
-            <p className="text-sm text-green-800">Proposta aceita: <strong>{selected.operadora_escolhida}</strong></p>
+            <p className="text-sm text-green-800">Proposta aceita: <strong>{selected.descricao_orcamento || selected.operadora_escolhida}</strong></p>
           </div>
         )}
         <p className="text-sm font-semibold text-gray-700 border-b pb-2">Aguardando assinatura da proposta</p>
@@ -1790,7 +1790,7 @@ const AdminParceirosPage = () => {
         {selected.operadora_escolhida && (
           <div className="bg-green-50 border border-green-100 rounded-xl p-3 flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
-            <p className="text-sm text-green-800">Proposta aceita: <strong>{selected.operadora_escolhida}</strong></p>
+            <p className="text-sm text-green-800">Proposta aceita: <strong>{selected.descricao_orcamento || selected.operadora_escolhida}</strong></p>
           </div>
         )}
         {!selected.parceiro_id ? (
@@ -1839,7 +1839,7 @@ const AdminParceirosPage = () => {
         {selected.operadora_escolhida && (
           <div className="bg-green-50 border border-green-100 rounded-xl p-3 flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
-            <p className="text-sm text-green-800">Proposta aceita: <strong>{selected.operadora_escolhida}</strong></p>
+            <p className="text-sm text-green-800">Proposta aceita: <strong>{selected.descricao_orcamento || selected.operadora_escolhida}</strong></p>
           </div>
         )}
         <p className="text-sm font-semibold text-gray-700 border-b pb-2">Comissão registrada</p>
