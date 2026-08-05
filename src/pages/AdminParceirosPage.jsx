@@ -1978,19 +1978,21 @@ const AdminParceirosPage = () => {
                           {o.valor_mensalidade && (
                             <p className="text-xs text-gray-500 mt-0.5">{['AUTO', 'VIAGEM'].includes(o.segmento) ? 'Valor do seguro' : 'Mensalidade'}: R$ {fmtBRL(o.valor_mensalidade)}</p>
                           )}
-                          {(o.descricao_orcamento || o.operadora_escolhida) && (
-                            <p className="text-xs text-green-700 font-medium mt-0.5 truncate">✓ {o.descricao_orcamento || o.operadora_escolhida}</p>
-                          )}
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {o.status === 'SOLICITACAO' && (
-                            <span className="relative flex h-2.5 w-2.5">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
-                            </span>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <div className="flex items-center gap-2">
+                            {o.status === 'SOLICITACAO' && (
+                              <span className="relative flex h-2.5 w-2.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                              </span>
+                            )}
+                            <Badge className={`text-xs ${cfg.color}`}>{o.status === 'ASSINATURA' ? assinaturaLabel(o.segmento) : cfg.label}</Badge>
+                            <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                          </div>
+                          {(o.descricao_orcamento || o.operadora_escolhida) && (
+                            <p className="text-xs text-green-700 font-medium text-right max-w-[160px]">Proposta aceita: <strong>{o.descricao_orcamento || o.operadora_escolhida}</strong></p>
                           )}
-                          <Badge className={`text-xs ${cfg.color}`}>{o.status === 'ASSINATURA' ? assinaturaLabel(o.segmento) : cfg.label}</Badge>
-                          <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                         </div>
                       </div>
                       <div className="mt-4 flex items-center px-1">
