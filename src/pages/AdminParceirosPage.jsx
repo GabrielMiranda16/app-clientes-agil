@@ -1726,6 +1726,12 @@ const AdminParceirosPage = () => {
     if (s === 'DOCUMENTOS') return (
       <div className="space-y-3">
         {renderAtividade()}
+        {selected.operadora_escolhida && (
+          <div className="bg-green-50 border border-green-100 rounded-xl p-3 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+            <p className="text-sm text-green-800">Proposta aceita: <strong>{selected.operadora_escolhida}</strong></p>
+          </div>
+        )}
         <p className="text-sm font-semibold text-gray-700 border-b pb-2">Documentos enviados pelo cliente</p>
         {docs.length === 0 ? (
           <p className="text-xs text-gray-400 text-center py-4">Nenhum documento recebido ainda.</p>
@@ -1752,6 +1758,12 @@ const AdminParceirosPage = () => {
     if (s === 'ASSINATURA') return (
       <div className="space-y-3">
         {renderAtividade()}
+        {selected.operadora_escolhida && (
+          <div className="bg-green-50 border border-green-100 rounded-xl p-3 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+            <p className="text-sm text-green-800">Proposta aceita: <strong>{selected.operadora_escolhida}</strong></p>
+          </div>
+        )}
         <p className="text-sm font-semibold text-gray-700 border-b pb-2">Aguardando assinatura da proposta</p>
         {docs.length > 0 && (
           <div className="space-y-2">
@@ -1775,6 +1787,12 @@ const AdminParceirosPage = () => {
     if (s === 'CONCLUIDO') return (
       <div className="space-y-4">
         {renderAtividade()}
+        {selected.operadora_escolhida && (
+          <div className="bg-green-50 border border-green-100 rounded-xl p-3 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+            <p className="text-sm text-green-800">Proposta aceita: <strong>{selected.operadora_escolhida}</strong></p>
+          </div>
+        )}
         {!selected.parceiro_id ? (
           <div className="bg-green-50 border border-green-100 rounded-xl p-4 text-center">
             <p className="text-2xl mb-1">🎉</p>
@@ -1818,6 +1836,12 @@ const AdminParceirosPage = () => {
     if (s === 'COMISSAO') return (
       <div className="space-y-3">
         {renderAtividade()}
+        {selected.operadora_escolhida && (
+          <div className="bg-green-50 border border-green-100 rounded-xl p-3 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+            <p className="text-sm text-green-800">Proposta aceita: <strong>{selected.operadora_escolhida}</strong></p>
+          </div>
+        )}
         <p className="text-sm font-semibold text-gray-700 border-b pb-2">Comissão registrada</p>
         <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
           <p className="text-xs text-gray-500">Parceiro: {selected.parceiros?.nome_completo}</p>
