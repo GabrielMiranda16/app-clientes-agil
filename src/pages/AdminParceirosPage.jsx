@@ -1978,6 +1978,9 @@ const AdminParceirosPage = () => {
                           {o.valor_mensalidade && (
                             <p className="text-xs text-gray-500 mt-0.5">{['AUTO', 'VIAGEM'].includes(o.segmento) ? 'Valor do seguro' : 'Mensalidade'}: R$ {fmtBRL(o.valor_mensalidade)}</p>
                           )}
+                          {(o.descricao_orcamento || o.operadora_escolhida) && (
+                            <p className="text-xs text-green-700 font-medium mt-0.5 truncate">✓ {o.descricao_orcamento || o.operadora_escolhida}</p>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {o.status === 'SOLICITACAO' && (
