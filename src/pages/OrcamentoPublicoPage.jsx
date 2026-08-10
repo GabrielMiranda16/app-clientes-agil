@@ -826,7 +826,7 @@ const OrcamentoPublicoPage = () => {
                             if (!a.destaque && b.destaque) return 1;
                             return getPropostaValor(a) - getPropostaValor(b);
                           }).map((p, i) => (
-                            <PropostaCard key={i} proposta={p} isSaude={isSaude} isAuto={segmento === 'AUTO'} isViagem={segmento === 'VIAGEM'} cenarios={cenarios}
+                            <PropostaCard key={i} proposta={p} isSaude={isSaude} isAuto={segmento === 'AUTO'} isViagem={segmento === 'VIAGEM'} isResidencial={segmento === 'RESIDENCIAL'} cenarios={cenarios}
                               onEscolher={() => handleAceitarProposta(p)} aceitando={aceitando} />
                           ))}
                         </div>
@@ -1022,12 +1022,14 @@ const OrcamentoPublicoPage = () => {
                                         <span className="text-sm font-medium text-white">{p.acomodacao || '—'}</span>
                                       </div>
                                     )}
-                                    <div className="flex items-center justify-between px-5 py-3">
-                                      <span className="text-sm text-white/60">Coparticipação</span>
-                                      {p.coparticipacao?.tem
-                                        ? <span className="text-sm font-medium text-amber-300">{p.coparticipacao.percentual ? `${p.coparticipacao.percentual}%` : 'Sim'}</span>
-                                        : <span className="text-sm font-medium text-green-300">Não</span>}
-                                    </div>
+                                    {segmento !== 'RESIDENCIAL' && (
+                                      <div className="flex items-center justify-between px-5 py-3">
+                                        <span className="text-sm text-white/60">Coparticipação</span>
+                                        {p.coparticipacao?.tem
+                                          ? <span className="text-sm font-medium text-amber-300">{p.coparticipacao.percentual ? `${p.coparticipacao.percentual}%` : 'Sim'}</span>
+                                          : <span className="text-sm font-medium text-green-300">Não</span>}
+                                      </div>
+                                    )}
                                     {isSaude && (
                                       <div className="flex items-center justify-between px-5 py-3">
                                         <span className="text-sm text-white/60">Carência</span>
@@ -1475,7 +1477,19 @@ const BOOL_COBERTURAS_VIAGEM_LABELS = [
   { key: 'esportes_lazer',      label: 'Esportes de Lazer e Turismo de Aventura' },
 ];
 
-const PropostaCard = ({ proposta, isSaude, isAuto = false, isViagem = false, cenarios = [], onEscolher, aceitando }) => {
+const COBERTURAS_RESIDENCIAL_LABELS = [
+  { key: 'incendio_raio_explosao', label: 'Incêndio, raio e explosão',       valKey: 'incendio_raio_explosao_valor' },
+  { key: 'vendaval_granizo',       label: 'Vendaval, granizo e fumaça',      valKey: 'vendaval_granizo_valor' },
+  { key: 'danos_eletricos',        label: 'Danos elétricos',                 valKey: 'danos_eletricos_valor' },
+  { key: 'roubo_bens',             label: 'Roubo e furto de bens',           valKey: 'roubo_bens_valor' },
+  { key: 'resp_civil_familiar',    label: 'Responsabilidade civil familiar', valKey: 'resp_civil_familiar_valor' },
+  { key: 'perda_aluguel',          label: 'Perda ou pagamento de aluguel',   valKey: 'perda_aluguel_valor' },
+  { key: 'danos_terceiros',        label: 'Danos a terceiros',               valKey: 'danos_terceiros_valor' },
+  { key: 'quebra_vidros',          label: 'Quebra de vidros',                valKey: null },
+  { key: 'assistencia_24h',        label: 'Assistência residencial 24h',     valKey: null },
+];
+
+const PropostaCard = ({ proposta, isSaude, isAuto = false, isViagem = false, isResidencial = false, cenarios = [], onEscolher, aceitando }) => {
   const [expanded, setExpanded] = useState(false);
   const [expandedCardDifs, setExpandedCardDifs] = useState(false);
   const economiaRef = useRef(null);
@@ -1786,6 +1800,24 @@ const PropostaCard = ({ proposta, isSaude, isAuto = false, isViagem = false, cen
         </div>
       )}
 
+      {/* Tabela de coberturas — RESIDENCIAL */}
+      {isResidencial && (
+        <div className={`border-b ${d ? 'border-gray-100' : 'border-white/15'}`}>
+          <div className="divide-y divide-white/10">
+            {COBERTURAS_RESIDENCIAL_LABELS.map(({ key, label, valKey }) => (
+              <div key={key} className={`flex items-center justify-between px-5 py-2.5 ${d ? 'divide-gray-100' : ''}`}>
+                <span className={`text-xs ${d ? 'text-gray-500' : 'text-white/60'}`}>{label}</span>
+                {proposta[key]
+                  ? <span className={`text-xs font-semibold ${d ? 'text-green-600' : 'text-green-300'}`}>
+                      ✓{valKey && proposta[valKey] ? ` R$ ${proposta[valKey]}` : ' Incluso'}
+                    </span>
+                  : <span className={`text-xs ${d ? 'text-gray-300' : 'text-white/25'}`}>—</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Diferenciais — AUTO */}
       {isAuto && autoDifs.length > 0 && (
         <div className={`border-b ${d ? 'border-gray-100' : 'border-white/15'}`}>
@@ -1827,7 +1859,7 @@ const PropostaCard = ({ proposta, isSaude, isAuto = false, isViagem = false, cen
               : 'bg-white/15 text-white hover:bg-white/25'
           }`}>
           {aceitando ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
-          {aceitando ? 'Processando...' : isAuto ? 'Quero este seguro' : isViagem ? 'Quero esta cobertura' : 'Quero este plano'}
+          {aceitando ? 'Processando...' : isAuto || isResidencial ? 'Quero este seguro' : isViagem ? 'Quero esta cobertura' : 'Quero este plano'}
         </button>
       </div>
     </motion.div>

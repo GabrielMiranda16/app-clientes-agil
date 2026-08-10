@@ -242,6 +242,18 @@ const BOOL_COBERTURAS_VIAGEM = [
 ];
 const MOEDAS_VIAGEM = ['R$', 'US$', '€'];
 
+const COBERTURAS_RESIDENCIAL = [
+  { key: 'incendio_raio_explosao', label: 'Incêndio, raio e explosão',       valKey: 'incendio_raio_explosao_valor' },
+  { key: 'vendaval_granizo',       label: 'Vendaval, granizo e fumaça',      valKey: 'vendaval_granizo_valor' },
+  { key: 'danos_eletricos',        label: 'Danos elétricos',                 valKey: 'danos_eletricos_valor' },
+  { key: 'roubo_bens',             label: 'Roubo e furto de bens',           valKey: 'roubo_bens_valor' },
+  { key: 'resp_civil_familiar',    label: 'Responsabilidade civil familiar', valKey: 'resp_civil_familiar_valor' },
+  { key: 'perda_aluguel',          label: 'Perda ou pagamento de aluguel',   valKey: 'perda_aluguel_valor' },
+  { key: 'danos_terceiros',        label: 'Danos a terceiros',               valKey: 'danos_terceiros_valor' },
+  { key: 'quebra_vidros',          label: 'Quebra de vidros',                valKey: null },
+  { key: 'assistencia_24h',        label: 'Assistência residencial 24h',     valKey: null },
+];
+
 const planoVazio = () => ({ nome: '', valor: '' });
 const propVazio = () => ({
   operadora: '', logo_url: '',
@@ -1141,8 +1153,10 @@ const AdminParceirosPage = () => {
 
   // ── Builder (SOLICITACAO + editar + nova proposta) ──
   const renderBuilder = (mode) => {
-    const isAutoSeg    = selected?.segmento === 'AUTO';
-    const isViagemSeg  = selected?.segmento === 'VIAGEM';
+    const isAutoSeg        = selected?.segmento === 'AUTO';
+    const isViagemSeg      = selected?.segmento === 'VIAGEM';
+    const isResidencialSeg = selected?.segmento === 'RESIDENCIAL';
+    const isGenericoSeg    = !isAutoSeg && !isViagemSeg && !isResidencialSeg;
     return (
     <div className="space-y-5">
       {/* Cenário atual — somente leitura (preenchido na solicitação) */}
@@ -1326,8 +1340,39 @@ const AdminParceirosPage = () => {
                   </div>
                 )}
 
+                {/* RESIDENCIAL: Valor do seguro + Coberturas */}
+                {isResidencialSeg && (
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-gray-500">Valor do seguro (R$) *</Label>
+                      <Input value={p.planos?.[0]?.valor || ''} onChange={e => updPlano(pi, 0, 'valor', maskBRL(e.target.value))}
+                        placeholder="Ex: 350,00"
+                        className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
+                    </div>
+                    <div className="space-y-2 pt-1">
+                      <Label className="text-xs font-semibold text-gray-600 block uppercase tracking-wide">Coberturas</Label>
+                      {COBERTURAS_RESIDENCIAL.map(({ key, label, valKey }) => (
+                        <div key={key} className="space-y-1">
+                          <div className="flex items-center gap-3">
+                            <Label className="text-xs text-gray-500 flex-1 shrink-0">{label}</Label>
+                            <ToggleBtn value={p[key] || false} onChange={v => updProposta(pi, key, v)} />
+                          </div>
+                          {valKey && p[key] && (
+                            <div className="flex items-center gap-2 pl-2">
+                              <Label className="text-xs text-gray-400 shrink-0">R$</Label>
+                              <Input value={p[valKey] || ''} onChange={e => updProposta(pi, valKey, maskBRL(e.target.value))}
+                                placeholder="Ex: 100.000,00"
+                                className="w-36 border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-7 text-xs" />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* SAUDE/outros: Planos */}
-                {!isAutoSeg && !isViagemSeg && (
+                {isGenericoSeg && (
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <Label className="text-xs text-gray-500">Planos *</Label>
@@ -1354,7 +1399,7 @@ const AdminParceirosPage = () => {
                 )}
 
                 {/* SAUDE/outros: Abrangência + Acomodação */}
-                {!isAutoSeg && !isViagemSeg && (
+                {isGenericoSeg && (
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
                       <Label className="text-xs text-gray-500">Abrangência</Label>
@@ -1404,7 +1449,7 @@ const AdminParceirosPage = () => {
                 )}
 
                 {/* SAUDE/outros: Coparticipação */}
-                {!isAutoSeg && !isViagemSeg && (
+                {isGenericoSeg && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-3 flex-wrap">
                       <Label className="text-xs text-gray-500 shrink-0">Coparticipação</Label>
@@ -1450,7 +1495,7 @@ const AdminParceirosPage = () => {
                 )}
 
                 {/* SAUDE/outros: Carência */}
-                {!isAutoSeg && !isViagemSeg && (
+                {isGenericoSeg && (
                   <div className="flex items-center gap-3 flex-wrap">
                     <Label className="text-xs text-gray-500 shrink-0">Carência</Label>
                     <ToggleBtn value={p.carencia} onChange={v => updProposta(pi, 'carencia', v)} />
@@ -1492,7 +1537,7 @@ const AdminParceirosPage = () => {
                 )}
 
                 {/* SAUDE/outros: Rede credenciada */}
-                {!isAutoSeg && !isViagemSeg && (
+                {isGenericoSeg && (
                   <div className="space-y-1">
                     <Label className="text-xs text-gray-500">Link de redes credenciadas (opcional)</Label>
                     <div className="flex items-center gap-1.5">
@@ -1703,7 +1748,7 @@ const AdminParceirosPage = () => {
               </div>
             ) : (
               <>
-                <p>{['AUTO', 'VIAGEM'].includes(selected.segmento) ? 'Valor do seguro' : 'Mensalidade'}: <span className="font-semibold text-gray-800">R$ {fmtBRL(selected.valor_mensalidade)}</span></p>
+                <p>{['AUTO', 'VIAGEM', 'RESIDENCIAL'].includes(selected.segmento) ? 'Valor do seguro' : 'Mensalidade'}: <span className="font-semibold text-gray-800">R$ {fmtBRL(selected.valor_mensalidade)}</span></p>
                 {selected.descricao_orcamento && <p className="mt-1 text-xs">{selected.descricao_orcamento}</p>}
               </>
             )}
@@ -1976,7 +2021,7 @@ const AdminParceirosPage = () => {
                           )}
                           <p className="text-xs text-gray-500 mt-0.5">Parceiro: <span className="font-medium">{o.parceiros?.nome_completo || '—'}</span></p>
                           {o.valor_mensalidade && (
-                            <p className="text-xs text-gray-500 mt-0.5">{['AUTO', 'VIAGEM'].includes(o.segmento) ? 'Valor do seguro' : 'Mensalidade'}: R$ {fmtBRL(o.valor_mensalidade)}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{['AUTO', 'VIAGEM', 'RESIDENCIAL'].includes(o.segmento) ? 'Valor do seguro' : 'Mensalidade'}: R$ {fmtBRL(o.valor_mensalidade)}</p>
                           )}
                         </div>
                         <div className="flex flex-col items-end gap-1 shrink-0">
