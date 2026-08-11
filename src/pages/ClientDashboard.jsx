@@ -1289,9 +1289,14 @@ const ClientDashboard = () => {
     if (!accessibleEmpresasIds.includes(empresaId)) { return <Navigate to="/select-segmento" replace />; }
   }
 
-  if (!empresa && !isLoading && empresas.length > 0) { 
+  if (!empresa && !isLoading && empresas.length > 0) {
       return <DashboardLayout><div className="text-center"><h1 className="text-2xl font-bold text-white">Empresa não encontrada.</h1></div></DashboardLayout>;
   }
+
+  // Adicionar/excluir/importar em massa exigem perfil ADM ou CEO — CLIENTE só
+  // tem permissão (RLS) para ver e editar dados; mudanças de vínculo passam
+  // pelo fluxo de Solicitação de Inclusão/Exclusão.
+  const isAdmin = user.perfil === 'ADM' || user.perfil === 'CEO';
 
   return (
     <>
@@ -1370,9 +1375,11 @@ const ClientDashboard = () => {
                     {temBoletoMesAtual ? 'Boleto Disponível' : 'Boleto'}
                   </Button>
                 )}
-                <Button variant="ghost" onClick={() => { setImportStep('upload'); setImportedRows([]); setIsImportOpen(true); }} className="text-white/80 hover:text-white hover:bg-white/10 border border-white/20 shrink-0">
-                  <Upload className="mr-2 h-4 w-4" /> Importar Beneficiários
-                </Button>
+                {isAdmin && (
+                  <Button variant="ghost" onClick={() => { setImportStep('upload'); setImportedRows([]); setIsImportOpen(true); }} className="text-white/80 hover:text-white hover:bg-white/10 border border-white/20 shrink-0">
+                    <Upload className="mr-2 h-4 w-4" /> Importar Beneficiários
+                  </Button>
+                )}
                 {(user?.perfil === 'ADM' || user?.perfil === 'CEO') && (
                   <Button variant="ghost" onClick={() => { setImportPlanosStep('upload'); setImportPlanosRows([]); setIsImportPlanosOpen(true); }} className="text-white/80 hover:text-white hover:bg-white/10 border border-white/20 shrink-0">
                     <FileSpreadsheet className="mr-2 h-4 w-4" /> Importar Planos
@@ -1400,7 +1407,7 @@ const ClientDashboard = () => {
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                     <CardTitle>Beneficiários</CardTitle>
                     <div className="flex items-center gap-2 w-full md:w-auto flex-wrap justify-end">
-                        {selectedIds.size > 0 && (
+                        {isAdmin && selectedIds.size > 0 && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="destructive" size="sm" disabled={isBulkDeleting}>
@@ -1441,7 +1448,7 @@ const ClientDashboard = () => {
                             className={`text-xs px-2 ${sortAge === 'desc' ? 'bg-[#003580] text-white border-[#003580]' : ''}`}
                             title="Idade: maior → menor">↓ Idade</Button>
                         </div>
-                        <Button onClick={openModalToAdd} className="w-full sm:w-auto bg-[#003580] hover:bg-[#002060] text-white"> Adicionar</Button>
+                        {isAdmin && <Button onClick={openModalToAdd} className="w-full sm:w-auto bg-[#003580] hover:bg-[#002060] text-white"> Adicionar</Button>}
                     </div>
                 </div>
             </CardHeader>
@@ -1500,6 +1507,7 @@ const ClientDashboard = () => {
                                                 </div>
                                                 <div className="flex gap-2 pt-1">
                                                     <Button variant="outline" size="sm" className="flex-1 text-[#003580] border-[#003580]" onClick={() => openModalToEdit(b)}><Edit className="h-3.5 w-3.5 mr-1" />Editar</Button>
+                                                    {isAdmin && (
                                                     <AlertDialog>
                                                         <AlertDialogTrigger asChild>
                                                             <Button variant="outline" size="sm" className="flex-1 text-red-600 border-red-300"><Trash2 className="h-3.5 w-3.5 mr-1" />Excluir</Button>
@@ -1515,6 +1523,7 @@ const ClientDashboard = () => {
                                                             </AlertDialogFooter>
                                                         </AlertDialogContent>
                                                     </AlertDialog>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}
@@ -1584,6 +1593,7 @@ const ClientDashboard = () => {
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
                                                     <Button variant="ghost" size="icon" onClick={() => openModalToEdit(b)} title="Editar"><Edit className="h-4 w-4 text-gray-500 hover:text-blue-600" /></Button>
+                                                    {isAdmin && (
                                                     <AlertDialog>
                                                         <AlertDialogTrigger asChild>
                                                             <Button variant="ghost" size="icon" title="Excluir"><Trash2 className="h-4 w-4 text-gray-500 hover:text-red-600" /></Button>
@@ -1599,6 +1609,7 @@ const ClientDashboard = () => {
                                                             </AlertDialogFooter>
                                                         </AlertDialogContent>
                                                     </AlertDialog>
+                                                    )}
                                                 </div>
                                             </TableCell>
                                         </TableRow>
@@ -1618,8 +1629,8 @@ const ClientDashboard = () => {
                     <div className="flex flex-col items-center justify-center py-10 text-center">
                          <div className="bg-gray-100 p-4 rounded-full mb-4"><Search className="h-8 w-8 text-gray-400" /></div>
                          <h3 className="text-lg font-medium text-gray-900">Nenhum beneficiário encontrado</h3>
-                         <p className="text-gray-500 max-w-sm mt-1">Não encontramos beneficiários com os filtros atuais. Tente mudar o termo de busca ou adicionar um novo.</p>
-                         <Button onClick={openModalToAdd} variant="link" className="mt-2">Adicionar novo beneficiário</Button>
+                         <p className="text-gray-500 max-w-sm mt-1">Não encontramos beneficiários com os filtros atuais.{isAdmin ? ' Tente mudar o termo de busca ou adicionar um novo.' : ' Tente mudar o termo de busca.'}</p>
+                         {isAdmin && <Button onClick={openModalToAdd} variant="link" className="mt-2">Adicionar novo beneficiário</Button>}
                     </div>
                 )}
             </CardContent>
