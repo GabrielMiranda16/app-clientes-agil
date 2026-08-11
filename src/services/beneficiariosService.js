@@ -135,7 +135,12 @@ export const beneficiariosService = {
         .eq('id', id)
         .select('id');
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23503') {
+          throw new Error('Não é possível excluir: este beneficiário ainda tem registros vinculados (coparticipação, solicitação etc). Peça pro suporte técnico ajustar as regras do banco.');
+        }
+        throw error;
+      }
 
       // RLS filtra a linha silenciosamente em vez de retornar erro: se nada
       // voltou, nada foi excluído (ex.: usuário sem permissão de DELETE).
