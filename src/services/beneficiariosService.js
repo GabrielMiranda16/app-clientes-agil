@@ -129,16 +129,24 @@ export const beneficiariosService = {
 
   async deleteBeneficiario(id) {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('beneficiarios')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .select('id');
 
       if (error) throw error;
+
+      // RLS filtra a linha silenciosamente em vez de retornar erro: se nada
+      // voltou, nada foi excluído (ex.: usuário sem permissão de DELETE).
+      if (!data || data.length === 0) {
+        throw new Error('Você não tem permissão para excluir este beneficiário, ou ele já foi removido.');
+      }
+
       return true;
     } catch (error) {
       console.error('Erro ao excluir beneficiário:', error);
-      throw new Error('Não foi possível excluir o beneficiário.');
+      throw new Error(error.message || 'Não foi possível excluir o beneficiário.');
     }
   }
 };
