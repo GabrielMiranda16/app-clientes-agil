@@ -2035,7 +2035,7 @@ const AdminParceirosPage = () => {
                             <Badge className={`text-xs ${cfg.color}`}>{o.status === 'ASSINATURA' ? assinaturaLabel(o.segmento) : cfg.label}</Badge>
                             <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                           </div>
-                          {(o.descricao_orcamento || o.operadora_escolhida) && (
+                          {o.operadora_escolhida && (
                             <p className="text-xs text-green-700 font-medium text-right max-w-[160px]">Proposta aceita: <strong>{o.descricao_orcamento || o.operadora_escolhida}</strong></p>
                           )}
                         </div>
