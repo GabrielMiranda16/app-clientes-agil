@@ -1323,7 +1323,7 @@ const ClientDashboard = () => {
                 {fromState?.segLabel && (
                   <>
                     <ChevronRight className="h-4 w-4 text-white/30" />
-                    <button onClick={() => navigate(`/select-apolice/${fromState.segmento?.toLowerCase()}`)} className="text-sm text-white/60 hover:text-white transition-colors">{fromState.segLabel}</button>
+                    <button onClick={() => navigate(`/select-apolice/${fromState.segmento?.toLowerCase().replace(/_/g, '-')}`)} className="text-sm text-white/60 hover:text-white transition-colors">{fromState.segLabel}</button>
                   </>
                 )}
                 {fromState?.apoliceId && (
