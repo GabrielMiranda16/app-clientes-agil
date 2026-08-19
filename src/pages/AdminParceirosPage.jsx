@@ -1425,9 +1425,11 @@ const AdminParceirosPage = () => {
                   <div className="space-y-2">
                     <div className="space-y-1">
                       <Label className="text-xs text-gray-500">LMI — Limite Máximo de Indenização (%)</Label>
-                      <Input value={p.lmi_percentual || ''} onChange={e => updProposta(pi, 'lmi_percentual', e.target.value)}
-                        placeholder="Ex: 100"
-                        className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
+                      <select value={p.lmi_percentual || ''} onChange={e => updProposta(pi, 'lmi_percentual', e.target.value)}
+                        className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-2 py-1.5 text-xs focus:outline-none focus:border-[#003580]">
+                        <option value="">Selecionar...</option>
+                        {Array.from({ length: 20 }, (_, i) => 100 - i * 5).map(n => <option key={n} value={n}>{n}%</option>)}
+                      </select>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
