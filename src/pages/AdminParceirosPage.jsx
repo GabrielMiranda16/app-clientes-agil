@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   HeartHandshake, FileText, Clock, CheckCircle2, DollarSign,
   X, Send, Loader2, ChevronRight, Copy, Check,
@@ -1425,11 +1426,16 @@ const AdminParceirosPage = () => {
                   <div className="space-y-2">
                     <div className="space-y-1">
                       <Label className="text-xs text-gray-500">LMI — Limite Máximo de Indenização (%)</Label>
-                      <select value={p.lmi_percentual || ''} onChange={e => updProposta(pi, 'lmi_percentual', e.target.value)}
-                        className="w-full rounded-lg border border-gray-200 bg-[#f0f7ff] px-2 py-1.5 text-xs focus:outline-none focus:border-[#003580]">
-                        <option value="">Selecionar...</option>
-                        {Array.from({ length: 20 }, (_, i) => 100 - i * 5).map(n => <option key={n} value={n}>{n}%</option>)}
-                      </select>
+                      <Select value={p.lmi_percentual ? String(p.lmi_percentual) : ''} onValueChange={v => updProposta(pi, 'lmi_percentual', v)}>
+                        <SelectTrigger className="h-8 text-xs rounded-lg border-gray-200 bg-[#f0f7ff] focus:border-[#003580]">
+                          <SelectValue placeholder="Selecionar..." />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[180px] overflow-y-auto">
+                          {Array.from({ length: 20 }, (_, i) => 100 - i * 5).map(n => (
+                            <SelectItem key={n} value={String(n)} className="text-xs">{n}%</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
