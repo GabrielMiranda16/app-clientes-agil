@@ -271,7 +271,7 @@ const ApoliceDashboard = () => {
               <>
                 <button onClick={() => navigate('/select-segmento')} className="text-sm text-white/60 hover:text-white transition-colors">Meus Seguros</button>
                 <ChevronRight className="h-4 w-4 text-white/30" />
-                <button onClick={() => navigate(`/select-apolice/${apolice.segmento}`)} className="text-sm text-white/60 hover:text-white transition-colors">
+                <button onClick={() => navigate(`/select-apolice/${SEGMENTOS[apolice.segmento]?.slug || apolice.segmento?.toLowerCase().replace(/_/g, '-')}`)} className="text-sm text-white/60 hover:text-white transition-colors">
                   {segLabel}
                 </button>
               </>

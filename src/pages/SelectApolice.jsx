@@ -41,7 +41,7 @@ const SelectApolice = () => {
 
     apolicesService.getApolicesByMatriz(empresaId)
       .then(all => {
-        const filtered = all.filter(ap => ap.segmento?.toLowerCase().replace(/_/g, '-') === segmento?.toLowerCase());
+        const filtered = all.filter(ap => ap.segmento?.toLowerCase().replace(/_/g, '-') === segmento?.toLowerCase().replace(/_/g, '-'));
         filtered.sort((a, b) => {
           const aIsMatriz = a.empresa?.tipo === 'MATRIZ' ? 0 : 1;
           const bIsMatriz = b.empresa?.tipo === 'MATRIZ' ? 0 : 1;
