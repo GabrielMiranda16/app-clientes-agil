@@ -942,6 +942,27 @@ const SolicitacoesPage = () => {
             </DialogDescription>
           </DialogHeader>
           
+          {editingSolicitacao && (() => {
+            const dados = editingSolicitacao.tipo_solicitacao === 'EXCLUSAO' ? editingSolicitacao.dados_exclusao : editingSolicitacao.dados_inclusao;
+            const motivo = editingSolicitacao.motivo || dados?.motivo;
+            const dataDesejadaRaw = dados?.dataExclusao || editingSolicitacao.data_desejada_inclusao || dados?.dataInclusao;
+            const observacao = editingSolicitacao.observacoes || dados?.observacao;
+            if (!motivo && !dataDesejadaRaw && !observacao) return null;
+            const fmtDataSimples = (d) => {
+              if (!d) return '';
+              const [y, m, day] = d.split('-');
+              return (y && m && day) ? `${day}/${m}/${y}` : d;
+            };
+            return (
+              <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 space-y-1.5 text-sm mb-4">
+                <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Solicitado pelo cliente</p>
+                {motivo && <p><span className="text-gray-500">Motivo:</span> {motivo}</p>}
+                {dataDesejadaRaw && <p><span className="text-gray-500">Data desejada:</span> {fmtDataSimples(dataDesejadaRaw)}</p>}
+                {observacao && <p><span className="text-gray-500">Observação:</span> {observacao}</p>}
+              </div>
+            );
+          })()}
+
           <form onSubmit={handleSubmit} className="space-y-4 py-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2 md:col-span-2">

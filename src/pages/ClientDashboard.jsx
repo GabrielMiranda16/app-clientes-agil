@@ -690,11 +690,9 @@ const ClientDashboard = () => {
               status: 'PENDENTE',
               data_solicitacao: new Date().toISOString(),
               data_aprovacao: null,
-              dados_inclusao: {
-                dataInclusao: detalhes.dataInclusao || '',
-                motivo: detalhes.motivo || '',
-                observacao: detalhes.observacao || ''
-              }
+              motivo: detalhes.motivo || null,
+              observacoes: detalhes.observacao || null,
+              data_desejada_inclusao: detalhes.dataInclusao || null,
             };
             return solicitacoesService.createSolicitacao(novaSolicitacao);
         });
