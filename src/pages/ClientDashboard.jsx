@@ -40,16 +40,22 @@ import { empresasService } from '@/services/empresasService';
 import { beneficiariosService } from '@/services/beneficiariosService';
 import { solicitacoesService } from '@/services/solicitacoesService';
 import { boletosService } from '@/services/boletosService';
+import { apolicesService } from '@/services/apolicesService';
+import { beneficiarioPlanosService } from '@/services/beneficiarioPlanosService';
 import { supabase } from '@/lib/customSupabaseClient';
 
 const emptyBeneficiario = {
   nome_completo: '', cpf: '', parentesco: '', data_nascimento: '', nome_mae: '', nome_titular: '', celular: '', email_beneficiario: '', 
   cep: '', rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '',
   matricula_empresa: '', data_admissao: '', observacoes: '', situacao: 'ATIVO', data_inatividade: '', data_afastamento: '', motivo_afastamento: '',
-  saude_ativo: false, saude_plano_nome: '', saude_acomodacao: '', saude_data_inclusao: '', saude_data_exclusao: '', saude_numero_carteirinha: '', saude_link_carteirinha: '', saude_valor_fatura: 0, saude_coparticipacao: 'Não', saude_codigo_empresa: '', saude_produto: '',
-  vida_ativo: false, vida_plano_nome: '', vida_data_inclusao: '', vida_data_exclusao: '', vida_numero_carteirinha: '', vida_link_carteirinha: '', vida_valor_fatura: 0, vida_codigo_empresa: '', vida_produto: '',
-  odonto_ativo: false, odonto_plano_nome: '', odonto_data_inclusao: '', odonto_data_exclusao: '', odonto_numero_carteirinha: '', odonto_link_carteirinha: '', odonto_valor_fatura: 0, odonto_codigo_empresa: '', odonto_produto: '',
+  saude_ativo: false, saude_plano_nome: '', saude_acomodacao: '', saude_data_inclusao: '', saude_data_exclusao: '', saude_numero_carteirinha: '', saude_link_carteirinha: '', saude_valor_fatura: 0, saude_coparticipacao: 'Não', saude_codigo_empresa: '', saude_produto: '', saude_apolice_id: '',
+  vida_ativo: false, vida_plano_nome: '', vida_data_inclusao: '', vida_data_exclusao: '', vida_numero_carteirinha: '', vida_link_carteirinha: '', vida_valor_fatura: 0, vida_codigo_empresa: '', vida_produto: '', vida_apolice_id: '',
+  odonto_ativo: false, odonto_plano_nome: '', odonto_data_inclusao: '', odonto_data_exclusao: '', odonto_numero_carteirinha: '', odonto_link_carteirinha: '', odonto_valor_fatura: 0, odonto_codigo_empresa: '', odonto_produto: '', odonto_apolice_id: '',
 };
+
+// Campos que existem só no formulário (não são colunas da tabela beneficiarios)
+// — usados pra saber em qual apólice cada plano deve ser vinculado.
+const CAMPOS_APOLICE_ID = ['saude_apolice_id', 'vida_apolice_id', 'odonto_apolice_id'];
 
 const FormField = ({ id, label, children, tooltip }) => (
   <div className="space-y-2"><div className="flex items-center space-x-2"><Label htmlFor={id}>{label}</Label>{tooltip && (<TooltipProvider delayDuration={100}><Tooltip><TooltipTrigger type="button"><Info className="h-4 w-4 text-gray-500" /></TooltipTrigger><TooltipContent><p>{tooltip}</p></TooltipContent></Tooltip></TooltipProvider>)}</div>{children}</div>
@@ -111,7 +117,25 @@ const PlanCheckboxIcon = ({ label, checked }) => (
   </div>
 );
 
-const ModalFormContent = React.memo(({ formData, setFormData, age, titulares, isCliente, openSolicitacaoDialog, renderPlanStatusCard, setIsExclusaoModalOpen, setExclusaoData, beneficiario, handleSolicitarAlteracao }) => {
+const ApoliceSelectField = ({ tipo, apolicesEmpresa, formData, setFormData, isCliente }) => {
+  const apolicesDoTipo = apolicesEmpresa.filter(ap => (ap.dados_adicionais?.sub_apolices || []).some(s => s.tipo === tipo));
+  const opcoes = apolicesDoTipo.length > 0 ? apolicesDoTipo : apolicesEmpresa;
+  const labelApolice = (ap) => {
+    const sub = (ap.dados_adicionais?.sub_apolices || []).find(s => s.tipo === tipo);
+    if (sub) return [sub.seguradora, sub.numero && `nº ${sub.numero}`].filter(Boolean).join(' · ') || `Apólice ${ap.id}`;
+    return [ap.seguradora, ap.numero_apolice && `nº ${ap.numero_apolice}`].filter(Boolean).join(' · ') || `Apólice ${ap.id}`;
+  };
+  return (
+    <FormField id={`${tipo}_apolice_id`} label="Apólice" tooltip="Esta empresa tem mais de uma apólice ativa nesse plano — selecione a qual esse beneficiário pertence.">
+      <Select value={formData[`${tipo}_apolice_id`]} onValueChange={(v) => setFormData(prev => ({ ...prev, [`${tipo}_apolice_id`]: v }))} disabled={isCliente}>
+        <SelectTrigger><SelectValue placeholder="Selecione a apólice..." /></SelectTrigger>
+        <SelectContent>{opcoes.map(ap => <SelectItem key={ap.id} value={String(ap.id)}>{labelApolice(ap)}</SelectItem>)}</SelectContent>
+      </Select>
+    </FormField>
+  );
+};
+
+const ModalFormContent = React.memo(({ formData, setFormData, age, titulares, isCliente, openSolicitacaoDialog, renderPlanStatusCard, setIsExclusaoModalOpen, setExclusaoData, beneficiario, handleSolicitarAlteracao, apolicesEmpresa }) => {
   const { toast } = useToast();
   const [isCepLoading, setIsCepLoading] = useState(false);
 
@@ -259,6 +283,7 @@ const ModalFormContent = React.memo(({ formData, setFormData, age, titulares, is
 
         <AccordionItem value="health_plan"><AccordionTrigger className="text-[#003580]"><PlanCheckboxIcon label="Plano de Saúde" checked={formData.saude_ativo} /></AccordionTrigger><AccordionContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {apolicesEmpresa.length > 1 && <ApoliceSelectField tipo="saude" apolicesEmpresa={apolicesEmpresa} formData={formData} setFormData={setFormData} isCliente={isCliente} />}
             <FormField id="saude_plano_nome" label="Nome do Plano"><Input id="saude_plano_nome" value={formData.saude_plano_nome} onChange={handleInputChange} disabled={isCliente} /></FormField>
             <FormField id="saude_acomodacao" label="Acomodação"><Input id="saude_acomodacao" value={formData.saude_acomodacao} onChange={handleInputChange} disabled={isCliente} /></FormField>
             <FormField id="saude_codigo_empresa" label="Código da Empresa"><Input id="saude_codigo_empresa" value={formData.saude_codigo_empresa} onChange={handleInputChange} disabled={isCliente} /></FormField>
@@ -280,6 +305,7 @@ const ModalFormContent = React.memo(({ formData, setFormData, age, titulares, is
 
         <AccordionItem value="life_plan"><AccordionTrigger className="text-[#003580]"><PlanCheckboxIcon label="Seguro de Vida" checked={formData.vida_ativo} /></AccordionTrigger><AccordionContent className="space-y-4">
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {apolicesEmpresa.length > 1 && <ApoliceSelectField tipo="vida" apolicesEmpresa={apolicesEmpresa} formData={formData} setFormData={setFormData} isCliente={isCliente} />}
             <FormField id="vida_plano_nome" label="Nome do Plano"><Input id="vida_plano_nome" value={formData.vida_plano_nome} onChange={handleInputChange} disabled={isCliente} /></FormField>
             <FormField id="vida_valor_fatura" label="Valor Fatura"><Input id="vida_valor_fatura" type="number" step="0.01" value={formData.vida_valor_fatura} onChange={handleInputChange} disabled={isCliente} /></FormField>
             <FormField id="vida_codigo_empresa" label="Código da Empresa"><Input id="vida_codigo_empresa" value={formData.vida_codigo_empresa} onChange={handleInputChange} disabled={isCliente} /></FormField>
@@ -297,6 +323,7 @@ const ModalFormContent = React.memo(({ formData, setFormData, age, titulares, is
 
         <AccordionItem value="dental_plan"><AccordionTrigger className="text-[#003580]"><PlanCheckboxIcon label="Plano Odonto" checked={formData.odonto_ativo} /></AccordionTrigger><AccordionContent className="space-y-4">
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {apolicesEmpresa.length > 1 && <ApoliceSelectField tipo="odonto" apolicesEmpresa={apolicesEmpresa} formData={formData} setFormData={setFormData} isCliente={isCliente} />}
             <FormField id="odonto_plano_nome" label="Nome do Plano"><Input id="odonto_plano_nome" value={formData.odonto_plano_nome} onChange={handleInputChange} disabled={isCliente} /></FormField>
             <FormField id="odonto_valor_fatura" label="Valor Fatura"><Input id="odonto_valor_fatura" type="number" step="0.01" value={formData.odonto_valor_fatura} onChange={handleInputChange} disabled={isCliente} /></FormField>
             <FormField id="odonto_codigo_empresa" label="Código da Empresa"><Input id="odonto_codigo_empresa" value={formData.odonto_codigo_empresa} onChange={handleInputChange} disabled={isCliente} /></FormField>
@@ -404,6 +431,9 @@ const ClientDashboard = () => {
   const [empresas, setEmpresas] = useState([]);
   const [beneficiarios, setBeneficiarios] = useState([]);
   const [solicitacoes, setSolicitacoes] = useState([]);
+  const [apolicesEmpresa, setApolicesEmpresa] = useState([]);
+  const [beneficiarioPlanos, setBeneficiarioPlanos] = useState([]);
+  const [beneficiariosGrupo, setBeneficiariosGrupo] = useState([]);
 
   // Boletos
   const [boletos, setBoletos] = useState([]);
@@ -479,15 +509,20 @@ const ClientDashboard = () => {
           return;
        }
 
-       const [empresasResult, beneficiariosResult, solicitacoesResult] = await Promise.allSettled([
+       const [empresasResult, beneficiariosResult, solicitacoesResult, apolicesResult] = await Promise.allSettled([
            empresasService.getEmpresas(),
            beneficiariosService.getBeneficiariosByEmpresa(empresaId_num),
-           solicitacoesService.getSolicitacoesByEmpresa(empresaId_num)
+           solicitacoesService.getSolicitacoesByEmpresa(empresaId_num),
+           apolicesService.getApolicesByEmpresa(empresaId_num),
        ]);
 
        setEmpresas(empresasResult.status === 'fulfilled' ? (empresasResult.value || []) : []);
-       setBeneficiarios(beneficiariosResult.status === 'fulfilled' ? (beneficiariosResult.value || []) : []);
+       const benData = beneficiariosResult.status === 'fulfilled' ? (beneficiariosResult.value || []) : [];
+       setBeneficiarios(benData);
        setSolicitacoes(solicitacoesResult.status === 'fulfilled' ? (solicitacoesResult.value || []) : []);
+       const apData = (apolicesResult.status === 'fulfilled' ? (apolicesResult.value || []) : []).filter(a => a.segmento === 'SAUDE_VIDA_ODONTO');
+       setApolicesEmpresa(apData);
+       beneficiarioPlanosService.getByBeneficiarioIds(benData.map(b => b.id)).then(setBeneficiarioPlanos);
      } catch (error) {
        console.error("Error fetching client data:", error);
        toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao carregar dados.' });
@@ -497,6 +532,21 @@ const ClientDashboard = () => {
   };
   
   useEffect(() => { if (empresaId_num) { fetchData(); } }, [empresaId_num]);
+
+  // Beneficiários das outras empresas do mesmo grupo (matriz + filiais) —
+  // só pra avisar (não bloquear) quando um CPF já existe em outra empresa,
+  // já que a mesma pessoa pode ter planos em empresas diferentes do grupo.
+  useEffect(() => {
+    const empresaAtual = empresas.find(e => e.id === empresaId);
+    if (!empresaAtual) { setBeneficiariosGrupo([]); return; }
+    const matrizId = empresaAtual.tipo === 'FILIAL' ? empresaAtual.empresa_matriz_id : empresaAtual.id;
+    if (!matrizId) { setBeneficiariosGrupo([]); return; }
+    const grupoIds = empresasService.getGrupoIds(empresas, matrizId).filter(id => id !== empresaId);
+    if (grupoIds.length === 0) { setBeneficiariosGrupo([]); return; }
+    beneficiariosService.getAllBeneficiarios()
+      .then(all => setBeneficiariosGrupo(all.filter(b => grupoIds.includes(Number(b.empresa_id)))))
+      .catch(() => setBeneficiariosGrupo([]));
+  }, [empresas, empresaId]);
 
   // Carrega boletos a partir do apoliceId da navegação (se disponível)
   useEffect(() => {
@@ -583,7 +633,16 @@ const ClientDashboard = () => {
   useEffect(() => { setAge(formData.data_nascimento ? calculateAge(formData.data_nascimento) : ''); }, [formData.data_nascimento]);
 
   const openModalToAdd = () => { setEditingBeneficiario(null); setFormData(emptyBeneficiario); setIsModalOpen(true); };
-  const openModalToEdit = (b) => { setEditingBeneficiario(b); setFormData({ ...emptyBeneficiario, ...b, cpf: b.cpf ? formatCpfCnpj(b.cpf) : '', parentesco: normalizeParentesco(b.parentesco) }); setIsModalOpen(true); };
+  const openModalToEdit = (b) => {
+    setEditingBeneficiario(b);
+    const apoliceIdPorTipo = {};
+    ['saude', 'vida', 'odonto'].forEach(tipo => {
+      const vinculo = beneficiarioPlanos.find(bp => bp.beneficiario_id === b.id && bp.tipo === tipo);
+      apoliceIdPorTipo[`${tipo}_apolice_id`] = vinculo ? String(vinculo.apolice_id) : '';
+    });
+    setFormData({ ...emptyBeneficiario, ...b, ...apoliceIdPorTipo, cpf: b.cpf ? formatCpfCnpj(b.cpf) : '', parentesco: normalizeParentesco(b.parentesco) });
+    setIsModalOpen(true);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -599,6 +658,16 @@ const ClientDashboard = () => {
       errors.push('Data e Motivo do Afastamento');
     }
 
+    const ambiguo = apolicesEmpresa.length > 1;
+    const PLANO_LABEL = { saude: 'Plano de Saúde', vida: 'Seguro de Vida', odonto: 'Plano Odonto' };
+    if (ambiguo) {
+      ['saude', 'vida', 'odonto'].forEach(tipo => {
+        if (formData[`${tipo}_ativo`] && !formData[`${tipo}_apolice_id`]) {
+          errors.push(`Apólice do ${PLANO_LABEL[tipo]}`);
+        }
+      });
+    }
+
     if (errors.length > 0) {
       toast({ variant: 'destructive', title: 'Campos Obrigatórios', description: `Por favor, preencha: ${errors.join(', ')}.` });
       return;
@@ -608,17 +677,49 @@ const ClientDashboard = () => {
       toast({ variant: "destructive", title: "Erro de Validação", description: "CPF já cadastrado nesta empresa." });
       return;
     }
+    const empresaComCpfIgual = beneficiariosGrupo.find(b => (b.cpf || '').replace(/\D/g, '') === unmaskedCpf);
+    if (empresaComCpfIgual) {
+      const nomeEmpresa = empresas.find(e => e.id === Number(empresaComCpfIgual.empresa_id));
+      toast({ title: 'CPF já existe em outra empresa do grupo', description: `Esse CPF também está cadastrado em ${nomeEmpresa?.nome_fantasia || nomeEmpresa?.razao_social || 'outra empresa do grupo'}. Se for a mesma pessoa com planos diferentes, tudo certo — só confira se não é duplicidade.` });
+    }
     setIsSubmitting(true);
     const dataToSave = { ...formData, saude_valor_fatura: Number(formData.saude_valor_fatura) || 0, vida_valor_fatura: Number(formData.vida_valor_fatura) || 0, odonto_valor_fatura: Number(formData.odonto_valor_fatura) || 0, empresa_id: empresaId };
-    
+    CAMPOS_APOLICE_ID.forEach(campo => delete dataToSave[campo]);
+
+    const sincronizarPlanos = async (beneficiarioId) => {
+      if (user?.perfil === 'CLIENTE') return;
+      for (const tipo of ['saude', 'vida', 'odonto']) {
+        const ativo = Boolean(formData[`${tipo}_ativo`]);
+        const apoliceId = ambiguo
+          ? (formData[`${tipo}_apolice_id`] ? Number(formData[`${tipo}_apolice_id`]) : null)
+          : (apolicesEmpresa[0]?.id ?? null);
+        await beneficiarioPlanosService.syncPlano(beneficiarioId, tipo, {
+          ativo,
+          apoliceId,
+          plano_nome: formData[`${tipo}_plano_nome`] || null,
+          numero_carteirinha: formData[`${tipo}_numero_carteirinha`] || null,
+          link_carteirinha: formData[`${tipo}_link_carteirinha`] || null,
+          valor_fatura: Number(formData[`${tipo}_valor_fatura`]) || null,
+          codigo_empresa: formData[`${tipo}_codigo_empresa`] || null,
+          produto: formData[`${tipo}_produto`] || null,
+          acomodacao: tipo === 'saude' ? (formData.saude_acomodacao || null) : null,
+          coparticipacao: tipo === 'saude' ? (formData.saude_coparticipacao || null) : null,
+          data_inclusao: formData[`${tipo}_data_inclusao`] || null,
+          data_exclusao: formData[`${tipo}_data_exclusao`] || null,
+        });
+      }
+    };
+
     try {
       if (editingBeneficiario) {
         await beneficiariosService.updateBeneficiario(editingBeneficiario.id, dataToSave);
         setBeneficiarios(prev => prev.map(b => b.id === editingBeneficiario.id ? { ...dataToSave, id: b.id } : b));
+        await sincronizarPlanos(editingBeneficiario.id);
         toast({ title: 'Sucesso', description: 'Beneficiário atualizado.' });
       } else {
         const created = await beneficiariosService.createBeneficiario(dataToSave);
         setBeneficiarios(prev => [...prev, created]);
+        await sincronizarPlanos(created.id);
         toast({ title: 'Sucesso', description: 'Beneficiário adicionado.' });
       }
       setIsModalOpen(false);
@@ -1765,7 +1866,7 @@ const ClientDashboard = () => {
           )}
         </motion.div>
 
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}><DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] p-0 flex flex-col overflow-hidden"><DialogHeader className="px-4 pt-4"><DialogTitle>{editingBeneficiario ? 'Editar' : 'Adicionar'} Beneficiário</DialogTitle></DialogHeader><form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">{isModalOpen && <ModalFormContent formData={formData} setFormData={setFormData} age={age} titulares={titulares} beneficiario={editingBeneficiario} isCliente={user.perfil === 'CLIENTE'} openSolicitacaoDialog={openSolicitacaoDialog} renderPlanStatusCard={renderPlanStatusCard} setIsExclusaoModalOpen={setIsExclusaoModalOpen} setExclusaoData={setExclusaoData} handleSolicitarAlteracao={handleSolicitarAlteracao} />}<DialogFooter className="px-4 mt-4 pb-4"><Button type="submit" disabled={isSubmitting} className="bg-[#003580] hover:bg-[#002060] text-white">{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar</Button></DialogFooter></form></DialogContent></Dialog>
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}><DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] p-0 flex flex-col overflow-hidden"><DialogHeader className="px-4 pt-4"><DialogTitle>{editingBeneficiario ? 'Editar' : 'Adicionar'} Beneficiário</DialogTitle></DialogHeader><form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">{isModalOpen && <ModalFormContent formData={formData} setFormData={setFormData} age={age} titulares={titulares} beneficiario={editingBeneficiario} isCliente={user.perfil === 'CLIENTE'} openSolicitacaoDialog={openSolicitacaoDialog} renderPlanStatusCard={renderPlanStatusCard} setIsExclusaoModalOpen={setIsExclusaoModalOpen} setExclusaoData={setExclusaoData} handleSolicitarAlteracao={handleSolicitarAlteracao} apolicesEmpresa={apolicesEmpresa} />}<DialogFooter className="px-4 mt-4 pb-4"><Button type="submit" disabled={isSubmitting} className="bg-[#003580] hover:bg-[#002060] text-white">{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar</Button></DialogFooter></form></DialogContent></Dialog>
         {editingBeneficiario && user.perfil === 'CLIENTE' && (<Dialog open={isSolicitacaoDialogOpen} onOpenChange={(open) => { if (!open) setIsSolicitacaoDialogOpen(false); }}><DialogContent className="sm:max-w-[425px] sm:max-h-[80vh] overflow-y-auto"><DialogHeader><DialogTitle>Solicitar Inclusão</DialogTitle><DialogDescription>Selecione os planos que deseja solicitar para este beneficiário.</DialogDescription></DialogHeader><div className="py-4 space-y-4">{renderPlanSelectionItem('saude', 'Plano de Saúde', Hospital, 'text-[#003580]')}{renderPlanSelectionItem('vida', 'Seguro de Vida', Heart, 'text-[#003580]')}{renderPlanSelectionItem('odonto', 'Plano Odonto', Smile, 'text-[#003580]')}</div><DialogFooter><Button variant="outline" onClick={() => setIsSolicitacaoDialogOpen(false)}>Fechar</Button><Button onClick={confirmSolicitacao}>Confirmar Solicitação</Button></DialogFooter></DialogContent></Dialog>)}
         <Dialog open={isExclusaoModalOpen} onOpenChange={setIsExclusaoModalOpen}>
           <DialogContent className="w-[95vw] sm:max-w-md">
