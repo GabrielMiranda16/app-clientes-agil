@@ -198,6 +198,27 @@ const ApoliceDashboard = () => {
     }
   };
 
+  const [baixandoBoletoId, setBaixandoBoletoId] = useState(null);
+
+  const handleBaixarBoleto = async (boleto) => {
+    setBaixandoBoletoId(boleto.id);
+    try {
+      const url = await boletosService.getSignedUrl(boleto.arquivo_url);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `boleto-${boleto.mes_referencia}.pdf`;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch {
+      toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível baixar o boleto.' });
+    } finally {
+      setBaixandoBoletoId(null);
+    }
+  };
+
   const mesLabel = (mesStr) => {
     try {
       const [y, m] = mesStr.split('-');
@@ -658,6 +679,11 @@ const ApoliceDashboard = () => {
                                   <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white" onClick={() => openBoletoPreview(b)}>
                                     <FileText className="h-3.5 w-3.5 mr-1.5" /> Visualizar
                                   </Button>
+                                  <Button variant="outline" size="icon" className="h-8 w-8" title="Baixar PDF"
+                                    disabled={baixandoBoletoId === b.id}
+                                    onClick={() => handleBaixarBoleto(b)}>
+                                    {baixandoBoletoId === b.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                                  </Button>
                                   {isAdmin && (
                                     <>
                                       <Button variant="outline" size="icon" className="h-8 w-8" title="Substituir PDF" onClick={() => openBoletoUpload(b)}>
@@ -687,9 +713,14 @@ const ApoliceDashboard = () => {
 
                         {/* Botão para o cliente — aparece fora da lista para facilitar */}
                         {isCliente && boletoAtual && (
-                          <div className="mt-3 pt-3 border-t">
-                            <Button className="w-full bg-[#003580] hover:bg-[#002060] text-white" onClick={() => openBoletoPreview(boletoAtual)}>
+                          <div className="mt-3 pt-3 border-t flex gap-2">
+                            <Button className="flex-1 bg-[#003580] hover:bg-[#002060] text-white" onClick={() => openBoletoPreview(boletoAtual)}>
                               <Receipt className="h-4 w-4 mr-2" /> Boleto Disponível — {mesLabel(boletoAtual.mes_referencia)}
+                            </Button>
+                            <Button variant="outline" size="icon" className="shrink-0" title="Baixar PDF"
+                              disabled={baixandoBoletoId === boletoAtual.id}
+                              onClick={() => handleBaixarBoleto(boletoAtual)}>
+                              {baixandoBoletoId === boletoAtual.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                             </Button>
                           </div>
                         )}
