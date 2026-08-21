@@ -6,7 +6,6 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useCompany } from '@/contexts/CompanyContext';
 import { apolicesService, SEGMENTOS } from '@/services/apolicesService';
 import { beneficiariosService } from '@/services/beneficiariosService';
-import { beneficiarioPlanosService } from '@/services/beneficiarioPlanosService';
 import { solicitacoesService } from '@/services/solicitacoesService';
 import { coparticipacaoService } from '@/services/coparticipacaoService';
 import { boletosService } from '@/services/boletosService';
@@ -107,7 +106,6 @@ const ApoliceDashboard = () => {
   const showTabs = isAdmin && isSVD;
   const showGestaoButton = isCliente && isSVD;
   const [beneficiarios, setBeneficiarios] = useState([]);
-  const [beneficiarioPlanos, setBeneficiarioPlanos] = useState(null);
   const [solicitacoes, setSolicitacoes] = useState([]);
   const [coparticipacoes, setCoparticipacoes] = useState([]);
   const [loadingBen, setLoadingBen] = useState(false);
@@ -135,23 +133,14 @@ const ApoliceDashboard = () => {
           setLoadingSol(true);
           const isSVDSegmento = ap.segmento === 'SAUDE_VIDA_ODONTO';
           if (isSVDSegmento) setLoadingCopat(true);
-          const [ben, sol, copat, apolicesEmpresa] = await Promise.all([
+          const [ben, sol, copat] = await Promise.all([
             beneficiariosService.getBeneficiariosByEmpresa(ap.empresa_id).catch(() => []),
             solicitacoesService.getSolicitacoesByEmpresa(ap.empresa_id).catch(() => []),
             isSVDSegmento ? coparticipacaoService.getCoparticipacoesByEmpresa(ap.empresa_id).catch(() => []) : Promise.resolve([]),
-            isSVDSegmento ? apolicesService.getApolicesByEmpresa(ap.empresa_id).catch(() => []) : Promise.resolve([]),
           ]);
           setBeneficiarios(ben);
           setSolicitacoes(sol);
           setCoparticipacoes(copat);
-          // Empresa com mais de 1 apólice SVD ativa: sem vínculo explícito
-          // não dá pra saber quem pertence a esta apólice especificamente.
-          if (isSVDSegmento && apolicesEmpresa.filter(a => a.segmento === 'SAUDE_VIDA_ODONTO').length > 1) {
-            const planos = await beneficiarioPlanosService.getByApoliceId(ap.id).catch(() => []);
-            setBeneficiarioPlanos(planos);
-          } else {
-            setBeneficiarioPlanos(null);
-          }
           setLoadingBen(false);
           setLoadingSol(false);
           setLoadingCopat(false);
@@ -405,7 +394,7 @@ const ApoliceDashboard = () => {
                     <TabsTrigger value="beneficiarios" className="text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
                       <Users className="h-4 w-4 mr-1.5" />
                       Beneficiários
-                      {isAdmin && !loadingBen && <span className="ml-1.5 bg-white/20 text-white text-xs px-1.5 py-0.5 rounded-full">{beneficiarioPlanos !== null ? new Set(beneficiarioPlanos.map(bp => bp.beneficiario_id)).size : beneficiarios.length}</span>}
+                      {isAdmin && !loadingBen && <span className="ml-1.5 bg-white/20 text-white text-xs px-1.5 py-0.5 rounded-full">{beneficiarios.length}</span>}
                     </TabsTrigger>
                     <TabsTrigger value="solicitacoes" className="text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
                       <ClipboardList className="h-4 w-4 mr-1.5" />
@@ -801,26 +790,15 @@ const ApoliceDashboard = () => {
                       {loadingBen ? (
                         <div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></div>
                       ) : (() => {
-                        // Empresa com mais de 1 apólice SVD ativa: usa só o vínculo
-                        // explícito (beneficiario_planos) desta apólice específica.
-                        let ativosCount, saudeCount, odontoCount, vidaCount;
-                        if (beneficiarioPlanos !== null) {
-                          ativosCount  = new Set(beneficiarioPlanos.map(bp => bp.beneficiario_id)).size;
-                          saudeCount   = beneficiarioPlanos.filter(bp => bp.tipo === 'saude').length;
-                          odontoCount  = beneficiarioPlanos.filter(bp => bp.tipo === 'odonto').length;
-                          vidaCount    = beneficiarioPlanos.filter(bp => bp.tipo === 'vida').length;
-                        } else {
-                          const ativos = beneficiarios.filter(b => !b.data_exclusao);
-                          ativosCount  = ativos.length;
-                          saudeCount   = ativos.filter(b => b.saude_ativo).length;
-                          odontoCount  = ativos.filter(b => b.odonto_ativo).length;
-                          vidaCount    = ativos.filter(b => b.vida_ativo).length;
-                        }
+                        const ativos = beneficiarios.filter(b => !b.data_exclusao);
+                        const saude  = ativos.filter(b => b.saude_ativo);
+                        const odonto = ativos.filter(b => b.odonto_ativo);
+                        const vida   = ativos.filter(b => b.vida_ativo);
                         const cards = [
-                          { label: 'Beneficiários Ativos', value: ativosCount,  color: 'bg-[#003580]', text: 'text-white' },
-                          { label: 'Planos de Saúde',      value: saudeCount,   color: 'bg-[#003580]/10', text: 'text-[#003580]' },
-                          { label: 'Planos de Odonto',     value: odontoCount,  color: 'bg-[#003580]/10', text: 'text-[#003580]' },
-                          { label: 'Seguros de Vida',      value: vidaCount,    color: 'bg-[#003580]/10', text: 'text-[#003580]' },
+                          { label: 'Beneficiários Ativos', value: ativos.length,  color: 'bg-[#003580]', text: 'text-white' },
+                          { label: 'Planos de Saúde',      value: saude.length,   color: 'bg-[#003580]/10', text: 'text-[#003580]' },
+                          { label: 'Planos de Odonto',     value: odonto.length,  color: 'bg-[#003580]/10', text: 'text-[#003580]' },
+                          { label: 'Seguros de Vida',      value: vida.length,    color: 'bg-[#003580]/10', text: 'text-[#003580]' },
                         ];
                         return (
                           <div className="space-y-3">
