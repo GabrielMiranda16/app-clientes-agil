@@ -340,6 +340,55 @@ const ModalFormContent = React.memo(({ formData, setFormData, age, titulares, is
 
 ModalFormContent.displayName = 'ModalFormContent';
 
+// Selo Matriz/Filial que, quando há outras empresas no mesmo grupo, também
+// funciona como um trocador rápido — evita ter que voltar pra lista de
+// apólices só pra ver os dados de outra filial (ou da matriz).
+const EmpresaSwitcher = ({ empresa, todasEmpresas, onNavigate }) => {
+  const [open, setOpen] = useState(false);
+  const ref = React.useRef(null);
+
+  useEffect(() => {
+    const onClickOutside = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  if (!empresa?.tipo) return null;
+
+  const matrizId = empresa.tipo === 'FILIAL' ? empresa.empresa_matriz_id : empresa.id;
+  const matriz = todasEmpresas.find(e => e.id === matrizId);
+  const irmas = empresasService.getFiliais(todasEmpresas, matrizId);
+  const grupo = matriz ? [matriz, ...irmas] : [];
+
+  const badgeClass = empresa.tipo === 'MATRIZ' ? 'bg-blue-500/30 text-blue-200' : 'bg-white/20 text-white/80';
+
+  if (grupo.length <= 1) {
+    return <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${badgeClass}`}>{empresa.tipo === 'MATRIZ' ? 'Matriz' : 'Filial'}</span>;
+  }
+
+  return (
+    <div className="relative" ref={ref}>
+      <button type="button" onClick={() => setOpen(o => !o)}
+        className={`flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full transition-colors ${badgeClass} hover:brightness-110`}>
+        {empresa.tipo === 'MATRIZ' ? 'Matriz' : 'Filial'}
+        <ChevronDown className={`h-3 w-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute z-50 mt-1 min-w-[240px] rounded-lg border bg-white shadow-lg overflow-hidden">
+          <p className="px-3 pt-2 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Trocar de empresa</p>
+          {grupo.map(e => (
+            <button key={e.id} type="button" onClick={() => { setOpen(false); onNavigate(e.id); }}
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center justify-between gap-2 ${e.id === empresa.id ? 'bg-blue-50 text-[#003580] font-medium' : 'text-gray-700'}`}>
+              <span className="truncate">{e.nome_fantasia || e.razao_social}</span>
+              <span className="text-[10px] text-gray-400 shrink-0">{e.tipo === 'MATRIZ' ? 'Matriz' : 'Filial'}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ClientDashboard = () => {
   // 1. All Hooks Declaration
   const { empresaId: paramEmpresaId } = useParams();
@@ -1349,11 +1398,11 @@ const ClientDashboard = () => {
                 </h1>
                 <p className="text-white/80 text-base font-medium mt-0.5 flex items-center gap-1.5">
                   {empresa.razao_social && empresa.nome_fantasia && <span className="text-white/60 text-sm">{empresa.razao_social}</span>}
-                  {empresa.tipo && (
-                    <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${empresa.tipo === 'MATRIZ' ? 'bg-blue-500/30 text-blue-200' : 'bg-white/20 text-white/80'}`}>
-                      {empresa.tipo === 'MATRIZ' ? 'Matriz' : 'Filial'}
-                    </span>
-                  )}
+                  <EmpresaSwitcher
+                    empresa={empresa}
+                    todasEmpresas={empresas}
+                    onNavigate={(id) => navigate(`/cliente/${id}`, { state: location.state })}
+                  />
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
