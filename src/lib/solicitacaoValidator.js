@@ -33,7 +33,6 @@ export const cleanSolicitacaoData = (data) => {
     tipo_plano: text(data.tipo_plano),
     motivo: text(data.motivo),
     observacoes: text(data.observacoes),
-    data_desejada_inclusao: date(data.data_desejada_inclusao),
     dados_exclusao: json(data.dados_exclusao),
     
     // Approval/Rejection workflow fields
