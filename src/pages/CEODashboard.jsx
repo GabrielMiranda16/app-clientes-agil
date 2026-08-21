@@ -22,7 +22,7 @@ import {
   Loader2, Edit, FileText, Briefcase, ClipboardList, Shield,
   Clock, CheckCircle2, DollarSign, MoreHorizontal, ChevronLeft, ChevronRight,
   AlertCircle, TrendingUp, AlertTriangle, Download, FileSpreadsheet, HeartHandshake, Plus, Bot, Pencil, ChevronDown,
-  Check, Bell, X
+  Check, Bell, X, GitBranchPlus, XCircle, Search, ArrowRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from "framer-motion";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -38,7 +38,8 @@ import { coparticipacaoService } from '@/services/coparticipacaoService';
 import { authService } from '@/services/authService';
 import { apolicesService } from '@/services/apolicesService';
 import { sendWelcomeEmail, generateTempPassword } from '@/services/emailService';
-import { formatCpfCnpj } from '@/lib/masks';
+import { formatCpfCnpj, applyCnpjMask, applyCpfMask, applyCepMask } from '@/lib/masks';
+import { validatePasswordStrength } from '@/lib/userValidator';
 
 const statusAlertaAdm = (data_alerta) => {
   if (!data_alerta) return null;
@@ -109,6 +110,21 @@ const CEODashboard = () => {
   // Empresas Pagination
   const [empresasCurrentPage, setEmpresasCurrentPage] = useState(1);
   const EMPRESAS_PER_PAGE = 10;
+
+  // Gestão de clientes (criar/editar/excluir/filial) — mesma lógica de AdminDashboard.jsx
+  const emptyNewEmpresa = { razao_social: '', nome_fantasia: '', cnpj: '', endereco_completo: '', email_cliente: '', data_nascimento: '', cep: '', rua: '', bairro: '', cidade: '', estado: '', numero: '', complemento: '' };
+  const [isNewClienteModalOpen, setIsNewClienteModalOpen] = useState(false);
+  const [isEditEmpresaModalOpen, setIsEditEmpresaModalOpen] = useState(false);
+  const [isAddFilialModalOpen, setIsAddFilialModalOpen] = useState(false);
+  const [isSubmittingEmpresa, setIsSubmittingEmpresa] = useState(false);
+  const [tipoPessoa, setTipoPessoa] = useState('PJ');
+  const [newEmpresa, setNewEmpresa] = useState(emptyNewEmpresa);
+  const [isCepLoading, setIsCepLoading] = useState(false);
+  const [editingEmpresa, setEditingEmpresa] = useState(null);
+  const [editingDocTipo, setEditingDocTipo] = useState('PJ');
+  const [filialFormData, setFilialFormData] = useState({ razao_social: '', nome_fantasia: '', cnpj: '', endereco_completo: '' });
+  const [editingFilial, setEditingFilial] = useState(null);
+  const [selectedMatriz, setSelectedMatriz] = useState(null);
 
   // Solicitacoes Pagination
   const [solicitacaoCurrentPage, setSolicitacaoCurrentPage] = useState(1);
@@ -558,6 +574,258 @@ const CEODashboard = () => {
   const handlePreviousPage = () => { if (solicitacaoCurrentPage > 1) setSolicitacaoCurrentPage(prev => prev - 1); };
 
   const handleViewCompany = (company) => { setSelectedCompany(company); setIsCompanyModalOpen(true); };
+
+  // ── Gestão de clientes (criar/editar/excluir/filial) — portado de AdminDashboard.jsx ──
+  const handleEmpresaInputChange = (e, setter, isCpfField = false) => {
+    const { id, value } = e.target;
+    let formatted = value;
+    if (id === 'cnpj') formatted = isCpfField ? applyCpfMask(value) : applyCnpjMask(value);
+    if (id === 'cep') formatted = applyCepMask(value);
+    setter(prev => ({ ...prev, [id]: formatted }));
+  };
+
+  const validarCPF = (cpf) => {
+    const nums = cpf.replace(/\D/g, '');
+    if (nums.length !== 11 || /^(\d)\1+$/.test(nums)) return false;
+    let soma = 0;
+    for (let i = 0; i < 9; i++) soma += parseInt(nums[i]) * (10 - i);
+    let dig1 = (soma * 10) % 11; if (dig1 >= 10) dig1 = 0;
+    if (dig1 !== parseInt(nums[9])) return false;
+    soma = 0;
+    for (let i = 0; i < 10; i++) soma += parseInt(nums[i]) * (11 - i);
+    let dig2 = (soma * 10) % 11; if (dig2 >= 10) dig2 = 0;
+    return dig2 === parseInt(nums[10]);
+  };
+
+  const buscarCepEmpresa = async (cep) => {
+    const nums = cep.replace(/\D/g, '');
+    if (nums.length !== 8) return;
+    setIsCepLoading(true);
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch(`https://viacep.com.br/ws/${nums}/json/`, { signal: controller.signal });
+      clearTimeout(timeout);
+      const data = await res.json();
+      if (data.erro) return toast({ variant: 'destructive', title: 'CEP não encontrado' });
+      setNewEmpresa(prev => ({
+        ...prev,
+        rua: data.logradouro || '',
+        bairro: data.bairro || '',
+        cidade: data.localidade || '',
+        estado: data.uf || '',
+      }));
+    } catch {
+      toast({ variant: 'destructive', title: 'Erro ao buscar CEP' });
+    } finally {
+      setIsCepLoading(false);
+    }
+  };
+
+  const validateAndSubmitMatriz = async (e) => {
+    e.preventDefault();
+    const { razao_social, cnpj, email_cliente, data_nascimento, cep, rua, numero, bairro, cidade, estado } = newEmpresa;
+    if (!razao_social || !cnpj || !email_cliente)
+      return toast({ variant: 'destructive', title: 'Erro', description: 'Todos os campos obrigatórios devem ser preenchidos.' });
+    if (!cep || cep.replace(/\D/g, '').length < 8)
+      return toast({ variant: 'destructive', title: 'Erro', description: 'CEP obrigatório. Digite o CEP e aguarde o preenchimento automático.' });
+    if (!numero)
+      return toast({ variant: 'destructive', title: 'Erro', description: 'Número do endereço obrigatório.' });
+    if (tipoPessoa === 'PF') {
+      if (!validarCPF(cnpj))
+        return toast({ variant: 'destructive', title: 'CPF inválido', description: 'Verifique o CPF informado.' });
+      if (!data_nascimento)
+        return toast({ variant: 'destructive', title: 'Erro', description: 'Data de nascimento obrigatória.' });
+    }
+    if (users.some(u => u.email === email_cliente))
+      return toast({ variant: 'destructive', title: 'Erro', description: 'E-mail já cadastrado.' });
+    if (empresas.some(emp => emp.cnpj?.replace(/\D/g, '') === cnpj.replace(/\D/g, '')))
+      return toast({ variant: 'destructive', title: 'Erro', description: tipoPessoa === 'PF' ? 'CPF já cadastrado.' : 'CNPJ já cadastrado.' });
+
+    let endereco_completo = newEmpresa.endereco_completo;
+    if (rua) {
+      endereco_completo = [
+        rua,
+        numero && `nº ${numero}`,
+        newEmpresa.complemento,
+        bairro,
+        cidade && estado ? `${cidade}/${estado}` : cidade || estado,
+        cep && `CEP ${cep}`,
+      ].filter(Boolean).join(', ');
+    }
+
+    setIsSubmittingEmpresa(true);
+    try {
+      const senhaTemporaria = generateTempPassword();
+      const { email_cliente: _e, data_nascimento: _dn, cep: _cep, rua: _r, bairro: _b, cidade: _c, estado: _est, numero: _n, complemento: _comp, ...empresaPayload } = {
+        tipo: 'MATRIZ',
+        empresa_matriz_id: null,
+        ...newEmpresa,
+        endereco_completo,
+        data_cadastro: new Date().toISOString(),
+      };
+      if (tipoPessoa === 'PF' && data_nascimento) empresaPayload.data_nascimento = data_nascimento;
+      empresaPayload.email_cliente = email_cliente;
+      const createdEmpresa = await empresasService.createEmpresa(empresaPayload);
+      const createdUser = await authService.createUser({
+        email: email_cliente,
+        password: senhaTemporaria,
+        perfil: 'CLIENTE',
+        empresa_matriz_id: createdEmpresa.id,
+        ativo: true,
+        must_change_password: true,
+      });
+      setEmpresas(prev => [...prev, createdEmpresa]);
+      setUsers(prev => [...prev, createdUser]);
+
+      const emailResult = await sendWelcomeEmail({
+        nomeCliente: razao_social,
+        emailCliente: email_cliente,
+        senhaTemporaria,
+      });
+
+      toast({
+        title: 'Cliente criado com sucesso!',
+        description: emailResult.ok
+          ? `Senha temporária enviada para ${email_cliente}.`
+          : `E-mail não enviado. Verifique as configurações de e-mail. Erro: ${emailResult.error}`,
+        duration: 10000,
+      });
+      setIsNewClienteModalOpen(false);
+      setNewEmpresa(emptyNewEmpresa);
+      setTipoPessoa('PJ');
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao criar cliente.' });
+    } finally {
+      setIsSubmittingEmpresa(false);
+    }
+  };
+
+  const validateAndSubmitEditMatriz = async (e) => {
+    e.preventDefault();
+    if (!editingEmpresa) return;
+    const { email_cliente, senha_cliente, cnpj } = editingEmpresa;
+    if (!email_cliente) return toast({ variant: 'destructive', title: 'Erro', description: 'E-mail obrigatório.' });
+    if (!cnpj) return toast({ variant: 'destructive', title: 'Erro', description: 'CPF/CNPJ obrigatório.' });
+    const clientUser = users.find(u => u.empresa_matriz_id === editingEmpresa.id);
+    if (!clientUser) return toast({ variant: 'destructive', title: 'Erro', description: 'Usuário não encontrado.' });
+    if (users.some(u => u.email === email_cliente && u.id !== clientUser.id))
+      return toast({ variant: 'destructive', title: 'Erro', description: 'E-mail já em uso.' });
+    if (empresas.some(emp => emp.cnpj?.replace(/\D/g, '') === cnpj.replace(/\D/g, '') && emp.id !== editingEmpresa.id))
+      return toast({ variant: 'destructive', title: 'Erro', description: 'CPF/CNPJ já cadastrado em outro cliente.' });
+    if (senha_cliente) {
+      const pwErrors = validatePasswordStrength(senha_cliente);
+      if (pwErrors.length > 0) return toast({ variant: 'destructive', title: 'Senha fraca', description: pwErrors[0] });
+    }
+    setIsSubmittingEmpresa(true);
+    try {
+      const updatePayload = { email: email_cliente };
+      if (senha_cliente) updatePayload.password = senha_cliente;
+      await authService.updateUser(clientUser.id, updatePayload);
+      const empUpdate = {
+        razao_social: editingEmpresa.razao_social || null,
+        endereco_completo: editingEmpresa.endereco_completo || null,
+        email_cliente,
+        cnpj: cnpj.replace(/\D/g, ''),
+        ...(editingDocTipo === 'PF' && { data_nascimento: editingEmpresa.data_nascimento || null }),
+      };
+      const { error: empUpdateError } = await supabaseClient.from('empresas')
+        .update(empUpdate)
+        .eq('id', editingEmpresa.id);
+      if (empUpdateError) throw empUpdateError;
+      setUsers(prev => prev.map(u => u.id === clientUser.id ? { ...u, ...updatePayload } : u));
+      setEmpresas(prev => prev.map(e => e.id === editingEmpresa.id ? { ...e, ...empUpdate } : e));
+      toast({ title: 'Sucesso', description: 'Dados do cliente atualizados.' });
+      setIsEditEmpresaModalOpen(false);
+      setEditingEmpresa(null);
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao atualizar.' });
+    } finally {
+      setIsSubmittingEmpresa(false);
+    }
+  };
+
+  const validateAndSubmitFilial = async (e) => {
+    e.preventDefault();
+    const { razao_social, cnpj } = filialFormData;
+    if (!razao_social || !cnpj) return toast({ variant: 'destructive', title: 'Erro', description: 'Razão Social e CNPJ são obrigatórios.' });
+    if (empresas.some(emp => emp.cnpj === cnpj && emp.id !== editingFilial?.id))
+      return toast({ variant: 'destructive', title: 'Erro', description: 'CNPJ já cadastrado.' });
+    setIsSubmittingEmpresa(true);
+    try {
+      if (editingFilial) {
+        await empresasService.updateEmpresa(editingFilial.id, filialFormData);
+        setEmpresas(prev => prev.map(emp => emp.id === editingFilial.id ? { ...emp, ...filialFormData } : emp));
+        toast({ title: 'Sucesso', description: 'Filial atualizada.' });
+      } else {
+        const createdFilial = await empresasService.createEmpresa({ tipo: 'FILIAL', empresa_matriz_id: selectedMatriz.id, ...filialFormData, data_cadastro: new Date().toISOString() });
+        setEmpresas(prev => [...prev, createdFilial]);
+        toast({ title: 'Sucesso', description: 'Filial adicionada.' });
+      }
+      setFilialFormData({ razao_social: '', nome_fantasia: '', cnpj: '', endereco_completo: '' });
+      setEditingFilial(null);
+      setIsAddFilialModalOpen(false);
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao salvar filial.' });
+    } finally {
+      setIsSubmittingEmpresa(false);
+    }
+  };
+
+  const deleteMatriz = async (id) => {
+    try {
+      const todasFiliais = empresas.filter(e => e.empresa_matriz_id === id);
+      const todasIds = [id, ...todasFiliais.map(f => f.id)];
+
+      const apolicesComContrato = apolices.filter(a => todasIds.includes(Number(a.empresa_id)) && a.contrato_url);
+      if (apolicesComContrato.length > 0) {
+        const paths = apolicesComContrato
+          .map(a => a.contrato_url.split('/apolices-contratos/')[1])
+          .filter(Boolean);
+        if (paths.length > 0) {
+          await supabaseClient.storage.from('apolices-contratos').remove(paths);
+        }
+      }
+
+      for (const eid of todasIds) {
+        await supabaseClient.from('coparticipacoes').delete().eq('empresa_id', eid);
+        await supabaseClient.from('solicitacoes').delete().eq('empresa_id', eid);
+        await supabaseClient.from('apolices').delete().eq('empresa_id', eid);
+        await supabaseClient.from('beneficiarios').delete().eq('empresa_id', eid);
+      }
+
+      const userToDelete = users.find(u => u.empresa_matriz_id === id);
+      if (userToDelete) await authService.deleteUser(userToDelete.id);
+
+      for (const filial of todasFiliais) {
+        await empresasService.deleteEmpresa(filial.id);
+      }
+      await empresasService.deleteEmpresa(id);
+
+      setEmpresas(prev => prev.filter(e => e.id !== id && e.empresa_matriz_id !== id));
+      setUsers(prev => prev.filter(u => u.empresa_matriz_id !== id));
+      setBeneficiarios(prev => prev.filter(b => !todasIds.includes(Number(b.empresa_id))));
+      setApolices(prev => prev.filter(a => !todasIds.includes(Number(a.empresa_id))));
+      toast({ title: 'Cliente excluído com sucesso.' });
+    } catch (error) {
+      console.error(error);
+      toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao excluir.' });
+    }
+  };
+
+  const openEditEmpresaModal = (matriz) => {
+    const clientUser = users.find(u => u.empresa_matriz_id === matriz.id);
+    setEditingEmpresa({ ...matriz, email_cliente: clientUser?.email || '', senha_cliente: '', data_nascimento: matriz.data_nascimento || '' });
+    setEditingDocTipo(matriz.cnpj?.replace(/\D/g, '').length === 11 ? 'PF' : 'PJ');
+    setIsEditEmpresaModalOpen(true);
+  };
+
+  const openAddFilialModal = (matriz) => {
+    setSelectedMatriz(matriz);
+    setEditingFilial(null);
+    setFilialFormData({ razao_social: '', nome_fantasia: '', cnpj: '', endereco_completo: '' });
+    setIsAddFilialModalOpen(true);
+  };
   const handleViewSolicitacao = (solicitacao) => { setSelectedSolicitacao(solicitacao); setIsSolicitacaoModalOpen(true); };
 
   const handleAddAdmin = async (e) => {
@@ -709,7 +977,12 @@ const CEODashboard = () => {
       <DashboardLayout>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <div className="space-y-3">
-            <h1 className="text-2xl font-bold tracking-tight text-white">{(() => { const h = new Date().getHours(); return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'; })()}, Gabriel!</h1>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <h1 className="text-2xl font-bold tracking-tight text-white">{(() => { const h = new Date().getHours(); return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'; })()}, Gabriel!</h1>
+              <Button onClick={() => navigate('/admin')} variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white">
+                Administração
+              </Button>
+            </div>
             <div className="hidden sm:block overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               <TabsList className="inline-flex h-auto gap-1 bg-white/10 border border-white/20 rounded-lg p-1 min-w-max">
                 {[
@@ -1051,7 +1324,12 @@ const CEODashboard = () => {
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }}>
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><Building className="h-5 w-5" />Gestão de Clientes</CardTitle>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <CardTitle className="flex items-center gap-2"><Building className="h-5 w-5" />Gestão de Clientes</CardTitle>
+                    <Button size="sm" onClick={() => setIsNewClienteModalOpen(true)} className="bg-[#003580] hover:bg-[#002060] text-white">
+                      <Plus className="mr-1.5 h-4 w-4" /> Novo Cliente
+                    </Button>
+                  </div>
                   <CardDescription>Gerencie todos os clientes cadastrados no sistema.</CardDescription>
                   <div className="flex flex-col md:flex-row gap-4 mt-4"><div className="relative flex-1"><Input placeholder="Buscar por nome ou CNPJ..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full" /></div><Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-[180px]"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem><SelectItem value="Ativa">Ativa</SelectItem><SelectItem value="Inativa">Inativa</SelectItem></SelectContent></Select></div>
                 </CardHeader>
@@ -1090,7 +1368,17 @@ const CEODashboard = () => {
                                       <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => navigate(`/admin/cliente/${empresa.id}`)}>Acessar</DropdownMenuItem>
                                       <DropdownMenuItem onClick={() => handleViewCompany(empresa)}>Visualizar</DropdownMenuItem>
+                                      {empresa.tipo === 'MATRIZ' && (
+                                        <>
+                                          <DropdownMenuItem onClick={() => openEditEmpresaModal(empresa)}>Editar acesso</DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => openAddFilialModal(empresa)}>Adicionar filial</DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => { if (window.confirm('Excluir este cliente e sua conta de acesso? Só é possível se não houver filiais cadastradas.')) deleteMatriz(empresa.id); }} className="text-red-600 focus:text-red-600">
+                                            Excluir
+                                          </DropdownMenuItem>
+                                        </>
+                                      )}
                                     </DropdownMenuContent>
                                   </DropdownMenu>
                                 </TableCell>
@@ -1132,7 +1420,17 @@ const CEODashboard = () => {
                                     <div><span className="text-xs text-muted-foreground block">Beneficiários</span><span className="font-semibold">{empresa.beneficiariosCount}</span></div>
                                     <div><span className="text-xs text-muted-foreground block">ADMs</span><span className="font-semibold">{empresa.adminsCount}</span></div>
                                   </div>
-                                  <Button size="sm" variant="outline" className="w-full mt-2" onClick={() => handleViewCompany(empresa)}>Visualizar</Button>
+                                  <div className="grid grid-cols-2 gap-2 mt-2">
+                                    <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white" onClick={() => navigate(`/admin/cliente/${empresa.id}`)}>Acessar</Button>
+                                    <Button size="sm" variant="outline" onClick={() => handleViewCompany(empresa)}>Visualizar</Button>
+                                  </div>
+                                  {empresa.tipo === 'MATRIZ' && (
+                                    <div className="grid grid-cols-3 gap-2">
+                                      <Button size="sm" variant="outline" onClick={() => openEditEmpresaModal(empresa)}>Editar</Button>
+                                      <Button size="sm" variant="outline" onClick={() => openAddFilialModal(empresa)}>+ Filial</Button>
+                                      <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700" onClick={() => { if (window.confirm('Excluir este cliente e sua conta de acesso? Só é possível se não houver filiais cadastradas.')) deleteMatriz(empresa.id); }}>Excluir</Button>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -1815,6 +2113,194 @@ const CEODashboard = () => {
 
         <Dialog open={isCompanyModalOpen} onOpenChange={setIsCompanyModalOpen}><DialogContent className="sm:max-w-[600px]"><DialogHeader><DialogTitle>Detalhes da Empresa</DialogTitle></DialogHeader>{selectedCompany && (<div className="grid gap-4 py-4"><div className="grid grid-cols-2 gap-4"><div><Label className="text-xs text-muted-foreground">Nome Fantasia</Label><div className="font-medium text-base">{selectedCompany.nome_fantasia}</div></div><div><Label className="text-xs text-muted-foreground">Razão Social</Label><div className="font-medium text-base">{selectedCompany.razao_social}</div></div><div><Label className="text-xs text-muted-foreground">CNPJ</Label><div className="font-medium text-base">{selectedCompany.cnpj}</div></div><div><Label className="text-xs text-muted-foreground">Status</Label><div><Badge variant={selectedCompany.status === 'Ativa' ? 'default' : 'destructive'} className={selectedCompany.status === 'Ativa' ? 'bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800' : 'bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800'}>{selectedCompany.status}</Badge></div></div><div><Label className="text-xs text-muted-foreground">Total de Beneficiários</Label><div className="font-medium text-base">{selectedCompany.beneficiariosCount}</div></div><div><Label className="text-xs text-muted-foreground">Administradores</Label><div className="font-medium text-base">{selectedCompany.adminsCount}</div></div></div></div>)}<DialogFooter><Button type="button" variant="outline" onClick={() => setIsCompanyModalOpen(false)}>Fechar</Button></DialogFooter></DialogContent></Dialog>
         <Dialog open={isSolicitacaoModalOpen} onOpenChange={setIsSolicitacaoModalOpen}><DialogContent className="sm:max-w-[500px]"><DialogHeader><DialogTitle>Detalhes da Solicitação</DialogTitle><DialogDescription>Visualizar informações completas da solicitação.</DialogDescription></DialogHeader>{selectedSolicitacao && (<div className="grid gap-4 py-4"><div className="grid grid-cols-2 gap-4"><div className="col-span-2 sm:col-span-1"><Label className="text-xs text-muted-foreground">ID da Solicitação</Label><div className="font-mono text-sm">{selectedSolicitacao.id}</div></div><div className="col-span-2 sm:col-span-1"><Label className="text-xs text-muted-foreground">Data</Label><div className="text-sm">{formatDate(selectedSolicitacao.data_solicitacao)}</div></div><div className="col-span-2"><Label className="text-xs text-muted-foreground">Empresa</Label><div className="text-base font-medium">{selectedSolicitacao.empresa?.nome_fantasia || 'N/A'}</div></div><div className="col-span-2"><Label className="text-xs text-muted-foreground">Beneficiário</Label><div className="text-base font-medium">{selectedSolicitacao.beneficiario?.nome_completo || 'N/A'}</div></div><div className="col-span-2 sm:col-span-1"><Label className="text-xs text-muted-foreground">Tipo</Label><div className="text-sm font-medium">{selectedSolicitacao.tipo_solicitacao}</div></div><div className="col-span-2 sm:col-span-1"><Label className="text-xs text-muted-foreground">Status</Label><div className="mt-1"><Badge variant={selectedSolicitacao.status === 'REJEITADA' ? 'destructive' : selectedSolicitacao.status === 'CONCLUIDA' ? 'default' : 'outline'} className={selectedSolicitacao.status === 'CONCLUIDA' ? 'bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800 border-green-200' : selectedSolicitacao.status === 'PENDENTE' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100 hover:text-yellow-800 border-yellow-200' : selectedSolicitacao.status === 'EM PROCESSAMENTO' ? 'bg-blue-100 text-blue-800 hover:bg-blue-100 hover:text-blue-800 border-blue-200' : ''}>{selectedSolicitacao.status}</Badge></div></div>{selectedSolicitacao.motivo && (<div className="col-span-2"><Label className="text-xs text-muted-foreground">Motivo</Label><div className="text-sm p-2 bg-slate-50 rounded border mt-1">{selectedSolicitacao.motivo}</div></div>)}</div></div>)}<DialogFooter><Button type="button" onClick={() => setIsSolicitacaoModalOpen(false)}>Fechar</Button></DialogFooter></DialogContent></Dialog>
+
+      {/* Modal Novo Cliente */}
+      <Dialog open={isNewClienteModalOpen} onOpenChange={(open) => {
+        setIsNewClienteModalOpen(open);
+        if (!open) { setTipoPessoa('PJ'); setNewEmpresa(emptyNewEmpresa); }
+      }}>
+        <DialogContent className="sm:max-w-2xl sm:max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Novo Cliente</DialogTitle></DialogHeader>
+          <form onSubmit={validateAndSubmitMatriz}>
+            <div className="py-4 space-y-4">
+              <div className="space-y-1">
+                <Label>Tipo de Pessoa *</Label>
+                <Select
+                  value={tipoPessoa}
+                  onValueChange={(val) => { setTipoPessoa(val); setNewEmpresa(emptyNewEmpresa); }}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PJ">Pessoa Jurídica (CNPJ)</SelectItem>
+                    <SelectItem value="PF">Pessoa Física (CPF)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {tipoPessoa === 'PJ' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div><Label htmlFor="razao_social">Razão Social *</Label><Input id="razao_social" value={newEmpresa.razao_social} onChange={e => handleEmpresaInputChange(e, setNewEmpresa)} /></div>
+                  <div><Label htmlFor="nome_fantasia">Nome Fantasia</Label><Input id="nome_fantasia" value={newEmpresa.nome_fantasia} onChange={e => handleEmpresaInputChange(e, setNewEmpresa)} /></div>
+                  <div><Label htmlFor="cnpj">CNPJ *</Label><Input id="cnpj" value={newEmpresa.cnpj} placeholder="00.000.000/0000-00" onChange={e => handleEmpresaInputChange(e, setNewEmpresa, false)} /></div>
+                  <div>
+                    <Label htmlFor="cep">CEP *</Label>
+                    <div className="flex gap-2">
+                      <Input id="cep" value={newEmpresa.cep} placeholder="00000-000" maxLength={9}
+                        onChange={e => handleEmpresaInputChange(e, setNewEmpresa)}
+                        onBlur={() => buscarCepEmpresa(newEmpresa.cep)} />
+                      <button type="button" onClick={() => buscarCepEmpresa(newEmpresa.cep)} disabled={isCepLoading}
+                        className="px-3 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 flex items-center gap-1 text-sm">
+                        {isCepLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div><Label htmlFor="numero">Número *</Label><Input id="numero" value={newEmpresa.numero} placeholder="123" onChange={e => handleEmpresaInputChange(e, setNewEmpresa)} /></div>
+                  <div className="md:col-span-2"><Label htmlFor="rua">Rua</Label><Input id="rua" value={newEmpresa.rua} readOnly className="bg-gray-50 text-gray-600" /></div>
+                  <div><Label htmlFor="complemento">Complemento</Label><Input id="complemento" value={newEmpresa.complemento} placeholder="Apto, bloco..." onChange={e => handleEmpresaInputChange(e, setNewEmpresa)} /></div>
+                  <div><Label htmlFor="bairro">Bairro</Label><Input id="bairro" value={newEmpresa.bairro} readOnly className="bg-gray-50 text-gray-600" /></div>
+                  <div><Label htmlFor="cidade">Cidade</Label><Input id="cidade" value={newEmpresa.cidade} readOnly className="bg-gray-50 text-gray-600" /></div>
+                  <div><Label htmlFor="estado">Estado</Label><Input id="estado" value={newEmpresa.estado} readOnly className="bg-gray-50 text-gray-600" /></div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2"><Label htmlFor="razao_social">Nome Completo *</Label><Input id="razao_social" value={newEmpresa.razao_social} onChange={e => handleEmpresaInputChange(e, setNewEmpresa)} /></div>
+                  <div><Label htmlFor="cnpj">CPF *</Label><Input id="cnpj" value={newEmpresa.cnpj} placeholder="000.000.000-00" onChange={e => handleEmpresaInputChange(e, setNewEmpresa, true)} maxLength={14} /></div>
+                  <div><Label htmlFor="data_nascimento">Data de Nascimento *</Label><Input id="data_nascimento" type="date" value={newEmpresa.data_nascimento} onChange={e => handleEmpresaInputChange(e, setNewEmpresa)} /></div>
+                  <div>
+                    <Label htmlFor="cep">CEP *</Label>
+                    <div className="flex gap-2">
+                      <Input id="cep" value={newEmpresa.cep} placeholder="00000-000" maxLength={9}
+                        onChange={e => handleEmpresaInputChange(e, setNewEmpresa)}
+                        onBlur={() => buscarCepEmpresa(newEmpresa.cep)} />
+                      <button type="button" onClick={() => buscarCepEmpresa(newEmpresa.cep)} disabled={isCepLoading}
+                        className="px-3 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 flex items-center gap-1 text-sm">
+                        {isCepLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div><Label htmlFor="numero">Número *</Label><Input id="numero" value={newEmpresa.numero} placeholder="123" onChange={e => handleEmpresaInputChange(e, setNewEmpresa)} /></div>
+                  <div className="md:col-span-2"><Label htmlFor="rua">Rua</Label><Input id="rua" value={newEmpresa.rua} readOnly className="bg-gray-50 text-gray-600" /></div>
+                  <div><Label htmlFor="complemento">Complemento</Label><Input id="complemento" value={newEmpresa.complemento} placeholder="Apto, bloco..." onChange={e => handleEmpresaInputChange(e, setNewEmpresa)} /></div>
+                  <div><Label htmlFor="bairro">Bairro</Label><Input id="bairro" value={newEmpresa.bairro} readOnly className="bg-gray-50 text-gray-600" /></div>
+                  <div><Label htmlFor="cidade">Cidade</Label><Input id="cidade" value={newEmpresa.cidade} readOnly className="bg-gray-50 text-gray-600" /></div>
+                  <div><Label htmlFor="estado">Estado</Label><Input id="estado" value={newEmpresa.estado} readOnly className="bg-gray-50 text-gray-600" /></div>
+                </div>
+              )}
+
+              <div className="border-t pt-4">
+                <p className="text-sm font-medium text-gray-600 mb-3">Acesso do cliente</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2"><Label htmlFor="email_cliente">E-mail *</Label><Input id="email_cliente" type="email" value={newEmpresa.email_cliente} onChange={e => handleEmpresaInputChange(e, setNewEmpresa)} /></div>
+                </div>
+                <p className="text-xs text-gray-400 mt-2">Uma senha temporária será gerada automaticamente e enviada para o e-mail do cliente.</p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsNewClienteModalOpen(false)}>Cancelar</Button>
+              <Button type="submit" disabled={isSubmittingEmpresa} className="bg-[#003580] hover:bg-[#002060] text-white">
+                {isSubmittingEmpresa && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Criar Cliente
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Editar Acesso do Cliente */}
+      {editingEmpresa && (
+        <Dialog open={isEditEmpresaModalOpen} onOpenChange={setIsEditEmpresaModalOpen}>
+          <DialogContent className="sm:max-w-lg overflow-y-auto overflow-x-hidden">
+            <DialogHeader>
+              <DialogTitle>Editar Acesso do Cliente</DialogTitle>
+              <p className="text-sm text-muted-foreground">{editingEmpresa.nome_fantasia || editingEmpresa.razao_social}</p>
+            </DialogHeader>
+            <form onSubmit={validateAndSubmitEditMatriz}>
+              <div className="space-y-4 py-4">
+                <div className="space-y-1">
+                  <Label>Tipo de Documento *</Label>
+                  <Select value={editingDocTipo} onValueChange={(val) => { setEditingDocTipo(val); setEditingEmpresa(prev => ({ ...prev, cnpj: '' })); }}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PJ">CNPJ (Pessoa Jurídica)</SelectItem>
+                      <SelectItem value="PF">CPF (Pessoa Física)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="razao_social">{editingDocTipo === 'PF' ? 'Nome Completo' : 'Razão Social'} *</Label>
+                  <Input id="razao_social" value={editingEmpresa.razao_social || ''} onChange={e => handleEmpresaInputChange(e, setEditingEmpresa)} />
+                </div>
+                <div>
+                  <Label htmlFor="cnpj">{editingDocTipo === 'PF' ? 'CPF' : 'CNPJ'} *</Label>
+                  <Input id="cnpj" value={editingEmpresa.cnpj || ''} placeholder={editingDocTipo === 'PF' ? '000.000.000-00' : '00.000.000/0000-00'}
+                    onChange={e => handleEmpresaInputChange(e, setEditingEmpresa, editingDocTipo === 'PF')} />
+                </div>
+                {editingDocTipo === 'PF' && (
+                  <div><Label htmlFor="data_nascimento">Data de Nascimento</Label><Input id="data_nascimento" type="date" value={editingEmpresa.data_nascimento || ''} onChange={e => handleEmpresaInputChange(e, setEditingEmpresa)} /></div>
+                )}
+                <div><Label htmlFor="endereco_completo">Endereço</Label><Input id="endereco_completo" value={editingEmpresa.endereco_completo || ''} onChange={e => handleEmpresaInputChange(e, setEditingEmpresa)} /></div>
+                <div><Label htmlFor="email_cliente">E-mail *</Label><Input id="email_cliente" type="email" value={editingEmpresa.email_cliente} onChange={e => handleEmpresaInputChange(e, setEditingEmpresa)} /></div>
+                <div>
+                  <Label htmlFor="senha_cliente">Nova Senha (opcional)</Label>
+                  <Input id="senha_cliente" type="password" placeholder="Deixe em branco para manter a atual" value={editingEmpresa.senha_cliente} onChange={e => handleEmpresaInputChange(e, setEditingEmpresa)} />
+                  {(() => {
+                    const pwd = editingEmpresa.senha_cliente || '';
+                    const checks = [
+                      { label: 'Mínimo 6 caracteres', ok: pwd.length >= 6 },
+                      { label: '1 letra maiúscula', ok: /[A-Z]/.test(pwd) },
+                      { label: '1 letra minúscula', ok: /[a-z]/.test(pwd) },
+                      { label: '1 número', ok: /[0-9]/.test(pwd) },
+                      { label: '1 caractere especial (!@#$%...)', ok: /[^a-zA-Z0-9]/.test(pwd) },
+                    ];
+                    return (
+                      <div className="mt-2 space-y-1">
+                        {checks.map(c => (
+                          <div key={c.label} className="flex items-center gap-1.5 text-xs">
+                            {c.ok ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" /> : <XCircle className="h-3.5 w-3.5 text-gray-300 shrink-0" />}
+                            <span className={c.ok ? 'text-green-600' : 'text-gray-400'}>{c.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsEditEmpresaModalOpen(false)}>Cancelar</Button>
+                <Button type="submit" disabled={isSubmittingEmpresa} className="bg-[#003580] hover:bg-[#002060] text-white">
+                  {isSubmittingEmpresa && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Salvar Alterações
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Modal Adicionar Filial */}
+      {selectedMatriz && (
+        <Dialog open={isAddFilialModalOpen} onOpenChange={setIsAddFilialModalOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Adicionar Filial</DialogTitle>
+              <p className="text-sm text-muted-foreground">{selectedMatriz.nome_fantasia || selectedMatriz.razao_social}</p>
+            </DialogHeader>
+            <form onSubmit={validateAndSubmitFilial} className="space-y-4 py-2">
+              <div><Label>Razão Social *</Label><Input id="razao_social" value={filialFormData.razao_social} onChange={e => handleEmpresaInputChange(e, setFilialFormData)} /></div>
+              <div><Label>Nome Fantasia</Label><Input id="nome_fantasia" value={filialFormData.nome_fantasia} onChange={e => handleEmpresaInputChange(e, setFilialFormData)} /></div>
+              <div><Label>CNPJ *</Label><Input id="cnpj" value={filialFormData.cnpj} onChange={e => handleEmpresaInputChange(e, setFilialFormData)} /></div>
+              <div><Label>Endereço</Label><Input id="endereco_completo" value={filialFormData.endereco_completo} onChange={e => handleEmpresaInputChange(e, setFilialFormData)} /></div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsAddFilialModalOpen(false)}>Cancelar</Button>
+                <Button type="submit" disabled={isSubmittingEmpresa} className="bg-[#003580] hover:bg-[#002060] text-white">
+                  {isSubmittingEmpresa && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <GitBranchPlus className="mr-2 h-4 w-4" /> Adicionar Filial
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
 
       </DashboardLayout>
     </>
