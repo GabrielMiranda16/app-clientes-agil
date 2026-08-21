@@ -33,4 +33,35 @@ export const beneficiarioPlanosService = {
       return [];
     }
   },
+
+  // Mantém o vínculo do beneficiário com a apólice sincronizado com o
+  // status do plano no formulário: desativa qualquer vínculo antigo desse
+  // tipo que não seja a apólice atual, e ativa/atualiza o vínculo certo.
+  async syncPlano(beneficiarioId, tipo, { ativo, apoliceId, ...campos }) {
+    try {
+      let desativarQuery = supabase
+        .from('beneficiario_planos')
+        .update({ ativo: false })
+        .eq('beneficiario_id', beneficiarioId)
+        .eq('tipo', tipo)
+        .eq('ativo', true);
+      if (ativo && apoliceId) desativarQuery = desativarQuery.neq('apolice_id', apoliceId);
+
+      const { error: desativarError } = await desativarQuery;
+      if (desativarError) throw desativarError;
+
+      if (!ativo || !apoliceId) return;
+
+      const { error: upsertError } = await supabase
+        .from('beneficiario_planos')
+        .upsert(
+          { beneficiario_id: beneficiarioId, apolice_id: apoliceId, tipo, ativo: true, ...campos },
+          { onConflict: 'beneficiario_id,apolice_id,tipo' }
+        );
+      if (upsertError) throw upsertError;
+    } catch (error) {
+      console.error(`Erro ao sincronizar vínculo (${tipo}) do beneficiário:`, error);
+      throw new Error('O beneficiário foi salvo, mas não foi possível atualizar o vínculo com a apólice.');
+    }
+  },
 };
