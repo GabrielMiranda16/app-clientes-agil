@@ -80,6 +80,26 @@ const ApoliceDashboard = () => {
 
   const [loading, setLoading] = useState(true);
   const [apolice, setApolice] = useState(null);
+  const [apolicesGrupo, setApolicesGrupo] = useState([]);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+  const switcherRef = useRef(null);
+
+  useEffect(() => {
+    const onClickOutside = (e) => { if (switcherRef.current && !switcherRef.current.contains(e.target)) setSwitcherOpen(false); };
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  // Outras empresas do mesmo grupo (matriz + filiais) que também têm apólice
+  // ativa desse mesmo segmento — permite trocar sem voltar pra lista.
+  useEffect(() => {
+    if (!isAdmin || !apolice?.empresas || !apolice?.segmento) { setApolicesGrupo([]); return; }
+    const matrizId = apolice.empresas.tipo === 'FILIAL' ? apolice.empresas.empresa_matriz_id : apolice.empresa_id;
+    if (!matrizId) { setApolicesGrupo([]); return; }
+    apolicesService.getApolicesByMatriz(matrizId)
+      .then(lista => setApolicesGrupo(lista.filter(a => a.segmento === apolice.segmento)))
+      .catch(() => setApolicesGrupo([]));
+  }, [isAdmin, apolice?.id, apolice?.segmento, apolice?.empresas?.tipo, apolice?.empresas?.empresa_matriz_id, apolice?.empresa_id]);
 
   // Tabs de Beneficiários/Solicitações/Coparticipação apenas para SVD (só ADM)
   const isSVD = apolice?.segmento === 'SAUDE_VIDA_ODONTO';
@@ -326,10 +346,32 @@ const ApoliceDashboard = () => {
               {apolice.empresas && (
                 <p className="text-white/90 text-base font-medium mt-0.5 flex items-center gap-1.5">
                   {apolice.empresas.nome_fantasia || apolice.empresas.razao_social}
-                  {apolice.empresas.tipo && (
+                  {apolice.empresas.tipo && apolicesGrupo.length <= 1 && (
                     <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${apolice.empresas.tipo === 'MATRIZ' ? 'bg-blue-500/30 text-blue-200' : 'bg-white/20 text-white/80'}`}>
                       {apolice.empresas.tipo === 'MATRIZ' ? 'Matriz' : 'Filial'}
                     </span>
+                  )}
+                  {apolice.empresas.tipo && apolicesGrupo.length > 1 && (
+                    <div className="relative" ref={switcherRef}>
+                      <button type="button" onClick={() => setSwitcherOpen(o => !o)}
+                        className={`flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full transition-colors hover:brightness-110 ${apolice.empresas.tipo === 'MATRIZ' ? 'bg-blue-500/30 text-blue-200' : 'bg-white/20 text-white/80'}`}>
+                        {apolice.empresas.tipo === 'MATRIZ' ? 'Matriz' : 'Filial'}
+                        <ChevronRight className={`h-3 w-3 transition-transform ${switcherOpen ? 'rotate-90' : ''}`} />
+                      </button>
+                      {switcherOpen && (
+                        <div className="absolute z-50 mt-1 min-w-[240px] rounded-lg border bg-white shadow-lg overflow-hidden">
+                          <p className="px-3 pt-2 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Trocar de empresa</p>
+                          {apolicesGrupo.map(a => (
+                            <button key={a.id} type="button"
+                              onClick={() => { setSwitcherOpen(false); if (a.id !== apolice.id) navigate(`/apolice/${a.id}`); }}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center justify-between gap-2 ${a.id === apolice.id ? 'bg-blue-50 text-[#003580] font-medium' : 'text-gray-700'}`}>
+                              <span className="truncate">{a.empresa?.nome_fantasia || a.empresa?.razao_social}</span>
+                              <span className="text-[10px] text-gray-400 shrink-0">{a.empresa?.tipo === 'MATRIZ' ? 'Matriz' : 'Filial'}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </p>
               )}
