@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton';
-import { Building, Plus, Trash2, ArrowRight, Search, Loader2, GitBranchPlus, Edit, Users, FileText, AlertTriangle, X, User, Building2, CheckCircle2, XCircle } from 'lucide-react';
+import { Building, Plus, Trash2, ArrowRight, Search, Loader2, GitBranchPlus, Edit, Users, FileText, AlertTriangle, X, User, Building2, CheckCircle2, XCircle, ChevronDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { applyCnpjMask, applyCpfMask, applyCepMask } from '@/lib/masks';
 import { generateTempPassword, sendWelcomeEmail } from '@/services/emailService';
@@ -40,6 +40,12 @@ const AdminDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [expandedFiliaisIds, setExpandedFiliaisIds] = useState(new Set());
+  const toggleFiliaisExpand = (id) => setExpandedFiliaisIds(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
 
   // Modals
   const [isNewClienteModalOpen, setIsNewClienteModalOpen] = useState(false);
@@ -542,7 +548,9 @@ const AdminDashboard = () => {
             ) : (
               searchResults.map(matriz => {
                 const pendentes = getTotalPendentesMatriz(matriz.id);
-                const filiaisCount = getFiliaisForMatriz(matriz.id).length;
+                const filiaisDaMatriz = getFiliaisForMatriz(matriz.id);
+                const filiaisCount = filiaisDaMatriz.length;
+                const isExpanded = expandedFiliaisIds.has(matriz.id);
                 return (
                   <motion.div
                     key={matriz.id}
@@ -552,6 +560,11 @@ const AdminDashboard = () => {
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4">
                       <div className="flex items-center gap-3 min-w-0">
+                        {filiaisCount > 0 && (
+                          <button onClick={() => toggleFiliaisExpand(matriz.id)} className="text-gray-400 hover:text-gray-600 shrink-0">
+                            <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                          </button>
+                        )}
                         <div className="bg-[#003580]/10 p-2.5 rounded-xl shrink-0">
                           <Building className="h-5 w-5 text-[#003580]" />
                         </div>
@@ -562,7 +575,11 @@ const AdminDashboard = () => {
                               ? `CPF: ${applyCpfMask(matriz.cnpj)}`
                               : `CNPJ: ${applyCnpjMask(matriz.cnpj)}`
                             }
-                            {filiaisCount > 0 && <span className="ml-2 text-gray-400">· {filiaisCount} filial(is)</span>}
+                            {filiaisCount > 0 && (
+                              <button onClick={() => toggleFiliaisExpand(matriz.id)} className="ml-2 text-gray-400 hover:text-[#003580] hover:underline">
+                                · {filiaisCount} filial{filiaisCount > 1 ? 'is' : ''}
+                              </button>
+                            )}
                           </p>
                         </div>
                       </div>
@@ -610,6 +627,38 @@ const AdminDashboard = () => {
                         )}
                       </div>
                     </div>
+                    {isExpanded && filiaisCount > 0 && (
+                      <div className="border-t bg-gray-50 divide-y divide-gray-100">
+                        {filiaisDaMatriz.map(filial => {
+                          const pendentesFilial = getSolicitacoesPendentesCount(filial.id);
+                          return (
+                            <div key={filial.id} className="flex items-center justify-between gap-3 px-4 py-2.5 pl-12">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-gray-300 shrink-0">└─</span>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-gray-700 truncate">{filial.nome_fantasia || filial.razao_social}</p>
+                                  <p className="text-xs text-gray-400">{applyCnpjMask(filial.cnpj || '')}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                {pendentesFilial > 0 && (
+                                  <button
+                                    onClick={() => goToSolicitacoes(filial.id)}
+                                    className="flex items-center gap-1 px-2 py-1 rounded-full bg-red-50 border border-red-200 text-red-700 text-xs font-semibold hover:bg-red-100 transition-colors"
+                                  >
+                                    <AlertTriangle className="h-3 w-3" />
+                                    {pendentesFilial}
+                                  </button>
+                                )}
+                                <Button size="sm" variant="outline" onClick={() => navigate(`/admin/cliente/${matriz.id}`)}>
+                                  Ver detalhes
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </motion.div>
                 );
               })
