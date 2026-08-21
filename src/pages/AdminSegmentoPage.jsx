@@ -24,6 +24,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import { empresasService } from '@/services/empresasService';
+import { beneficiarioPlanosService } from '@/services/beneficiarioPlanosService';
 import { beneficiariosService } from '@/services/beneficiariosService';
 import { solicitacoesService } from '@/services/solicitacoesService';
 import { apolicesService, SEGMENTOS } from '@/services/apolicesService';
@@ -71,6 +72,7 @@ const AdminSegmentoPage = () => {
   const [filiais, setFiliais] = useState([]);
   const [apolices, setApolices] = useState([]);
   const [beneficiarios, setBeneficiarios] = useState([]);
+  const [beneficiarioPlanos, setBeneficiarioPlanos] = useState([]);
   const [solicitacoes, setSolicitacoes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -120,7 +122,10 @@ const AdminSegmentoPage = () => {
 
         if (isSVD) {
           const benData = await beneficiariosService.getAllBeneficiarios();
-          setBeneficiarios(benData.filter(b => todasIds.includes(Number(b.empresa_id)) && !b.data_exclusao));
+          const benFiltrados = benData.filter(b => todasIds.includes(Number(b.empresa_id)) && !b.data_exclusao);
+          setBeneficiarios(benFiltrados);
+          const planosData = await beneficiarioPlanosService.getByBeneficiarioIds(benFiltrados.map(b => b.id));
+          setBeneficiarioPlanos(planosData);
         }
       } catch (err) {
         toast({ variant: 'destructive', title: 'Erro', description: 'Falha ao carregar dados.' });
@@ -140,6 +145,18 @@ const AdminSegmentoPage = () => {
 
   const getApolicesEmpresa = (empresaId) =>
     apolices.filter(a => Number(a.empresa_id) === Number(empresaId) && a.ativo !== false);
+
+  // Quando a empresa tem só 1 apólice ativa, não há ambiguidade: o total de
+  // beneficiários da empresa já pertence a ela. Só quando há 2+ apólices no
+  // mesmo segmento é que o vínculo explícito (beneficiario_planos) decide
+  // quem pertence a qual apólice.
+  const getBeneficiariosApolice = (ap, empApolices) => {
+    if (empApolices.length <= 1) return getBeneficiariosEmpresa(ap.empresa_id).length;
+    const ids = new Set(
+      beneficiarioPlanos.filter(bp => Number(bp.apolice_id) === Number(ap.id)).map(bp => bp.beneficiario_id)
+    );
+    return ids.size;
+  };
 
   const todasEmpresas = useMemo(() => matriz ? [{ ...matriz, isMatriz: true }, ...filiais.map(f => ({ ...f, isMatriz: false }))] : [], [matriz, filiais]);
 
@@ -413,7 +430,6 @@ const AdminSegmentoPage = () => {
           {todasEmpresas.map((empresa) => {
             const pendentes = getSolicitacoesPendentes(empresa.id);
             const empApolices = getApolicesEmpresa(empresa.id);
-            const empBeneficiarios = getBeneficiariosEmpresa(empresa.id);
 
             return (
               <Card key={empresa.id} className="border shadow-sm overflow-hidden">
@@ -472,10 +488,15 @@ const AdminSegmentoPage = () => {
                                 );
                               })()}
                               <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-3">
-                                <span className="flex items-center gap-1">
-                                  <Users className="h-3 w-3" />
-                                  <span className="font-semibold text-gray-600">{empBeneficiarios.length}</span> beneficiário{empBeneficiarios.length !== 1 ? 's' : ''} ativo{empBeneficiarios.length !== 1 ? 's' : ''} · Solicitações e Coparticipação disponíveis dentro
-                                </span>
+                                {(() => {
+                                  const qtd = getBeneficiariosApolice(ap, empApolices);
+                                  return (
+                                    <span className="flex items-center gap-1">
+                                      <Users className="h-3 w-3" />
+                                      <span className="font-semibold text-gray-600">{qtd}</span> beneficiário{qtd !== 1 ? 's' : ''} ativo{qtd !== 1 ? 's' : ''} · Solicitações e Coparticipação disponíveis dentro
+                                    </span>
+                                  );
+                                })()}
                               </p>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
