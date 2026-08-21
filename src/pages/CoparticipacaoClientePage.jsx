@@ -461,8 +461,21 @@ const CoparticipacaoClientePage = () => {
               <CardTitle className="text-white flex items-center gap-2">
                 <FileText className="h-5 w-5" /> Resumo {tipoLabel}
               </CardTitle>
-              <CardDescription className="text-blue-100">
-                {(() => { const emp = empresas.find(e => String(e.id) === String(empresaId)); return emp ? `${emp.nome_fantasia || emp.razao_social} · ${formatCpfCnpj(emp.cnpj || emp.cpf)}` : ''; })()}
+              <CardDescription className="text-blue-100 flex items-center gap-1.5 flex-wrap">
+                {(() => {
+                  const emp = empresas.find(e => String(e.id) === String(empresaId));
+                  if (!emp) return null;
+                  return (
+                    <>
+                      <span>{emp.nome_fantasia || emp.razao_social} · {formatCpfCnpj(emp.cnpj || emp.cpf)}</span>
+                      {emp.tipo && (
+                        <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${emp.tipo === 'MATRIZ' ? 'bg-blue-400/30 text-blue-100' : 'bg-white/20 text-white/80'}`}>
+                          {emp.tipo === 'MATRIZ' ? 'Matriz' : 'Filial'}
+                        </span>
+                      )}
+                    </>
+                  );
+                })()}
               </CardDescription>
               <CardDescription className="text-blue-100">
                 Total de coparticipações de {tipoLabel.toLowerCase()} lançadas em {getMonthName(selectedMonth)} de {selectedYear}
