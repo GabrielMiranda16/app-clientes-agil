@@ -66,6 +66,8 @@ import { formatDateTime } from '@/lib/utils';
 import { solicitacoesService } from '@/services/solicitacoesService';
 import { beneficiariosService } from '@/services/beneficiariosService';
 import { empresasService } from '@/services/empresasService';
+import { apolicesService } from '@/services/apolicesService';
+import { beneficiarioPlanosService } from '@/services/beneficiarioPlanosService';
 import { formatCpfCnpj } from '@/lib/masks';
 import { supabase } from '@/lib/customSupabaseClient';
 
@@ -75,6 +77,7 @@ const SolicitacoesPage = () => {
   const [solicitacoes, setSolicitacoes] = useState([]);
   const [beneficiarios, setBeneficiarios] = useState([]);
   const [empresas, setEmpresas] = useState([]);
+  const [apolices, setApolices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -93,6 +96,7 @@ const SolicitacoesPage = () => {
   const [isEditBeneficiarioModalOpen, setIsEditBeneficiarioModalOpen] = useState(false);
   const [editingBeneficiarioData, setEditingBeneficiarioData] = useState(null);
   const [beneficiarioFormData, setBeneficiarioFormData] = useState({
+    apolice_id: '',
     // Saúde
     saude_plano_nome: '',
     saude_numero_carteirinha: '',
@@ -232,14 +236,16 @@ const SolicitacoesPage = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [solData, benData, empData] = await Promise.all([
+      const [solData, benData, empData, apData] = await Promise.all([
         solicitacoesService.getAllSolicitacoes(),
         beneficiariosService.getAllBeneficiarios(),
-        empresasService.getEmpresas()
+        empresasService.getEmpresas(),
+        apolicesService.getAllApolices().catch(() => [])
       ]);
       setSolicitacoes(solData);
       setBeneficiarios(benData);
       setEmpresas(empData);
+      setApolices(apData.filter(a => a.segmento === 'SAUDE_VIDA_ODONTO'));
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({ variant: 'destructive', title: 'Erro', description: 'Erro ao carregar dados.' });
@@ -310,6 +316,9 @@ const SolicitacoesPage = () => {
       };
 
       if (editingSolicitacao) {
+        const apolicesDoBeneficiario = apolices.filter(a => Number(a.empresa_id) === Number(beneficiario.empresa_id) && a.ativo !== false);
+        const ambiguo = apolicesDoBeneficiario.length > 1;
+
         // Atualizar beneficiário ANTES da solicitação — se falhar, a solicitação fica intacta
         if (formData.status === 'CONCLUIDA' && formData.tipo_solicitacao === 'EXCLUSAO' && formData.tipo_plano) {
           const planoField = `${formData.tipo_plano}_ativo`;
@@ -318,12 +327,18 @@ const SolicitacoesPage = () => {
             [`${formData.tipo_plano}_data_exclusao`]: new Date().toISOString().split('T')[0],
           });
           setBeneficiarios(prev => prev.map(b => b.id === beneficiario.id ? { ...b, [planoField]: false } : b));
+          await beneficiarioPlanosService.syncPlano(beneficiario.id, formData.tipo_plano, { ativo: false });
         }
 
         if (formData.status === 'CONCLUIDA' && formData.tipo_solicitacao === 'INCLUSAO' && formData.tipo_plano) {
           const planoField = `${formData.tipo_plano}_ativo`;
           await beneficiariosService.updateBeneficiario(beneficiario.id, { [planoField]: true });
           setBeneficiarios(prev => prev.map(b => b.id === beneficiario.id ? { ...b, [planoField]: true } : b));
+          if (ambiguo) {
+            toast({ title: 'Vínculo com apólice não atualizado', description: 'Esta empresa tem mais de uma apólice ativa nesse plano — use o botão "Adicionar Dados" na solicitação para escolher a apólice certa.' });
+          } else {
+            await beneficiarioPlanosService.syncPlano(beneficiario.id, formData.tipo_plano, { ativo: true, apoliceId: apolicesDoBeneficiario[0]?.id ?? null });
+          }
         }
 
         await solicitacoesService.updateSolicitacao(editingSolicitacao.id, payload);
@@ -414,7 +429,7 @@ const SolicitacoesPage = () => {
     }
   };
 
-  const handleEditBeneficiarioData = (solicitacao) => {
+  const handleEditBeneficiarioData = async (solicitacao) => {
     const beneficiario = beneficiarios.find(b => b.id === solicitacao.beneficiario_id);
     if (!beneficiario) {
       toast({ variant: 'destructive', title: 'Erro', description: 'Beneficiário não encontrado.' });
@@ -422,9 +437,13 @@ const SolicitacoesPage = () => {
     }
 
     setEditingBeneficiarioData({ solicitacao, beneficiario });
-    
+
+    const vinculos = await beneficiarioPlanosService.getByBeneficiarioIds([beneficiario.id]);
+    const vinculoAtual = vinculos.find(v => v.tipo === solicitacao.tipo_plano);
+
     // Populate form with all existing beneficiary data
     setBeneficiarioFormData({
+      apolice_id: vinculoAtual ? String(vinculoAtual.apolice_id) : '',
       // Saúde
       saude_plano_nome: beneficiario.saude_plano_nome || '',
       saude_numero_carteirinha: beneficiario.saude_numero_carteirinha || '',
@@ -465,12 +484,19 @@ const SolicitacoesPage = () => {
     e.preventDefault();
     if (!editingBeneficiarioData) return;
 
+    const { solicitacao, beneficiario } = editingBeneficiarioData;
+    const isExclusao = solicitacao.tipo_solicitacao === 'EXCLUSAO';
+    const apolicesDoBeneficiario = apolices.filter(a => Number(a.empresa_id) === Number(beneficiario.empresa_id) && a.ativo !== false);
+    const ambiguo = apolicesDoBeneficiario.length > 1;
+
+    if (!isExclusao && ambiguo && !beneficiarioFormData.apolice_id) {
+      toast({ variant: 'destructive', title: 'Selecione a apólice', description: 'Esta empresa tem mais de uma apólice ativa nesse plano — selecione a qual esse beneficiário pertence.' });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      const { solicitacao, beneficiario } = editingBeneficiarioData;
       const updateFields = {};
-
-      const isExclusao = solicitacao.tipo_solicitacao === 'EXCLUSAO';
 
       // Handle based on plan type to only update relevant fields
       if (solicitacao.tipo_plano === 'saude') {
@@ -524,6 +550,23 @@ const SolicitacoesPage = () => {
 
       // 1. Update Beneficiario with specific fields
       const updatedBeneficiario = await beneficiariosService.updateBeneficiario(beneficiario.id, updateFields);
+
+      // 1b. Sincroniza o vínculo com a apólice certa (ou desativa, se for exclusão)
+      const apoliceId = isExclusao ? null : (ambiguo ? Number(beneficiarioFormData.apolice_id) : (apolicesDoBeneficiario[0]?.id ?? null));
+      await beneficiarioPlanosService.syncPlano(beneficiario.id, solicitacao.tipo_plano, {
+        ativo: !isExclusao,
+        apoliceId,
+        plano_nome: beneficiarioFormData[`${solicitacao.tipo_plano}_plano_nome`] || null,
+        numero_carteirinha: beneficiarioFormData[`${solicitacao.tipo_plano}_numero_carteirinha`] || null,
+        link_carteirinha: beneficiarioFormData[`${solicitacao.tipo_plano}_link_carteirinha`] || null,
+        valor_fatura: Number(beneficiarioFormData[`${solicitacao.tipo_plano}_valor_fatura`]) || null,
+        codigo_empresa: beneficiarioFormData[`${solicitacao.tipo_plano}_codigo_empresa`] || null,
+        produto: beneficiarioFormData[`${solicitacao.tipo_plano}_produto`] || null,
+        acomodacao: solicitacao.tipo_plano === 'saude' ? (beneficiarioFormData.saude_acomodacao || null) : null,
+        coparticipacao: solicitacao.tipo_plano === 'saude' ? (beneficiarioFormData.saude_coparticipacao || null) : null,
+        data_inclusao: beneficiarioFormData[`${solicitacao.tipo_plano}_data_inclusao`] || null,
+        data_exclusao: beneficiarioFormData[`${solicitacao.tipo_plano}_data_exclusao`] || null,
+      });
 
       // 2. Update Solicitacao to CONCLUIDA
       const solicitacaoUpdateData = {
@@ -1083,7 +1126,30 @@ const SolicitacoesPage = () => {
           </DialogHeader>
 
           <form onSubmit={handleSaveBeneficiarioData} className="space-y-4 py-4">
-            
+
+            {editingBeneficiarioData && editingBeneficiarioData.solicitacao.tipo_solicitacao !== 'EXCLUSAO' && (() => {
+              const apolicesDoBeneficiario = apolices.filter(a => Number(a.empresa_id) === Number(editingBeneficiarioData.beneficiario.empresa_id) && a.ativo !== false);
+              if (apolicesDoBeneficiario.length <= 1) return null;
+              const tipo = editingBeneficiarioData.solicitacao.tipo_plano;
+              const apolicesDoTipo = apolicesDoBeneficiario.filter(ap => (ap.dados_adicionais?.sub_apolices || []).some(s => s.tipo === tipo));
+              const opcoes = apolicesDoTipo.length > 0 ? apolicesDoTipo : apolicesDoBeneficiario;
+              const labelApolice = (ap) => {
+                const sub = (ap.dados_adicionais?.sub_apolices || []).find(s => s.tipo === tipo);
+                if (sub) return [sub.seguradora, sub.numero && `nº ${sub.numero}`].filter(Boolean).join(' · ') || `Apólice ${ap.id}`;
+                return [ap.seguradora, ap.numero_apolice && `nº ${ap.numero_apolice}`].filter(Boolean).join(' · ') || `Apólice ${ap.id}`;
+              };
+              return (
+                <div className="space-y-2">
+                  <Label htmlFor="apolice_id">Apólice</Label>
+                  <Select value={beneficiarioFormData.apolice_id} onValueChange={(v) => setBeneficiarioFormData(prev => ({ ...prev, apolice_id: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Selecione a apólice..." /></SelectTrigger>
+                    <SelectContent>{opcoes.map(ap => <SelectItem key={ap.id} value={String(ap.id)}>{labelApolice(ap)}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500">Esta empresa tem mais de uma apólice ativa nesse plano — selecione a qual esse beneficiário pertence.</p>
+                </div>
+              );
+            })()}
+
             {/* Seção SAÚDE */}
             {editingBeneficiarioData?.solicitacao.tipo_plano === 'saude' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
