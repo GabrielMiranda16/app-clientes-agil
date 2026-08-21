@@ -58,8 +58,9 @@ const STATUS_SOL_COLORS = {
 const MES_OPTS = (() => {
   const opts = [];
   const now = new Date();
-  for (let i = 0; i < 3; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+  // 0 = mês atual (padrão), 1 = próximo mês, -1/-2 = meses anteriores
+  for (const off of [0, 1, -1, -2]) {
+    const d = new Date(now.getFullYear(), now.getMonth() + off, 1);
     const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     const label = format(d, 'MMMM yyyy', { locale: ptBR });
     opts.push({ val, label: label.charAt(0).toUpperCase() + label.slice(1) });
