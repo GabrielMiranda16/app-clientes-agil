@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate, useParams, useLocation, Navigate } from 'react-router-dom';
 import { Download, FileText, ArrowLeft, Calendar, Loader2, Search, ChevronRight, ChevronDown } from 'lucide-react';
@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { jsPDF } from 'jspdf';
@@ -21,6 +22,74 @@ import { beneficiariosService } from '@/services/beneficiariosService';
 import { empresasService } from '@/services/empresasService';
 import { apolicesService } from '@/services/apolicesService';
 import { formatCpfCnpj } from '@/lib/masks';
+
+const ColaboradorSearchSelect = ({ beneficiarios, value, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
+        setQuery('');
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selecionado = beneficiarios.find(b => String(b.id) === String(value));
+  const label = value === '__all__' || !value ? 'Todos os colaboradores' : (selecionado?.nome_completo || 'Todos os colaboradores');
+
+  const filtrados = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const qDigits = q.replace(/\D/g, '');
+    if (!q) return beneficiarios;
+    return beneficiarios.filter(b =>
+      (b.nome_completo || '').toLowerCase().includes(q) ||
+      (qDigits && (b.cpf || '').replace(/\D/g, '').includes(qDigits))
+    );
+  }, [beneficiarios, query]);
+
+  return (
+    <div className="relative w-full sm:w-56" ref={containerRef}>
+      <button type="button" onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm h-10">
+        <span className="truncate">{label}</span>
+        <ChevronDown className={`h-4 w-4 text-gray-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute z-50 mt-1 w-full min-w-[240px] rounded-md border bg-white shadow-lg">
+          <div className="p-2 border-b">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+              <Input autoFocus value={query} onChange={e => setQuery(e.target.value)}
+                placeholder="Buscar por nome ou CPF..." className="pl-8 h-8 text-sm" />
+            </div>
+          </div>
+          <div className="max-h-64 overflow-y-auto py-1">
+            <button type="button" onClick={() => { onChange('__all__'); setOpen(false); setQuery(''); }}
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${value === '__all__' || !value ? 'bg-blue-50 text-[#003580] font-medium' : ''}`}>
+              Todos os colaboradores
+            </button>
+            {filtrados.length === 0 ? (
+              <p className="px-3 py-4 text-sm text-gray-400 text-center">Nenhum colaborador encontrado.</p>
+            ) : filtrados.map(b => (
+              <button key={b.id} type="button" onClick={() => { onChange(String(b.id)); setOpen(false); setQuery(''); }}
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${String(value) === String(b.id) ? 'bg-blue-50 text-[#003580] font-medium' : ''}`}>
+                <div className="flex flex-col">
+                  <span className="truncate">{b.nome_completo}</span>
+                  {b.cpf && <span className="text-xs text-gray-400">{formatCpfCnpj(b.cpf)}</span>}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const CoparticipacaoClientePage = () => {
   const navigate = useNavigate();
@@ -44,6 +113,7 @@ const CoparticipacaoClientePage = () => {
   const [selectedColaboradorId, setSelectedColaboradorId] = useState('__all__');
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedId, setExpandedId] = useState(null);
+  const [selectedRowIds, setSelectedRowIds] = useState(new Set());
   const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
@@ -150,6 +220,12 @@ const CoparticipacaoClientePage = () => {
   }, [filteredCoparticipacoes]);
 
   useEffect(() => { setCurrentPage(1); }, [filteredCoparticipacoes.length, tipoFiltro, selectedColaboradorId, selectedMonth, selectedYear]);
+  useEffect(() => { setSelectedRowIds(new Set()); }, [tipoFiltro, selectedColaboradorId, selectedMonth, selectedYear]);
+
+  const dadosParaExportar = selectedRowIds.size > 0
+    ? filteredCoparticipacoes.filter(c => selectedRowIds.has(c.id))
+    : filteredCoparticipacoes;
+  const totalExportar = dadosParaExportar.reduce((acc, curr) => acc + (parseFloat(curr.valor) || 0), 0);
 
   const totalPages = Math.max(1, Math.ceil(filteredCoparticipacoes.length / ITEMS_PER_PAGE));
   const pageData = filteredCoparticipacoes.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -165,7 +241,7 @@ const CoparticipacaoClientePage = () => {
   };
 
   const handleExportPDF = () => {
-    if (filteredCoparticipacoes.length === 0) {
+    if (dadosParaExportar.length === 0) {
       toast({ variant: "destructive", description: "Não há dados para exportar." });
       return;
     }
@@ -213,7 +289,7 @@ const CoparticipacaoClientePage = () => {
     doc.text(`Período: ${mesLabel} de ${selectedYear}`, 14, 55);
 
     const tableColumn = ["Beneficiário Titular", "Quem Utilizou", "CPF Utilizador", "Descrição", "Valor (R$)"];
-    const tableRows = filteredCoparticipacoes.map(item => [
+    const tableRows = dadosParaExportar.map(item => [
       getBeneficiarioName(item.beneficiario_id),
       item.nome_quem_utilizou || '-',
       item.cpf_quem_utilizou ? formatCpfCnpj(item.cpf_quem_utilizou) : '-',
@@ -222,7 +298,7 @@ const CoparticipacaoClientePage = () => {
     ]);
     tableRows.push([
       { content: 'TOTAL', colSpan: 4, styles: { halign: 'right', fontStyle: 'bold' } },
-      { content: new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2 }).format(totalMes), styles: { halign: 'right', fontStyle: 'bold' } }
+      { content: new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2 }).format(totalExportar), styles: { halign: 'right', fontStyle: 'bold' } }
     ]);
 
     doc.autoTable({
@@ -248,19 +324,19 @@ const CoparticipacaoClientePage = () => {
   };
 
   const handleExportExcel = () => {
-    if (filteredCoparticipacoes.length === 0) {
+    if (dadosParaExportar.length === 0) {
       toast({ variant: "destructive", description: "Não há dados para exportar." });
       return;
     }
     const empresaAtual = empresas.find(e => String(e.id) === String(empresaId));
-    const dataToExport = filteredCoparticipacoes.map(item => ({
+    const dataToExport = dadosParaExportar.map(item => ({
       "Beneficiário Titular": getBeneficiarioName(item.beneficiario_id),
       "Quem Utilizou": item.nome_quem_utilizou || '-',
       "CPF Utilizador": item.cpf_quem_utilizou || '-',
       "Descrição / Procedimento": item.descricao || '-',
       "Valor (R$)": item.valor
     }));
-    dataToExport.push({ "Beneficiário Titular": "", "Quem Utilizou": "", "CPF Utilizador": "", "Descrição / Procedimento": "TOTAL", "Valor (R$)": totalMes });
+    dataToExport.push({ "Beneficiário Titular": "", "Quem Utilizou": "", "CPF Utilizador": "", "Descrição / Procedimento": "TOTAL", "Valor (R$)": totalExportar });
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
@@ -410,24 +486,25 @@ const CoparticipacaoClientePage = () => {
         {/* Table */}
         <Card>
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <CardTitle>Detalhamento</CardTitle>
+            <CardTitle>
+              Detalhamento
+              {selectedRowIds.size > 0 && (
+                <span className="ml-2 text-xs font-normal text-[#003580] bg-blue-50 px-2 py-0.5 rounded-full align-middle">
+                  {selectedRowIds.size} selecionado(s)
+                </span>
+              )}
+            </CardTitle>
             <div className="flex flex-wrap gap-2 items-center">
-              <Select value={selectedColaboradorId} onValueChange={setSelectedColaboradorId}>
-                <SelectTrigger className="w-full sm:w-52">
-                  <SelectValue placeholder="Todos os colaboradores" />
-                </SelectTrigger>
-                <SelectContent className="max-h-[320px] overflow-y-auto">
-                  <SelectItem value="__all__">Todos os colaboradores</SelectItem>
-                  {beneficiariosDaEmpresa.map(b => (
-                    <SelectItem key={b.id} value={String(b.id)}>{b.nome_completo}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={filteredCoparticipacoes.length === 0}>
-                <Download className="mr-2 h-4 w-4" /> Baixar Excel
+              <ColaboradorSearchSelect
+                beneficiarios={beneficiariosDaEmpresa}
+                value={selectedColaboradorId}
+                onChange={setSelectedColaboradorId}
+              />
+              <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={dadosParaExportar.length === 0}>
+                <Download className="mr-2 h-4 w-4" /> Baixar Excel{selectedRowIds.size > 0 ? ` (${selectedRowIds.size})` : ''}
               </Button>
-              <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={filteredCoparticipacoes.length === 0}>
-                <Download className="mr-2 h-4 w-4" /> Baixar PDF
+              <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={dadosParaExportar.length === 0}>
+                <Download className="mr-2 h-4 w-4" /> Baixar PDF{selectedRowIds.size > 0 ? ` (${selectedRowIds.size})` : ''}
               </Button>
             </div>
           </CardHeader>
@@ -444,6 +521,18 @@ const CoparticipacaoClientePage = () => {
                   <table className="w-full text-sm text-left">
                     <thead className="bg-gray-50 text-gray-700 uppercase font-medium">
                       <tr>
+                        <th className="px-4 py-3 w-10">
+                          <Checkbox
+                            checked={pageData.length > 0 && pageData.every(item => selectedRowIds.has(item.id))}
+                            onCheckedChange={(v) => {
+                              setSelectedRowIds(prev => {
+                                const next = new Set(prev);
+                                pageData.forEach(item => v ? next.add(item.id) : next.delete(item.id));
+                                return next;
+                              });
+                            }}
+                          />
+                        </th>
                         <th className="px-4 py-3">Beneficiário Titular</th>
                         <th className="px-4 py-3">Quem Utilizou</th>
                         <th className="px-4 py-3">CPF Utilizador</th>
@@ -453,7 +542,17 @@ const CoparticipacaoClientePage = () => {
                     </thead>
                     <tbody className="divide-y divide-gray-100 bg-white">
                       {pageData.map((item) => (
-                        <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                        <tr key={item.id} className={`hover:bg-gray-50 transition-colors ${selectedRowIds.has(item.id) ? 'bg-blue-50/60' : ''}`}>
+                          <td className="px-4 py-3">
+                            <Checkbox
+                              checked={selectedRowIds.has(item.id)}
+                              onCheckedChange={(v) => setSelectedRowIds(prev => {
+                                const next = new Set(prev);
+                                v ? next.add(item.id) : next.delete(item.id);
+                                return next;
+                              })}
+                            />
+                          </td>
                           <td className="px-4 py-3 font-medium text-gray-900">{getBeneficiarioName(item.beneficiario_id)}</td>
                           <td className="px-4 py-3 text-gray-600">{item.nome_quem_utilizou || '-'}</td>
                           <td className="px-4 py-3 text-gray-500">{item.cpf_quem_utilizou ? formatCpfCnpj(item.cpf_quem_utilizou) : '-'}</td>
@@ -464,7 +563,7 @@ const CoparticipacaoClientePage = () => {
                     </tbody>
                     <tfoot className="bg-gray-50 font-bold border-t">
                       <tr>
-                        <td colSpan={4} className="px-4 py-3 text-right text-gray-600">TOTAL:</td>
+                        <td colSpan={5} className="px-4 py-3 text-right text-gray-600">TOTAL:</td>
                         <td className="px-4 py-3 text-right text-blue-700 text-base">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalMes)}</td>
                       </tr>
                     </tfoot>
@@ -476,14 +575,25 @@ const CoparticipacaoClientePage = () => {
                   {pageData.map((item) => {
                     const isOpen = expandedId === item.id;
                     return (
-                      <div key={item.id} className="rounded-lg border bg-white overflow-hidden">
-                        <button className="w-full px-4 py-3 text-left" onClick={() => setExpandedId(isOpen ? null : item.id)}>
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="font-semibold text-sm leading-snug">{item.nome_quem_utilizou || getBeneficiarioName(item.beneficiario_id)}</p>
-                            <ChevronDown className={`h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                          </div>
-                          <span className="font-bold text-green-600 text-sm mt-1 block">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valor)}</span>
-                        </button>
+                      <div key={item.id} className={`rounded-lg border bg-white overflow-hidden ${selectedRowIds.has(item.id) ? 'border-[#003580]' : ''}`}>
+                        <div className="flex items-start gap-2 px-4 pt-3">
+                          <Checkbox
+                            className="mt-1 shrink-0"
+                            checked={selectedRowIds.has(item.id)}
+                            onCheckedChange={(v) => setSelectedRowIds(prev => {
+                              const next = new Set(prev);
+                              v ? next.add(item.id) : next.delete(item.id);
+                              return next;
+                            })}
+                          />
+                          <button className="flex-1 text-left pb-3" onClick={() => setExpandedId(isOpen ? null : item.id)}>
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="font-semibold text-sm leading-snug">{item.nome_quem_utilizou || getBeneficiarioName(item.beneficiario_id)}</p>
+                              <ChevronDown className={`h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                            </div>
+                            <span className="font-bold text-green-600 text-sm mt-1 block">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valor)}</span>
+                          </button>
+                        </div>
                         {isOpen && (
                           <div className="px-4 pb-4 border-t pt-3 space-y-2 bg-gray-50 text-sm">
                             <div><span className="text-xs text-muted-foreground block">Beneficiário Titular</span>{getBeneficiarioName(item.beneficiario_id)}</div>
