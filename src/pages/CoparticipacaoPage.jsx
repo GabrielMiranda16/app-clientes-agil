@@ -824,7 +824,20 @@ const CoparticipacaoPage = () => {
 
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-white">Coparticipação</h1>
-          {(() => { const emp = empresas.find(e => String(e.id) === String(selectedCompanyId)); return emp ? <p className="text-white font-medium">{emp.nome_fantasia || emp.razao_social} · <span className="text-white/70">{formatCpfCnpj(emp.cnpj || emp.cpf)}</span></p> : null; })()}
+          {(() => {
+            const emp = empresas.find(e => String(e.id) === String(selectedCompanyId));
+            if (!emp) return null;
+            return (
+              <p className="text-white font-medium flex items-center gap-1.5 flex-wrap">
+                {emp.nome_fantasia || emp.razao_social} · <span className="text-white/70">{formatCpfCnpj(emp.cnpj || emp.cpf)}</span>
+                {emp.tipo && (
+                  <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${emp.tipo === 'MATRIZ' ? 'bg-blue-500/30 text-blue-200' : 'bg-white/20 text-white/80'}`}>
+                    {emp.tipo === 'MATRIZ' ? 'Matriz' : 'Filial'}
+                  </span>
+                )}
+              </p>
+            );
+          })()}
           <p className="text-white/70">Gerencie os valores de coparticipação mensal por empresa.</p>
         </div>
 
