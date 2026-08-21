@@ -140,6 +140,12 @@ const CEODashboard = () => {
   // Gi métricas
   const [giMetricas, setGiMetricas] = useState(null);
   const [expandedEmpresaId, setExpandedEmpresaId] = useState(null);
+  const [expandedFiliaisIds, setExpandedFiliaisIds] = useState(new Set());
+  const toggleFiliaisExpand = (id) => setExpandedFiliaisIds(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
   const [expandedSolId, setExpandedSolId] = useState(null);
   const [isLoadingGi, setIsLoadingGi] = useState(true);
 
@@ -511,18 +517,42 @@ const CEODashboard = () => {
   const handleCloseAlert = (alertId) => { setClosedAlerts(prev => [...prev, alertId]); };
   const visibleAlerts = useMemo(() => alerts.filter(alert => !closedAlerts.includes(alert.id)), [alerts, closedAlerts]);
 
+  const contarGrupo = (grupoIds) => ({
+    beneficiariosCount: beneficiarios.filter(b => grupoIds.includes(Number(b.empresa_id))).length,
+    adminsCount: users.filter(u => grupoIds.includes(Number(u.empresa_id)) && u.perfil === 'ADM').length,
+  });
+
+  // Só matrizes ficam no nível principal da lista — filiais vêm aninhadas em
+  // cada matriz (.filiais), com seus próprios contadores, pra exibir num
+  // expandir/recolher em vez de misturar tudo numa lista só.
+  const matrizesComGrupo = useMemo(() => {
+    const matrizes = empresas.filter(e => !e.empresa_matriz_id);
+    return matrizes.map(matriz => {
+      const filiaisRaw = empresasService.getFiliais(empresas, matriz.id);
+      const filiais = filiaisRaw.map(filial => ({
+        ...filial,
+        ...contarGrupo([filial.id]),
+        status: filial.ativo === false ? 'Inativa' : 'Ativa',
+      }));
+      const grupoIds = [matriz.id, ...filiais.map(f => f.id)];
+      return {
+        ...matriz,
+        ...contarGrupo(grupoIds),
+        status: matriz.ativo === false ? 'Inativa' : 'Ativa',
+        filiais,
+      };
+    });
+  }, [empresas, beneficiarios, users]);
+
   const filteredEmpresas = useMemo(() => {
-    return empresas.map(empresa => {
-      const beneficiariosCount = beneficiarios.filter(b => b.empresa_id === empresa.id).length;
-      const adminsCount = users.filter(u => u.empresa_id === empresa.id && u.perfil === 'ADM').length;
-      const status = empresa.ativo === false ? "Inativa" : "Ativa";
-      return { ...empresa, beneficiariosCount, adminsCount, status };
-    }).filter(empresa => {
-      const matchesSearch = (empresa.nome_fantasia && empresa.nome_fantasia.toLowerCase().includes(searchTerm.toLowerCase())) || (empresa.razao_social && empresa.razao_social.toLowerCase().includes(searchTerm.toLowerCase())) || (empresa.cnpj && empresa.cnpj.includes(searchTerm));
-      const matchesStatus = statusFilter === 'all' || empresa.status === statusFilter;
+    const term = searchTerm.toLowerCase();
+    return matrizesComGrupo.filter(matriz => {
+      const bate = (e) => (e.nome_fantasia || '').toLowerCase().includes(term) || (e.razao_social || '').toLowerCase().includes(term) || (e.cnpj || '').includes(searchTerm);
+      const matchesSearch = !searchTerm || bate(matriz) || matriz.filiais.some(bate);
+      const matchesStatus = statusFilter === 'all' || matriz.status === statusFilter || matriz.filiais.some(f => f.status === statusFilter);
       return matchesSearch && matchesStatus;
     });
-  }, [empresas, beneficiarios, users, searchTerm, statusFilter]);
+  }, [matrizesComGrupo, searchTerm, statusFilter]);
 
   const sortedEmpresas = useMemo(() =>
     [...filteredEmpresas].sort((a, b) =>
@@ -774,8 +804,16 @@ const CEODashboard = () => {
 
   const deleteMatriz = async (id) => {
     try {
-      const todasFiliais = empresas.filter(e => e.empresa_matriz_id === id);
-      const todasIds = [id, ...todasFiliais.map(f => f.id)];
+      const todasFiliais = empresasService.getFiliais(empresas, id);
+      if (todasFiliais.length > 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Não é possível excluir',
+          description: `Este cliente tem ${todasFiliais.length} filial(is) cadastrada(s). Remova as filiais primeiro (dentro do detalhe do cliente) antes de excluir a matriz.`,
+        });
+        return;
+      }
+      const todasIds = [id];
 
       const apolicesComContrato = apolices.filter(a => todasIds.includes(Number(a.empresa_id)) && a.contrato_url);
       if (apolicesComContrato.length > 0) {
@@ -1341,6 +1379,7 @@ const CEODashboard = () => {
                         <Table>
                           <TableHeader>
                             <TableRow>
+                              <TableHead className="w-8"></TableHead>
                               <TableHead>Empresa</TableHead>
                               <TableHead>CNPJ</TableHead>
                               <TableHead className="text-center">Beneficiários</TableHead>
@@ -1350,40 +1389,78 @@ const CEODashboard = () => {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {paginatedEmpresas.map((empresa) => (
-                              <TableRow key={empresa.id}>
-                                <TableCell>
-                                  <div className="font-medium">{empresa.nome_fantasia}</div>
-                                  <div className="text-xs text-muted-foreground">{empresa.razao_social}</div>
-                                </TableCell>
-                                <TableCell>{formatCpfCnpj(empresa.cnpj)}</TableCell>
-                                <TableCell className="text-center">{empresa.beneficiariosCount}</TableCell>
-                                <TableCell className="text-center">{empresa.adminsCount}</TableCell>
-                                <TableCell>
-                                  <Badge className={empresa.status === 'Ativa' ? 'bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800 hover:bg-green-200' : 'bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800 hover:bg-red-200'}>{empresa.status}</Badge>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem onClick={() => navigate(`/admin/cliente/${empresa.id}`)}>Acessar</DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => handleViewCompany(empresa)}>Visualizar</DropdownMenuItem>
-                                      {empresa.tipo === 'MATRIZ' && (
-                                        <>
+                            {paginatedEmpresas.map((empresa) => {
+                              const temFiliais = empresa.filiais.length > 0;
+                              const isExpanded = expandedFiliaisIds.has(empresa.id);
+                              return (
+                                <React.Fragment key={empresa.id}>
+                                  <TableRow>
+                                    <TableCell>
+                                      {temFiliais && (
+                                        <button onClick={() => toggleFiliaisExpand(empresa.id)} className="text-gray-400 hover:text-gray-600">
+                                          <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                        </button>
+                                      )}
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="font-medium flex items-center gap-2">
+                                        {empresa.nome_fantasia}
+                                        {temFiliais && (
+                                          <span className="text-xs text-gray-400 font-normal">
+                                            ({empresa.filiais.length} filial{empresa.filiais.length > 1 ? 'is' : ''})
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground">{empresa.razao_social}</div>
+                                    </TableCell>
+                                    <TableCell>{formatCpfCnpj(empresa.cnpj)}</TableCell>
+                                    <TableCell className="text-center">{empresa.beneficiariosCount}</TableCell>
+                                    <TableCell className="text-center">{empresa.adminsCount}</TableCell>
+                                    <TableCell>
+                                      <Badge className={empresa.status === 'Ativa' ? 'bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800 hover:bg-green-200' : 'bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800 hover:bg-red-200'}>{empresa.status}</Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuItem onClick={() => navigate(`/admin/cliente/${empresa.id}`)}>Acessar</DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => handleViewCompany(empresa)}>Visualizar</DropdownMenuItem>
                                           <DropdownMenuItem onClick={() => openEditEmpresaModal(empresa)}>Editar acesso</DropdownMenuItem>
                                           <DropdownMenuItem onClick={() => openAddFilialModal(empresa)}>Adicionar filial</DropdownMenuItem>
                                           <DropdownMenuItem onClick={() => { if (window.confirm('Excluir este cliente e sua conta de acesso? Só é possível se não houver filiais cadastradas.')) deleteMatriz(empresa.id); }} className="text-red-600 focus:text-red-600">
                                             Excluir
                                           </DropdownMenuItem>
-                                        </>
-                                      )}
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </TableCell>
-                              </TableRow>
-                            ))}
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </TableCell>
+                                  </TableRow>
+                                  {isExpanded && empresa.filiais.map(filial => (
+                                    <TableRow key={filial.id} className="bg-gray-50/70">
+                                      <TableCell></TableCell>
+                                      <TableCell>
+                                        <div className="flex items-center gap-1.5 text-sm">
+                                          <span className="text-gray-300">└─</span>
+                                          <span className="font-medium text-gray-700">{filial.nome_fantasia}</span>
+                                          <Badge className="bg-white text-gray-500 border text-[10px] px-1.5 py-0 hover:bg-white hover:text-gray-500">Filial</Badge>
+                                        </div>
+                                        <div className="text-xs text-muted-foreground pl-5">{filial.razao_social}</div>
+                                      </TableCell>
+                                      <TableCell>{formatCpfCnpj(filial.cnpj)}</TableCell>
+                                      <TableCell className="text-center">{filial.beneficiariosCount}</TableCell>
+                                      <TableCell className="text-center">{filial.adminsCount}</TableCell>
+                                      <TableCell>
+                                        <Badge className={filial.status === 'Ativa' ? 'bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800' : 'bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800'}>{filial.status}</Badge>
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                        <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/cliente/${empresa.id}`)}>Ver detalhes</Button>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </React.Fragment>
+                              );
+                            })}
                           </TableBody>
                         </Table>
                       </div>
@@ -1392,7 +1469,6 @@ const CEODashboard = () => {
                       <div className="sm:hidden space-y-2">
                         {paginatedEmpresas.map((empresa) => {
                           const isOpen = expandedEmpresaId === empresa.id;
-                          const isFilial = !!empresa.empresa_matriz_id;
                           const displayName = empresa.razao_social || empresa.nome_fantasia;
                           return (
                             <div key={empresa.id} className="rounded-lg border bg-white overflow-hidden">
@@ -1401,34 +1477,44 @@ const CEODashboard = () => {
                                 onClick={() => setExpandedEmpresaId(isOpen ? null : empresa.id)}
                               >
                                 <div className="flex items-start justify-between gap-2">
-                                  <p className="font-semibold text-sm leading-snug">
-                                    {isFilial ? <span className="text-gray-400 mr-1">└─</span> : null}{displayName}
-                                  </p>
+                                  <p className="font-semibold text-sm leading-snug">{displayName}</p>
                                   <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 mt-0.5 ${isOpen ? 'rotate-180' : ''}`} />
                                 </div>
-                                <div className="flex items-center gap-2 mt-1">
+                                <div className="flex items-center gap-2 mt-1 flex-wrap">
                                   <span className="text-xs text-muted-foreground">{formatCpfCnpj(empresa.cnpj)}</span>
                                   <Badge className={empresa.status === 'Ativa' ? 'bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800 text-xs hover:bg-green-100 hover:text-green-800' : 'bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800 text-xs hover:bg-red-100 hover:text-red-800'}>{empresa.status}</Badge>
+                                  {empresa.filiais.length > 0 && (
+                                    <span className="text-xs text-gray-400">{empresa.filiais.length} filial{empresa.filiais.length > 1 ? 'is' : ''}</span>
+                                  )}
                                 </div>
                               </button>
                               {isOpen && (
                                 <div className="px-4 pb-4 border-t pt-3 space-y-2 bg-gray-50">
-                                  {isFilial && empresa.matriz && (
-                                    <div className="text-xs text-muted-foreground">Matriz: {empresa.matriz.nome_fantasia || empresa.matriz.razao_social}</div>
-                                  )}
                                   <div className="grid grid-cols-2 gap-2 text-sm">
-                                    <div><span className="text-xs text-muted-foreground block">Beneficiários</span><span className="font-semibold">{empresa.beneficiariosCount}</span></div>
-                                    <div><span className="text-xs text-muted-foreground block">ADMs</span><span className="font-semibold">{empresa.adminsCount}</span></div>
+                                    <div><span className="text-xs text-muted-foreground block">Beneficiários (grupo)</span><span className="font-semibold">{empresa.beneficiariosCount}</span></div>
+                                    <div><span className="text-xs text-muted-foreground block">ADMs (grupo)</span><span className="font-semibold">{empresa.adminsCount}</span></div>
                                   </div>
                                   <div className="grid grid-cols-2 gap-2 mt-2">
                                     <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white" onClick={() => navigate(`/admin/cliente/${empresa.id}`)}>Acessar</Button>
                                     <Button size="sm" variant="outline" onClick={() => handleViewCompany(empresa)}>Visualizar</Button>
                                   </div>
-                                  {empresa.tipo === 'MATRIZ' && (
-                                    <div className="grid grid-cols-3 gap-2">
-                                      <Button size="sm" variant="outline" onClick={() => openEditEmpresaModal(empresa)}>Editar</Button>
-                                      <Button size="sm" variant="outline" onClick={() => openAddFilialModal(empresa)}>+ Filial</Button>
-                                      <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700" onClick={() => { if (window.confirm('Excluir este cliente e sua conta de acesso? Só é possível se não houver filiais cadastradas.')) deleteMatriz(empresa.id); }}>Excluir</Button>
+                                  <div className="grid grid-cols-3 gap-2">
+                                    <Button size="sm" variant="outline" onClick={() => openEditEmpresaModal(empresa)}>Editar</Button>
+                                    <Button size="sm" variant="outline" onClick={() => openAddFilialModal(empresa)}>+ Filial</Button>
+                                    <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700" onClick={() => { if (window.confirm('Excluir este cliente e sua conta de acesso? Só é possível se não houver filiais cadastradas.')) deleteMatriz(empresa.id); }}>Excluir</Button>
+                                  </div>
+                                  {empresa.filiais.length > 0 && (
+                                    <div className="pt-2 border-t space-y-1.5">
+                                      <p className="text-xs font-medium text-gray-500">Filiais</p>
+                                      {empresa.filiais.map(filial => (
+                                        <div key={filial.id} className="flex items-center justify-between gap-2 bg-white rounded-lg border px-3 py-2">
+                                          <div className="min-w-0">
+                                            <p className="text-xs font-medium text-gray-700 truncate">{filial.nome_fantasia}</p>
+                                            <p className="text-xs text-muted-foreground">{formatCpfCnpj(filial.cnpj)}</p>
+                                          </div>
+                                          <Button size="sm" variant="ghost" className="shrink-0 h-7 text-xs" onClick={() => navigate(`/admin/cliente/${empresa.id}`)}>Ver</Button>
+                                        </div>
+                                      ))}
                                     </div>
                                   )}
                                 </div>

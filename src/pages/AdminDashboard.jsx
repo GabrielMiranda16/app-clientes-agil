@@ -364,8 +364,16 @@ const AdminDashboard = () => {
     if (!canManage) return;
     try {
       // Collect all empresa IDs (matriz + filiais)
-      const todasFiliais = empresas.filter(e => e.empresa_matriz_id === id);
-      const todasIds = [id, ...todasFiliais.map(f => f.id)];
+      const todasFiliais = empresasService.getFiliais(empresas, id);
+      if (todasFiliais.length > 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Não é possível excluir',
+          description: `Este cliente tem ${todasFiliais.length} filial(is) cadastrada(s). Remova as filiais primeiro (dentro do detalhe do cliente) antes de excluir a matriz.`,
+        });
+        return;
+      }
+      const todasIds = [id];
 
       // Delete storage files for apolices with contrato_url
       const apolicesComContrato = apolices.filter(a => todasIds.includes(Number(a.empresa_id)) && a.contrato_url);

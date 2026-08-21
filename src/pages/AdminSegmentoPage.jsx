@@ -103,8 +103,8 @@ const AdminSegmentoPage = () => {
 
         const matrizData = todasEmpresas.find(e => e.id === id && e.tipo === 'MATRIZ');
         if (!matrizData) { navigate('/admin/clientes'); return; }
-        const filiaisData = todasEmpresas.filter(e => e.tipo === 'FILIAL' && e.empresa_matriz_id === id);
-        const todasIds = [id, ...filiaisData.map(f => f.id)];
+        const filiaisData = empresasService.getFiliais(todasEmpresas, id);
+        const todasIds = empresasService.getGrupoIds(todasEmpresas, id);
 
         setMatriz(matrizData);
         setFiliais(filiaisData);
@@ -331,7 +331,7 @@ const AdminSegmentoPage = () => {
       setApolices(restantes);
 
       // Cancela todas as solicitações pendentes de todas as empresas do grupo
-      const todasIds = todasEmpresas.map(e => e.id);
+      const todasIds = [matriz.id, ...filiais.map(f => f.id)];
       await Promise.allSettled(todasIds.map(eid => solicitacoesService.cancelPendingByEmpresa(eid)));
       setSolicitacoes(prev => prev.map(s =>
         todasIds.includes(Number(s.empresa_id)) &&

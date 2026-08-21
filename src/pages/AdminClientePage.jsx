@@ -75,8 +75,8 @@ const AdminClientePage = () => {
         const matrizEncontrada = todasEmpresas.find(e => e.id === id && e.tipo === 'MATRIZ');
         if (!matrizEncontrada) { navigate('/admin/clientes'); return; }
 
-        const filiaisData = todasEmpresas.filter(e => e.tipo === 'FILIAL' && e.empresa_matriz_id === id);
-        const todasIds = [id, ...filiaisData.map(f => f.id)];
+        const filiaisData = empresasService.getFiliais(todasEmpresas, id);
+        const todasIds = empresasService.getGrupoIds(todasEmpresas, id);
 
         setMatriz(matrizEncontrada);
         setFiliais(filiaisData);
