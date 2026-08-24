@@ -71,7 +71,7 @@ const BeneficiarioFormFields = ({ form, setForm, titulares, empresaOptions, show
         <div>
           <Label className="text-xs">Empresa *</Label>
           <Select value={form.empresa_id} onValueChange={(v) => set('empresa_id', v)}>
-            <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Selecione..." className="truncate min-w-0" /></SelectTrigger>
             <SelectContent>{empresaOptions}</SelectContent>
           </Select>
         </div>
@@ -85,7 +85,7 @@ const BeneficiarioFormFields = ({ form, setForm, titulares, empresaOptions, show
           <div>
             <Label className="text-xs">Parentesco *</Label>
             <Select value={form.parentesco} onValueChange={(v) => set('parentesco', v)}>
-              <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Selecione..." className="truncate min-w-0" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="TITULAR">TITULAR</SelectItem>
                 <SelectItem value="CONJUGE">CÔNJUGE</SelectItem>
@@ -103,7 +103,7 @@ const BeneficiarioFormFields = ({ form, setForm, titulares, empresaOptions, show
               <Input value="" disabled placeholder="Não aplicável para titulares" />
             ) : (
               <Select value={form.nome_titular} onValueChange={(v) => set('nome_titular', v)} disabled={titulares.length === 0}>
-                <SelectTrigger><SelectValue placeholder={titulares.length > 0 ? 'Selecione o titular...' : 'Nenhum titular cadastrado'} /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={titulares.length > 0 ? 'Selecione o titular...' : 'Nenhum titular cadastrado'} className="truncate min-w-0" /></SelectTrigger>
                 <SelectContent>
                   {titulares.map(t => <SelectItem key={t.id} value={t.nome_completo}>{t.nome_completo}</SelectItem>)}
                 </SelectContent>
@@ -119,7 +119,7 @@ const BeneficiarioFormFields = ({ form, setForm, titulares, empresaOptions, show
           <div>
             <Label className="text-xs">Situação Geral *</Label>
             <Select value={form.situacao} onValueChange={(v) => set('situacao', v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger><SelectValue className="truncate min-w-0" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="ATIVO">ATIVO</SelectItem>
                 <SelectItem value="INATIVO">INATIVO</SelectItem>
@@ -732,17 +732,17 @@ const GestaoGeralTestePage = () => {
 
         <Tabs defaultValue="beneficiarios" className="space-y-4">
           <TabsList className="bg-white/10 w-full h-auto p-1 gap-1 grid grid-cols-2 sm:grid-cols-4">
-            <TabsTrigger value="beneficiarios" className="text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
-              <Users className="h-4 w-4 mr-1.5" /> Beneficiários <span className="ml-1.5 bg-white/20 text-white text-xs px-1.5 py-0.5 rounded-full">{beneficiarios.length}</span>
+            <TabsTrigger value="beneficiarios" className="group text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
+              <Users className="h-4 w-4 mr-1.5" /> Beneficiários <span className="ml-1.5 bg-white/20 text-white group-data-[state=active]:bg-[#003580]/10 group-data-[state=active]:text-[#003580] text-xs px-1.5 py-0.5 rounded-full">{beneficiarios.length}</span>
             </TabsTrigger>
-            <TabsTrigger value="apolices" className="text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
-              <FileText className="h-4 w-4 mr-1.5" /> Apólices <span className="ml-1.5 bg-white/20 text-white text-xs px-1.5 py-0.5 rounded-full">{apolices.length}</span>
+            <TabsTrigger value="apolices" className="group text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
+              <FileText className="h-4 w-4 mr-1.5" /> Apólices <span className="ml-1.5 bg-white/20 text-white group-data-[state=active]:bg-[#003580]/10 group-data-[state=active]:text-[#003580] text-xs px-1.5 py-0.5 rounded-full">{apolices.length}</span>
             </TabsTrigger>
-            <TabsTrigger value="solicitacoes" className="text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
-              <ClipboardList className="h-4 w-4 mr-1.5" /> Solicitações <span className="ml-1.5 bg-white/20 text-white text-xs px-1.5 py-0.5 rounded-full">{solicitacoes.filter(s => ['PENDENTE', 'EM PROCESSAMENTO'].includes(s.status)).length}</span>
+            <TabsTrigger value="solicitacoes" className="group text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
+              <ClipboardList className="h-4 w-4 mr-1.5" /> Solicitações <span className="ml-1.5 bg-white/20 text-white group-data-[state=active]:bg-[#003580]/10 group-data-[state=active]:text-[#003580] text-xs px-1.5 py-0.5 rounded-full">{solicitacoes.length}</span>
             </TabsTrigger>
-            <TabsTrigger value="coparticipacao" className="text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
-              <DollarSign className="h-4 w-4 mr-1.5" /> Coparticipação <span className="ml-1.5 bg-white/20 text-white text-xs px-1.5 py-0.5 rounded-full">{coparticipacoes.length}</span>
+            <TabsTrigger value="coparticipacao" className="group text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
+              <DollarSign className="h-4 w-4 mr-1.5" /> Coparticipação <span className="ml-1.5 bg-white/20 text-white group-data-[state=active]:bg-[#003580]/10 group-data-[state=active]:text-[#003580] text-xs px-1.5 py-0.5 rounded-full">{coparticipacoes.length}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -768,14 +768,14 @@ const GestaoGeralTestePage = () => {
                         <div>
                           <Label className="text-xs">Empresa (CNPJ)</Label>
                           <Select value={filtroEmpresaBen} onValueChange={setFiltroEmpresaBen}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectTrigger><SelectValue className="truncate min-w-0" /></SelectTrigger>
                             <SelectContent><SelectItem value="todas">Todas as empresas</SelectItem>{empresaOptions}</SelectContent>
                           </Select>
                         </div>
                         <div>
                           <Label className="text-xs">Apólice</Label>
                           <Select value={filtroApoliceBen} onValueChange={setFiltroApoliceBen}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectTrigger><SelectValue className="truncate min-w-0" /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="todas">Todas as apólices</SelectItem>
                               {apolices.map(a => <SelectItem key={a.id} value={String(a.id)}>{apoliceLabel(a)} — {empresaLabel(a.empresa_id)}</SelectItem>)}
@@ -785,7 +785,7 @@ const GestaoGeralTestePage = () => {
                         <div>
                           <Label className="text-xs">Situação</Label>
                           <Select value={filtroSituacaoBen} onValueChange={setFiltroSituacaoBen}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectTrigger><SelectValue className="truncate min-w-0" /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="todos">Todas situações</SelectItem>
                               <SelectItem value="ATIVO">Ativos</SelectItem>
@@ -797,7 +797,7 @@ const GestaoGeralTestePage = () => {
                         <div>
                           <Label className="text-xs">Parentesco</Label>
                           <Select value={filtroParentescoBen} onValueChange={setFiltroParentescoBen}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectTrigger><SelectValue className="truncate min-w-0" /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="todos">Todos</SelectItem>
                               <SelectItem value="TITULAR">Titulares</SelectItem>
@@ -980,7 +980,7 @@ const GestaoGeralTestePage = () => {
               </CardHeader>
               <CardContent className="space-y-3">
                 <Select value={filtroEmpresaApolice} onValueChange={setFiltroEmpresaApolice}>
-                  <SelectTrigger className="w-56"><SelectValue placeholder="Empresa (CNPJ)" /></SelectTrigger>
+                  <SelectTrigger className="w-56"><SelectValue placeholder="Empresa (CNPJ)" className="truncate min-w-0" /></SelectTrigger>
                   <SelectContent><SelectItem value="todas">Todas as empresas</SelectItem>{empresaOptions}</SelectContent>
                 </Select>
 
@@ -1007,7 +1007,7 @@ const GestaoGeralTestePage = () => {
                               <div>
                                 <Label className="text-xs">Tipo</Label>
                                 <Select value={apoliceForm.tipo} onValueChange={(v) => setApoliceForm(prev => ({ ...prev, tipo: v }))}>
-                                  <SelectTrigger><SelectValue /></SelectTrigger>
+                                  <SelectTrigger><SelectValue className="truncate min-w-0" /></SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="saude">Saúde</SelectItem>
                                     <SelectItem value="vida">Vida</SelectItem>
@@ -1045,7 +1045,7 @@ const GestaoGeralTestePage = () => {
               <CardHeader><CardTitle>Solicitações</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <Select value={filtroStatusSol} onValueChange={setFiltroStatusSol}>
-                  <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-56"><SelectValue className="truncate min-w-0" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="abertas">Pendentes + Em Processamento</SelectItem>
                     <SelectItem value="PENDENTE">Pendentes</SelectItem>
@@ -1121,7 +1121,7 @@ const GestaoGeralTestePage = () => {
               <CardHeader><CardTitle>Coparticipação</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <Select value={filtroEmpresaCopart} onValueChange={setFiltroEmpresaCopart}>
-                  <SelectTrigger className="w-56"><SelectValue placeholder="Empresa (CNPJ)" /></SelectTrigger>
+                  <SelectTrigger className="w-56"><SelectValue placeholder="Empresa (CNPJ)" className="truncate min-w-0" /></SelectTrigger>
                   <SelectContent><SelectItem value="todas">Todas as empresas</SelectItem>{empresaOptions}</SelectContent>
                 </Select>
 
@@ -1195,7 +1195,7 @@ const GestaoGeralTestePage = () => {
                       <div className="sm:col-span-2">
                         <Label className="text-xs">Apólice (de qualquer empresa do grupo)</Label>
                         <Select value={f.apolice_id} onValueChange={(v) => setVinculoForm(prev => ({ ...prev, [key]: { ...prev[key], apolice_id: v } }))}>
-                          <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                          <SelectTrigger><SelectValue placeholder="Selecione..." className="truncate min-w-0" /></SelectTrigger>
                           <SelectContent>
                             {apolicesDoTipo.map(a => <SelectItem key={a.id} value={String(a.id)}>{apoliceLabel(a)} — {empresaLabel(a.empresa_id)}</SelectItem>)}
                             {apolicesDoTipo.length === 0 && <div className="px-3 py-2 text-xs text-gray-400">Nenhuma apólice de {label.toLowerCase()} nesse grupo ainda</div>}
@@ -1267,7 +1267,7 @@ const GestaoGeralTestePage = () => {
                     <div>
                       <Label className="text-xs">Apólice (de qualquer empresa do grupo)</Label>
                       <Select value={solDadosForm.apolice_id} onValueChange={(v) => setSolDadosForm(prev => ({ ...prev, apolice_id: v }))}>
-                        <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder="Selecione..." className="truncate min-w-0" /></SelectTrigger>
                         <SelectContent>
                           {apolicesDoTipo.map(a => <SelectItem key={a.id} value={String(a.id)}>{apoliceLabel(a)} — {empresaLabel(a.empresa_id)}</SelectItem>)}
                           {apolicesDoTipo.length === 0 && <div className="px-3 py-2 text-xs text-gray-400">Nenhuma apólice de {s.tipo_plano} nesse grupo ainda</div>}
@@ -1318,14 +1318,14 @@ const GestaoGeralTestePage = () => {
             <div>
               <Label>Empresa</Label>
               <Select value={addApForm.empresa_id} onValueChange={(v) => setAddApForm(prev => ({ ...prev, empresa_id: v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecione..." className="truncate min-w-0" /></SelectTrigger>
                 <SelectContent>{empresaOptions}</SelectContent>
               </Select>
             </div>
             <div>
               <Label>Tipo</Label>
               <Select value={addApForm.tipo} onValueChange={(v) => setAddApForm(prev => ({ ...prev, tipo: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue className="truncate min-w-0" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="saude">Saúde</SelectItem>
                   <SelectItem value="vida">Vida</SelectItem>
