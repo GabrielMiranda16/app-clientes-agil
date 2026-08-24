@@ -190,8 +190,9 @@ const GestaoGeralTestePage = () => {
 
   const [filtroEmpresaBen, setFiltroEmpresaBen] = useState('todas');
   const [filtroApoliceBen, setFiltroApoliceBen] = useState('todas');
-  const [filtroIdadeMin, setFiltroIdadeMin] = useState('');
-  const [filtroIdadeMax, setFiltroIdadeMax] = useState('');
+  const [filtroSituacaoBen, setFiltroSituacaoBen] = useState('todos');
+  const [filtroParentescoBen, setFiltroParentescoBen] = useState('todos');
+  const [ordenarBen, setOrdenarBen] = useState('nome_asc');
   const [filtroEmpresaApolice, setFiltroEmpresaApolice] = useState('todas');
   const [filtroEmpresaCopart, setFiltroEmpresaCopart] = useState('todas');
   const [busca, setBusca] = useState('');
@@ -269,7 +270,7 @@ const GestaoGeralTestePage = () => {
   };
 
   useEffect(() => { if (matrizId) load(); }, [matrizId]);
-  useEffect(() => { setPaginaBen(1); }, [filtroEmpresaBen, filtroApoliceBen, busca, filtroIdadeMin, filtroIdadeMax]);
+  useEffect(() => { setPaginaBen(1); }, [filtroEmpresaBen, filtroApoliceBen, busca, filtroSituacaoBen, filtroParentescoBen]);
 
   const empresaLabel = (empresaId) => {
     const e = todasEmpresas.find(x => x.id === Number(empresaId));
@@ -286,22 +287,25 @@ const GestaoGeralTestePage = () => {
   const planosDoBeneficiario = (benId) => planos.filter(p => p.beneficiario_id === benId);
 
   const beneficiariosFiltrados = useMemo(() => {
-    return beneficiarios.filter(b => {
+    const lista = beneficiarios.filter(b => {
       if (filtroEmpresaBen !== 'todas' && Number(b.empresa_id) !== Number(filtroEmpresaBen)) return false;
       if (filtroApoliceBen !== 'todas') {
         const vinculado = planos.some(p => p.beneficiario_id === b.id && Number(p.apolice_id) === Number(filtroApoliceBen));
         if (!vinculado) return false;
       }
       if (busca && !(b.nome_completo || '').toLowerCase().includes(busca.toLowerCase()) && !(b.cpf || '').includes(busca)) return false;
-      if (filtroIdadeMin !== '' || filtroIdadeMax !== '') {
-        const idade = calculateAge(b.data_nascimento);
-        if (idade === '') return false;
-        if (filtroIdadeMin !== '' && idade < Number(filtroIdadeMin)) return false;
-        if (filtroIdadeMax !== '' && idade > Number(filtroIdadeMax)) return false;
-      }
+      if (filtroSituacaoBen !== 'todos' && b.situacao !== filtroSituacaoBen) return false;
+      if (filtroParentescoBen === 'TITULAR' && b.parentesco !== 'TITULAR') return false;
+      if (filtroParentescoBen === 'DEPENDENTE' && b.parentesco === 'TITULAR') return false;
       return true;
     });
-  }, [beneficiarios, planos, filtroEmpresaBen, filtroApoliceBen, busca, filtroIdadeMin, filtroIdadeMax]);
+    const ordenada = [...lista];
+    if (ordenarBen === 'nome_asc') ordenada.sort((a, b) => (a.nome_completo || '').localeCompare(b.nome_completo || ''));
+    if (ordenarBen === 'nome_desc') ordenada.sort((a, b) => (b.nome_completo || '').localeCompare(a.nome_completo || ''));
+    if (ordenarBen === 'idade_asc') ordenada.sort((a, b) => new Date(b.data_nascimento || 0) - new Date(a.data_nascimento || 0));
+    if (ordenarBen === 'idade_desc') ordenada.sort((a, b) => new Date(a.data_nascimento || 0) - new Date(b.data_nascimento || 0));
+    return ordenada;
+  }, [beneficiarios, planos, filtroEmpresaBen, filtroApoliceBen, busca, filtroSituacaoBen, filtroParentescoBen, ordenarBen]);
 
   const BEN_POR_PAGINA = 20;
   const totalPaginasBen = Math.max(1, Math.ceil(beneficiariosFiltrados.length / BEN_POR_PAGINA));
@@ -739,11 +743,32 @@ const GestaoGeralTestePage = () => {
                       {apolices.map(a => <SelectItem key={a.id} value={String(a.id)}>{apoliceLabel(a)} — {empresaLabel(a.empresa_id)}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                  <div className="flex items-center gap-1">
-                    <Input type="number" min="0" placeholder="Idade de" value={filtroIdadeMin} onChange={e => setFiltroIdadeMin(e.target.value)} className="w-24" />
-                    <span className="text-gray-400 text-sm">até</span>
-                    <Input type="number" min="0" placeholder="Idade até" value={filtroIdadeMax} onChange={e => setFiltroIdadeMax(e.target.value)} className="w-24" />
-                  </div>
+                  <Select value={filtroSituacaoBen} onValueChange={setFiltroSituacaoBen}>
+                    <SelectTrigger className="w-36"><SelectValue placeholder="Situação" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todas situações</SelectItem>
+                      <SelectItem value="ATIVO">Ativos</SelectItem>
+                      <SelectItem value="INATIVO">Inativos</SelectItem>
+                      <SelectItem value="AFASTADO">Afastados</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={filtroParentescoBen} onValueChange={setFiltroParentescoBen}>
+                    <SelectTrigger className="w-36"><SelectValue placeholder="Parentesco" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="TITULAR">Titulares</SelectItem>
+                      <SelectItem value="DEPENDENTE">Dependentes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={ordenarBen} onValueChange={setOrdenarBen}>
+                    <SelectTrigger className="w-44"><SelectValue placeholder="Ordenar por" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="nome_asc">Nome A-Z</SelectItem>
+                      <SelectItem value="nome_desc">Nome Z-A</SelectItem>
+                      <SelectItem value="idade_asc">Idade: menor → maior</SelectItem>
+                      <SelectItem value="idade_desc">Idade: maior → menor</SelectItem>
+                    </SelectContent>
+                  </Select>
                   {selectedIds.size > 0 && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
