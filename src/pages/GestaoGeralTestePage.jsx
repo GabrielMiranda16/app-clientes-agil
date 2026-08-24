@@ -189,6 +189,7 @@ const GestaoGeralTestePage = () => {
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   const [expandedBenId, setExpandedBenId] = useState(null);
+  const [expandedPlanoDetail, setExpandedPlanoDetail] = useState(null);
 
   const [isEditBenOpen, setIsEditBenOpen] = useState(false);
   const [editBenTarget, setEditBenTarget] = useState(null);
@@ -404,7 +405,12 @@ const GestaoGeralTestePage = () => {
         ativo: !!vinculo,
         apolice_id: vinculo ? String(vinculo.apolice_id) : '',
         numero_carteirinha: vinculo?.numero_carteirinha || '',
+        link_carteirinha: vinculo?.link_carteirinha || '',
         data_inclusao: vinculo?.data_inclusao || '',
+        data_exclusao: vinculo?.data_exclusao || '',
+        codigo_empresa: vinculo?.codigo_empresa || '',
+        produto: vinculo?.produto || '',
+        acomodacao: vinculo?.acomodacao || '',
       };
     });
     setVinculoForm(vform);
@@ -428,7 +434,12 @@ const GestaoGeralTestePage = () => {
           ativo: f.ativo,
           apoliceId: f.apolice_id ? Number(f.apolice_id) : null,
           numero_carteirinha: f.numero_carteirinha || null,
+          link_carteirinha: f.link_carteirinha || null,
           data_inclusao: f.data_inclusao || null,
+          data_exclusao: f.data_exclusao || null,
+          codigo_empresa: f.codigo_empresa || null,
+          produto: f.produto || null,
+          acomodacao: key === 'saude' ? (f.acomodacao || null) : null,
         });
       }
       toast({ title: 'Vínculos atualizados.' });
@@ -649,17 +660,40 @@ const GestaoGeralTestePage = () => {
                               {TIPOS.map(({ key, label }) => {
                                 const vinculo = planosDoBeneficiario(b.id).find(p => p.tipo === key);
                                 const ap = vinculo ? apolices.find(a => a.id === vinculo.apolice_id) : null;
+                                const sub = ap ? subApoliceOf(ap) : {};
+                                const detailKey = `${b.id}-${key}`;
+                                const detailOpen = expandedPlanoDetail === detailKey;
                                 return (
-                                  <div key={key} className="flex items-center gap-2 flex-wrap bg-white border rounded-lg px-3 py-2 text-sm">
-                                    <span className="font-medium w-14 shrink-0">{label}</span>
-                                    {vinculo ? (
-                                      <>
-                                        <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Ativo</Badge>
-                                        <span className="text-gray-600">{ap ? apoliceLabel(ap) : `#${vinculo.apolice_id}`}</span>
-                                        {vinculo.numero_carteirinha && <span className="text-gray-400">· carteirinha {vinculo.numero_carteirinha}</span>}
-                                      </>
-                                    ) : (
-                                      <Badge variant="outline" className="text-gray-400">Inativo</Badge>
+                                  <div key={key} className="bg-white border rounded-lg overflow-hidden">
+                                    <div className="flex items-center gap-2 flex-wrap px-3 py-2 text-sm">
+                                      <span className="font-medium w-14 shrink-0">{label}</span>
+                                      {vinculo ? (
+                                        <>
+                                          <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Ativo</Badge>
+                                          <span className="text-gray-600">{ap ? apoliceLabel(ap) : `#${vinculo.apolice_id}`}</span>
+                                          {vinculo.numero_carteirinha && <span className="text-gray-400">· carteirinha {vinculo.numero_carteirinha}</span>}
+                                          <button type="button" className="ml-auto text-gray-400 hover:text-[#003580] flex items-center gap-1 text-xs" onClick={() => setExpandedPlanoDetail(detailOpen ? null : detailKey)}>
+                                            Ampliar <ChevronDown className={`h-3.5 w-3.5 transition-transform ${detailOpen ? 'rotate-180' : ''}`} />
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <Badge variant="outline" className="text-gray-400">Inativo</Badge>
+                                      )}
+                                    </div>
+                                    {vinculo && detailOpen && (
+                                      <div className="border-t bg-gray-50 px-3 py-2 grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-2 text-xs">
+                                        <div><span className="block text-gray-400">Nome do Plano</span><span className="text-gray-700">{sub.plano || '—'}</span></div>
+                                        {key === 'saude' && <div><span className="block text-gray-400">Acomodação</span><span className="text-gray-700">{vinculo.acomodacao || '—'}</span></div>}
+                                        <div><span className="block text-gray-400">Código da Empresa</span><span className="text-gray-700">{vinculo.codigo_empresa || '—'}</span></div>
+                                        <div><span className="block text-gray-400">Produto</span><span className="text-gray-700">{vinculo.produto || '—'}</span></div>
+                                        <div><span className="block text-gray-400">Data Inclusão</span><span className="text-gray-700">{vinculo.data_inclusao || '—'}</span></div>
+                                        <div><span className="block text-gray-400">Data Exclusão</span><span className="text-gray-700">{vinculo.data_exclusao || '—'}</span></div>
+                                        <div><span className="block text-gray-400">Número Carteirinha</span><span className="text-gray-700">{vinculo.numero_carteirinha || '—'}</span></div>
+                                        <div>
+                                          <span className="block text-gray-400">Link Carteirinha</span>
+                                          {vinculo.link_carteirinha ? <a href={vinculo.link_carteirinha} target="_blank" rel="noreferrer" className="text-[#003580] underline">abrir</a> : <span className="text-gray-700">—</span>}
+                                        </div>
+                                      </div>
                                     )}
                                   </div>
                                 );
@@ -858,9 +892,31 @@ const GestaoGeralTestePage = () => {
                         <Input value={f.numero_carteirinha} onChange={e => setVinculoForm(prev => ({ ...prev, [key]: { ...prev[key], numero_carteirinha: e.target.value } }))} />
                       </div>
                       <div>
+                        <Label className="text-xs">Link carteirinha</Label>
+                        <Input value={f.link_carteirinha} onChange={e => setVinculoForm(prev => ({ ...prev, [key]: { ...prev[key], link_carteirinha: e.target.value } }))} />
+                      </div>
+                      <div>
                         <Label className="text-xs">Data inclusão</Label>
                         <Input type="date" value={f.data_inclusao} onChange={e => setVinculoForm(prev => ({ ...prev, [key]: { ...prev[key], data_inclusao: e.target.value } }))} />
                       </div>
+                      <div>
+                        <Label className="text-xs">Data exclusão</Label>
+                        <Input type="date" value={f.data_exclusao} onChange={e => setVinculoForm(prev => ({ ...prev, [key]: { ...prev[key], data_exclusao: e.target.value } }))} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Código da empresa</Label>
+                        <Input value={f.codigo_empresa} onChange={e => setVinculoForm(prev => ({ ...prev, [key]: { ...prev[key], codigo_empresa: e.target.value } }))} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Produto</Label>
+                        <Input value={f.produto} onChange={e => setVinculoForm(prev => ({ ...prev, [key]: { ...prev[key], produto: e.target.value } }))} />
+                      </div>
+                      {key === 'saude' && (
+                        <div>
+                          <Label className="text-xs">Acomodação</Label>
+                          <Input value={f.acomodacao} onChange={e => setVinculoForm(prev => ({ ...prev, [key]: { ...prev[key], acomodacao: e.target.value } }))} />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
