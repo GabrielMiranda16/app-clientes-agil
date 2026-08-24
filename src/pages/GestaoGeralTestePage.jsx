@@ -12,14 +12,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Plus, ChevronDown, Users, FileText, Search, Trash2 } from 'lucide-react';
+import { Loader2, Plus, ChevronDown, Users, FileText, Search, Trash2, DollarSign } from 'lucide-react';
 import { formatCpfCnpj, applyCpfMask, applyPhoneMask, applyCepMask } from '@/lib/masks';
-import { calculateAge } from '@/lib/utils';
+import { calculateAge, formatCurrency } from '@/lib/utils';
 
 import { empresasService } from '@/services/empresasService';
 import { beneficiariosService } from '@/services/beneficiariosService';
 import { apolicesService } from '@/services/apolicesService';
 import { beneficiarioPlanosService } from '@/services/beneficiarioPlanosService';
+import { coparticipacaoService } from '@/services/coparticipacaoService';
 
 const TIPOS = [
   { key: 'saude', label: 'Saúde' },
@@ -176,10 +177,12 @@ const GestaoGeralTestePage = () => {
   const [apolices, setApolices] = useState([]);
   const [beneficiarios, setBeneficiarios] = useState([]);
   const [planos, setPlanos] = useState([]);
+  const [coparticipacoes, setCoparticipacoes] = useState([]);
 
   const [filtroEmpresaBen, setFiltroEmpresaBen] = useState('todas');
   const [filtroApoliceBen, setFiltroApoliceBen] = useState('todas');
   const [filtroEmpresaApolice, setFiltroEmpresaApolice] = useState('todas');
+  const [filtroEmpresaCopart, setFiltroEmpresaCopart] = useState('todas');
   const [busca, setBusca] = useState('');
 
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -229,14 +232,16 @@ const GestaoGeralTestePage = () => {
       setFiliais(filiaisData);
       setTodasEmpresas(todas);
 
-      const [apData, benData] = await Promise.all([
+      const [apData, benData, copartData] = await Promise.all([
         apolicesService.getApolicesByMatriz(id),
         beneficiariosService.getAllBeneficiarios(),
+        coparticipacaoService.getAllCoparticipacoes().catch(() => []),
       ]);
       const apSVD = apData.filter(a => a.segmento === 'SAUDE_VIDA_ODONTO');
       const benGrupo = benData.filter(b => ids.includes(Number(b.empresa_id)) && !b.data_exclusao);
       setApolices(apSVD);
       setBeneficiarios(benGrupo);
+      setCoparticipacoes(copartData.filter(c => ids.includes(Number(c.empresa_id))));
 
       const planosData = await beneficiarioPlanosService.getByBeneficiarioIds(benGrupo.map(b => b.id));
       setPlanos(planosData);
@@ -279,6 +284,10 @@ const GestaoGeralTestePage = () => {
   const apolicesFiltradas = useMemo(() => {
     return apolices.filter(a => filtroEmpresaApolice === 'todas' || Number(a.empresa_id) === Number(filtroEmpresaApolice));
   }, [apolices, filtroEmpresaApolice]);
+
+  const coparticipacoesFiltradas = useMemo(() => {
+    return coparticipacoes.filter(c => filtroEmpresaCopart === 'todas' || Number(c.empresa_id) === Number(filtroEmpresaCopart));
+  }, [coparticipacoes, filtroEmpresaCopart]);
 
   const contagemBeneficiariosApolice = (apoliceId) =>
     new Set(planos.filter(p => Number(p.apolice_id) === Number(apoliceId)).map(p => p.beneficiario_id)).size;
@@ -548,12 +557,15 @@ const GestaoGeralTestePage = () => {
         </div>
 
         <Tabs defaultValue="beneficiarios" className="space-y-4">
-          <TabsList className="bg-white/10 w-full h-auto p-1 gap-1 grid grid-cols-2">
+          <TabsList className="bg-white/10 w-full h-auto p-1 gap-1 grid grid-cols-3">
             <TabsTrigger value="beneficiarios" className="text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
               <Users className="h-4 w-4 mr-1.5" /> Beneficiários <span className="ml-1.5 bg-white/20 text-white text-xs px-1.5 py-0.5 rounded-full">{beneficiarios.length}</span>
             </TabsTrigger>
             <TabsTrigger value="apolices" className="text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
               <FileText className="h-4 w-4 mr-1.5" /> Apólices <span className="ml-1.5 bg-white/20 text-white text-xs px-1.5 py-0.5 rounded-full">{apolices.length}</span>
+            </TabsTrigger>
+            <TabsTrigger value="coparticipacao" className="text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
+              <DollarSign className="h-4 w-4 mr-1.5" /> Coparticipação <span className="ml-1.5 bg-white/20 text-white text-xs px-1.5 py-0.5 rounded-full">{coparticipacoes.length}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -622,25 +634,34 @@ const GestaoGeralTestePage = () => {
                           <Checkbox checked={selectedIds.has(b.id)} onCheckedChange={() => toggleSelectOne(b.id)} onClick={e => e.stopPropagation()} className="shrink-0" />
                           <button type="button" onClick={() => toggleExpandBen(b)} className="flex-1 flex items-center gap-3 text-left min-w-0">
                             <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-1 text-sm min-w-0">
-                              <span className="font-medium text-gray-800 truncate">{b.nome_completo}</span>
-                              <span className="text-gray-500">{formatCpfCnpj(b.cpf)}</span>
-                              <span className="text-gray-500 capitalize">{(b.parentesco || '—').toLowerCase()}</span>
-                              <span className="text-gray-500">{idade !== '' ? `${idade} anos` : '—'}</span>
+                              <span className="font-medium text-gray-800 truncate min-w-0">{b.nome_completo}</span>
+                              <span className="text-gray-500 truncate min-w-0">{formatCpfCnpj(b.cpf)}</span>
+                              <span className="text-gray-500 capitalize truncate min-w-0">{(b.parentesco || '—').toLowerCase()}</span>
+                              <span className="text-gray-500 truncate min-w-0">{idade !== '' ? `${idade} anos` : '—'}</span>
                             </div>
                             <ChevronDown className={`h-4 w-4 text-gray-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
                           </button>
                         </div>
                         {open && (
                           <div className="p-3 border-t bg-gray-50 space-y-3">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <Badge variant="outline">{empresaLabel(b.empresa_id)}</Badge>
-                              {planosDoBeneficiario(b.id).length === 0 && <span className="text-xs text-gray-400">nenhuma apólice vinculada ainda</span>}
-                              {planosDoBeneficiario(b.id).map(p => {
-                                const ap = apolices.find(a => a.id === p.apolice_id);
+                            <Badge variant="outline">{empresaLabel(b.empresa_id)}</Badge>
+                            <div className="space-y-1.5">
+                              {TIPOS.map(({ key, label }) => {
+                                const vinculo = planosDoBeneficiario(b.id).find(p => p.tipo === key);
+                                const ap = vinculo ? apolices.find(a => a.id === vinculo.apolice_id) : null;
                                 return (
-                                  <Badge key={p.id} className="bg-[#003580]/10 text-[#003580] hover:bg-[#003580]/10">
-                                    {p.tipo} · {ap ? apoliceLabel(ap) : `#${p.apolice_id}`}
-                                  </Badge>
+                                  <div key={key} className="flex items-center gap-2 flex-wrap bg-white border rounded-lg px-3 py-2 text-sm">
+                                    <span className="font-medium w-14 shrink-0">{label}</span>
+                                    {vinculo ? (
+                                      <>
+                                        <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Ativo</Badge>
+                                        <span className="text-gray-600">{ap ? apoliceLabel(ap) : `#${vinculo.apolice_id}`}</span>
+                                        {vinculo.numero_carteirinha && <span className="text-gray-400">· carteirinha {vinculo.numero_carteirinha}</span>}
+                                      </>
+                                    ) : (
+                                      <Badge variant="outline" className="text-gray-400">Inativo</Badge>
+                                    )}
+                                  </div>
                                 );
                               })}
                             </div>
@@ -698,10 +719,10 @@ const GestaoGeralTestePage = () => {
                       <div key={a.id} className="border rounded-lg overflow-hidden bg-white">
                         <button type="button" onClick={() => toggleExpandAp(a)} className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50">
                           <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-1 text-sm min-w-0">
-                            <span className="text-gray-500 capitalize">{sub.tipo || '—'}</span>
-                            <span className="font-medium text-gray-800 truncate">{sub.seguradora || '—'}</span>
-                            <span className="text-gray-500 truncate">{sub.plano || '—'}</span>
-                            <span className="text-gray-500">{contagemBeneficiariosApolice(a.id)} beneficiário{contagemBeneficiariosApolice(a.id) !== 1 ? 's' : ''}</span>
+                            <span className="text-gray-500 capitalize truncate min-w-0">{sub.tipo || '—'}</span>
+                            <span className="font-medium text-gray-800 truncate min-w-0">{sub.seguradora || '—'}</span>
+                            <span className="text-gray-500 truncate min-w-0">{sub.plano || '—'}</span>
+                            <span className="text-gray-500 truncate min-w-0">{contagemBeneficiariosApolice(a.id)} beneficiário{contagemBeneficiariosApolice(a.id) !== 1 ? 's' : ''}</span>
                           </div>
                           <Badge variant="outline" className="shrink-0 hidden sm:inline-flex">{empresaLabel(a.empresa_id)}</Badge>
                           <ChevronDown className={`h-4 w-4 text-gray-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -741,6 +762,43 @@ const GestaoGeralTestePage = () => {
                     );
                   })}
                   {apolicesFiltradas.length === 0 && <p className="text-center text-gray-400 py-8">Nenhuma apólice com esse filtro.</p>}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="coparticipacao">
+            <Card>
+              <CardHeader><CardTitle>Coparticipação</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <Select value={filtroEmpresaCopart} onValueChange={setFiltroEmpresaCopart}>
+                  <SelectTrigger className="w-56"><SelectValue placeholder="Empresa (CNPJ)" /></SelectTrigger>
+                  <SelectContent><SelectItem value="todas">Todas as empresas</SelectItem>{empresaOptions}</SelectContent>
+                </Select>
+
+                <div className="hidden sm:flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  <div className="flex-1 grid grid-cols-5 gap-x-3">
+                    <span>Beneficiário</span>
+                    <span>Empresa</span>
+                    <span>Competência</span>
+                    <span>Valor</span>
+                    <span>Descrição</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {coparticipacoesFiltradas.map(c => (
+                    <div key={c.id} className="border rounded-lg bg-white p-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-x-3 gap-y-1 text-sm">
+                        <span className="font-medium text-gray-800 truncate min-w-0">{c.beneficiarios?.nome_completo || '—'}</span>
+                        <span className="text-gray-500 truncate min-w-0">{empresaLabel(c.empresa_id)}</span>
+                        <span className="text-gray-500 truncate min-w-0">{c.competencia || '—'}</span>
+                        <span className="text-gray-500 truncate min-w-0">{formatCurrency(c.valor)}</span>
+                        <span className="text-gray-500 truncate min-w-0">{c.descricao || '—'}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {coparticipacoesFiltradas.length === 0 && <p className="text-center text-gray-400 py-8">Nenhuma coparticipação com esse filtro.</p>}
                 </div>
               </CardContent>
             </Card>
