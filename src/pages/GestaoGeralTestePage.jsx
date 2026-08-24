@@ -186,12 +186,18 @@ const GestaoGeralTestePage = () => {
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   const [expandedBenId, setExpandedBenId] = useState(null);
+
+  const [isEditBenOpen, setIsEditBenOpen] = useState(false);
+  const [editBenTarget, setEditBenTarget] = useState(null);
   const [editBenForm, setEditBenForm] = useState(emptyBenForm);
-  const [vinculoForm, setVinculoForm] = useState({});
-  const [isSavingVinculo, setIsSavingVinculo] = useState(false);
   const [isSavingBenEdit, setIsSavingBenEdit] = useState(false);
   const [isDeletingBen, setIsDeletingBen] = useState(false);
   const [isCepLoading, setIsCepLoading] = useState(false);
+
+  const [isVinculoOpen, setIsVinculoOpen] = useState(false);
+  const [vinculoTarget, setVinculoTarget] = useState(null);
+  const [vinculoForm, setVinculoForm] = useState({});
+  const [isSavingVinculo, setIsSavingVinculo] = useState(false);
 
   const [expandedApId, setExpandedApId] = useState(null);
   const [apoliceForm, setApoliceForm] = useState({ seguradora: '', plano: '', numero: '', valor_premio: '', tipo: 'saude' });
@@ -323,10 +329,13 @@ const GestaoGeralTestePage = () => {
     toast({ title: `${ok} excluído(s)${fail ? ` • ${fail} erro(s)` : ''}` });
   };
 
-  // ---------- Beneficiário: expandir + editar + vínculos ----------
+  // ---------- Beneficiário: expandir (mostra as ações) ----------
   const toggleExpandBen = (b) => {
-    if (expandedBenId === b.id) { setExpandedBenId(null); return; }
-    setExpandedBenId(b.id);
+    setExpandedBenId(prev => prev === b.id ? null : b.id);
+  };
+
+  const abrirEditarBen = (b) => {
+    setEditBenTarget(b);
     setEditBenForm({
       nome_completo: b.nome_completo || '', cpf: b.cpf ? applyCpfMask(b.cpf) : '', parentesco: b.parentesco || 'TITULAR',
       data_nascimento: b.data_nascimento || '', nome_mae: b.nome_mae || '', nome_titular: b.nome_titular || '',
@@ -336,34 +345,26 @@ const GestaoGeralTestePage = () => {
       cep: b.cep || '', rua: b.rua || '', numero: b.numero || '', complemento: b.complemento || '', bairro: b.bairro || '', cidade: b.cidade || '', estado: b.estado || '',
       empresa_id: String(b.empresa_id),
     });
-    const vform = {};
-    TIPOS.forEach(({ key }) => {
-      const vinculo = planos.find(p => p.beneficiario_id === b.id && p.tipo === key);
-      vform[key] = {
-        ativo: !!vinculo,
-        apolice_id: vinculo ? String(vinculo.apolice_id) : '',
-        numero_carteirinha: vinculo?.numero_carteirinha || '',
-        data_inclusao: vinculo?.data_inclusao || '',
-      };
-    });
-    setVinculoForm(vform);
+    setIsEditBenOpen(true);
   };
 
-  const salvarEdicaoBeneficiario = async (b) => {
+  const salvarEdicaoBeneficiario = async () => {
+    if (!editBenTarget) return;
     if (!editBenForm.nome_completo || !editBenForm.cpf || !editBenForm.parentesco) {
       toast({ variant: 'destructive', title: 'Preencha nome, CPF e parentesco.' });
       return;
     }
     const cpfLimpo = editBenForm.cpf.replace(/\D/g, '');
-    if (beneficiarios.some(ben => ben.id !== b.id && (ben.cpf || '').replace(/\D/g, '') === cpfLimpo)) {
+    if (beneficiarios.some(ben => ben.id !== editBenTarget.id && (ben.cpf || '').replace(/\D/g, '') === cpfLimpo)) {
       toast({ variant: 'destructive', title: 'CPF já cadastrado nesse grupo.' });
       return;
     }
     setIsSavingBenEdit(true);
     try {
-      const updated = await beneficiariosService.updateBeneficiario(b.id, editBenForm);
-      setBeneficiarios(prev => prev.map(x => x.id === b.id ? { ...x, ...updated } : x));
+      const updated = await beneficiariosService.updateBeneficiario(editBenTarget.id, editBenForm);
+      setBeneficiarios(prev => prev.map(x => x.id === editBenTarget.id ? { ...x, ...updated } : x));
       toast({ title: 'Dados atualizados.' });
+      setIsEditBenOpen(false);
     } catch (err) {
       toast({ variant: 'destructive', title: 'Erro ao salvar', description: err.message });
     } finally {
@@ -385,7 +386,24 @@ const GestaoGeralTestePage = () => {
     }
   };
 
-  const salvarVinculos = async (beneficiarioId) => {
+  const abrirVincularApolice = (b) => {
+    setVinculoTarget(b);
+    const vform = {};
+    TIPOS.forEach(({ key }) => {
+      const vinculo = planos.find(p => p.beneficiario_id === b.id && p.tipo === key);
+      vform[key] = {
+        ativo: !!vinculo,
+        apolice_id: vinculo ? String(vinculo.apolice_id) : '',
+        numero_carteirinha: vinculo?.numero_carteirinha || '',
+        data_inclusao: vinculo?.data_inclusao || '',
+      };
+    });
+    setVinculoForm(vform);
+    setIsVinculoOpen(true);
+  };
+
+  const salvarVinculos = async () => {
+    if (!vinculoTarget) return;
     for (const { key, label } of TIPOS) {
       const f = vinculoForm[key];
       if (f.ativo && !f.apolice_id) {
@@ -397,7 +415,7 @@ const GestaoGeralTestePage = () => {
     try {
       for (const { key } of TIPOS) {
         const f = vinculoForm[key];
-        await beneficiarioPlanosService.syncPlano(beneficiarioId, key, {
+        await beneficiarioPlanosService.syncPlano(vinculoTarget.id, key, {
           ativo: f.ativo,
           apoliceId: f.apolice_id ? Number(f.apolice_id) : null,
           numero_carteirinha: f.numero_carteirinha || null,
@@ -405,6 +423,7 @@ const GestaoGeralTestePage = () => {
         });
       }
       toast({ title: 'Vínculos atualizados.' });
+      setIsVinculoOpen(false);
       await load();
     } catch (err) {
       toast({ variant: 'destructive', title: 'Erro ao salvar vínculos', description: err.message });
@@ -612,14 +631,26 @@ const GestaoGeralTestePage = () => {
                           </button>
                         </div>
                         {open && (
-                          <div className="p-3 border-t bg-gray-50 space-y-4">
-                            <BeneficiarioFormFields form={editBenForm} setForm={setEditBenForm} titulares={titulares.filter(t => t.id !== b.id)} empresaOptions={empresaOptions} showEmpresa cepLoading={isCepLoading} onBuscarCep={(cep) => buscarCep(cep, setEditBenForm)} />
-
-                            <div className="flex items-center justify-between pt-2 border-t">
+                          <div className="p-3 border-t bg-gray-50 space-y-3">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge variant="outline">{empresaLabel(b.empresa_id)}</Badge>
+                              {planosDoBeneficiario(b.id).length === 0 && <span className="text-xs text-gray-400">nenhuma apólice vinculada ainda</span>}
+                              {planosDoBeneficiario(b.id).map(p => {
+                                const ap = apolices.find(a => a.id === p.apolice_id);
+                                return (
+                                  <Badge key={p.id} className="bg-[#003580]/10 text-[#003580] hover:bg-[#003580]/10">
+                                    {p.tipo} · {ap ? apoliceLabel(ap) : `#${p.apolice_id}`}
+                                  </Badge>
+                                );
+                              })}
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <Button size="sm" variant="outline" onClick={() => abrirEditarBen(b)}>Editar beneficiário</Button>
+                              <Button size="sm" variant="outline" onClick={() => abrirVincularApolice(b)}>Vincular apólice</Button>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" disabled={isDeletingBen}>
-                                    <Trash2 className="h-4 w-4 mr-1" /> Excluir beneficiário
+                                  <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200" disabled={isDeletingBen}>
+                                    <Trash2 className="h-4 w-4 mr-1" /> Excluir
                                   </Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
@@ -633,76 +664,6 @@ const GestaoGeralTestePage = () => {
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>
-                              <Button size="sm" onClick={() => salvarEdicaoBeneficiario(b)} disabled={isSavingBenEdit} className="bg-[#003580] hover:bg-[#002060] text-white">
-                                {isSavingBenEdit && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar dados
-                              </Button>
-                            </div>
-
-                            <div className="pt-2 border-t">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-[#003580] mb-2">Vínculos com apólices</p>
-                              <div className="flex items-center gap-2 flex-wrap mb-3">
-                                <Badge variant="outline">{empresaLabel(b.empresa_id)}</Badge>
-                                {planosDoBeneficiario(b.id).length === 0 && <span className="text-xs text-gray-400">nenhuma apólice vinculada ainda</span>}
-                                {planosDoBeneficiario(b.id).map(p => {
-                                  const ap = apolices.find(a => a.id === p.apolice_id);
-                                  return (
-                                    <Badge key={p.id} className="bg-[#003580]/10 text-[#003580] hover:bg-[#003580]/10">
-                                      {p.tipo} · {ap ? apoliceLabel(ap) : `#${p.apolice_id}`}
-                                    </Badge>
-                                  );
-                                })}
-                              </div>
-
-                              <div className="space-y-3">
-                                {TIPOS.map(({ key, label }) => {
-                                  const f = vinculoForm[key] || {};
-                                  const apolicesDoTipo = apolices.filter(a => subApoliceOf(a).tipo === key);
-                                  return (
-                                    <div key={key} className="border rounded-lg p-3 space-y-2 bg-white">
-                                      <div className="flex items-center justify-between">
-                                        <Label className="font-semibold text-sm">{label}</Label>
-                                        <Button
-                                          type="button" size="sm"
-                                          variant={f.ativo ? 'default' : 'outline'}
-                                          className={f.ativo ? 'bg-[#003580] hover:bg-[#002060]' : ''}
-                                          onClick={() => setVinculoForm(prev => ({ ...prev, [key]: { ...prev[key], ativo: !prev[key]?.ativo } }))}
-                                        >
-                                          {f.ativo ? 'Ativo' : 'Inativo'}
-                                        </Button>
-                                      </div>
-                                      {f.ativo && (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                          <div className="sm:col-span-2">
-                                            <Label className="text-xs">Apólice (de qualquer empresa do grupo)</Label>
-                                            <Select value={f.apolice_id} onValueChange={(v) => setVinculoForm(prev => ({ ...prev, [key]: { ...prev[key], apolice_id: v } }))}>
-                                              <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                                              <SelectContent>
-                                                {apolicesDoTipo.map(a => <SelectItem key={a.id} value={String(a.id)}>{apoliceLabel(a)} — {empresaLabel(a.empresa_id)}</SelectItem>)}
-                                                {apolicesDoTipo.length === 0 && <div className="px-3 py-2 text-xs text-gray-400">Nenhuma apólice de {label.toLowerCase()} nesse grupo ainda</div>}
-                                              </SelectContent>
-                                            </Select>
-                                          </div>
-                                          <div>
-                                            <Label className="text-xs">Número carteirinha</Label>
-                                            <Input value={f.numero_carteirinha} onChange={e => setVinculoForm(prev => ({ ...prev, [key]: { ...prev[key], numero_carteirinha: e.target.value } }))} />
-                                          </div>
-                                          <div>
-                                            <Label className="text-xs">Data inclusão</Label>
-                                            <Input type="date" value={f.data_inclusao} onChange={e => setVinculoForm(prev => ({ ...prev, [key]: { ...prev[key], data_inclusao: e.target.value } }))} />
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-
-                              <div className="flex justify-end gap-2 mt-3">
-                                <Button variant="outline" size="sm" onClick={() => setExpandedBenId(null)}>Fechar</Button>
-                                <Button size="sm" onClick={() => salvarVinculos(b.id)} disabled={isSavingVinculo} className="bg-[#003580] hover:bg-[#002060] text-white">
-                                  {isSavingVinculo && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar vínculos
-                                </Button>
-                              </div>
                             </div>
                           </div>
                         )}
@@ -786,6 +747,76 @@ const GestaoGeralTestePage = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Modal: editar beneficiário */}
+      <Dialog open={isEditBenOpen} onOpenChange={setIsEditBenOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Editar beneficiário</DialogTitle></DialogHeader>
+          <BeneficiarioFormFields form={editBenForm} setForm={setEditBenForm} titulares={titulares.filter(t => t.id !== editBenTarget?.id)} empresaOptions={empresaOptions} showEmpresa cepLoading={isCepLoading} onBuscarCep={(cep) => buscarCep(cep, setEditBenForm)} />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditBenOpen(false)}>Cancelar</Button>
+            <Button onClick={salvarEdicaoBeneficiario} disabled={isSavingBenEdit} className="bg-[#003580] hover:bg-[#002060]">
+              {isSavingBenEdit && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: vincular apólice */}
+      <Dialog open={isVinculoOpen} onOpenChange={setIsVinculoOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Vincular apólice — {vinculoTarget?.nome_completo}</DialogTitle></DialogHeader>
+          <div className="space-y-3 py-2">
+            {TIPOS.map(({ key, label }) => {
+              const f = vinculoForm[key] || {};
+              const apolicesDoTipo = apolices.filter(a => subApoliceOf(a).tipo === key);
+              return (
+                <div key={key} className="border rounded-lg p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="font-semibold text-sm">{label}</Label>
+                    <Button
+                      type="button" size="sm"
+                      variant={f.ativo ? 'default' : 'outline'}
+                      className={f.ativo ? 'bg-[#003580] hover:bg-[#002060]' : ''}
+                      onClick={() => setVinculoForm(prev => ({ ...prev, [key]: { ...prev[key], ativo: !prev[key]?.ativo } }))}
+                    >
+                      {f.ativo ? 'Ativo' : 'Inativo'}
+                    </Button>
+                  </div>
+                  {f.ativo && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="sm:col-span-2">
+                        <Label className="text-xs">Apólice (de qualquer empresa do grupo)</Label>
+                        <Select value={f.apolice_id} onValueChange={(v) => setVinculoForm(prev => ({ ...prev, [key]: { ...prev[key], apolice_id: v } }))}>
+                          <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                          <SelectContent>
+                            {apolicesDoTipo.map(a => <SelectItem key={a.id} value={String(a.id)}>{apoliceLabel(a)} — {empresaLabel(a.empresa_id)}</SelectItem>)}
+                            {apolicesDoTipo.length === 0 && <div className="px-3 py-2 text-xs text-gray-400">Nenhuma apólice de {label.toLowerCase()} nesse grupo ainda</div>}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Número carteirinha</Label>
+                        <Input value={f.numero_carteirinha} onChange={e => setVinculoForm(prev => ({ ...prev, [key]: { ...prev[key], numero_carteirinha: e.target.value } }))} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Data inclusão</Label>
+                        <Input type="date" value={f.data_inclusao} onChange={e => setVinculoForm(prev => ({ ...prev, [key]: { ...prev[key], data_inclusao: e.target.value } }))} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsVinculoOpen(false)}>Cancelar</Button>
+            <Button onClick={salvarVinculos} disabled={isSavingVinculo} className="bg-[#003580] hover:bg-[#002060]">
+              {isSavingVinculo && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar vínculos
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal: adicionar beneficiário */}
       <Dialog open={isAddBenOpen} onOpenChange={setIsAddBenOpen}>
