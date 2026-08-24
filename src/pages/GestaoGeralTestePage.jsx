@@ -212,6 +212,8 @@ const GestaoGeralTestePage = () => {
 
   useEffect(() => {
     const onClickOutside = (e) => {
+      // Selects dentro do painel abrem num portal fora dessa div — não conta como "fora"
+      if (e.target.closest('[data-radix-popper-content-wrapper]')) return;
       if (filtroBenRef.current && !filtroBenRef.current.contains(e.target)) setIsFiltroBenOpen(false);
       if (ordenarBenRef.current && !ordenarBenRef.current.contains(e.target)) setIsOrdenarBenOpen(false);
     };
