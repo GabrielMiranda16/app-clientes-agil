@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Plus, ChevronDown, ChevronLeft, ChevronRight, Users, FileText, Search, Trash2, DollarSign, ClipboardList, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { Loader2, Plus, ChevronDown, ChevronLeft, ChevronRight, Users, FileText, Search, Trash2, DollarSign, ClipboardList, Clock, CheckCircle2, XCircle, SlidersHorizontal, ArrowUpDown, Check } from 'lucide-react';
 import { formatCpfCnpj, applyCpfMask, applyPhoneMask, applyCepMask } from '@/lib/masks';
 import { calculateAge, formatCurrency } from '@/lib/utils';
 
@@ -27,6 +27,13 @@ const TIPOS = [
   { key: 'saude', label: 'Saúde' },
   { key: 'vida', label: 'Vida' },
   { key: 'odonto', label: 'Odonto' },
+];
+
+const ORDENAR_BEN_OPTIONS = [
+  { key: 'nome_asc', label: 'Nome A-Z' },
+  { key: 'nome_desc', label: 'Nome Z-A' },
+  { key: 'idade_asc', label: 'Idade: menor → maior' },
+  { key: 'idade_desc', label: 'Idade: maior → menor' },
 ];
 
 const subApoliceOf = (ap) => (ap.dados_adicionais?.sub_apolices || [])[0] || {};
@@ -198,6 +205,20 @@ const GestaoGeralTestePage = () => {
   const [busca, setBusca] = useState('');
   const [paginaBen, setPaginaBen] = useState(1);
 
+  const [isFiltroBenOpen, setIsFiltroBenOpen] = useState(false);
+  const [isOrdenarBenOpen, setIsOrdenarBenOpen] = useState(false);
+  const filtroBenRef = useRef(null);
+  const ordenarBenRef = useRef(null);
+
+  useEffect(() => {
+    const onClickOutside = (e) => {
+      if (filtroBenRef.current && !filtroBenRef.current.contains(e.target)) setIsFiltroBenOpen(false);
+      if (ordenarBenRef.current && !ordenarBenRef.current.contains(e.target)) setIsOrdenarBenOpen(false);
+    };
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
@@ -285,6 +306,8 @@ const GestaoGeralTestePage = () => {
 
   const titulares = useMemo(() => beneficiarios.filter(b => b.parentesco === 'TITULAR'), [beneficiarios]);
   const planosDoBeneficiario = (benId) => planos.filter(p => p.beneficiario_id === benId);
+
+  const qtdFiltrosBenAtivos = [filtroEmpresaBen !== 'todas', filtroApoliceBen !== 'todas', filtroSituacaoBen !== 'todos', filtroParentescoBen !== 'todos'].filter(Boolean).length;
 
   const beneficiariosFiltrados = useMemo(() => {
     const lista = beneficiarios.filter(b => {
@@ -732,43 +755,80 @@ const GestaoGeralTestePage = () => {
               <CardContent className="space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <Input placeholder="Buscar nome ou CPF..." value={busca} onChange={e => setBusca(e.target.value)} className="max-w-xs" />
-                  <Select value={filtroEmpresaBen} onValueChange={setFiltroEmpresaBen}>
-                    <SelectTrigger className="w-56"><SelectValue placeholder="Empresa (CNPJ)" /></SelectTrigger>
-                    <SelectContent><SelectItem value="todas">Todas as empresas</SelectItem>{empresaOptions}</SelectContent>
-                  </Select>
-                  <Select value={filtroApoliceBen} onValueChange={setFiltroApoliceBen}>
-                    <SelectTrigger className="w-64"><SelectValue placeholder="Apólice" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todas">Todas as apólices</SelectItem>
-                      {apolices.map(a => <SelectItem key={a.id} value={String(a.id)}>{apoliceLabel(a)} — {empresaLabel(a.empresa_id)}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <Select value={filtroSituacaoBen} onValueChange={setFiltroSituacaoBen}>
-                    <SelectTrigger className="w-36"><SelectValue placeholder="Situação" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todas situações</SelectItem>
-                      <SelectItem value="ATIVO">Ativos</SelectItem>
-                      <SelectItem value="INATIVO">Inativos</SelectItem>
-                      <SelectItem value="AFASTADO">Afastados</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={filtroParentescoBen} onValueChange={setFiltroParentescoBen}>
-                    <SelectTrigger className="w-36"><SelectValue placeholder="Parentesco" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos</SelectItem>
-                      <SelectItem value="TITULAR">Titulares</SelectItem>
-                      <SelectItem value="DEPENDENTE">Dependentes</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={ordenarBen} onValueChange={setOrdenarBen}>
-                    <SelectTrigger className="w-44"><SelectValue placeholder="Ordenar por" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="nome_asc">Nome A-Z</SelectItem>
-                      <SelectItem value="nome_desc">Nome Z-A</SelectItem>
-                      <SelectItem value="idade_asc">Idade: menor → maior</SelectItem>
-                      <SelectItem value="idade_desc">Idade: maior → menor</SelectItem>
-                    </SelectContent>
-                  </Select>
+
+                  <div className="relative" ref={filtroBenRef}>
+                    <Button variant="outline" size="sm" onClick={() => setIsFiltroBenOpen(o => !o)} className="gap-1.5">
+                      <SlidersHorizontal className="h-3.5 w-3.5" /> Filtro
+                      {qtdFiltrosBenAtivos > 0 && <Badge className="bg-[#003580] hover:bg-[#003580] text-white h-5 min-w-5 px-1 rounded-full">{qtdFiltrosBenAtivos}</Badge>}
+                    </Button>
+                    {isFiltroBenOpen && (
+                      <div className="absolute z-50 mt-1 w-72 rounded-lg border bg-white shadow-lg p-3 space-y-3">
+                        <div>
+                          <Label className="text-xs">Empresa (CNPJ)</Label>
+                          <Select value={filtroEmpresaBen} onValueChange={setFiltroEmpresaBen}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent><SelectItem value="todas">Todas as empresas</SelectItem>{empresaOptions}</SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Apólice</Label>
+                          <Select value={filtroApoliceBen} onValueChange={setFiltroApoliceBen}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="todas">Todas as apólices</SelectItem>
+                              {apolices.map(a => <SelectItem key={a.id} value={String(a.id)}>{apoliceLabel(a)} — {empresaLabel(a.empresa_id)}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Situação</Label>
+                          <Select value={filtroSituacaoBen} onValueChange={setFiltroSituacaoBen}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="todos">Todas situações</SelectItem>
+                              <SelectItem value="ATIVO">Ativos</SelectItem>
+                              <SelectItem value="INATIVO">Inativos</SelectItem>
+                              <SelectItem value="AFASTADO">Afastados</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Parentesco</Label>
+                          <Select value={filtroParentescoBen} onValueChange={setFiltroParentescoBen}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="todos">Todos</SelectItem>
+                              <SelectItem value="TITULAR">Titulares</SelectItem>
+                              <SelectItem value="DEPENDENTE">Dependentes</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {qtdFiltrosBenAtivos > 0 && (
+                          <button type="button" className="text-xs text-[#003580] hover:underline" onClick={() => { setFiltroEmpresaBen('todas'); setFiltroApoliceBen('todas'); setFiltroSituacaoBen('todos'); setFiltroParentescoBen('todos'); }}>
+                            Limpar filtros
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="relative" ref={ordenarBenRef}>
+                    <Button variant="outline" size="sm" onClick={() => setIsOrdenarBenOpen(o => !o)} className="gap-1.5">
+                      <ArrowUpDown className="h-3.5 w-3.5" /> Ordenar
+                    </Button>
+                    {isOrdenarBenOpen && (
+                      <div className="absolute z-50 mt-1 w-56 rounded-lg border bg-white shadow-lg py-1">
+                        {ORDENAR_BEN_OPTIONS.map(opt => (
+                          <button key={opt.key} type="button" onClick={() => { setOrdenarBen(opt.key); setIsOrdenarBenOpen(false); }}
+                            className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 ${ordenarBen === opt.key ? 'text-[#003580] font-medium' : 'text-gray-700'}`}>
+                            {opt.label}
+                            {ordenarBen === opt.key && <Check className="h-3.5 w-3.5" />}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   {selectedIds.size > 0 && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
