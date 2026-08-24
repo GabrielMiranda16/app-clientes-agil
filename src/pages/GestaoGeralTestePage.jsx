@@ -755,16 +755,17 @@ const GestaoGeralTestePage = () => {
                 </Button>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Input placeholder="Buscar nome ou CPF..." value={busca} onChange={e => setBusca(e.target.value)} className="max-w-xs" />
+                <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
+                  <Input placeholder="Buscar nome ou CPF..." value={busca} onChange={e => setBusca(e.target.value)} className="w-full sm:w-auto sm:max-w-xs" />
 
+                  <div className="flex flex-wrap gap-2">
                   <div className="relative" ref={filtroBenRef}>
                     <Button variant="outline" size="sm" onClick={() => setIsFiltroBenOpen(o => !o)} className="gap-1.5">
                       <SlidersHorizontal className="h-3.5 w-3.5" /> Filtro
                       {qtdFiltrosBenAtivos > 0 && <Badge className="bg-[#003580] hover:bg-[#003580] text-white h-5 min-w-5 px-1 rounded-full">{qtdFiltrosBenAtivos}</Badge>}
                     </Button>
                     {isFiltroBenOpen && (
-                      <div className="absolute z-50 mt-1 w-72 rounded-lg border bg-white shadow-lg p-3 space-y-3">
+                      <div className="absolute z-50 mt-1 w-72 max-w-[calc(100vw-2rem)] rounded-lg border bg-white shadow-lg p-3 space-y-3">
                         <div>
                           <Label className="text-xs">Empresa (CNPJ)</Label>
                           <Select value={filtroEmpresaBen} onValueChange={setFiltroEmpresaBen}>
@@ -819,7 +820,7 @@ const GestaoGeralTestePage = () => {
                       <ArrowUpDown className="h-3.5 w-3.5" /> Ordenar
                     </Button>
                     {isOrdenarBenOpen && (
-                      <div className="absolute z-50 mt-1 w-56 rounded-lg border bg-white shadow-lg py-1">
+                      <div className="absolute z-50 mt-1 w-56 max-w-[calc(100vw-2rem)] rounded-lg border bg-white shadow-lg py-1">
                         {ORDENAR_BEN_OPTIONS.map(opt => (
                           <button key={opt.key} type="button" onClick={() => { setOrdenarBen(opt.key); setIsOrdenarBenOpen(false); }}
                             className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 ${ordenarBen === opt.key ? 'text-[#003580] font-medium' : 'text-gray-700'}`}>
@@ -829,6 +830,7 @@ const GestaoGeralTestePage = () => {
                         ))}
                       </div>
                     )}
+                  </div>
                   </div>
 
                   {selectedIds.size > 0 && (
