@@ -190,6 +190,8 @@ const GestaoGeralTestePage = () => {
 
   const [filtroEmpresaBen, setFiltroEmpresaBen] = useState('todas');
   const [filtroApoliceBen, setFiltroApoliceBen] = useState('todas');
+  const [filtroIdadeMin, setFiltroIdadeMin] = useState('');
+  const [filtroIdadeMax, setFiltroIdadeMax] = useState('');
   const [filtroEmpresaApolice, setFiltroEmpresaApolice] = useState('todas');
   const [filtroEmpresaCopart, setFiltroEmpresaCopart] = useState('todas');
   const [busca, setBusca] = useState('');
@@ -267,7 +269,7 @@ const GestaoGeralTestePage = () => {
   };
 
   useEffect(() => { if (matrizId) load(); }, [matrizId]);
-  useEffect(() => { setPaginaBen(1); }, [filtroEmpresaBen, filtroApoliceBen, busca]);
+  useEffect(() => { setPaginaBen(1); }, [filtroEmpresaBen, filtroApoliceBen, busca, filtroIdadeMin, filtroIdadeMax]);
 
   const empresaLabel = (empresaId) => {
     const e = todasEmpresas.find(x => x.id === Number(empresaId));
@@ -291,9 +293,15 @@ const GestaoGeralTestePage = () => {
         if (!vinculado) return false;
       }
       if (busca && !(b.nome_completo || '').toLowerCase().includes(busca.toLowerCase()) && !(b.cpf || '').includes(busca)) return false;
+      if (filtroIdadeMin !== '' || filtroIdadeMax !== '') {
+        const idade = calculateAge(b.data_nascimento);
+        if (idade === '') return false;
+        if (filtroIdadeMin !== '' && idade < Number(filtroIdadeMin)) return false;
+        if (filtroIdadeMax !== '' && idade > Number(filtroIdadeMax)) return false;
+      }
       return true;
     });
-  }, [beneficiarios, planos, filtroEmpresaBen, filtroApoliceBen, busca]);
+  }, [beneficiarios, planos, filtroEmpresaBen, filtroApoliceBen, busca, filtroIdadeMin, filtroIdadeMax]);
 
   const BEN_POR_PAGINA = 20;
   const totalPaginasBen = Math.max(1, Math.ceil(beneficiariosFiltrados.length / BEN_POR_PAGINA));
@@ -731,6 +739,11 @@ const GestaoGeralTestePage = () => {
                       {apolices.map(a => <SelectItem key={a.id} value={String(a.id)}>{apoliceLabel(a)} — {empresaLabel(a.empresa_id)}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                  <div className="flex items-center gap-1">
+                    <Input type="number" min="0" placeholder="Idade de" value={filtroIdadeMin} onChange={e => setFiltroIdadeMin(e.target.value)} className="w-24" />
+                    <span className="text-gray-400 text-sm">até</span>
+                    <Input type="number" min="0" placeholder="Idade até" value={filtroIdadeMax} onChange={e => setFiltroIdadeMax(e.target.value)} className="w-24" />
+                  </div>
                   {selectedIds.size > 0 && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
