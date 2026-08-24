@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Plus, ChevronDown, Users, FileText, Search, Trash2, DollarSign } from 'lucide-react';
+import { Loader2, Plus, ChevronDown, ChevronLeft, ChevronRight, Users, FileText, Search, Trash2, DollarSign, ClipboardList, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { formatCpfCnpj, applyCpfMask, applyPhoneMask, applyCepMask } from '@/lib/masks';
 import { calculateAge, formatCurrency } from '@/lib/utils';
 
@@ -21,6 +21,7 @@ import { beneficiariosService } from '@/services/beneficiariosService';
 import { apolicesService } from '@/services/apolicesService';
 import { beneficiarioPlanosService } from '@/services/beneficiarioPlanosService';
 import { coparticipacaoService } from '@/services/coparticipacaoService';
+import { solicitacoesService } from '@/services/solicitacoesService';
 
 const TIPOS = [
   { key: 'saude', label: 'Saúde' },
@@ -178,12 +179,21 @@ const GestaoGeralTestePage = () => {
   const [beneficiarios, setBeneficiarios] = useState([]);
   const [planos, setPlanos] = useState([]);
   const [coparticipacoes, setCoparticipacoes] = useState([]);
+  const [solicitacoes, setSolicitacoes] = useState([]);
+  const [filtroStatusSol, setFiltroStatusSol] = useState('abertas');
+
+  const [isSolDadosOpen, setIsSolDadosOpen] = useState(false);
+  const [solDadosTarget, setSolDadosTarget] = useState(null);
+  const [solDadosForm, setSolDadosForm] = useState({});
+  const [isSavingSolDados, setIsSavingSolDados] = useState(false);
+  const [isAceitandoSolId, setIsAceitandoSolId] = useState(null);
 
   const [filtroEmpresaBen, setFiltroEmpresaBen] = useState('todas');
   const [filtroApoliceBen, setFiltroApoliceBen] = useState('todas');
   const [filtroEmpresaApolice, setFiltroEmpresaApolice] = useState('todas');
   const [filtroEmpresaCopart, setFiltroEmpresaCopart] = useState('todas');
   const [busca, setBusca] = useState('');
+  const [paginaBen, setPaginaBen] = useState(1);
 
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
@@ -233,13 +243,15 @@ const GestaoGeralTestePage = () => {
       setFiliais(filiaisData);
       setTodasEmpresas(todas);
 
-      const [apData, benData, copartData] = await Promise.all([
+      const [apData, benData, copartData, solData] = await Promise.all([
         apolicesService.getApolicesByMatriz(id),
         beneficiariosService.getAllBeneficiarios(),
         coparticipacaoService.getAllCoparticipacoes().catch(() => []),
+        solicitacoesService.getAllSolicitacoes().catch(() => []),
       ]);
       const apSVD = apData.filter(a => a.segmento === 'SAUDE_VIDA_ODONTO');
       const benGrupo = benData.filter(b => ids.includes(Number(b.empresa_id)) && !b.data_exclusao);
+      setSolicitacoes(solData.filter(s => ids.includes(Number(s.empresa_id))));
       setApolices(apSVD);
       setBeneficiarios(benGrupo);
       setCoparticipacoes(copartData.filter(c => ids.includes(Number(c.empresa_id))));
@@ -255,6 +267,7 @@ const GestaoGeralTestePage = () => {
   };
 
   useEffect(() => { if (matrizId) load(); }, [matrizId]);
+  useEffect(() => { setPaginaBen(1); }, [filtroEmpresaBen, filtroApoliceBen, busca]);
 
   const empresaLabel = (empresaId) => {
     const e = todasEmpresas.find(x => x.id === Number(empresaId));
@@ -282,6 +295,13 @@ const GestaoGeralTestePage = () => {
     });
   }, [beneficiarios, planos, filtroEmpresaBen, filtroApoliceBen, busca]);
 
+  const BEN_POR_PAGINA = 20;
+  const totalPaginasBen = Math.max(1, Math.ceil(beneficiariosFiltrados.length / BEN_POR_PAGINA));
+  const beneficiariosPaginados = useMemo(() => {
+    const start = (paginaBen - 1) * BEN_POR_PAGINA;
+    return beneficiariosFiltrados.slice(start, start + BEN_POR_PAGINA);
+  }, [beneficiariosFiltrados, paginaBen]);
+
   const apolicesFiltradas = useMemo(() => {
     return apolices.filter(a => filtroEmpresaApolice === 'todas' || Number(a.empresa_id) === Number(filtroEmpresaApolice));
   }, [apolices, filtroEmpresaApolice]);
@@ -289,6 +309,112 @@ const GestaoGeralTestePage = () => {
   const coparticipacoesFiltradas = useMemo(() => {
     return coparticipacoes.filter(c => filtroEmpresaCopart === 'todas' || Number(c.empresa_id) === Number(filtroEmpresaCopart));
   }, [coparticipacoes, filtroEmpresaCopart]);
+
+  const solicitacoesFiltradas = useMemo(() => {
+    if (filtroStatusSol === 'abertas') return solicitacoes.filter(s => ['PENDENTE', 'EM PROCESSAMENTO'].includes(s.status));
+    if (filtroStatusSol === 'todas') return solicitacoes;
+    return solicitacoes.filter(s => s.status === filtroStatusSol);
+  }, [solicitacoes, filtroStatusSol]);
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'PENDENTE': return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 hover:bg-yellow-50 border-yellow-200"><Clock className="w-3 h-3 mr-1" /> Pendente</Badge>;
+      case 'EM PROCESSAMENTO': return <Badge variant="outline" className="bg-blue-50 text-blue-700 hover:bg-blue-50 border-blue-200"><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Em Processamento</Badge>;
+      case 'CONCLUIDA': return <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-50 border-green-200"><CheckCircle2 className="w-3 h-3 mr-1" /> Concluída</Badge>;
+      case 'REJEITADA': return <Badge variant="outline" className="bg-red-50 text-red-700 hover:bg-red-50 border-red-200"><XCircle className="w-3 h-3 mr-1" /> Rejeitada</Badge>;
+      case 'CANCELADA': return <Badge variant="outline" className="bg-gray-50 text-gray-600 hover:bg-gray-50 border-gray-200"><XCircle className="w-3 h-3 mr-1" /> Cancelada</Badge>;
+      default: return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const getTipoBadge = (tipo) => {
+    switch (tipo) {
+      case 'INCLUSAO': return <Badge className="bg-green-600 hover:bg-green-600">Inclusão</Badge>;
+      case 'EXCLUSAO': return <Badge variant="destructive">Exclusão</Badge>;
+      default: return <Badge variant="outline">{tipo}</Badge>;
+    }
+  };
+
+  const getTempoDecorrido = (dataStr) => {
+    if (!dataStr) return '—';
+    const diffMs = new Date() - new Date(dataStr);
+    if (diffMs < 0) return '—';
+    const dias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const horas = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+    return dias > 0 ? `${dias}d ${horas}h` : `${horas}h`;
+  };
+
+  const aceitarSolicitacao = async (s) => {
+    setIsAceitandoSolId(s.id);
+    try {
+      const updated = await solicitacoesService.updateSolicitacao(s.id, { status: 'EM PROCESSAMENTO', data_aprovacao: new Date().toISOString() });
+      setSolicitacoes(prev => prev.map(x => x.id === s.id ? { ...x, ...updated } : x));
+      toast({ title: 'Solicitação aceita.' });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro ao aceitar', description: err.message });
+    } finally {
+      setIsAceitandoSolId(null);
+    }
+  };
+
+  const cancelarSolicitacao = async (s) => {
+    try {
+      await solicitacoesService.cancelSolicitacao(s.id);
+      setSolicitacoes(prev => prev.map(x => x.id === s.id ? { ...x, status: 'CANCELADA' } : x));
+      toast({ title: 'Solicitação cancelada.' });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro ao cancelar', description: err.message });
+    }
+  };
+
+  const abrirAdicionarDadosSol = (s) => {
+    const beneficiario = beneficiarios.find(b => b.id === s.beneficiario_id);
+    if (!beneficiario) { toast({ variant: 'destructive', title: 'Beneficiário não encontrado.' }); return; }
+    setSolDadosTarget({ solicitacao: s, beneficiario });
+    const vinculo = planos.find(p => p.beneficiario_id === s.beneficiario_id && p.tipo === s.tipo_plano);
+    setSolDadosForm({
+      apolice_id: vinculo ? String(vinculo.apolice_id) : '',
+      numero_carteirinha: vinculo?.numero_carteirinha || '',
+      link_carteirinha: vinculo?.link_carteirinha || '',
+      data_inclusao: vinculo?.data_inclusao || '',
+      codigo_empresa: vinculo?.codigo_empresa || '',
+      produto: vinculo?.produto || '',
+      acomodacao: vinculo?.acomodacao || '',
+    });
+    setIsSolDadosOpen(true);
+  };
+
+  const salvarDadosSolicitacao = async () => {
+    if (!solDadosTarget) return;
+    const { solicitacao: s, beneficiario } = solDadosTarget;
+    const isExclusao = s.tipo_solicitacao === 'EXCLUSAO';
+    if (!isExclusao && !solDadosForm.apolice_id) {
+      toast({ variant: 'destructive', title: 'Selecione a apólice.' });
+      return;
+    }
+    setIsSavingSolDados(true);
+    try {
+      await beneficiarioPlanosService.syncPlano(beneficiario.id, s.tipo_plano, {
+        ativo: !isExclusao,
+        apoliceId: isExclusao ? null : Number(solDadosForm.apolice_id),
+        numero_carteirinha: solDadosForm.numero_carteirinha || null,
+        link_carteirinha: solDadosForm.link_carteirinha || null,
+        data_inclusao: solDadosForm.data_inclusao || null,
+        codigo_empresa: solDadosForm.codigo_empresa || null,
+        produto: solDadosForm.produto || null,
+        acomodacao: s.tipo_plano === 'saude' ? (solDadosForm.acomodacao || null) : null,
+      });
+      const updated = await solicitacoesService.updateSolicitacao(s.id, { status: 'CONCLUIDA', data_conclusao: new Date().toISOString() });
+      setSolicitacoes(prev => prev.map(x => x.id === s.id ? { ...x, ...updated } : x));
+      toast({ title: 'Solicitação concluída.' });
+      setIsSolDadosOpen(false);
+      await load();
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro ao concluir', description: err.message });
+    } finally {
+      setIsSavingSolDados(false);
+    }
+  };
 
   const contagemBeneficiariosApolice = (apoliceId) =>
     new Set(planos.filter(p => Number(p.apolice_id) === Number(apoliceId)).map(p => p.beneficiario_id)).size;
@@ -568,12 +694,15 @@ const GestaoGeralTestePage = () => {
         </div>
 
         <Tabs defaultValue="beneficiarios" className="space-y-4">
-          <TabsList className="bg-white/10 w-full h-auto p-1 gap-1 grid grid-cols-3">
+          <TabsList className="bg-white/10 w-full h-auto p-1 gap-1 grid grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="beneficiarios" className="text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
               <Users className="h-4 w-4 mr-1.5" /> Beneficiários <span className="ml-1.5 bg-white/20 text-white text-xs px-1.5 py-0.5 rounded-full">{beneficiarios.length}</span>
             </TabsTrigger>
             <TabsTrigger value="apolices" className="text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
               <FileText className="h-4 w-4 mr-1.5" /> Apólices <span className="ml-1.5 bg-white/20 text-white text-xs px-1.5 py-0.5 rounded-full">{apolices.length}</span>
+            </TabsTrigger>
+            <TabsTrigger value="solicitacoes" className="text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
+              <ClipboardList className="h-4 w-4 mr-1.5" /> Solicitações <span className="ml-1.5 bg-white/20 text-white text-xs px-1.5 py-0.5 rounded-full">{solicitacoes.filter(s => ['PENDENTE', 'EM PROCESSAMENTO'].includes(s.status)).length}</span>
             </TabsTrigger>
             <TabsTrigger value="coparticipacao" className="text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
               <DollarSign className="h-4 w-4 mr-1.5" /> Coparticipação <span className="ml-1.5 bg-white/20 text-white text-xs px-1.5 py-0.5 rounded-full">{coparticipacoes.length}</span>
@@ -636,7 +765,7 @@ const GestaoGeralTestePage = () => {
                 </div>
 
                 <div className="space-y-2">
-                  {beneficiariosFiltrados.map(b => {
+                  {beneficiariosPaginados.map(b => {
                     const open = expandedBenId === b.id;
                     const idade = calculateAge(b.data_nascimento);
                     return (
@@ -727,6 +856,16 @@ const GestaoGeralTestePage = () => {
                   })}
                   {beneficiariosFiltrados.length === 0 && <p className="text-center text-gray-400 py-8">Nenhum beneficiário com esse filtro.</p>}
                 </div>
+
+                {totalPaginasBen > 1 && (
+                  <div className="flex items-center justify-between pt-2">
+                    <p className="text-xs text-gray-400">Página {paginaBen} de {totalPaginasBen} · {beneficiariosFiltrados.length} beneficiários</p>
+                    <div className="flex items-center gap-1">
+                      <Button size="sm" variant="outline" disabled={paginaBen === 1} onClick={() => setPaginaBen(p => Math.max(1, p - 1))}><ChevronLeft className="h-4 w-4" /></Button>
+                      <Button size="sm" variant="outline" disabled={paginaBen === totalPaginasBen} onClick={() => setPaginaBen(p => Math.min(totalPaginasBen, p + 1))}><ChevronRight className="h-4 w-4" /></Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -796,6 +935,82 @@ const GestaoGeralTestePage = () => {
                     );
                   })}
                   {apolicesFiltradas.length === 0 && <p className="text-center text-gray-400 py-8">Nenhuma apólice com esse filtro.</p>}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="solicitacoes">
+            <Card>
+              <CardHeader><CardTitle>Solicitações</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <Select value={filtroStatusSol} onValueChange={setFiltroStatusSol}>
+                  <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="abertas">Pendentes + Em Processamento</SelectItem>
+                    <SelectItem value="PENDENTE">Pendentes</SelectItem>
+                    <SelectItem value="EM PROCESSAMENTO">Em Processamento</SelectItem>
+                    <SelectItem value="CONCLUIDA">Concluídas</SelectItem>
+                    <SelectItem value="REJEITADA">Rejeitadas</SelectItem>
+                    <SelectItem value="CANCELADA">Canceladas</SelectItem>
+                    <SelectItem value="todas">Todas</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <div className="space-y-2">
+                  {solicitacoesFiltradas.map(s => {
+                    const beneficiario = beneficiarios.find(b => b.id === s.beneficiario_id);
+                    const aberta = ['PENDENTE', 'EM PROCESSAMENTO'].includes(s.status);
+                    return (
+                      <div key={s.id} className="border rounded-lg bg-white p-3 space-y-2">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div className="min-w-0">
+                            <p className="font-medium text-gray-800 truncate">{beneficiario?.nome_completo || 'Beneficiário removido'}</p>
+                            <p className="text-xs text-gray-500">{empresaLabel(s.empresa_id)} · {getTempoDecorrido(s.data_solicitacao)}</p>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-gray-500 capitalize">{s.tipo_plano}</span>
+                            {getTipoBadge(s.tipo_solicitacao)}
+                            {getStatusBadge(s.status)}
+                          </div>
+                        </div>
+                        {(s.motivo || s.observacoes) && (
+                          <p className="text-xs text-gray-500 bg-gray-50 rounded p-2">
+                            {s.motivo && <span><strong>Motivo:</strong> {s.motivo} </span>}
+                            {s.observacoes && <span><strong>Obs:</strong> {s.observacoes}</span>}
+                          </p>
+                        )}
+                        {aberta && (
+                          <div className="flex justify-end gap-2">
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="ghost" className="text-gray-500 hover:text-red-600">Cancelar</Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Cancelar solicitação?</AlertDialogTitle>
+                                  <AlertDialogDescription>O cliente poderá solicitar novamente.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Voltar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => cancelarSolicitacao(s)} className="bg-red-600 hover:bg-red-700">Confirmar</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                            {s.status === 'PENDENTE' && (
+                              <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => aceitarSolicitacao(s)} disabled={isAceitandoSolId === s.id}>
+                                {isAceitandoSolId === s.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Aceitar
+                              </Button>
+                            )}
+                            {s.status === 'EM PROCESSAMENTO' && (
+                              <Button size="sm" variant="outline" onClick={() => abrirAdicionarDadosSol(s)}>Adicionar Dados</Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {solicitacoesFiltradas.length === 0 && <p className="text-center text-gray-400 py-8">Nenhuma solicitação com esse filtro.</p>}
                 </div>
               </CardContent>
             </Card>
@@ -927,6 +1142,55 @@ const GestaoGeralTestePage = () => {
             <Button variant="outline" onClick={() => setIsVinculoOpen(false)}>Cancelar</Button>
             <Button onClick={salvarVinculos} disabled={isSavingVinculo} className="bg-[#003580] hover:bg-[#002060]">
               {isSavingVinculo && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar vínculos
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: adicionar dados da solicitação (concluir) */}
+      <Dialog open={isSolDadosOpen} onOpenChange={setIsSolDadosOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Adicionar dados — {solDadosTarget?.beneficiario?.nome_completo}</DialogTitle>
+          </DialogHeader>
+          {solDadosTarget && (() => {
+            const s = solDadosTarget.solicitacao;
+            const isExclusao = s.tipo_solicitacao === 'EXCLUSAO';
+            const apolicesDoTipo = apolices.filter(a => subApoliceOf(a).tipo === s.tipo_plano);
+            return (
+              <div className="space-y-3 py-2">
+                <p className="text-sm text-gray-500">
+                  {isExclusao ? 'Confirma a exclusão do plano de' : 'Complete os dados do plano de'} <span className="font-semibold uppercase">{s.tipo_plano}</span>.
+                </p>
+                {!isExclusao && (
+                  <>
+                    <div>
+                      <Label className="text-xs">Apólice (de qualquer empresa do grupo)</Label>
+                      <Select value={solDadosForm.apolice_id} onValueChange={(v) => setSolDadosForm(prev => ({ ...prev, apolice_id: v }))}>
+                        <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                        <SelectContent>
+                          {apolicesDoTipo.map(a => <SelectItem key={a.id} value={String(a.id)}>{apoliceLabel(a)} — {empresaLabel(a.empresa_id)}</SelectItem>)}
+                          {apolicesDoTipo.length === 0 && <div className="px-3 py-2 text-xs text-gray-400">Nenhuma apólice de {s.tipo_plano} nesse grupo ainda</div>}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div><Label className="text-xs">Número carteirinha</Label><Input value={solDadosForm.numero_carteirinha} onChange={e => setSolDadosForm(prev => ({ ...prev, numero_carteirinha: e.target.value }))} /></div>
+                      <div><Label className="text-xs">Link carteirinha</Label><Input value={solDadosForm.link_carteirinha} onChange={e => setSolDadosForm(prev => ({ ...prev, link_carteirinha: e.target.value }))} /></div>
+                      <div><Label className="text-xs">Data inclusão</Label><Input type="date" value={solDadosForm.data_inclusao} onChange={e => setSolDadosForm(prev => ({ ...prev, data_inclusao: e.target.value }))} /></div>
+                      <div><Label className="text-xs">Código da empresa</Label><Input value={solDadosForm.codigo_empresa} onChange={e => setSolDadosForm(prev => ({ ...prev, codigo_empresa: e.target.value }))} /></div>
+                      <div><Label className="text-xs">Produto</Label><Input value={solDadosForm.produto} onChange={e => setSolDadosForm(prev => ({ ...prev, produto: e.target.value }))} /></div>
+                      {s.tipo_plano === 'saude' && <div><Label className="text-xs">Acomodação</Label><Input value={solDadosForm.acomodacao} onChange={e => setSolDadosForm(prev => ({ ...prev, acomodacao: e.target.value }))} /></div>}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })()}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsSolDadosOpen(false)}>Cancelar</Button>
+            <Button onClick={salvarDadosSolicitacao} disabled={isSavingSolDados} className="bg-[#003580] hover:bg-[#002060]">
+              {isSavingSolDados && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Concluir solicitação
             </Button>
           </DialogFooter>
         </DialogContent>
