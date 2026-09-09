@@ -1159,10 +1159,12 @@ const GestaoGeralTestePage = () => {
 
       {/* Modal: editar beneficiário */}
       <Dialog open={isEditBenOpen} onOpenChange={setIsEditBenOpen}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Editar beneficiário</DialogTitle></DialogHeader>
-          <BeneficiarioFormFields form={editBenForm} setForm={setEditBenForm} titulares={titulares.filter(t => t.id !== editBenTarget?.id)} empresaOptions={empresaOptions} showEmpresa cepLoading={isCepLoading} onBuscarCep={(cep) => buscarCep(cep, setEditBenForm)} />
-          <DialogFooter>
+        <DialogContent className="max-w-lg max-h-[85vh] p-0 flex flex-col overflow-hidden">
+          <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b"><DialogTitle>Editar beneficiário</DialogTitle></DialogHeader>
+          <div className="overflow-y-auto px-6 py-4 flex-1">
+            <BeneficiarioFormFields form={editBenForm} setForm={setEditBenForm} titulares={titulares.filter(t => t.id !== editBenTarget?.id)} empresaOptions={empresaOptions} showEmpresa cepLoading={isCepLoading} onBuscarCep={(cep) => buscarCep(cep, setEditBenForm)} />
+          </div>
+          <DialogFooter className="px-6 pb-6 pt-3 shrink-0 border-t gap-2">
             <Button variant="outline" onClick={() => setIsEditBenOpen(false)}>Cancelar</Button>
             <Button onClick={salvarEdicaoBeneficiario} disabled={isSavingBenEdit} className="bg-[#003580] hover:bg-[#002060]">
               {isSavingBenEdit && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar
@@ -1173,9 +1175,9 @@ const GestaoGeralTestePage = () => {
 
       {/* Modal: vincular apólice */}
       <Dialog open={isVinculoOpen} onOpenChange={setIsVinculoOpen}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Vincular apólice — {vinculoTarget?.nome_completo}</DialogTitle></DialogHeader>
-          <div className="space-y-3 py-2">
+        <DialogContent className="max-w-lg max-h-[85vh] p-0 flex flex-col overflow-hidden">
+          <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b"><DialogTitle>Vincular apólice — {vinculoTarget?.nome_completo}</DialogTitle></DialogHeader>
+          <div className="overflow-y-auto px-6 py-4 flex-1 space-y-3">
             {TIPOS.map(({ key, label }) => {
               const f = vinculoForm[key] || {};
               const apolicesDoTipo = apolices.filter(a => subApoliceOf(a).tipo === key);
@@ -1240,7 +1242,7 @@ const GestaoGeralTestePage = () => {
               );
             })}
           </div>
-          <DialogFooter>
+          <DialogFooter className="px-6 pb-6 pt-3 shrink-0 border-t gap-2">
             <Button variant="outline" onClick={() => setIsVinculoOpen(false)}>Cancelar</Button>
             <Button onClick={salvarVinculos} disabled={isSavingVinculo} className="bg-[#003580] hover:bg-[#002060]">
               {isSavingVinculo && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar vínculos
