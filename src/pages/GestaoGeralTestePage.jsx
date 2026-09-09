@@ -306,6 +306,12 @@ const GestaoGeralTestePage = () => {
     return [sub.numero && `Apólice ${sub.numero}`, sub.seguradora].filter(Boolean).join(' · ') || `Apólice ${ap.id}`;
   };
 
+  const primeiroUltimoNome = (nomeCompleto) => {
+    if (!nomeCompleto) return '';
+    const partes = nomeCompleto.trim().split(/\s+/);
+    return partes.length <= 1 ? nomeCompleto : `${partes[0]} ${partes[partes.length - 1]}`;
+  };
+
   const titulares = useMemo(() => beneficiarios.filter(b => b.parentesco === 'TITULAR'), [beneficiarios]);
   const planosDoBeneficiario = (benId) => planos.filter(p => p.beneficiario_id === benId);
 
@@ -1176,7 +1182,7 @@ const GestaoGeralTestePage = () => {
       {/* Modal: vincular apólice */}
       <Dialog open={isVinculoOpen} onOpenChange={setIsVinculoOpen}>
         <DialogContent className="max-w-lg max-h-[85vh] p-0 flex flex-col overflow-hidden">
-          <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b"><DialogTitle>Vincular apólice — {vinculoTarget?.nome_completo}</DialogTitle></DialogHeader>
+          <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b"><DialogTitle>Vincular apólice — {primeiroUltimoNome(vinculoTarget?.nome_completo)}</DialogTitle></DialogHeader>
           <div className="overflow-y-auto px-6 py-4 flex-1 space-y-3">
             {TIPOS.map(({ key, label }) => {
               const f = vinculoForm[key] || {};
