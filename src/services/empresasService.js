@@ -89,5 +89,21 @@ export const empresasService = {
       // Specific error handling for foreign key constraints is often helpful here
       throw new Error('Não foi possível excluir a empresa. Verifique se existem beneficiários ou dados vinculados a ela.');
     }
-  }
+  },
+
+  // Retorna as filiais (empresas com tipo FILIAL) de uma matriz, a partir de
+  // uma lista de empresas já carregada (não faz nova consulta ao banco).
+  getFiliais(todasEmpresas, matrizId) {
+    const id = Number(matrizId);
+    return (todasEmpresas || []).filter(e => Number(e.empresa_matriz_id) === id);
+  },
+
+  // Retorna os IDs da matriz + todas as suas filiais, a partir de uma lista
+  // de empresas já carregada. Centraliza o agrupamento usado em várias telas
+  // (beneficiários, solicitações, apólices, coparticipações do grupo todo).
+  getGrupoIds(todasEmpresas, matrizId) {
+    const id = Number(matrizId);
+    const filiais = this.getFiliais(todasEmpresas, id);
+    return [id, ...filiais.map(f => f.id)];
+  },
 };
