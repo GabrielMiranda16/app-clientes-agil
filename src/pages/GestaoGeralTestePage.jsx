@@ -329,7 +329,7 @@ const GestaoGeralTestePage = () => {
   const titulares = useMemo(() => beneficiarios.filter(b => b.parentesco === 'TITULAR'), [beneficiarios]);
   const planosDoBeneficiario = (benId) => planos.filter(p => p.beneficiario_id === benId);
 
-  const ultimaCoparticipacaoDoBeneficiario = (b) => {
+  const coparticipacoesDoUltimoMes = (b) => {
     const cpfLimpo = (b.cpf || '').replace(/\D/g, '');
     const nomeLimpo = (b.nome_completo || '').trim().toLowerCase();
     const doBeneficiario = coparticipacoes.filter(c => {
@@ -338,8 +338,9 @@ const GestaoGeralTestePage = () => {
       if (nomeLimpo && (c.nome_quem_utilizou || '').trim().toLowerCase() === nomeLimpo) return true;
       return false;
     });
-    if (doBeneficiario.length === 0) return null;
-    return [...doBeneficiario].sort((a, b2) => (b2.competencia || '').localeCompare(a.competencia || ''))[0];
+    if (doBeneficiario.length === 0) return [];
+    const ultimaCompetencia = doBeneficiario.reduce((max, c) => (c.competencia || '') > max ? (c.competencia || '') : max, '');
+    return doBeneficiario.filter(c => (c.competencia || '') === ultimaCompetencia);
   };
 
   const qtdFiltrosBenAtivos = [filtroEmpresaBen !== 'todas', filtroSituacaoBen !== 'todos', filtroParentescoBen !== 'todos'].filter(Boolean).length;
@@ -1022,16 +1023,17 @@ const GestaoGeralTestePage = () => {
                                 </div>
 
                                 {(() => {
-                                  const ultima = ultimaCoparticipacaoDoBeneficiario(b);
-                                  if (!ultima) return null;
+                                  const doMes = coparticipacoesDoUltimoMes(b);
+                                  if (doMes.length === 0) return null;
                                   return (
                                     <div className="space-y-1.5">
-                                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Última coparticipação</p>
-                                      <div className="bg-white border rounded-lg px-3 py-2 text-sm flex items-center gap-2 flex-wrap">
-                                        <span className="text-gray-600">{ultima.competencia || '—'}</span>
-                                        <span className="font-medium text-gray-800">{formatCurrency(ultima.valor)}</span>
-                                        {ultima.descricao && <span className="text-gray-400">· {ultima.descricao}</span>}
-                                      </div>
+                                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Coparticipação — {doMes[0].competencia}</p>
+                                      {doMes.map(c => (
+                                        <div key={c.id} className="bg-white border rounded-lg px-3 py-2 text-sm flex items-center gap-2 flex-wrap">
+                                          <span className="font-medium text-gray-800">{formatCurrency(c.valor)}</span>
+                                          {c.descricao && <span className="text-gray-400">· {c.descricao}</span>}
+                                        </div>
+                                      ))}
                                     </div>
                                   );
                                 })()}
