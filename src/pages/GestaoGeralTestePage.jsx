@@ -983,9 +983,15 @@ const GestaoGeralTestePage = () => {
                                 <Badge variant="outline">{empresaLabel(b.empresa_id)}</Badge>
                                 <div className="space-y-1.5">
                                   {TIPOS.map(({ key, label }) => {
-                                    const ativo = b[`${key}_ativo`] === true || b[`${key}_ativo`] === 'true';
+                                    const vinculo = planos.find(p => p.beneficiario_id === b.id && p.tipo === key);
+                                    const ap = vinculo ? apolices.find(a => a.id === vinculo.apolice_id) : null;
+                                    const legacyAtivo = b[`${key}_ativo`] === true || b[`${key}_ativo`] === 'true';
+                                    const ativo = legacyAtivo || !!vinculo;
                                     const detailKey = `${b.id}-${key}`;
                                     const detailOpen = expandedPlanoDetail === detailKey;
+                                    const nomePlano = vinculo ? (ap ? apoliceLabel(ap) : `#${vinculo.apolice_id}`) : (b[`${key}_plano_nome`] || '—');
+                                    const carteirinha = vinculo?.numero_carteirinha || b[`${key}_numero_carteirinha`];
+                                    const linkCarteirinha = vinculo?.link_carteirinha || b[`${key}_link_carteirinha`];
                                     return (
                                       <div key={key} className="bg-white border rounded-lg overflow-hidden">
                                         <div className="flex items-center gap-2 flex-wrap px-3 py-2 text-sm">
@@ -993,8 +999,8 @@ const GestaoGeralTestePage = () => {
                                           {ativo ? (
                                             <>
                                               <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Ativo</Badge>
-                                              <span className="text-gray-600">{b[`${key}_plano_nome`] || '—'}</span>
-                                              {b[`${key}_numero_carteirinha`] && <span className="text-gray-400">· carteirinha {b[`${key}_numero_carteirinha`]}</span>}
+                                              <span className="text-gray-600">{nomePlano}</span>
+                                              {carteirinha && <span className="text-gray-400">· carteirinha {carteirinha}</span>}
                                               <button type="button" className="ml-auto text-gray-400 hover:text-[#003580] flex items-center gap-1 text-xs" onClick={() => setExpandedPlanoDetail(detailOpen ? null : detailKey)}>
                                                 Ampliar <ChevronDown className={`h-3.5 w-3.5 transition-transform ${detailOpen ? 'rotate-180' : ''}`} />
                                               </button>
@@ -1005,16 +1011,16 @@ const GestaoGeralTestePage = () => {
                                         </div>
                                         {ativo && detailOpen && (
                                           <div className="border-t bg-gray-50 px-3 py-2 grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-2 text-xs">
-                                            <div><span className="block text-gray-400">Nome do Plano</span><span className="text-gray-700">{b[`${key}_plano_nome`] || '—'}</span></div>
-                                            {key === 'saude' && <div><span className="block text-gray-400">Acomodação</span><span className="text-gray-700">{b.saude_acomodacao || '—'}</span></div>}
-                                            <div><span className="block text-gray-400">Código da Empresa</span><span className="text-gray-700">{b[`${key}_codigo_empresa`] || '—'}</span></div>
-                                            <div><span className="block text-gray-400">Produto</span><span className="text-gray-700">{b[`${key}_produto`] || '—'}</span></div>
-                                            <div><span className="block text-gray-400">Data Inclusão</span><span className="text-gray-700">{b[`${key}_data_inclusao`] || '—'}</span></div>
-                                            <div><span className="block text-gray-400">Data Exclusão</span><span className="text-gray-700">{b[`${key}_data_exclusao`] || '—'}</span></div>
-                                            <div><span className="block text-gray-400">Número Carteirinha</span><span className="text-gray-700">{b[`${key}_numero_carteirinha`] || '—'}</span></div>
+                                            <div><span className="block text-gray-400">Nome do Plano</span><span className="text-gray-700">{vinculo ? (ap ? subApoliceOf(ap).plano || '—' : '—') : (b[`${key}_plano_nome`] || '—')}</span></div>
+                                            {key === 'saude' && <div><span className="block text-gray-400">Acomodação</span><span className="text-gray-700">{vinculo?.acomodacao || b.saude_acomodacao || '—'}</span></div>}
+                                            <div><span className="block text-gray-400">Código da Empresa</span><span className="text-gray-700">{vinculo?.codigo_empresa || b[`${key}_codigo_empresa`] || '—'}</span></div>
+                                            <div><span className="block text-gray-400">Produto</span><span className="text-gray-700">{vinculo?.produto || b[`${key}_produto`] || '—'}</span></div>
+                                            <div><span className="block text-gray-400">Data Inclusão</span><span className="text-gray-700">{vinculo?.data_inclusao || b[`${key}_data_inclusao`] || '—'}</span></div>
+                                            <div><span className="block text-gray-400">Data Exclusão</span><span className="text-gray-700">{vinculo?.data_exclusao || b[`${key}_data_exclusao`] || '—'}</span></div>
+                                            <div><span className="block text-gray-400">Número Carteirinha</span><span className="text-gray-700">{carteirinha || '—'}</span></div>
                                             <div>
                                               <span className="block text-gray-400">Link Carteirinha</span>
-                                              {b[`${key}_link_carteirinha`] ? <a href={b[`${key}_link_carteirinha`]} target="_blank" rel="noreferrer" className="text-[#003580] underline">abrir</a> : <span className="text-gray-700">—</span>}
+                                              {linkCarteirinha ? <a href={linkCarteirinha} target="_blank" rel="noreferrer" className="text-[#003580] underline">abrir</a> : <span className="text-gray-700">—</span>}
                                             </div>
                                           </div>
                                         )}
