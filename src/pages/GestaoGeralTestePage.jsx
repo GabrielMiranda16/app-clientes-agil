@@ -327,7 +327,6 @@ const GestaoGeralTestePage = () => {
   };
 
   const titulares = useMemo(() => beneficiarios.filter(b => b.parentesco === 'TITULAR'), [beneficiarios]);
-  const planosDoBeneficiario = (benId) => planos.filter(p => p.beneficiario_id === benId);
 
   const competenciaMaisRecenteGeral = useMemo(
     () => coparticipacoes.reduce((max, c) => (c.competencia || '') > max ? (c.competencia || '') : max, ''),
@@ -984,20 +983,18 @@ const GestaoGeralTestePage = () => {
                                 <Badge variant="outline">{empresaLabel(b.empresa_id)}</Badge>
                                 <div className="space-y-1.5">
                                   {TIPOS.map(({ key, label }) => {
-                                    const vinculo = planosDoBeneficiario(b.id).find(p => p.tipo === key);
-                                    const ap = vinculo ? apolices.find(a => a.id === vinculo.apolice_id) : null;
-                                    const sub = ap ? subApoliceOf(ap) : {};
+                                    const ativo = b[`${key}_ativo`] === true || b[`${key}_ativo`] === 'true';
                                     const detailKey = `${b.id}-${key}`;
                                     const detailOpen = expandedPlanoDetail === detailKey;
                                     return (
                                       <div key={key} className="bg-white border rounded-lg overflow-hidden">
                                         <div className="flex items-center gap-2 flex-wrap px-3 py-2 text-sm">
                                           <span className="font-medium w-14 shrink-0">{label}</span>
-                                          {vinculo ? (
+                                          {ativo ? (
                                             <>
                                               <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Ativo</Badge>
-                                              <span className="text-gray-600">{ap ? apoliceLabel(ap) : `#${vinculo.apolice_id}`}</span>
-                                              {vinculo.numero_carteirinha && <span className="text-gray-400">· carteirinha {vinculo.numero_carteirinha}</span>}
+                                              <span className="text-gray-600">{b[`${key}_plano_nome`] || '—'}</span>
+                                              {b[`${key}_numero_carteirinha`] && <span className="text-gray-400">· carteirinha {b[`${key}_numero_carteirinha`]}</span>}
                                               <button type="button" className="ml-auto text-gray-400 hover:text-[#003580] flex items-center gap-1 text-xs" onClick={() => setExpandedPlanoDetail(detailOpen ? null : detailKey)}>
                                                 Ampliar <ChevronDown className={`h-3.5 w-3.5 transition-transform ${detailOpen ? 'rotate-180' : ''}`} />
                                               </button>
@@ -1006,18 +1003,18 @@ const GestaoGeralTestePage = () => {
                                             <Badge variant="outline" className="text-gray-400">Inativo</Badge>
                                           )}
                                         </div>
-                                        {vinculo && detailOpen && (
+                                        {ativo && detailOpen && (
                                           <div className="border-t bg-gray-50 px-3 py-2 grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-2 text-xs">
-                                            <div><span className="block text-gray-400">Nome do Plano</span><span className="text-gray-700">{sub.plano || '—'}</span></div>
-                                            {key === 'saude' && <div><span className="block text-gray-400">Acomodação</span><span className="text-gray-700">{vinculo.acomodacao || '—'}</span></div>}
-                                            <div><span className="block text-gray-400">Código da Empresa</span><span className="text-gray-700">{vinculo.codigo_empresa || '—'}</span></div>
-                                            <div><span className="block text-gray-400">Produto</span><span className="text-gray-700">{vinculo.produto || '—'}</span></div>
-                                            <div><span className="block text-gray-400">Data Inclusão</span><span className="text-gray-700">{vinculo.data_inclusao || '—'}</span></div>
-                                            <div><span className="block text-gray-400">Data Exclusão</span><span className="text-gray-700">{vinculo.data_exclusao || '—'}</span></div>
-                                            <div><span className="block text-gray-400">Número Carteirinha</span><span className="text-gray-700">{vinculo.numero_carteirinha || '—'}</span></div>
+                                            <div><span className="block text-gray-400">Nome do Plano</span><span className="text-gray-700">{b[`${key}_plano_nome`] || '—'}</span></div>
+                                            {key === 'saude' && <div><span className="block text-gray-400">Acomodação</span><span className="text-gray-700">{b.saude_acomodacao || '—'}</span></div>}
+                                            <div><span className="block text-gray-400">Código da Empresa</span><span className="text-gray-700">{b[`${key}_codigo_empresa`] || '—'}</span></div>
+                                            <div><span className="block text-gray-400">Produto</span><span className="text-gray-700">{b[`${key}_produto`] || '—'}</span></div>
+                                            <div><span className="block text-gray-400">Data Inclusão</span><span className="text-gray-700">{b[`${key}_data_inclusao`] || '—'}</span></div>
+                                            <div><span className="block text-gray-400">Data Exclusão</span><span className="text-gray-700">{b[`${key}_data_exclusao`] || '—'}</span></div>
+                                            <div><span className="block text-gray-400">Número Carteirinha</span><span className="text-gray-700">{b[`${key}_numero_carteirinha`] || '—'}</span></div>
                                             <div>
                                               <span className="block text-gray-400">Link Carteirinha</span>
-                                              {vinculo.link_carteirinha ? <a href={vinculo.link_carteirinha} target="_blank" rel="noreferrer" className="text-[#003580] underline">abrir</a> : <span className="text-gray-700">—</span>}
+                                              {b[`${key}_link_carteirinha`] ? <a href={b[`${key}_link_carteirinha`]} target="_blank" rel="noreferrer" className="text-[#003580] underline">abrir</a> : <span className="text-gray-700">—</span>}
                                             </div>
                                           </div>
                                         )}
