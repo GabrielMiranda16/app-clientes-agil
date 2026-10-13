@@ -202,6 +202,7 @@ const GestaoGeralTestePage = () => {
   const [ordenarBen, setOrdenarBen] = useState('nome_asc');
   const [filtroEmpresaApolice, setFiltroEmpresaApolice] = useState('todas');
   const [visaoGestao, setVisaoGestao] = useState('beneficiarios');
+  const [filtroApolice, setFiltroApolice] = useState('todas');
   const [busca, setBusca] = useState('');
   const [paginaBen, setPaginaBen] = useState(1);
 
@@ -297,7 +298,7 @@ const GestaoGeralTestePage = () => {
   };
 
   useEffect(() => { if (matrizId) load(); }, [matrizId]);
-  useEffect(() => { setPaginaBen(1); }, [filtroEmpresaBen, busca, filtroSituacaoBen, filtroParentescoBen]);
+  useEffect(() => { setPaginaBen(1); }, [filtroEmpresaBen, filtroApolice, busca, filtroSituacaoBen, filtroParentescoBen]);
 
   const empresaLabel = (empresaId) => {
     const e = todasEmpresas.find(x => x.id === Number(empresaId));
@@ -326,9 +327,12 @@ const GestaoGeralTestePage = () => {
 
   const qtdFiltrosBenAtivos = [filtroEmpresaBen !== 'todas', filtroSituacaoBen !== 'todos', filtroParentescoBen !== 'todos'].filter(Boolean).length;
 
+  const temVinculoComApolice = (beneficiarioId) => filtroApolice === 'todas' || planos.some(p => p.beneficiario_id === beneficiarioId && Number(p.apolice_id) === Number(filtroApolice));
+
   const beneficiariosFiltrados = useMemo(() => {
     const lista = beneficiarios.filter(b => {
       if (filtroEmpresaBen !== 'todas' && Number(b.empresa_id) !== Number(filtroEmpresaBen)) return false;
+      if (!temVinculoComApolice(b.id)) return false;
       if (busca && !(b.nome_completo || '').toLowerCase().includes(busca.toLowerCase()) && !(b.cpf || '').includes(busca)) return false;
       if (filtroSituacaoBen !== 'todos' && b.situacao !== filtroSituacaoBen) return false;
       if (filtroParentescoBen === 'TITULAR' && b.parentesco !== 'TITULAR') return false;
@@ -341,7 +345,7 @@ const GestaoGeralTestePage = () => {
     if (ordenarBen === 'idade_asc') ordenada.sort((a, b) => new Date(b.data_nascimento || 0) - new Date(a.data_nascimento || 0));
     if (ordenarBen === 'idade_desc') ordenada.sort((a, b) => new Date(a.data_nascimento || 0) - new Date(b.data_nascimento || 0));
     return ordenada;
-  }, [beneficiarios, filtroEmpresaBen, busca, filtroSituacaoBen, filtroParentescoBen, ordenarBen]);
+  }, [beneficiarios, planos, filtroEmpresaBen, filtroApolice, busca, filtroSituacaoBen, filtroParentescoBen, ordenarBen]);
 
   const BEN_POR_PAGINA = 20;
   const totalPaginasBen = Math.max(1, Math.ceil(beneficiariosFiltrados.length / BEN_POR_PAGINA));
@@ -354,13 +358,16 @@ const GestaoGeralTestePage = () => {
     return apolices.filter(a => filtroEmpresaApolice === 'todas' || Number(a.empresa_id) === Number(filtroEmpresaApolice));
   }, [apolices, filtroEmpresaApolice]);
 
-  const coparticipacoesFiltradas = coparticipacoes;
+  const coparticipacoesFiltradas = useMemo(() => {
+    return coparticipacoes.filter(c => temVinculoComApolice(c.beneficiario_id));
+  }, [coparticipacoes, planos, filtroApolice]);
 
   const solicitacoesFiltradas = useMemo(() => {
-    if (filtroStatusSol === 'abertas') return solicitacoes.filter(s => ['PENDENTE', 'EM PROCESSAMENTO'].includes(s.status));
-    if (filtroStatusSol === 'todas') return solicitacoes;
-    return solicitacoes.filter(s => s.status === filtroStatusSol);
-  }, [solicitacoes, filtroStatusSol]);
+    let lista = solicitacoes;
+    if (filtroStatusSol === 'abertas') lista = lista.filter(s => ['PENDENTE', 'EM PROCESSAMENTO'].includes(s.status));
+    else if (filtroStatusSol !== 'todas') lista = lista.filter(s => s.status === filtroStatusSol);
+    return lista.filter(s => temVinculoComApolice(s.beneficiario_id));
+  }, [solicitacoes, filtroStatusSol, planos, filtroApolice]);
 
   const solicitacoesPendentesCount = useMemo(() => solicitacoes.filter(s => ['PENDENTE', 'EM PROCESSAMENTO'].includes(s.status)).length, [solicitacoes]);
 
@@ -788,18 +795,33 @@ const GestaoGeralTestePage = () => {
             </DropdownMenu>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label className="text-xs">Visão</Label>
-              <Select value={visaoGestao} onValueChange={setVisaoGestao}>
-                <SelectTrigger className="w-full sm:w-72 [&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="beneficiarios">Beneficiários</SelectItem>
-                  <SelectItem value="solicitacoes">Solicitações{solicitacoesPendentesCount > 0 ? ` (${solicitacoesPendentesCount} pendente${solicitacoesPendentesCount !== 1 ? 's' : ''})` : ''}</SelectItem>
-                  <SelectItem value="coparticipacao">Coparticipação</SelectItem>
-                  <SelectItem value="apolices">Apólices</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1">
+                <Label className="text-xs">Visão</Label>
+                <Select value={visaoGestao} onValueChange={setVisaoGestao}>
+                  <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="beneficiarios">Beneficiários</SelectItem>
+                    <SelectItem value="solicitacoes">Solicitações{solicitacoesPendentesCount > 0 ? ` (${solicitacoesPendentesCount} pendente${solicitacoesPendentesCount !== 1 ? 's' : ''})` : ''}</SelectItem>
+                    <SelectItem value="coparticipacao">Coparticipação</SelectItem>
+                    <SelectItem value="apolices">Apólices</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {visaoGestao !== 'apolices' && (
+                <div className="flex-1">
+                  <Label className="text-xs">Apólice</Label>
+                  <Select value={filtroApolice} onValueChange={setFiltroApolice}>
+                    <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+                    <SelectContent className="max-w-[calc(100vw-3rem)]">
+                      <SelectItem value="todas">Todas as apólices</SelectItem>
+                      {apolices.map(a => <SelectItem key={a.id} value={String(a.id)} className="truncate">{truncarTexto(apoliceLabel(a))} — {truncarTexto(empresaLabel(a.empresa_id))}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
+            {visaoGestao !== 'apolices' && filtroApolice !== 'todas' && <p className="text-xs text-gray-400">Filtrando só dessa apólice.</p>}
 
             {visaoGestao === 'beneficiarios' && (
               <>
