@@ -202,6 +202,8 @@ const GestaoGeralTestePage = () => {
   const [filtroParentescoBen, setFiltroParentescoBen] = useState('todos');
   const [ordenarBen, setOrdenarBen] = useState('nome_asc');
   const [filtroEmpresaApolice, setFiltroEmpresaApolice] = useState('todas');
+  const [visaoGestao, setVisaoGestao] = useState('geral');
+  const [isSolicitacoesOpen, setIsSolicitacoesOpen] = useState(false);
   const [busca, setBusca] = useState('');
   const [paginaBen, setPaginaBen] = useState(1);
 
@@ -777,7 +779,7 @@ const GestaoGeralTestePage = () => {
           <Button variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white border border-white/20 rounded-lg" onClick={() => navigate(`/admin/cliente/${matriz.id}`)}>Voltar pra empresa</Button>
         </div>
 
-        {/* Card de filtros + ações */}
+        {/* Card único: visão + filtros + conteúdo */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Gestão</CardTitle>
@@ -794,120 +796,125 @@ const GestaoGeralTestePage = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <Label className="text-xs">Apólice</Label>
-              <Select value={filtroApoliceBen} onValueChange={setFiltroApoliceBen}>
-                <SelectTrigger className="w-full sm:w-96 [&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
-                <SelectContent className="max-w-[calc(100vw-3rem)]">
-                  <SelectItem value="todas">Todas as apólices</SelectItem>
-                  {apolices.map(a => <SelectItem key={a.id} value={String(a.id)} className="truncate">{truncarTexto(apoliceLabel(a))} — {truncarTexto(empresaLabel(a.empresa_id))}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              {filtroApoliceBen !== 'todas' && <p className="text-xs text-gray-400 mt-1">Filtrando Beneficiários e Coparticipação só dessa apólice.</p>}
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
-              <Input placeholder="Buscar nome ou CPF..." value={busca} onChange={e => setBusca(e.target.value)} className="w-full sm:w-auto sm:max-w-xs" />
-
-              <div className="flex flex-wrap gap-2">
-              <div className="relative" ref={filtroBenRef}>
-                <Button variant="outline" size="sm" onClick={() => setIsFiltroBenOpen(o => !o)} className="gap-1.5">
-                  <SlidersHorizontal className="h-3.5 w-3.5" /> Filtro
-                  {qtdFiltrosBenAtivos > 0 && <Badge className="bg-[#003580] hover:bg-[#003580] text-white h-5 min-w-5 px-1 rounded-full">{qtdFiltrosBenAtivos}</Badge>}
-                </Button>
-                {isFiltroBenOpen && (
-                  <div className="absolute z-50 mt-1 w-72 max-w-[calc(100vw-2rem)] rounded-lg border bg-white shadow-lg p-3 space-y-3">
-                    <div>
-                      <Label className="text-xs">Empresa (CNPJ)</Label>
-                      <Select value={filtroEmpresaBen} onValueChange={setFiltroEmpresaBen}>
-                        <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
-                        <SelectContent><SelectItem value="todas">Todas as empresas</SelectItem>{empresaOptions}</SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-xs">Situação</Label>
-                      <Select value={filtroSituacaoBen} onValueChange={setFiltroSituacaoBen}>
-                        <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="todos">Todas situações</SelectItem>
-                          <SelectItem value="ATIVO">Ativos</SelectItem>
-                          <SelectItem value="INATIVO">Inativos</SelectItem>
-                          <SelectItem value="AFASTADO">Afastados</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-xs">Parentesco</Label>
-                      <Select value={filtroParentescoBen} onValueChange={setFiltroParentescoBen}>
-                        <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="todos">Todos</SelectItem>
-                          <SelectItem value="TITULAR">Titulares</SelectItem>
-                          <SelectItem value="DEPENDENTE">Dependentes</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    {qtdFiltrosBenAtivos > 0 && (
-                      <button type="button" className="text-xs text-[#003580] hover:underline" onClick={() => { setFiltroEmpresaBen('todas'); setFiltroSituacaoBen('todos'); setFiltroParentescoBen('todos'); }}>
-                        Limpar filtros
-                      </button>
-                    )}
-                  </div>
-                )}
+          <CardContent className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1">
+                <Label className="text-xs">Visão</Label>
+                <Select value={visaoGestao} onValueChange={setVisaoGestao}>
+                  <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="geral">Visão Geral</SelectItem>
+                    <SelectItem value="apolices">Apólices</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-
-              <div className="relative" ref={ordenarBenRef}>
-                <Button variant="outline" size="sm" onClick={() => setIsOrdenarBenOpen(o => !o)} className="gap-1.5">
-                  <ArrowUpDown className="h-3.5 w-3.5" /> Ordenar
-                </Button>
-                {isOrdenarBenOpen && (
-                  <div className="absolute z-50 mt-1 w-56 max-w-[calc(100vw-2rem)] rounded-lg border bg-white shadow-lg py-1">
-                    {ORDENAR_BEN_OPTIONS.map(opt => (
-                      <button key={opt.key} type="button" onClick={() => { setOrdenarBen(opt.key); setIsOrdenarBenOpen(false); }}
-                        className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 ${ordenarBen === opt.key ? 'text-[#003580] font-medium' : 'text-gray-700'}`}>
-                        {opt.label}
-                        {ordenarBen === opt.key && <Check className="h-3.5 w-3.5" />}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              </div>
-
-              {selectedIds.size > 0 && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button size="sm" variant="destructive" disabled={isBulkDeleting}>
-                      <Trash2 className="h-3.5 w-3.5 mr-1" /> Excluir {selectedIds.size} selecionado{selectedIds.size !== 1 ? 's' : ''}
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Excluir beneficiários selecionados?</AlertDialogTitle>
-                      <AlertDialogDescription>Essa ação não pode ser desfeita.</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={excluirSelecionados} className="bg-red-600 hover:bg-red-700">Excluir</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+              {visaoGestao === 'geral' && (
+                <div className="flex-1">
+                  <Label className="text-xs">Apólice</Label>
+                  <Select value={filtroApoliceBen} onValueChange={setFiltroApoliceBen}>
+                    <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+                    <SelectContent className="max-w-[calc(100vw-3rem)]">
+                      <SelectItem value="todas">Todas as apólices</SelectItem>
+                      {apolices.map(a => <SelectItem key={a.id} value={String(a.id)} className="truncate">{truncarTexto(apoliceLabel(a))} — {truncarTexto(empresaLabel(a.empresa_id))}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
               )}
             </div>
-          </CardContent>
-        </Card>
+            {visaoGestao === 'geral' && filtroApoliceBen !== 'todas' && <p className="text-xs text-gray-400">Filtrando Beneficiários e Coparticipação só dessa apólice.</p>}
 
-        {/* Beneficiários */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-[#003580]" /> Beneficiários
-              <span className="bg-gray-100 text-gray-500 text-xs px-1.5 py-0.5 rounded-full">{beneficiariosFiltrados.length}</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {/* Cabeçalho das colunas */}
+            {visaoGestao === 'geral' ? (
+              <>
+                <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
+                  <Input placeholder="Buscar nome ou CPF..." value={busca} onChange={e => setBusca(e.target.value)} className="w-full sm:w-auto sm:max-w-xs" />
+
+                  <div className="flex flex-wrap gap-2">
+                  <div className="relative" ref={filtroBenRef}>
+                    <Button variant="outline" size="sm" onClick={() => setIsFiltroBenOpen(o => !o)} className="gap-1.5">
+                      <SlidersHorizontal className="h-3.5 w-3.5" /> Filtro
+                      {qtdFiltrosBenAtivos > 0 && <Badge className="bg-[#003580] hover:bg-[#003580] text-white h-5 min-w-5 px-1 rounded-full">{qtdFiltrosBenAtivos}</Badge>}
+                    </Button>
+                    {isFiltroBenOpen && (
+                      <div className="absolute z-50 mt-1 w-72 max-w-[calc(100vw-2rem)] rounded-lg border bg-white shadow-lg p-3 space-y-3">
+                        <div>
+                          <Label className="text-xs">Empresa (CNPJ)</Label>
+                          <Select value={filtroEmpresaBen} onValueChange={setFiltroEmpresaBen}>
+                            <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+                            <SelectContent><SelectItem value="todas">Todas as empresas</SelectItem>{empresaOptions}</SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Situação</Label>
+                          <Select value={filtroSituacaoBen} onValueChange={setFiltroSituacaoBen}>
+                            <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="todos">Todas situações</SelectItem>
+                              <SelectItem value="ATIVO">Ativos</SelectItem>
+                              <SelectItem value="INATIVO">Inativos</SelectItem>
+                              <SelectItem value="AFASTADO">Afastados</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Parentesco</Label>
+                          <Select value={filtroParentescoBen} onValueChange={setFiltroParentescoBen}>
+                            <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="todos">Todos</SelectItem>
+                              <SelectItem value="TITULAR">Titulares</SelectItem>
+                              <SelectItem value="DEPENDENTE">Dependentes</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {qtdFiltrosBenAtivos > 0 && (
+                          <button type="button" className="text-xs text-[#003580] hover:underline" onClick={() => { setFiltroEmpresaBen('todas'); setFiltroSituacaoBen('todos'); setFiltroParentescoBen('todos'); }}>
+                            Limpar filtros
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="relative" ref={ordenarBenRef}>
+                    <Button variant="outline" size="sm" onClick={() => setIsOrdenarBenOpen(o => !o)} className="gap-1.5">
+                      <ArrowUpDown className="h-3.5 w-3.5" /> Ordenar
+                    </Button>
+                    {isOrdenarBenOpen && (
+                      <div className="absolute z-50 mt-1 w-56 max-w-[calc(100vw-2rem)] rounded-lg border bg-white shadow-lg py-1">
+                        {ORDENAR_BEN_OPTIONS.map(opt => (
+                          <button key={opt.key} type="button" onClick={() => { setOrdenarBen(opt.key); setIsOrdenarBenOpen(false); }}
+                            className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 ${ordenarBen === opt.key ? 'text-[#003580] font-medium' : 'text-gray-700'}`}>
+                            {opt.label}
+                            {ordenarBen === opt.key && <Check className="h-3.5 w-3.5" />}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  </div>
+
+                  {selectedIds.size > 0 && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" variant="destructive" disabled={isBulkDeleting}>
+                          <Trash2 className="h-3.5 w-3.5 mr-1" /> Excluir {selectedIds.size} selecionado{selectedIds.size !== 1 ? 's' : ''}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir beneficiários selecionados?</AlertDialogTitle>
+                          <AlertDialogDescription>Essa ação não pode ser desfeita.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={excluirSelecionados} className="bg-red-600 hover:bg-red-700">Excluir</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
+
+                {/* Cabeçalho das colunas */}
                 <div className="hidden sm:flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
                   <div className="w-5 shrink-0" />
                   <div className="flex-1 grid grid-cols-4 gap-x-3">
@@ -1021,134 +1028,124 @@ const GestaoGeralTestePage = () => {
                     </div>
                   </div>
                 )}
-              </CardContent>
-            </Card>
 
-        {/* Solicitações */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ClipboardList className="h-4 w-4 text-[#003580]" /> Solicitações
-              {solicitacoesPendentesCount > 0 && <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">{solicitacoesPendentesCount} pendente{solicitacoesPendentesCount !== 1 ? 's' : ''}</Badge>}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Select value={filtroStatusSol} onValueChange={setFiltroStatusSol}>
-              <SelectTrigger className="w-56 [&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="abertas">Pendentes + Em Processamento</SelectItem>
-                <SelectItem value="PENDENTE">Pendentes</SelectItem>
-                <SelectItem value="EM PROCESSAMENTO">Em Processamento</SelectItem>
-                <SelectItem value="CONCLUIDA">Concluídas</SelectItem>
-                <SelectItem value="REJEITADA">Rejeitadas</SelectItem>
-                <SelectItem value="CANCELADA">Canceladas</SelectItem>
-                <SelectItem value="todas">Todas</SelectItem>
-              </SelectContent>
-            </Select>
+                {/* Solicitações — expande dentro do mesmo card */}
+                <div className="border-t pt-4">
+                  <button type="button" onClick={() => setIsSolicitacoesOpen(o => !o)} className="w-full flex items-center justify-between text-left">
+                    <span className="flex items-center gap-2 font-semibold text-sm text-gray-700">
+                      <ClipboardList className="h-4 w-4 text-[#003580]" /> Solicitações
+                      {solicitacoesPendentesCount > 0 && <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">{solicitacoesPendentesCount} pendente{solicitacoesPendentesCount !== 1 ? 's' : ''}</Badge>}
+                    </span>
+                    <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isSolicitacoesOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {isSolicitacoesOpen && (
+                    <div className="mt-3 space-y-3">
+                      <Select value={filtroStatusSol} onValueChange={setFiltroStatusSol}>
+                        <SelectTrigger className="w-56 [&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="abertas">Pendentes + Em Processamento</SelectItem>
+                          <SelectItem value="PENDENTE">Pendentes</SelectItem>
+                          <SelectItem value="EM PROCESSAMENTO">Em Processamento</SelectItem>
+                          <SelectItem value="CONCLUIDA">Concluídas</SelectItem>
+                          <SelectItem value="REJEITADA">Rejeitadas</SelectItem>
+                          <SelectItem value="CANCELADA">Canceladas</SelectItem>
+                          <SelectItem value="todas">Todas</SelectItem>
+                        </SelectContent>
+                      </Select>
 
-            <div className="space-y-2">
-              {solicitacoesFiltradas.map(s => {
-                const beneficiario = beneficiarios.find(b => b.id === s.beneficiario_id);
-                const aberta = ['PENDENTE', 'EM PROCESSAMENTO'].includes(s.status);
-                return (
-                  <div key={s.id} className="border rounded-lg bg-white p-3 space-y-2">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="min-w-0">
-                        <p className="font-medium text-gray-800 truncate">{beneficiario?.nome_completo || 'Beneficiário removido'}</p>
-                        <p className="text-xs text-gray-500">{empresaLabel(s.empresa_id)} · {getTempoDecorrido(s.data_solicitacao)}</p>
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs text-gray-500 capitalize">{s.tipo_plano}</span>
-                        {getTipoBadge(s.tipo_solicitacao)}
-                        {getStatusBadge(s.status)}
+                      <div className="space-y-2">
+                        {solicitacoesFiltradas.map(s => {
+                          const beneficiario = beneficiarios.find(b => b.id === s.beneficiario_id);
+                          const aberta = ['PENDENTE', 'EM PROCESSAMENTO'].includes(s.status);
+                          return (
+                            <div key={s.id} className="border rounded-lg bg-white p-3 space-y-2">
+                              <div className="flex items-center justify-between flex-wrap gap-2">
+                                <div className="min-w-0">
+                                  <p className="font-medium text-gray-800 truncate">{beneficiario?.nome_completo || 'Beneficiário removido'}</p>
+                                  <p className="text-xs text-gray-500">{empresaLabel(s.empresa_id)} · {getTempoDecorrido(s.data_solicitacao)}</p>
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-xs text-gray-500 capitalize">{s.tipo_plano}</span>
+                                  {getTipoBadge(s.tipo_solicitacao)}
+                                  {getStatusBadge(s.status)}
+                                </div>
+                              </div>
+                              {(s.motivo || s.observacoes) && (
+                                <p className="text-xs text-gray-500 bg-gray-50 rounded p-2">
+                                  {s.motivo && <span><strong>Motivo:</strong> {s.motivo} </span>}
+                                  {s.observacoes && <span><strong>Obs:</strong> {s.observacoes}</span>}
+                                </p>
+                              )}
+                              {aberta && (
+                                <div className="flex justify-end gap-2">
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button size="sm" variant="ghost" className="text-gray-500 hover:text-red-600">Cancelar</Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Cancelar solicitação?</AlertDialogTitle>
+                                        <AlertDialogDescription>O cliente poderá solicitar novamente.</AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Voltar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => cancelarSolicitacao(s)} className="bg-red-600 hover:bg-red-700">Confirmar</AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                  {s.status === 'PENDENTE' && (
+                                    <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => aceitarSolicitacao(s)} disabled={isAceitandoSolId === s.id}>
+                                      {isAceitandoSolId === s.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Aceitar
+                                    </Button>
+                                  )}
+                                  {s.status === 'EM PROCESSAMENTO' && (
+                                    <Button size="sm" variant="outline" onClick={() => abrirAdicionarDadosSol(s)}>Adicionar Dados</Button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {solicitacoesFiltradas.length === 0 && <p className="text-center text-gray-400 py-8">Nenhuma solicitação com esse filtro.</p>}
                       </div>
                     </div>
-                    {(s.motivo || s.observacoes) && (
-                      <p className="text-xs text-gray-500 bg-gray-50 rounded p-2">
-                        {s.motivo && <span><strong>Motivo:</strong> {s.motivo} </span>}
-                        {s.observacoes && <span><strong>Obs:</strong> {s.observacoes}</span>}
-                      </p>
-                    )}
-                    {aberta && (
-                      <div className="flex justify-end gap-2">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button size="sm" variant="ghost" className="text-gray-500 hover:text-red-600">Cancelar</Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Cancelar solicitação?</AlertDialogTitle>
-                              <AlertDialogDescription>O cliente poderá solicitar novamente.</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Voltar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => cancelarSolicitacao(s)} className="bg-red-600 hover:bg-red-700">Confirmar</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                        {s.status === 'PENDENTE' && (
-                          <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => aceitarSolicitacao(s)} disabled={isAceitandoSolId === s.id}>
-                            {isAceitandoSolId === s.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Aceitar
-                          </Button>
-                        )}
-                        {s.status === 'EM PROCESSAMENTO' && (
-                          <Button size="sm" variant="outline" onClick={() => abrirAdicionarDadosSol(s)}>Adicionar Dados</Button>
-                        )}
-                      </div>
-                    )}
+                  )}
+                </div>
+
+                {/* Coparticipação */}
+                <div className="border-t pt-4 space-y-3">
+                  <p className="flex items-center gap-2 font-semibold text-sm text-gray-700">
+                    <DollarSign className="h-4 w-4 text-[#003580]" /> Coparticipação
+                    <span className="bg-gray-100 text-gray-500 text-xs px-1.5 py-0.5 rounded-full">{coparticipacoesFiltradas.length}</span>
+                  </p>
+                  <div className="hidden sm:flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                    <div className="flex-1 grid grid-cols-5 gap-x-3">
+                      <span>Beneficiário</span>
+                      <span>Empresa</span>
+                      <span>Competência</span>
+                      <span>Valor</span>
+                      <span>Descrição</span>
+                    </div>
                   </div>
-                );
-              })}
-              {solicitacoesFiltradas.length === 0 && <p className="text-center text-gray-400 py-8">Nenhuma solicitação com esse filtro.</p>}
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Coparticipação */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-[#003580]" /> Coparticipação
-              <span className="bg-gray-100 text-gray-500 text-xs px-1.5 py-0.5 rounded-full">{coparticipacoesFiltradas.length}</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="hidden sm:flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
-              <div className="flex-1 grid grid-cols-5 gap-x-3">
-                <span>Beneficiário</span>
-                <span>Empresa</span>
-                <span>Competência</span>
-                <span>Valor</span>
-                <span>Descrição</span>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              {coparticipacoesFiltradas.map(c => (
-                <div key={c.id} className="border rounded-lg bg-white p-3">
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-x-3 gap-y-1 text-sm">
-                    <span className="font-medium text-gray-800 truncate min-w-0">{c.beneficiarios?.nome_completo || '—'}</span>
-                    <span className="text-gray-500 truncate min-w-0">{empresaLabel(c.empresa_id)}</span>
-                    <span className="text-gray-500 truncate min-w-0">{c.competencia || '—'}</span>
-                    <span className="text-gray-500 truncate min-w-0">{formatCurrency(c.valor)}</span>
-                    <span className="text-gray-500 truncate min-w-0">{c.descricao || '—'}</span>
+                  <div className="space-y-2">
+                    {coparticipacoesFiltradas.map(c => (
+                      <div key={c.id} className="border rounded-lg bg-white p-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-x-3 gap-y-1 text-sm">
+                          <span className="font-medium text-gray-800 truncate min-w-0">{c.beneficiarios?.nome_completo || '—'}</span>
+                          <span className="text-gray-500 truncate min-w-0">{empresaLabel(c.empresa_id)}</span>
+                          <span className="text-gray-500 truncate min-w-0">{c.competencia || '—'}</span>
+                          <span className="text-gray-500 truncate min-w-0">{formatCurrency(c.valor)}</span>
+                          <span className="text-gray-500 truncate min-w-0">{c.descricao || '—'}</span>
+                        </div>
+                      </div>
+                    ))}
+                    {coparticipacoesFiltradas.length === 0 && <p className="text-center text-gray-400 py-8">Nenhuma coparticipação com esse filtro.</p>}
                   </div>
                 </div>
-              ))}
-              {coparticipacoesFiltradas.length === 0 && <p className="text-center text-gray-400 py-8">Nenhuma coparticipação com esse filtro.</p>}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Apólices */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-[#003580]" /> Apólices
-              <span className="bg-gray-100 text-gray-500 text-xs px-1.5 py-0.5 rounded-full">{apolicesFiltradas.length}</span>
-            </CardTitle>
-          </CardHeader>
-              <CardContent className="space-y-3">
+              </>
+            ) : (
+              <>
                 <Select value={filtroEmpresaApolice} onValueChange={setFiltroEmpresaApolice}>
                   <SelectTrigger className="w-56 [&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue placeholder="Empresa (CNPJ)" className="truncate min-w-0" /></SelectTrigger>
                   <SelectContent><SelectItem value="todas">Todas as empresas</SelectItem>{empresaOptions}</SelectContent>
@@ -1206,8 +1203,10 @@ const GestaoGeralTestePage = () => {
                   })}
                   {apolicesFiltradas.length === 0 && <p className="text-center text-gray-400 py-8">Nenhuma apólice com esse filtro.</p>}
                 </div>
-              </CardContent>
-            </Card>
+              </>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Modal: editar beneficiário */}
