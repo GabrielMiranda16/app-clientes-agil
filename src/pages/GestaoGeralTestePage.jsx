@@ -329,18 +329,22 @@ const GestaoGeralTestePage = () => {
   const titulares = useMemo(() => beneficiarios.filter(b => b.parentesco === 'TITULAR'), [beneficiarios]);
   const planosDoBeneficiario = (benId) => planos.filter(p => p.beneficiario_id === benId);
 
+  const competenciaMaisRecenteGeral = useMemo(
+    () => coparticipacoes.reduce((max, c) => (c.competencia || '') > max ? (c.competencia || '') : max, ''),
+    [coparticipacoes]
+  );
+
   const coparticipacoesDoUltimoMes = (b) => {
+    if (!competenciaMaisRecenteGeral) return [];
     const cpfLimpo = (b.cpf || '').replace(/\D/g, '');
     const nomeLimpo = (b.nome_completo || '').trim().toLowerCase();
-    const doBeneficiario = coparticipacoes.filter(c => {
+    return coparticipacoes.filter(c => {
+      if (c.competencia !== competenciaMaisRecenteGeral) return false;
       if (c.beneficiario_id === b.id) return true;
       if (cpfLimpo && (c.cpf_quem_utilizou || '').replace(/\D/g, '') === cpfLimpo) return true;
       if (nomeLimpo && (c.nome_quem_utilizou || '').trim().toLowerCase() === nomeLimpo) return true;
       return false;
     });
-    if (doBeneficiario.length === 0) return [];
-    const ultimaCompetencia = doBeneficiario.reduce((max, c) => (c.competencia || '') > max ? (c.competencia || '') : max, '');
-    return doBeneficiario.filter(c => (c.competencia || '') === ultimaCompetencia);
   };
 
   const qtdFiltrosBenAtivos = [filtroEmpresaBen !== 'todas', filtroSituacaoBen !== 'todos', filtroParentescoBen !== 'todos'].filter(Boolean).length;
