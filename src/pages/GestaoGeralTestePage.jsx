@@ -329,6 +329,17 @@ const GestaoGeralTestePage = () => {
   const titulares = useMemo(() => beneficiarios.filter(b => b.parentesco === 'TITULAR'), [beneficiarios]);
   const planosDoBeneficiario = (benId) => planos.filter(p => p.beneficiario_id === benId);
 
+  const coparticipacoesDoBeneficiario = (b) => {
+    const cpfLimpo = (b.cpf || '').replace(/\D/g, '');
+    const nomeLimpo = (b.nome_completo || '').trim().toLowerCase();
+    return coparticipacoes.filter(c => {
+      if (c.beneficiario_id === b.id) return true;
+      if (cpfLimpo && (c.cpf_quem_utilizou || '').replace(/\D/g, '') === cpfLimpo) return true;
+      if (nomeLimpo && (c.nome_quem_utilizou || '').trim().toLowerCase() === nomeLimpo) return true;
+      return false;
+    });
+  };
+
   const qtdFiltrosBenAtivos = [filtroEmpresaBen !== 'todas', filtroSituacaoBen !== 'todos', filtroParentescoBen !== 'todos'].filter(Boolean).length;
 
   const temVinculoComApolice = (beneficiarioId) => filtroApolice === 'todas' || planos.some(p => p.beneficiario_id === beneficiarioId && Number(p.apolice_id) === Number(filtroApolice));
@@ -1007,6 +1018,24 @@ const GestaoGeralTestePage = () => {
                                     );
                                   })}
                                 </div>
+
+                                {(() => {
+                                  const coparts = coparticipacoesDoBeneficiario(b);
+                                  if (coparts.length === 0) return null;
+                                  return (
+                                    <div className="space-y-1.5">
+                                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Coparticipação</p>
+                                      {coparts.map(c => (
+                                        <div key={c.id} className="bg-white border rounded-lg px-3 py-2 text-sm flex items-center gap-2 flex-wrap">
+                                          <span className="text-gray-600">{c.competencia || '—'}</span>
+                                          <span className="font-medium text-gray-800">{formatCurrency(c.valor)}</span>
+                                          {c.descricao && <span className="text-gray-400">· {c.descricao}</span>}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  );
+                                })()}
+
                                 <div className="flex flex-wrap gap-2">
                                   <Button size="sm" variant="outline" onClick={() => abrirEditarBen(b)}>Editar beneficiário</Button>
                                   <Button size="sm" variant="outline" onClick={() => abrirVincularApolice(b)}>Vincular apólice</Button>
