@@ -12,7 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Plus, ChevronDown, ChevronLeft, ChevronRight, Users, FileText, Search, Trash2, DollarSign, ClipboardList, Clock, CheckCircle2, XCircle, SlidersHorizontal, ArrowUpDown, Check } from 'lucide-react';
+import { Loader2, Plus, ChevronDown, ChevronLeft, ChevronRight, Search, Trash2, Clock, CheckCircle2, XCircle, SlidersHorizontal, ArrowUpDown, Check } from 'lucide-react';
 import { formatCpfCnpj, applyCpfMask, applyPhoneMask, applyCepMask } from '@/lib/masks';
 import { calculateAge, formatCurrency } from '@/lib/utils';
 
@@ -197,13 +197,11 @@ const GestaoGeralTestePage = () => {
   const [isAceitandoSolId, setIsAceitandoSolId] = useState(null);
 
   const [filtroEmpresaBen, setFiltroEmpresaBen] = useState('todas');
-  const [filtroApoliceBen, setFiltroApoliceBen] = useState('todas');
   const [filtroSituacaoBen, setFiltroSituacaoBen] = useState('todos');
   const [filtroParentescoBen, setFiltroParentescoBen] = useState('todos');
   const [ordenarBen, setOrdenarBen] = useState('nome_asc');
   const [filtroEmpresaApolice, setFiltroEmpresaApolice] = useState('todas');
-  const [visaoGestao, setVisaoGestao] = useState('geral');
-  const [subVisaoGeral, setSubVisaoGeral] = useState('beneficiarios');
+  const [visaoGestao, setVisaoGestao] = useState('beneficiarios');
   const [busca, setBusca] = useState('');
   const [paginaBen, setPaginaBen] = useState(1);
 
@@ -299,7 +297,7 @@ const GestaoGeralTestePage = () => {
   };
 
   useEffect(() => { if (matrizId) load(); }, [matrizId]);
-  useEffect(() => { setPaginaBen(1); }, [filtroEmpresaBen, filtroApoliceBen, busca, filtroSituacaoBen, filtroParentescoBen]);
+  useEffect(() => { setPaginaBen(1); }, [filtroEmpresaBen, busca, filtroSituacaoBen, filtroParentescoBen]);
 
   const empresaLabel = (empresaId) => {
     const e = todasEmpresas.find(x => x.id === Number(empresaId));
@@ -326,15 +324,11 @@ const GestaoGeralTestePage = () => {
   const titulares = useMemo(() => beneficiarios.filter(b => b.parentesco === 'TITULAR'), [beneficiarios]);
   const planosDoBeneficiario = (benId) => planos.filter(p => p.beneficiario_id === benId);
 
-  const qtdFiltrosBenAtivos = [filtroEmpresaBen !== 'todas', filtroApoliceBen !== 'todas', filtroSituacaoBen !== 'todos', filtroParentescoBen !== 'todos'].filter(Boolean).length;
+  const qtdFiltrosBenAtivos = [filtroEmpresaBen !== 'todas', filtroSituacaoBen !== 'todos', filtroParentescoBen !== 'todos'].filter(Boolean).length;
 
   const beneficiariosFiltrados = useMemo(() => {
     const lista = beneficiarios.filter(b => {
       if (filtroEmpresaBen !== 'todas' && Number(b.empresa_id) !== Number(filtroEmpresaBen)) return false;
-      if (filtroApoliceBen !== 'todas') {
-        const vinculado = planos.some(p => p.beneficiario_id === b.id && Number(p.apolice_id) === Number(filtroApoliceBen));
-        if (!vinculado) return false;
-      }
       if (busca && !(b.nome_completo || '').toLowerCase().includes(busca.toLowerCase()) && !(b.cpf || '').includes(busca)) return false;
       if (filtroSituacaoBen !== 'todos' && b.situacao !== filtroSituacaoBen) return false;
       if (filtroParentescoBen === 'TITULAR' && b.parentesco !== 'TITULAR') return false;
@@ -347,7 +341,7 @@ const GestaoGeralTestePage = () => {
     if (ordenarBen === 'idade_asc') ordenada.sort((a, b) => new Date(b.data_nascimento || 0) - new Date(a.data_nascimento || 0));
     if (ordenarBen === 'idade_desc') ordenada.sort((a, b) => new Date(a.data_nascimento || 0) - new Date(b.data_nascimento || 0));
     return ordenada;
-  }, [beneficiarios, planos, filtroEmpresaBen, filtroApoliceBen, busca, filtroSituacaoBen, filtroParentescoBen, ordenarBen]);
+  }, [beneficiarios, filtroEmpresaBen, busca, filtroSituacaoBen, filtroParentescoBen, ordenarBen]);
 
   const BEN_POR_PAGINA = 20;
   const totalPaginasBen = Math.max(1, Math.ceil(beneficiariosFiltrados.length / BEN_POR_PAGINA));
@@ -360,10 +354,7 @@ const GestaoGeralTestePage = () => {
     return apolices.filter(a => filtroEmpresaApolice === 'todas' || Number(a.empresa_id) === Number(filtroEmpresaApolice));
   }, [apolices, filtroEmpresaApolice]);
 
-  const coparticipacoesFiltradas = useMemo(() => {
-    if (filtroApoliceBen === 'todas') return coparticipacoes;
-    return coparticipacoes.filter(c => planos.some(p => p.beneficiario_id === c.beneficiario_id && Number(p.apolice_id) === Number(filtroApoliceBen)));
-  }, [coparticipacoes, planos, filtroApoliceBen]);
+  const coparticipacoesFiltradas = coparticipacoes;
 
   const solicitacoesFiltradas = useMemo(() => {
     if (filtroStatusSol === 'abertas') return solicitacoes.filter(s => ['PENDENTE', 'EM PROCESSAMENTO'].includes(s.status));
@@ -797,68 +788,23 @@ const GestaoGeralTestePage = () => {
             </DropdownMenu>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1">
-                <Label className="text-xs">Visão</Label>
-                <Select value={visaoGestao} onValueChange={setVisaoGestao}>
-                  <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="geral">Visão Geral</SelectItem>
-                    <SelectItem value="apolices">Apólices</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {visaoGestao === 'geral' && (
-                <div className="flex-1">
-                  <Label className="text-xs">Apólice</Label>
-                  <Select value={filtroApoliceBen} onValueChange={setFiltroApoliceBen}>
-                    <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
-                    <SelectContent className="max-w-[calc(100vw-3rem)]">
-                      <SelectItem value="todas">Todas as apólices</SelectItem>
-                      {apolices.map(a => <SelectItem key={a.id} value={String(a.id)} className="truncate">{truncarTexto(apoliceLabel(a))} — {truncarTexto(empresaLabel(a.empresa_id))}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+            <div>
+              <Label className="text-xs">Visão</Label>
+              <Select value={visaoGestao} onValueChange={setVisaoGestao}>
+                <SelectTrigger className="w-full sm:w-72 [&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="beneficiarios">Beneficiários</SelectItem>
+                  <SelectItem value="solicitacoes">Solicitações{solicitacoesPendentesCount > 0 ? ` (${solicitacoesPendentesCount} pendente${solicitacoesPendentesCount !== 1 ? 's' : ''})` : ''}</SelectItem>
+                  <SelectItem value="coparticipacao">Coparticipação</SelectItem>
+                  <SelectItem value="apolices">Apólices</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            {visaoGestao === 'geral' && filtroApoliceBen !== 'todas' && <p className="text-xs text-gray-400">Filtrando Beneficiários e Coparticipação só dessa apólice.</p>}
 
-            {visaoGestao === 'geral' ? (
+            {visaoGestao === 'beneficiarios' && (
               <>
-                {/* Switch: Beneficiários / Solicitações / Coparticipação — só um aparece por vez */}
-                <div className="flex flex-wrap gap-2 border-b pb-4">
-                  <button
-                    type="button"
-                    onClick={() => setSubVisaoGeral('beneficiarios')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${subVisaoGeral === 'beneficiarios' ? 'bg-[#003580] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                  >
-                    <Users className="h-3.5 w-3.5" /> Beneficiários
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${subVisaoGeral === 'beneficiarios' ? 'bg-white/20' : 'bg-gray-200'}`}>{beneficiariosFiltrados.length}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSubVisaoGeral('solicitacoes')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${subVisaoGeral === 'solicitacoes' ? 'bg-[#003580] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                  >
-                    <ClipboardList className="h-3.5 w-3.5" /> Solicitações
-                    {solicitacoesPendentesCount > 0 && (
-                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${subVisaoGeral === 'solicitacoes' ? 'bg-white/20' : 'bg-amber-100 text-amber-800'}`}>{solicitacoesPendentesCount}</span>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSubVisaoGeral('coparticipacao')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${subVisaoGeral === 'coparticipacao' ? 'bg-[#003580] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                  >
-                    <DollarSign className="h-3.5 w-3.5" /> Coparticipação
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${subVisaoGeral === 'coparticipacao' ? 'bg-white/20' : 'bg-gray-200'}`}>{coparticipacoesFiltradas.length}</span>
-                  </button>
-                </div>
-
-                {subVisaoGeral === 'beneficiarios' && (
-                  <>
-                    <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
-                      <Input placeholder="Buscar nome ou CPF..." value={busca} onChange={e => setBusca(e.target.value)} className="w-full sm:w-auto sm:max-w-xs" />
+                <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
+                  <Input placeholder="Buscar nome ou CPF..." value={busca} onChange={e => setBusca(e.target.value)} className="w-full sm:w-auto sm:max-w-xs" />
 
                       <div className="flex flex-wrap gap-2">
                       <div className="relative" ref={filtroBenRef}>
@@ -1063,7 +1009,7 @@ const GestaoGeralTestePage = () => {
                   </>
                 )}
 
-                {subVisaoGeral === 'solicitacoes' && (
+                {visaoGestao === 'solicitacoes' && (
                   <div className="space-y-3">
                     <Select value={filtroStatusSol} onValueChange={setFiltroStatusSol}>
                       <SelectTrigger className="w-56 [&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
@@ -1136,7 +1082,7 @@ const GestaoGeralTestePage = () => {
                   </div>
                 )}
 
-                {subVisaoGeral === 'coparticipacao' && (
+                {visaoGestao === 'coparticipacao' && (
                   <div className="space-y-3">
                     <div className="hidden sm:flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
                       <div className="flex-1 grid grid-cols-5 gap-x-3">
@@ -1164,8 +1110,8 @@ const GestaoGeralTestePage = () => {
                     </div>
                   </div>
                 )}
-              </>
-            ) : (
+
+            {visaoGestao === 'apolices' && (
               <>
                 <Select value={filtroEmpresaApolice} onValueChange={setFiltroEmpresaApolice}>
                   <SelectTrigger className="w-56 [&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue placeholder="Empresa (CNPJ)" className="truncate min-w-0" /></SelectTrigger>
