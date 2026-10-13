@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -59,6 +59,7 @@ const emptyBenForm = {
 };
 
 const emptyAddAp = { empresa_id: '', tipo: 'saude', seguradora: '', plano: '', numero: '', valor_premio: '' };
+const emptyAddCopart = { beneficiario_id: '', competencia: '', valor: '', descricao: '' };
 
 // Campos completos do beneficiário — usado tanto no "Adicionar" quanto no card expandido
 const BeneficiarioFormFields = ({ form, setForm, titulares, empresaOptions, showEmpresa, cepLoading, onBuscarCep }) => {
@@ -201,7 +202,6 @@ const GestaoGeralTestePage = () => {
   const [filtroParentescoBen, setFiltroParentescoBen] = useState('todos');
   const [ordenarBen, setOrdenarBen] = useState('nome_asc');
   const [filtroEmpresaApolice, setFiltroEmpresaApolice] = useState('todas');
-  const [filtroEmpresaCopart, setFiltroEmpresaCopart] = useState('todas');
   const [busca, setBusca] = useState('');
   const [paginaBen, setPaginaBen] = useState(1);
 
@@ -250,6 +250,10 @@ const GestaoGeralTestePage = () => {
   const [isAddApOpen, setIsAddApOpen] = useState(false);
   const [addApForm, setAddApForm] = useState(emptyAddAp);
   const [isSavingAp, setIsSavingAp] = useState(false);
+
+  const [isAddCopartOpen, setIsAddCopartOpen] = useState(false);
+  const [addCopartForm, setAddCopartForm] = useState(emptyAddCopart);
+  const [isSavingCopart, setIsSavingCopart] = useState(false);
 
   const load = async () => {
     setIsLoading(true);
@@ -355,14 +359,17 @@ const GestaoGeralTestePage = () => {
   }, [apolices, filtroEmpresaApolice]);
 
   const coparticipacoesFiltradas = useMemo(() => {
-    return coparticipacoes.filter(c => filtroEmpresaCopart === 'todas' || Number(c.empresa_id) === Number(filtroEmpresaCopart));
-  }, [coparticipacoes, filtroEmpresaCopart]);
+    if (filtroApoliceBen === 'todas') return coparticipacoes;
+    return coparticipacoes.filter(c => planos.some(p => p.beneficiario_id === c.beneficiario_id && Number(p.apolice_id) === Number(filtroApoliceBen)));
+  }, [coparticipacoes, planos, filtroApoliceBen]);
 
   const solicitacoesFiltradas = useMemo(() => {
     if (filtroStatusSol === 'abertas') return solicitacoes.filter(s => ['PENDENTE', 'EM PROCESSAMENTO'].includes(s.status));
     if (filtroStatusSol === 'todas') return solicitacoes;
     return solicitacoes.filter(s => s.status === filtroStatusSol);
   }, [solicitacoes, filtroStatusSol]);
+
+  const solicitacoesPendentesCount = useMemo(() => solicitacoes.filter(s => ['PENDENTE', 'EM PROCESSAMENTO'].includes(s.status)).length, [solicitacoes]);
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -714,6 +721,35 @@ const GestaoGeralTestePage = () => {
     }
   };
 
+  const salvarNovaCoparticipacao = async () => {
+    if (!addCopartForm.beneficiario_id || !addCopartForm.competencia || !addCopartForm.valor) {
+      toast({ variant: 'destructive', title: 'Selecione o beneficiário e informe competência e valor.' });
+      return;
+    }
+    const beneficiario = beneficiarios.find(b => b.id === Number(addCopartForm.beneficiario_id));
+    setIsSavingCopart(true);
+    try {
+      const payload = {
+        empresa_id: beneficiario.empresa_id,
+        beneficiario_id: Number(addCopartForm.beneficiario_id),
+        competencia: addCopartForm.competencia,
+        valor: parseBRL(addCopartForm.valor),
+        descricao: addCopartForm.descricao,
+        nome_quem_utilizou: beneficiario.nome_completo,
+        cpf_quem_utilizou: beneficiario.cpf,
+      };
+      const created = await coparticipacaoService.createCoparticipacao(payload);
+      setCoparticipacoes(prev => [{ ...created, beneficiarios: { nome_completo: beneficiario.nome_completo, cpf: beneficiario.cpf } }, ...prev]);
+      toast({ title: 'Coparticipação adicionada.' });
+      setIsAddCopartOpen(false);
+      setAddCopartForm(emptyAddCopart);
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro ao adicionar coparticipação', description: err.message });
+    } finally {
+      setIsSavingCopart(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -741,131 +777,137 @@ const GestaoGeralTestePage = () => {
           <Button variant="ghost" size="sm" className="bg-white/10 hover:bg-white/20 text-white/90 hover:text-white border border-white/20 rounded-lg" onClick={() => navigate(`/admin/cliente/${matriz.id}`)}>Voltar pra empresa</Button>
         </div>
 
-        <Tabs defaultValue="beneficiarios" className="space-y-4">
-          <TabsList className="bg-white/10 w-full h-auto p-1 gap-1 grid grid-cols-2 sm:grid-cols-4">
-            <TabsTrigger value="beneficiarios" className="group text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
-              <Users className="h-4 w-4 mr-1.5" /> Beneficiários <span className="ml-1.5 bg-white/20 text-white group-data-[state=active]:bg-[#003580]/10 group-data-[state=active]:text-[#003580] text-xs px-1.5 py-0.5 rounded-full">{beneficiarios.length}</span>
-            </TabsTrigger>
-            <TabsTrigger value="apolices" className="group text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
-              <FileText className="h-4 w-4 mr-1.5" /> Apólices <span className="ml-1.5 bg-white/20 text-white group-data-[state=active]:bg-[#003580]/10 group-data-[state=active]:text-[#003580] text-xs px-1.5 py-0.5 rounded-full">{apolices.length}</span>
-            </TabsTrigger>
-            <TabsTrigger value="solicitacoes" className="group text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
-              <ClipboardList className="h-4 w-4 mr-1.5" /> Solicitações <span className="ml-1.5 bg-white/20 text-white group-data-[state=active]:bg-[#003580]/10 group-data-[state=active]:text-[#003580] text-xs px-1.5 py-0.5 rounded-full">{solicitacoes.length}</span>
-            </TabsTrigger>
-            <TabsTrigger value="coparticipacao" className="group text-white/80 data-[state=active]:bg-white data-[state=active]:text-[#003580]">
-              <DollarSign className="h-4 w-4 mr-1.5" /> Coparticipação <span className="ml-1.5 bg-white/20 text-white group-data-[state=active]:bg-[#003580]/10 group-data-[state=active]:text-[#003580] text-xs px-1.5 py-0.5 rounded-full">{coparticipacoes.length}</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="beneficiarios">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Beneficiários</CardTitle>
-                <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white" onClick={() => { setAddBenForm({ ...emptyBenForm, empresa_id: String(matriz.id) }); setIsAddBenOpen(true); }}>
+        {/* Card de filtros + ações */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Gestão</CardTitle>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white">
                   <Plus className="h-4 w-4 mr-1" /> Adicionar
                 </Button>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
-                  <Input placeholder="Buscar nome ou CPF..." value={busca} onChange={e => setBusca(e.target.value)} className="w-full sm:w-auto sm:max-w-xs" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => { setAddBenForm({ ...emptyBenForm, empresa_id: String(matriz.id) }); setIsAddBenOpen(true); }}>Beneficiário</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setAddApForm({ ...emptyAddAp, empresa_id: String(matriz.id) }); setIsAddApOpen(true); }}>Apólice</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setAddCopartForm(emptyAddCopart); setIsAddCopartOpen(true); }}>Coparticipação</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <Label className="text-xs">Apólice</Label>
+              <Select value={filtroApoliceBen} onValueChange={setFiltroApoliceBen}>
+                <SelectTrigger className="w-full sm:w-96 [&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+                <SelectContent className="max-w-[calc(100vw-3rem)]">
+                  <SelectItem value="todas">Todas as apólices</SelectItem>
+                  {apolices.map(a => <SelectItem key={a.id} value={String(a.id)} className="truncate">{truncarTexto(apoliceLabel(a))} — {truncarTexto(empresaLabel(a.empresa_id))}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              {filtroApoliceBen !== 'todas' && <p className="text-xs text-gray-400 mt-1">Filtrando Beneficiários e Coparticipação só dessa apólice.</p>}
+            </div>
 
-                  <div className="flex flex-wrap gap-2">
-                  <div className="relative" ref={filtroBenRef}>
-                    <Button variant="outline" size="sm" onClick={() => setIsFiltroBenOpen(o => !o)} className="gap-1.5">
-                      <SlidersHorizontal className="h-3.5 w-3.5" /> Filtro
-                      {qtdFiltrosBenAtivos > 0 && <Badge className="bg-[#003580] hover:bg-[#003580] text-white h-5 min-w-5 px-1 rounded-full">{qtdFiltrosBenAtivos}</Badge>}
-                    </Button>
-                    {isFiltroBenOpen && (
-                      <div className="absolute z-50 mt-1 w-72 max-w-[calc(100vw-2rem)] rounded-lg border bg-white shadow-lg p-3 space-y-3">
-                        <div>
-                          <Label className="text-xs">Empresa (CNPJ)</Label>
-                          <Select value={filtroEmpresaBen} onValueChange={setFiltroEmpresaBen}>
-                            <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
-                            <SelectContent><SelectItem value="todas">Todas as empresas</SelectItem>{empresaOptions}</SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label className="text-xs">Apólice</Label>
-                          <Select value={filtroApoliceBen} onValueChange={setFiltroApoliceBen}>
-                            <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
-                            <SelectContent className="max-w-[calc(100vw-3rem)]">
-                              <SelectItem value="todas">Todas as apólices</SelectItem>
-                              {apolices.map(a => <SelectItem key={a.id} value={String(a.id)} className="truncate">{truncarTexto(apoliceLabel(a))} — {truncarTexto(empresaLabel(a.empresa_id))}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label className="text-xs">Situação</Label>
-                          <Select value={filtroSituacaoBen} onValueChange={setFiltroSituacaoBen}>
-                            <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="todos">Todas situações</SelectItem>
-                              <SelectItem value="ATIVO">Ativos</SelectItem>
-                              <SelectItem value="INATIVO">Inativos</SelectItem>
-                              <SelectItem value="AFASTADO">Afastados</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label className="text-xs">Parentesco</Label>
-                          <Select value={filtroParentescoBen} onValueChange={setFiltroParentescoBen}>
-                            <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="todos">Todos</SelectItem>
-                              <SelectItem value="TITULAR">Titulares</SelectItem>
-                              <SelectItem value="DEPENDENTE">Dependentes</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        {qtdFiltrosBenAtivos > 0 && (
-                          <button type="button" className="text-xs text-[#003580] hover:underline" onClick={() => { setFiltroEmpresaBen('todas'); setFiltroApoliceBen('todas'); setFiltroSituacaoBen('todos'); setFiltroParentescoBen('todos'); }}>
-                            Limpar filtros
-                          </button>
-                        )}
-                      </div>
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
+              <Input placeholder="Buscar nome ou CPF..." value={busca} onChange={e => setBusca(e.target.value)} className="w-full sm:w-auto sm:max-w-xs" />
+
+              <div className="flex flex-wrap gap-2">
+              <div className="relative" ref={filtroBenRef}>
+                <Button variant="outline" size="sm" onClick={() => setIsFiltroBenOpen(o => !o)} className="gap-1.5">
+                  <SlidersHorizontal className="h-3.5 w-3.5" /> Filtro
+                  {qtdFiltrosBenAtivos > 0 && <Badge className="bg-[#003580] hover:bg-[#003580] text-white h-5 min-w-5 px-1 rounded-full">{qtdFiltrosBenAtivos}</Badge>}
+                </Button>
+                {isFiltroBenOpen && (
+                  <div className="absolute z-50 mt-1 w-72 max-w-[calc(100vw-2rem)] rounded-lg border bg-white shadow-lg p-3 space-y-3">
+                    <div>
+                      <Label className="text-xs">Empresa (CNPJ)</Label>
+                      <Select value={filtroEmpresaBen} onValueChange={setFiltroEmpresaBen}>
+                        <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+                        <SelectContent><SelectItem value="todas">Todas as empresas</SelectItem>{empresaOptions}</SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Situação</Label>
+                      <Select value={filtroSituacaoBen} onValueChange={setFiltroSituacaoBen}>
+                        <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todos">Todas situações</SelectItem>
+                          <SelectItem value="ATIVO">Ativos</SelectItem>
+                          <SelectItem value="INATIVO">Inativos</SelectItem>
+                          <SelectItem value="AFASTADO">Afastados</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Parentesco</Label>
+                      <Select value={filtroParentescoBen} onValueChange={setFiltroParentescoBen}>
+                        <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todos">Todos</SelectItem>
+                          <SelectItem value="TITULAR">Titulares</SelectItem>
+                          <SelectItem value="DEPENDENTE">Dependentes</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {qtdFiltrosBenAtivos > 0 && (
+                      <button type="button" className="text-xs text-[#003580] hover:underline" onClick={() => { setFiltroEmpresaBen('todas'); setFiltroSituacaoBen('todos'); setFiltroParentescoBen('todos'); }}>
+                        Limpar filtros
+                      </button>
                     )}
                   </div>
+                )}
+              </div>
 
-                  <div className="relative" ref={ordenarBenRef}>
-                    <Button variant="outline" size="sm" onClick={() => setIsOrdenarBenOpen(o => !o)} className="gap-1.5">
-                      <ArrowUpDown className="h-3.5 w-3.5" /> Ordenar
+              <div className="relative" ref={ordenarBenRef}>
+                <Button variant="outline" size="sm" onClick={() => setIsOrdenarBenOpen(o => !o)} className="gap-1.5">
+                  <ArrowUpDown className="h-3.5 w-3.5" /> Ordenar
+                </Button>
+                {isOrdenarBenOpen && (
+                  <div className="absolute z-50 mt-1 w-56 max-w-[calc(100vw-2rem)] rounded-lg border bg-white shadow-lg py-1">
+                    {ORDENAR_BEN_OPTIONS.map(opt => (
+                      <button key={opt.key} type="button" onClick={() => { setOrdenarBen(opt.key); setIsOrdenarBenOpen(false); }}
+                        className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 ${ordenarBen === opt.key ? 'text-[#003580] font-medium' : 'text-gray-700'}`}>
+                        {opt.label}
+                        {ordenarBen === opt.key && <Check className="h-3.5 w-3.5" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              </div>
+
+              {selectedIds.size > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="destructive" disabled={isBulkDeleting}>
+                      <Trash2 className="h-3.5 w-3.5 mr-1" /> Excluir {selectedIds.size} selecionado{selectedIds.size !== 1 ? 's' : ''}
                     </Button>
-                    {isOrdenarBenOpen && (
-                      <div className="absolute z-50 mt-1 w-56 max-w-[calc(100vw-2rem)] rounded-lg border bg-white shadow-lg py-1">
-                        {ORDENAR_BEN_OPTIONS.map(opt => (
-                          <button key={opt.key} type="button" onClick={() => { setOrdenarBen(opt.key); setIsOrdenarBenOpen(false); }}
-                            className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 ${ordenarBen === opt.key ? 'text-[#003580] font-medium' : 'text-gray-700'}`}>
-                            {opt.label}
-                            {ordenarBen === opt.key && <Check className="h-3.5 w-3.5" />}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  </div>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir beneficiários selecionados?</AlertDialogTitle>
+                      <AlertDialogDescription>Essa ação não pode ser desfeita.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={excluirSelecionados} className="bg-red-600 hover:bg-red-700">Excluir</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-                  {selectedIds.size > 0 && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button size="sm" variant="destructive" disabled={isBulkDeleting}>
-                          <Trash2 className="h-3.5 w-3.5 mr-1" /> Excluir {selectedIds.size} selecionado{selectedIds.size !== 1 ? 's' : ''}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Excluir beneficiários selecionados?</AlertDialogTitle>
-                          <AlertDialogDescription>Essa ação não pode ser desfeita.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={excluirSelecionados} className="bg-red-600 hover:bg-red-700">Excluir</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                </div>
-
-                {/* Cabeçalho das colunas */}
+        {/* Beneficiários */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-[#003580]" /> Beneficiários
+              <span className="bg-gray-100 text-gray-500 text-xs px-1.5 py-0.5 rounded-full">{beneficiariosFiltrados.length}</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {/* Cabeçalho das colunas */}
                 <div className="hidden sm:flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
                   <div className="w-5 shrink-0" />
                   <div className="flex-1 grid grid-cols-4 gap-x-3">
@@ -981,16 +1023,131 @@ const GestaoGeralTestePage = () => {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
 
-          <TabsContent value="apolices">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Apólices</CardTitle>
-                <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white" onClick={() => { setAddApForm({ ...emptyAddAp, empresa_id: String(matriz.id) }); setIsAddApOpen(true); }}>
-                  <Plus className="h-4 w-4 mr-1" /> Adicionar
-                </Button>
-              </CardHeader>
+        {/* Solicitações */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ClipboardList className="h-4 w-4 text-[#003580]" /> Solicitações
+              {solicitacoesPendentesCount > 0 && <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">{solicitacoesPendentesCount} pendente{solicitacoesPendentesCount !== 1 ? 's' : ''}</Badge>}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Select value={filtroStatusSol} onValueChange={setFiltroStatusSol}>
+              <SelectTrigger className="w-56 [&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="abertas">Pendentes + Em Processamento</SelectItem>
+                <SelectItem value="PENDENTE">Pendentes</SelectItem>
+                <SelectItem value="EM PROCESSAMENTO">Em Processamento</SelectItem>
+                <SelectItem value="CONCLUIDA">Concluídas</SelectItem>
+                <SelectItem value="REJEITADA">Rejeitadas</SelectItem>
+                <SelectItem value="CANCELADA">Canceladas</SelectItem>
+                <SelectItem value="todas">Todas</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div className="space-y-2">
+              {solicitacoesFiltradas.map(s => {
+                const beneficiario = beneficiarios.find(b => b.id === s.beneficiario_id);
+                const aberta = ['PENDENTE', 'EM PROCESSAMENTO'].includes(s.status);
+                return (
+                  <div key={s.id} className="border rounded-lg bg-white p-3 space-y-2">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-800 truncate">{beneficiario?.nome_completo || 'Beneficiário removido'}</p>
+                        <p className="text-xs text-gray-500">{empresaLabel(s.empresa_id)} · {getTempoDecorrido(s.data_solicitacao)}</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-gray-500 capitalize">{s.tipo_plano}</span>
+                        {getTipoBadge(s.tipo_solicitacao)}
+                        {getStatusBadge(s.status)}
+                      </div>
+                    </div>
+                    {(s.motivo || s.observacoes) && (
+                      <p className="text-xs text-gray-500 bg-gray-50 rounded p-2">
+                        {s.motivo && <span><strong>Motivo:</strong> {s.motivo} </span>}
+                        {s.observacoes && <span><strong>Obs:</strong> {s.observacoes}</span>}
+                      </p>
+                    )}
+                    {aberta && (
+                      <div className="flex justify-end gap-2">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="ghost" className="text-gray-500 hover:text-red-600">Cancelar</Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Cancelar solicitação?</AlertDialogTitle>
+                              <AlertDialogDescription>O cliente poderá solicitar novamente.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Voltar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => cancelarSolicitacao(s)} className="bg-red-600 hover:bg-red-700">Confirmar</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                        {s.status === 'PENDENTE' && (
+                          <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => aceitarSolicitacao(s)} disabled={isAceitandoSolId === s.id}>
+                            {isAceitandoSolId === s.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Aceitar
+                          </Button>
+                        )}
+                        {s.status === 'EM PROCESSAMENTO' && (
+                          <Button size="sm" variant="outline" onClick={() => abrirAdicionarDadosSol(s)}>Adicionar Dados</Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {solicitacoesFiltradas.length === 0 && <p className="text-center text-gray-400 py-8">Nenhuma solicitação com esse filtro.</p>}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Coparticipação */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-[#003580]" /> Coparticipação
+              <span className="bg-gray-100 text-gray-500 text-xs px-1.5 py-0.5 rounded-full">{coparticipacoesFiltradas.length}</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="hidden sm:flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
+              <div className="flex-1 grid grid-cols-5 gap-x-3">
+                <span>Beneficiário</span>
+                <span>Empresa</span>
+                <span>Competência</span>
+                <span>Valor</span>
+                <span>Descrição</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {coparticipacoesFiltradas.map(c => (
+                <div key={c.id} className="border rounded-lg bg-white p-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-x-3 gap-y-1 text-sm">
+                    <span className="font-medium text-gray-800 truncate min-w-0">{c.beneficiarios?.nome_completo || '—'}</span>
+                    <span className="text-gray-500 truncate min-w-0">{empresaLabel(c.empresa_id)}</span>
+                    <span className="text-gray-500 truncate min-w-0">{c.competencia || '—'}</span>
+                    <span className="text-gray-500 truncate min-w-0">{formatCurrency(c.valor)}</span>
+                    <span className="text-gray-500 truncate min-w-0">{c.descricao || '—'}</span>
+                  </div>
+                </div>
+              ))}
+              {coparticipacoesFiltradas.length === 0 && <p className="text-center text-gray-400 py-8">Nenhuma coparticipação com esse filtro.</p>}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Apólices */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-[#003580]" /> Apólices
+              <span className="bg-gray-100 text-gray-500 text-xs px-1.5 py-0.5 rounded-full">{apolicesFiltradas.length}</span>
+            </CardTitle>
+          </CardHeader>
               <CardContent className="space-y-3">
                 <Select value={filtroEmpresaApolice} onValueChange={setFiltroEmpresaApolice}>
                   <SelectTrigger className="w-56 [&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue placeholder="Empresa (CNPJ)" className="truncate min-w-0" /></SelectTrigger>
@@ -1051,121 +1208,6 @@ const GestaoGeralTestePage = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="solicitacoes">
-            <Card>
-              <CardHeader><CardTitle>Solicitações</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <Select value={filtroStatusSol} onValueChange={setFiltroStatusSol}>
-                  <SelectTrigger className="w-56 [&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="abertas">Pendentes + Em Processamento</SelectItem>
-                    <SelectItem value="PENDENTE">Pendentes</SelectItem>
-                    <SelectItem value="EM PROCESSAMENTO">Em Processamento</SelectItem>
-                    <SelectItem value="CONCLUIDA">Concluídas</SelectItem>
-                    <SelectItem value="REJEITADA">Rejeitadas</SelectItem>
-                    <SelectItem value="CANCELADA">Canceladas</SelectItem>
-                    <SelectItem value="todas">Todas</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <div className="space-y-2">
-                  {solicitacoesFiltradas.map(s => {
-                    const beneficiario = beneficiarios.find(b => b.id === s.beneficiario_id);
-                    const aberta = ['PENDENTE', 'EM PROCESSAMENTO'].includes(s.status);
-                    return (
-                      <div key={s.id} className="border rounded-lg bg-white p-3 space-y-2">
-                        <div className="flex items-center justify-between flex-wrap gap-2">
-                          <div className="min-w-0">
-                            <p className="font-medium text-gray-800 truncate">{beneficiario?.nome_completo || 'Beneficiário removido'}</p>
-                            <p className="text-xs text-gray-500">{empresaLabel(s.empresa_id)} · {getTempoDecorrido(s.data_solicitacao)}</p>
-                          </div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs text-gray-500 capitalize">{s.tipo_plano}</span>
-                            {getTipoBadge(s.tipo_solicitacao)}
-                            {getStatusBadge(s.status)}
-                          </div>
-                        </div>
-                        {(s.motivo || s.observacoes) && (
-                          <p className="text-xs text-gray-500 bg-gray-50 rounded p-2">
-                            {s.motivo && <span><strong>Motivo:</strong> {s.motivo} </span>}
-                            {s.observacoes && <span><strong>Obs:</strong> {s.observacoes}</span>}
-                          </p>
-                        )}
-                        {aberta && (
-                          <div className="flex justify-end gap-2">
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button size="sm" variant="ghost" className="text-gray-500 hover:text-red-600">Cancelar</Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Cancelar solicitação?</AlertDialogTitle>
-                                  <AlertDialogDescription>O cliente poderá solicitar novamente.</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Voltar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => cancelarSolicitacao(s)} className="bg-red-600 hover:bg-red-700">Confirmar</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                            {s.status === 'PENDENTE' && (
-                              <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => aceitarSolicitacao(s)} disabled={isAceitandoSolId === s.id}>
-                                {isAceitandoSolId === s.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Aceitar
-                              </Button>
-                            )}
-                            {s.status === 'EM PROCESSAMENTO' && (
-                              <Button size="sm" variant="outline" onClick={() => abrirAdicionarDadosSol(s)}>Adicionar Dados</Button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                  {solicitacoesFiltradas.length === 0 && <p className="text-center text-gray-400 py-8">Nenhuma solicitação com esse filtro.</p>}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="coparticipacao">
-            <Card>
-              <CardHeader><CardTitle>Coparticipação</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <Select value={filtroEmpresaCopart} onValueChange={setFiltroEmpresaCopart}>
-                  <SelectTrigger className="w-56 [&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue placeholder="Empresa (CNPJ)" className="truncate min-w-0" /></SelectTrigger>
-                  <SelectContent><SelectItem value="todas">Todas as empresas</SelectItem>{empresaOptions}</SelectContent>
-                </Select>
-
-                <div className="hidden sm:flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                  <div className="flex-1 grid grid-cols-5 gap-x-3">
-                    <span>Beneficiário</span>
-                    <span>Empresa</span>
-                    <span>Competência</span>
-                    <span>Valor</span>
-                    <span>Descrição</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  {coparticipacoesFiltradas.map(c => (
-                    <div key={c.id} className="border rounded-lg bg-white p-3">
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-x-3 gap-y-1 text-sm">
-                        <span className="font-medium text-gray-800 truncate min-w-0">{c.beneficiarios?.nome_completo || '—'}</span>
-                        <span className="text-gray-500 truncate min-w-0">{empresaLabel(c.empresa_id)}</span>
-                        <span className="text-gray-500 truncate min-w-0">{c.competencia || '—'}</span>
-                        <span className="text-gray-500 truncate min-w-0">{formatCurrency(c.valor)}</span>
-                        <span className="text-gray-500 truncate min-w-0">{c.descricao || '—'}</span>
-                      </div>
-                    </div>
-                  ))}
-                  {coparticipacoesFiltradas.length === 0 && <p className="text-center text-gray-400 py-8">Nenhuma coparticipação com esse filtro.</p>}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
       </div>
 
       {/* Modal: editar beneficiário */}
@@ -1360,6 +1402,33 @@ const GestaoGeralTestePage = () => {
             <Button variant="outline" onClick={() => setIsAddApOpen(false)}>Cancelar</Button>
             <Button onClick={salvarNovaApolice} disabled={isSavingAp} className="bg-[#003580] hover:bg-[#002060]">
               {isSavingAp && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Adicionar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: adicionar coparticipação */}
+      <Dialog open={isAddCopartOpen} onOpenChange={setIsAddCopartOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Adicionar coparticipação</DialogTitle></DialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <Label>Beneficiário</Label>
+              <Select value={addCopartForm.beneficiario_id} onValueChange={(v) => setAddCopartForm(prev => ({ ...prev, beneficiario_id: v }))}>
+                <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue placeholder="Selecione..." className="truncate min-w-0" /></SelectTrigger>
+                <SelectContent className="max-w-[calc(100vw-3rem)]">
+                  {beneficiarios.map(b => <SelectItem key={b.id} value={String(b.id)} className="truncate">{truncarTexto(b.nome_completo, 30)} — {truncarTexto(empresaLabel(b.empresa_id))}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>Competência</Label><Input value={addCopartForm.competencia} onChange={e => setAddCopartForm(prev => ({ ...prev, competencia: e.target.value }))} placeholder="AAAA-MM" /></div>
+            <div><Label>Valor (R$)</Label><Input value={addCopartForm.valor} onChange={e => setAddCopartForm(prev => ({ ...prev, valor: maskBRL(e.target.value) }))} placeholder="0,00" /></div>
+            <div><Label>Descrição</Label><Input value={addCopartForm.descricao} onChange={e => setAddCopartForm(prev => ({ ...prev, descricao: e.target.value }))} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddCopartOpen(false)}>Cancelar</Button>
+            <Button onClick={salvarNovaCoparticipacao} disabled={isSavingCopart} className="bg-[#003580] hover:bg-[#002060]">
+              {isSavingCopart && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Adicionar
             </Button>
           </DialogFooter>
         </DialogContent>
