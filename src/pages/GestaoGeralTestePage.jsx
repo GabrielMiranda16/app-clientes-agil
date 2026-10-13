@@ -205,6 +205,8 @@ const GestaoGeralTestePage = () => {
   const [filtroApolice, setFiltroApolice] = useState('todas');
   const [busca, setBusca] = useState('');
   const [paginaBen, setPaginaBen] = useState(1);
+  const [paginaSol, setPaginaSol] = useState(1);
+  const [paginaCopart, setPaginaCopart] = useState(1);
 
   const [isFiltroBenOpen, setIsFiltroBenOpen] = useState(false);
   const [isOrdenarBenOpen, setIsOrdenarBenOpen] = useState(false);
@@ -299,6 +301,8 @@ const GestaoGeralTestePage = () => {
 
   useEffect(() => { if (matrizId) load(); }, [matrizId]);
   useEffect(() => { setPaginaBen(1); }, [filtroEmpresaBen, filtroApolice, busca, filtroSituacaoBen, filtroParentescoBen]);
+  useEffect(() => { setPaginaSol(1); }, [filtroStatusSol, filtroApolice]);
+  useEffect(() => { setPaginaCopart(1); }, [filtroApolice]);
 
   const empresaLabel = (empresaId) => {
     const e = todasEmpresas.find(x => x.id === Number(empresaId));
@@ -347,11 +351,12 @@ const GestaoGeralTestePage = () => {
     return ordenada;
   }, [beneficiarios, planos, filtroEmpresaBen, filtroApolice, busca, filtroSituacaoBen, filtroParentescoBen, ordenarBen]);
 
-  const BEN_POR_PAGINA = 20;
-  const totalPaginasBen = Math.max(1, Math.ceil(beneficiariosFiltrados.length / BEN_POR_PAGINA));
+  const ITENS_POR_PAGINA = 20;
+
+  const totalPaginasBen = Math.max(1, Math.ceil(beneficiariosFiltrados.length / ITENS_POR_PAGINA));
   const beneficiariosPaginados = useMemo(() => {
-    const start = (paginaBen - 1) * BEN_POR_PAGINA;
-    return beneficiariosFiltrados.slice(start, start + BEN_POR_PAGINA);
+    const start = (paginaBen - 1) * ITENS_POR_PAGINA;
+    return beneficiariosFiltrados.slice(start, start + ITENS_POR_PAGINA);
   }, [beneficiariosFiltrados, paginaBen]);
 
   const apolicesFiltradas = useMemo(() => {
@@ -362,12 +367,24 @@ const GestaoGeralTestePage = () => {
     return coparticipacoes.filter(c => temVinculoComApolice(c.beneficiario_id));
   }, [coparticipacoes, planos, filtroApolice]);
 
+  const totalPaginasCopart = Math.max(1, Math.ceil(coparticipacoesFiltradas.length / ITENS_POR_PAGINA));
+  const coparticipacoesPaginadas = useMemo(() => {
+    const start = (paginaCopart - 1) * ITENS_POR_PAGINA;
+    return coparticipacoesFiltradas.slice(start, start + ITENS_POR_PAGINA);
+  }, [coparticipacoesFiltradas, paginaCopart]);
+
   const solicitacoesFiltradas = useMemo(() => {
     let lista = solicitacoes;
     if (filtroStatusSol === 'abertas') lista = lista.filter(s => ['PENDENTE', 'EM PROCESSAMENTO'].includes(s.status));
     else if (filtroStatusSol !== 'todas') lista = lista.filter(s => s.status === filtroStatusSol);
     return lista.filter(s => temVinculoComApolice(s.beneficiario_id));
   }, [solicitacoes, filtroStatusSol, planos, filtroApolice]);
+
+  const totalPaginasSol = Math.max(1, Math.ceil(solicitacoesFiltradas.length / ITENS_POR_PAGINA));
+  const solicitacoesPaginadas = useMemo(() => {
+    const start = (paginaSol - 1) * ITENS_POR_PAGINA;
+    return solicitacoesFiltradas.slice(start, start + ITENS_POR_PAGINA);
+  }, [solicitacoesFiltradas, paginaSol]);
 
   const solicitacoesPendentesCount = useMemo(() => solicitacoes.filter(s => ['PENDENTE', 'EM PROCESSAMENTO'].includes(s.status)).length, [solicitacoes]);
 
@@ -797,7 +814,7 @@ const GestaoGeralTestePage = () => {
           <CardContent className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1">
-                <Label className="text-xs">Visão</Label>
+                <Label className="text-xs">Visão Geral</Label>
                 <Select value={visaoGestao} onValueChange={setVisaoGestao}>
                   <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
                   <SelectContent>
@@ -1047,7 +1064,7 @@ const GestaoGeralTestePage = () => {
                     </Select>
 
                     <div className="space-y-2">
-                      {solicitacoesFiltradas.map(s => {
+                      {solicitacoesPaginadas.map(s => {
                         const beneficiario = beneficiarios.find(b => b.id === s.beneficiario_id);
                         const aberta = ['PENDENTE', 'EM PROCESSAMENTO'].includes(s.status);
                         return (
@@ -1101,6 +1118,16 @@ const GestaoGeralTestePage = () => {
                       })}
                       {solicitacoesFiltradas.length === 0 && <p className="text-center text-gray-400 py-8">Nenhuma solicitação com esse filtro.</p>}
                     </div>
+
+                    {totalPaginasSol > 1 && (
+                      <div className="flex items-center justify-between pt-2">
+                        <p className="text-xs text-gray-400">Página {paginaSol} de {totalPaginasSol} · {solicitacoesFiltradas.length} solicitações</p>
+                        <div className="flex items-center gap-1">
+                          <Button size="sm" variant="outline" disabled={paginaSol === 1} onClick={() => setPaginaSol(p => Math.max(1, p - 1))}><ChevronLeft className="h-4 w-4" /></Button>
+                          <Button size="sm" variant="outline" disabled={paginaSol === totalPaginasSol} onClick={() => setPaginaSol(p => Math.min(totalPaginasSol, p + 1))}><ChevronRight className="h-4 w-4" /></Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1117,7 +1144,7 @@ const GestaoGeralTestePage = () => {
                     </div>
 
                     <div className="space-y-2">
-                      {coparticipacoesFiltradas.map(c => (
+                      {coparticipacoesPaginadas.map(c => (
                         <div key={c.id} className="border rounded-lg bg-white p-3">
                           <div className="grid grid-cols-2 sm:grid-cols-5 gap-x-3 gap-y-1 text-sm">
                             <span className="font-medium text-gray-800 truncate min-w-0">{c.beneficiarios?.nome_completo || '—'}</span>
@@ -1130,6 +1157,16 @@ const GestaoGeralTestePage = () => {
                       ))}
                       {coparticipacoesFiltradas.length === 0 && <p className="text-center text-gray-400 py-8">Nenhuma coparticipação com esse filtro.</p>}
                     </div>
+
+                    {totalPaginasCopart > 1 && (
+                      <div className="flex items-center justify-between pt-2">
+                        <p className="text-xs text-gray-400">Página {paginaCopart} de {totalPaginasCopart} · {coparticipacoesFiltradas.length} coparticipações</p>
+                        <div className="flex items-center gap-1">
+                          <Button size="sm" variant="outline" disabled={paginaCopart === 1} onClick={() => setPaginaCopart(p => Math.max(1, p - 1))}><ChevronLeft className="h-4 w-4" /></Button>
+                          <Button size="sm" variant="outline" disabled={paginaCopart === totalPaginasCopart} onClick={() => setPaginaCopart(p => Math.min(totalPaginasCopart, p + 1))}><ChevronRight className="h-4 w-4" /></Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
