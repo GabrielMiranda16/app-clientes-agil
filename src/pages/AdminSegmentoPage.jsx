@@ -256,6 +256,8 @@ const AdminSegmentoPage = () => {
         ...apoliceForm,
         segmento: segConfig.key,
         empresa_id: Number(apoliceEmpresaId),
+        vigencia_inicio: apoliceForm.vigencia_inicio || null,
+        vigencia_fim: apoliceForm.vigencia_fim || null,
         valor_premio: apoliceForm.valor_premio ? Number(apoliceForm.valor_premio) : null,
         ativo: true,
         dados_adicionais: dadosAdicionais,
