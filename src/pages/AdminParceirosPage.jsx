@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   HeartHandshake, FileText, Clock, CheckCircle2, DollarSign,
   X, Send, Loader2, ChevronRight, Copy, Check,
@@ -1425,9 +1426,16 @@ const AdminParceirosPage = () => {
                   <div className="space-y-2">
                     <div className="space-y-1">
                       <Label className="text-xs text-gray-500">LMI — Limite Máximo de Indenização (%)</Label>
-                      <Input value={p.lmi_percentual || ''} onChange={e => updProposta(pi, 'lmi_percentual', e.target.value)}
-                        placeholder="Ex: 100"
-                        className="border-gray-200 bg-[#f0f7ff] focus:border-[#003580] h-8 text-xs" />
+                      <Select value={p.lmi_percentual ? String(p.lmi_percentual) : ''} onValueChange={v => updProposta(pi, 'lmi_percentual', v)}>
+                        <SelectTrigger className="h-8 text-xs rounded-lg border-gray-200 bg-[#f0f7ff] focus:border-[#003580]">
+                          <SelectValue placeholder="Selecionar..." />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[180px] overflow-y-auto">
+                          {Array.from({ length: 20 }, (_, i) => 100 - i * 5).map(n => (
+                            <SelectItem key={n} value={String(n)} className="text-xs">{n}%</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
@@ -2035,7 +2043,7 @@ const AdminParceirosPage = () => {
                             <Badge className={`text-xs ${cfg.color}`}>{o.status === 'ASSINATURA' ? assinaturaLabel(o.segmento) : cfg.label}</Badge>
                             <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                           </div>
-                          {(o.descricao_orcamento || o.operadora_escolhida) && (
+                          {o.operadora_escolhida && (
                             <p className="text-xs text-green-700 font-medium text-right max-w-[160px]">Proposta aceita: <strong>{o.descricao_orcamento || o.operadora_escolhida}</strong></p>
                           )}
                         </div>

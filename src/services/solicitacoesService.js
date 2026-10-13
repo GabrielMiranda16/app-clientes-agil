@@ -12,9 +12,11 @@ export const solicitacoesService = {
             nome_completo,
             cpf
           ),
-          empresas (
+          empresa:empresas (
             razao_social,
-            nome_fantasia
+            nome_fantasia,
+            tipo,
+            empresa_matriz_id
           )
         `)
         .order('created_at', { ascending: false });

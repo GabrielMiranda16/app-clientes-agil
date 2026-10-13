@@ -58,8 +58,9 @@ const STATUS_SOL_COLORS = {
 const MES_OPTS = (() => {
   const opts = [];
   const now = new Date();
-  for (let i = 0; i < 3; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+  // 0 = mês atual (padrão), 1 = próximo mês, -1/-2 = meses anteriores
+  for (const off of [0, 1, -1, -2]) {
+    const d = new Date(now.getFullYear(), now.getMonth() + off, 1);
     const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     const label = format(d, 'MMMM yyyy', { locale: ptBR });
     opts.push({ val, label: label.charAt(0).toUpperCase() + label.slice(1) });
@@ -79,6 +80,26 @@ const ApoliceDashboard = () => {
 
   const [loading, setLoading] = useState(true);
   const [apolice, setApolice] = useState(null);
+  const [apolicesGrupo, setApolicesGrupo] = useState([]);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+  const switcherRef = useRef(null);
+
+  useEffect(() => {
+    const onClickOutside = (e) => { if (switcherRef.current && !switcherRef.current.contains(e.target)) setSwitcherOpen(false); };
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  // Outras empresas do mesmo grupo (matriz + filiais) que também têm apólice
+  // ativa desse mesmo segmento — permite trocar sem voltar pra lista.
+  useEffect(() => {
+    if (!isAdmin || !apolice?.empresas || !apolice?.segmento) { setApolicesGrupo([]); return; }
+    const matrizId = apolice.empresas.tipo === 'FILIAL' ? apolice.empresas.empresa_matriz_id : apolice.empresa_id;
+    if (!matrizId) { setApolicesGrupo([]); return; }
+    apolicesService.getApolicesByMatriz(matrizId)
+      .then(lista => setApolicesGrupo(lista.filter(a => a.segmento === apolice.segmento)))
+      .catch(() => setApolicesGrupo([]));
+  }, [isAdmin, apolice?.id, apolice?.segmento, apolice?.empresas?.tipo, apolice?.empresas?.empresa_matriz_id, apolice?.empresa_id]);
 
   // Tabs de Beneficiários/Solicitações/Coparticipação apenas para SVD (só ADM)
   const isSVD = apolice?.segmento === 'SAUDE_VIDA_ODONTO';
@@ -198,6 +219,27 @@ const ApoliceDashboard = () => {
     }
   };
 
+  const [baixandoBoletoId, setBaixandoBoletoId] = useState(null);
+
+  const handleBaixarBoleto = async (boleto) => {
+    setBaixandoBoletoId(boleto.id);
+    try {
+      const url = await boletosService.getSignedUrl(boleto.arquivo_url);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `boleto-${boleto.mes_referencia}.pdf`;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch {
+      toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível baixar o boleto.' });
+    } finally {
+      setBaixandoBoletoId(null);
+    }
+  };
+
   const mesLabel = (mesStr) => {
     try {
       const [y, m] = mesStr.split('-');
@@ -271,7 +313,7 @@ const ApoliceDashboard = () => {
               <>
                 <button onClick={() => navigate('/select-segmento')} className="text-sm text-white/60 hover:text-white transition-colors">Meus Seguros</button>
                 <ChevronRight className="h-4 w-4 text-white/30" />
-                <button onClick={() => navigate(`/select-apolice/${apolice.segmento}`)} className="text-sm text-white/60 hover:text-white transition-colors">
+                <button onClick={() => navigate(`/select-apolice/${SEGMENTOS[apolice.segmento]?.slug || apolice.segmento?.toLowerCase().replace(/_/g, '-')}`)} className="text-sm text-white/60 hover:text-white transition-colors">
                   {segLabel}
                 </button>
               </>
@@ -304,10 +346,32 @@ const ApoliceDashboard = () => {
               {apolice.empresas && (
                 <p className="text-white/90 text-base font-medium mt-0.5 flex items-center gap-1.5">
                   {apolice.empresas.nome_fantasia || apolice.empresas.razao_social}
-                  {apolice.empresas.tipo && (
+                  {apolice.empresas.tipo && apolicesGrupo.length <= 1 && (
                     <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${apolice.empresas.tipo === 'MATRIZ' ? 'bg-blue-500/30 text-blue-200' : 'bg-white/20 text-white/80'}`}>
                       {apolice.empresas.tipo === 'MATRIZ' ? 'Matriz' : 'Filial'}
                     </span>
+                  )}
+                  {apolice.empresas.tipo && apolicesGrupo.length > 1 && (
+                    <div className="relative" ref={switcherRef}>
+                      <button type="button" onClick={() => setSwitcherOpen(o => !o)}
+                        className={`flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full transition-colors hover:brightness-110 ${apolice.empresas.tipo === 'MATRIZ' ? 'bg-blue-500/30 text-blue-200' : 'bg-white/20 text-white/80'}`}>
+                        {apolice.empresas.tipo === 'MATRIZ' ? 'Matriz' : 'Filial'}
+                        <ChevronRight className={`h-3 w-3 transition-transform ${switcherOpen ? 'rotate-90' : ''}`} />
+                      </button>
+                      {switcherOpen && (
+                        <div className="absolute z-50 mt-1 min-w-[240px] rounded-lg border bg-white shadow-lg overflow-hidden">
+                          <p className="px-3 pt-2 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Trocar de empresa</p>
+                          {apolicesGrupo.map(a => (
+                            <button key={a.id} type="button"
+                              onClick={() => { setSwitcherOpen(false); if (a.id !== apolice.id) navigate(`/apolice/${a.id}`); }}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center justify-between gap-2 ${a.id === apolice.id ? 'bg-blue-50 text-[#003580] font-medium' : 'text-gray-700'}`}>
+                              <span className="truncate">{a.empresa?.nome_fantasia || a.empresa?.razao_social}</span>
+                              <span className="text-[10px] text-gray-400 shrink-0">{a.empresa?.tipo === 'MATRIZ' ? 'Matriz' : 'Filial'}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </p>
               )}
@@ -658,6 +722,11 @@ const ApoliceDashboard = () => {
                                   <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white" onClick={() => openBoletoPreview(b)}>
                                     <FileText className="h-3.5 w-3.5 mr-1.5" /> Visualizar
                                   </Button>
+                                  <Button variant="outline" size="icon" className="h-8 w-8" title="Baixar PDF"
+                                    disabled={baixandoBoletoId === b.id}
+                                    onClick={() => handleBaixarBoleto(b)}>
+                                    {baixandoBoletoId === b.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                                  </Button>
                                   {isAdmin && (
                                     <>
                                       <Button variant="outline" size="icon" className="h-8 w-8" title="Substituir PDF" onClick={() => openBoletoUpload(b)}>
@@ -687,9 +756,14 @@ const ApoliceDashboard = () => {
 
                         {/* Botão para o cliente — aparece fora da lista para facilitar */}
                         {isCliente && boletoAtual && (
-                          <div className="mt-3 pt-3 border-t">
-                            <Button className="w-full bg-[#003580] hover:bg-[#002060] text-white" onClick={() => openBoletoPreview(boletoAtual)}>
+                          <div className="mt-3 pt-3 border-t flex gap-2">
+                            <Button className="flex-1 bg-[#003580] hover:bg-[#002060] text-white" onClick={() => openBoletoPreview(boletoAtual)}>
                               <Receipt className="h-4 w-4 mr-2" /> Boleto Disponível — {mesLabel(boletoAtual.mes_referencia)}
+                            </Button>
+                            <Button variant="outline" size="icon" className="shrink-0" title="Baixar PDF"
+                              disabled={baixandoBoletoId === boletoAtual.id}
+                              onClick={() => handleBaixarBoleto(boletoAtual)}>
+                              {baixandoBoletoId === boletoAtual.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                             </Button>
                           </div>
                         )}
