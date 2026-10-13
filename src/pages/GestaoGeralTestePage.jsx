@@ -203,7 +203,7 @@ const GestaoGeralTestePage = () => {
   const [ordenarBen, setOrdenarBen] = useState('nome_asc');
   const [filtroEmpresaApolice, setFiltroEmpresaApolice] = useState('todas');
   const [visaoGestao, setVisaoGestao] = useState('geral');
-  const [isSolicitacoesOpen, setIsSolicitacoesOpen] = useState(false);
+  const [subVisaoGeral, setSubVisaoGeral] = useState('beneficiarios');
   const [busca, setBusca] = useState('');
   const [paginaBen, setPaginaBen] = useState(1);
 
@@ -825,324 +825,345 @@ const GestaoGeralTestePage = () => {
 
             {visaoGestao === 'geral' ? (
               <>
-                <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
-                  <Input placeholder="Buscar nome ou CPF..." value={busca} onChange={e => setBusca(e.target.value)} className="w-full sm:w-auto sm:max-w-xs" />
-
-                  <div className="flex flex-wrap gap-2">
-                  <div className="relative" ref={filtroBenRef}>
-                    <Button variant="outline" size="sm" onClick={() => setIsFiltroBenOpen(o => !o)} className="gap-1.5">
-                      <SlidersHorizontal className="h-3.5 w-3.5" /> Filtro
-                      {qtdFiltrosBenAtivos > 0 && <Badge className="bg-[#003580] hover:bg-[#003580] text-white h-5 min-w-5 px-1 rounded-full">{qtdFiltrosBenAtivos}</Badge>}
-                    </Button>
-                    {isFiltroBenOpen && (
-                      <div className="absolute z-50 mt-1 w-72 max-w-[calc(100vw-2rem)] rounded-lg border bg-white shadow-lg p-3 space-y-3">
-                        <div>
-                          <Label className="text-xs">Empresa (CNPJ)</Label>
-                          <Select value={filtroEmpresaBen} onValueChange={setFiltroEmpresaBen}>
-                            <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
-                            <SelectContent><SelectItem value="todas">Todas as empresas</SelectItem>{empresaOptions}</SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label className="text-xs">Situação</Label>
-                          <Select value={filtroSituacaoBen} onValueChange={setFiltroSituacaoBen}>
-                            <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="todos">Todas situações</SelectItem>
-                              <SelectItem value="ATIVO">Ativos</SelectItem>
-                              <SelectItem value="INATIVO">Inativos</SelectItem>
-                              <SelectItem value="AFASTADO">Afastados</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label className="text-xs">Parentesco</Label>
-                          <Select value={filtroParentescoBen} onValueChange={setFiltroParentescoBen}>
-                            <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="todos">Todos</SelectItem>
-                              <SelectItem value="TITULAR">Titulares</SelectItem>
-                              <SelectItem value="DEPENDENTE">Dependentes</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        {qtdFiltrosBenAtivos > 0 && (
-                          <button type="button" className="text-xs text-[#003580] hover:underline" onClick={() => { setFiltroEmpresaBen('todas'); setFiltroSituacaoBen('todos'); setFiltroParentescoBen('todos'); }}>
-                            Limpar filtros
-                          </button>
-                        )}
-                      </div>
+                {/* Switch: Beneficiários / Solicitações / Coparticipação — só um aparece por vez */}
+                <div className="flex flex-wrap gap-2 border-b pb-4">
+                  <button
+                    type="button"
+                    onClick={() => setSubVisaoGeral('beneficiarios')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${subVisaoGeral === 'beneficiarios' ? 'bg-[#003580] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                  >
+                    <Users className="h-3.5 w-3.5" /> Beneficiários
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${subVisaoGeral === 'beneficiarios' ? 'bg-white/20' : 'bg-gray-200'}`}>{beneficiariosFiltrados.length}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSubVisaoGeral('solicitacoes')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${subVisaoGeral === 'solicitacoes' ? 'bg-[#003580] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                  >
+                    <ClipboardList className="h-3.5 w-3.5" /> Solicitações
+                    {solicitacoesPendentesCount > 0 && (
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${subVisaoGeral === 'solicitacoes' ? 'bg-white/20' : 'bg-amber-100 text-amber-800'}`}>{solicitacoesPendentesCount}</span>
                     )}
-                  </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSubVisaoGeral('coparticipacao')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${subVisaoGeral === 'coparticipacao' ? 'bg-[#003580] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                  >
+                    <DollarSign className="h-3.5 w-3.5" /> Coparticipação
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${subVisaoGeral === 'coparticipacao' ? 'bg-white/20' : 'bg-gray-200'}`}>{coparticipacoesFiltradas.length}</span>
+                  </button>
+                </div>
 
-                  <div className="relative" ref={ordenarBenRef}>
-                    <Button variant="outline" size="sm" onClick={() => setIsOrdenarBenOpen(o => !o)} className="gap-1.5">
-                      <ArrowUpDown className="h-3.5 w-3.5" /> Ordenar
-                    </Button>
-                    {isOrdenarBenOpen && (
-                      <div className="absolute z-50 mt-1 w-56 max-w-[calc(100vw-2rem)] rounded-lg border bg-white shadow-lg py-1">
-                        {ORDENAR_BEN_OPTIONS.map(opt => (
-                          <button key={opt.key} type="button" onClick={() => { setOrdenarBen(opt.key); setIsOrdenarBenOpen(false); }}
-                            className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 ${ordenarBen === opt.key ? 'text-[#003580] font-medium' : 'text-gray-700'}`}>
-                            {opt.label}
-                            {ordenarBen === opt.key && <Check className="h-3.5 w-3.5" />}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  </div>
+                {subVisaoGeral === 'beneficiarios' && (
+                  <>
+                    <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
+                      <Input placeholder="Buscar nome ou CPF..." value={busca} onChange={e => setBusca(e.target.value)} className="w-full sm:w-auto sm:max-w-xs" />
 
-                  {selectedIds.size > 0 && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button size="sm" variant="destructive" disabled={isBulkDeleting}>
-                          <Trash2 className="h-3.5 w-3.5 mr-1" /> Excluir {selectedIds.size} selecionado{selectedIds.size !== 1 ? 's' : ''}
+                      <div className="flex flex-wrap gap-2">
+                      <div className="relative" ref={filtroBenRef}>
+                        <Button variant="outline" size="sm" onClick={() => setIsFiltroBenOpen(o => !o)} className="gap-1.5">
+                          <SlidersHorizontal className="h-3.5 w-3.5" /> Filtro
+                          {qtdFiltrosBenAtivos > 0 && <Badge className="bg-[#003580] hover:bg-[#003580] text-white h-5 min-w-5 px-1 rounded-full">{qtdFiltrosBenAtivos}</Badge>}
                         </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Excluir beneficiários selecionados?</AlertDialogTitle>
-                          <AlertDialogDescription>Essa ação não pode ser desfeita.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={excluirSelecionados} className="bg-red-600 hover:bg-red-700">Excluir</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                </div>
-
-                {/* Cabeçalho das colunas */}
-                <div className="hidden sm:flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                  <div className="w-5 shrink-0" />
-                  <div className="flex-1 grid grid-cols-4 gap-x-3">
-                    <span>Nome Completo</span>
-                    <span>CPF</span>
-                    <span>Parentesco</span>
-                    <span>Idade</span>
-                  </div>
-                  <div className="w-4 shrink-0" />
-                </div>
-
-                <div className="space-y-2">
-                  {beneficiariosPaginados.map(b => {
-                    const open = expandedBenId === b.id;
-                    const idade = calculateAge(b.data_nascimento);
-                    return (
-                      <div key={b.id} className="border rounded-lg overflow-hidden bg-white">
-                        <div className="w-full flex items-center gap-3 p-3">
-                          <Checkbox checked={selectedIds.has(b.id)} onCheckedChange={() => toggleSelectOne(b.id)} onClick={e => e.stopPropagation()} className="shrink-0" />
-                          <button type="button" onClick={() => toggleExpandBen(b)} className="flex-1 flex items-center gap-3 text-left min-w-0">
-                            <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-1 text-sm min-w-0">
-                              <span className="font-medium text-gray-800 truncate min-w-0">{b.nome_completo}</span>
-                              <span className="text-gray-500 truncate min-w-0">{formatCpfCnpj(b.cpf)}</span>
-                              <span className="text-gray-500 capitalize truncate min-w-0">{(b.parentesco || '—').toLowerCase()}</span>
-                              <span className="text-gray-500 truncate min-w-0">{idade !== '' ? `${idade} anos` : '—'}</span>
+                        {isFiltroBenOpen && (
+                          <div className="absolute z-50 mt-1 w-72 max-w-[calc(100vw-2rem)] rounded-lg border bg-white shadow-lg p-3 space-y-3">
+                            <div>
+                              <Label className="text-xs">Empresa (CNPJ)</Label>
+                              <Select value={filtroEmpresaBen} onValueChange={setFiltroEmpresaBen}>
+                                <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+                                <SelectContent><SelectItem value="todas">Todas as empresas</SelectItem>{empresaOptions}</SelectContent>
+                              </Select>
                             </div>
-                            <ChevronDown className={`h-4 w-4 text-gray-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
-                          </button>
-                        </div>
-                        {open && (
-                          <div className="p-3 border-t bg-gray-50 space-y-3">
-                            <Badge variant="outline">{empresaLabel(b.empresa_id)}</Badge>
-                            <div className="space-y-1.5">
-                              {TIPOS.map(({ key, label }) => {
-                                const vinculo = planosDoBeneficiario(b.id).find(p => p.tipo === key);
-                                const ap = vinculo ? apolices.find(a => a.id === vinculo.apolice_id) : null;
-                                const sub = ap ? subApoliceOf(ap) : {};
-                                const detailKey = `${b.id}-${key}`;
-                                const detailOpen = expandedPlanoDetail === detailKey;
-                                return (
-                                  <div key={key} className="bg-white border rounded-lg overflow-hidden">
-                                    <div className="flex items-center gap-2 flex-wrap px-3 py-2 text-sm">
-                                      <span className="font-medium w-14 shrink-0">{label}</span>
-                                      {vinculo ? (
-                                        <>
-                                          <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Ativo</Badge>
-                                          <span className="text-gray-600">{ap ? apoliceLabel(ap) : `#${vinculo.apolice_id}`}</span>
-                                          {vinculo.numero_carteirinha && <span className="text-gray-400">· carteirinha {vinculo.numero_carteirinha}</span>}
-                                          <button type="button" className="ml-auto text-gray-400 hover:text-[#003580] flex items-center gap-1 text-xs" onClick={() => setExpandedPlanoDetail(detailOpen ? null : detailKey)}>
-                                            Ampliar <ChevronDown className={`h-3.5 w-3.5 transition-transform ${detailOpen ? 'rotate-180' : ''}`} />
-                                          </button>
-                                        </>
-                                      ) : (
-                                        <Badge variant="outline" className="text-gray-400">Inativo</Badge>
-                                      )}
-                                    </div>
-                                    {vinculo && detailOpen && (
-                                      <div className="border-t bg-gray-50 px-3 py-2 grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-2 text-xs">
-                                        <div><span className="block text-gray-400">Nome do Plano</span><span className="text-gray-700">{sub.plano || '—'}</span></div>
-                                        {key === 'saude' && <div><span className="block text-gray-400">Acomodação</span><span className="text-gray-700">{vinculo.acomodacao || '—'}</span></div>}
-                                        <div><span className="block text-gray-400">Código da Empresa</span><span className="text-gray-700">{vinculo.codigo_empresa || '—'}</span></div>
-                                        <div><span className="block text-gray-400">Produto</span><span className="text-gray-700">{vinculo.produto || '—'}</span></div>
-                                        <div><span className="block text-gray-400">Data Inclusão</span><span className="text-gray-700">{vinculo.data_inclusao || '—'}</span></div>
-                                        <div><span className="block text-gray-400">Data Exclusão</span><span className="text-gray-700">{vinculo.data_exclusao || '—'}</span></div>
-                                        <div><span className="block text-gray-400">Número Carteirinha</span><span className="text-gray-700">{vinculo.numero_carteirinha || '—'}</span></div>
-                                        <div>
-                                          <span className="block text-gray-400">Link Carteirinha</span>
-                                          {vinculo.link_carteirinha ? <a href={vinculo.link_carteirinha} target="_blank" rel="noreferrer" className="text-[#003580] underline">abrir</a> : <span className="text-gray-700">—</span>}
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
+                            <div>
+                              <Label className="text-xs">Situação</Label>
+                              <Select value={filtroSituacaoBen} onValueChange={setFiltroSituacaoBen}>
+                                <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="todos">Todas situações</SelectItem>
+                                  <SelectItem value="ATIVO">Ativos</SelectItem>
+                                  <SelectItem value="INATIVO">Inativos</SelectItem>
+                                  <SelectItem value="AFASTADO">Afastados</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
-                            <div className="flex flex-wrap gap-2">
-                              <Button size="sm" variant="outline" onClick={() => abrirEditarBen(b)}>Editar beneficiário</Button>
-                              <Button size="sm" variant="outline" onClick={() => abrirVincularApolice(b)}>Vincular apólice</Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200" disabled={isDeletingBen}>
-                                    <Trash2 className="h-4 w-4 mr-1" /> Excluir
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Excluir {b.nome_completo}?</AlertDialogTitle>
-                                    <AlertDialogDescription>Essa ação não pode ser desfeita.</AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => excluirBeneficiario(b)} className="bg-red-600 hover:bg-red-700">Excluir</AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                            <div>
+                              <Label className="text-xs">Parentesco</Label>
+                              <Select value={filtroParentescoBen} onValueChange={setFiltroParentescoBen}>
+                                <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="todos">Todos</SelectItem>
+                                  <SelectItem value="TITULAR">Titulares</SelectItem>
+                                  <SelectItem value="DEPENDENTE">Dependentes</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
+                            {qtdFiltrosBenAtivos > 0 && (
+                              <button type="button" className="text-xs text-[#003580] hover:underline" onClick={() => { setFiltroEmpresaBen('todas'); setFiltroSituacaoBen('todos'); setFiltroParentescoBen('todos'); }}>
+                                Limpar filtros
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
-                    );
-                  })}
-                  {beneficiariosFiltrados.length === 0 && <p className="text-center text-gray-400 py-8">Nenhum beneficiário com esse filtro.</p>}
-                </div>
 
-                {totalPaginasBen > 1 && (
-                  <div className="flex items-center justify-between pt-2">
-                    <p className="text-xs text-gray-400">Página {paginaBen} de {totalPaginasBen} · {beneficiariosFiltrados.length} beneficiários</p>
-                    <div className="flex items-center gap-1">
-                      <Button size="sm" variant="outline" disabled={paginaBen === 1} onClick={() => setPaginaBen(p => Math.max(1, p - 1))}><ChevronLeft className="h-4 w-4" /></Button>
-                      <Button size="sm" variant="outline" disabled={paginaBen === totalPaginasBen} onClick={() => setPaginaBen(p => Math.min(totalPaginasBen, p + 1))}><ChevronRight className="h-4 w-4" /></Button>
+                      <div className="relative" ref={ordenarBenRef}>
+                        <Button variant="outline" size="sm" onClick={() => setIsOrdenarBenOpen(o => !o)} className="gap-1.5">
+                          <ArrowUpDown className="h-3.5 w-3.5" /> Ordenar
+                        </Button>
+                        {isOrdenarBenOpen && (
+                          <div className="absolute z-50 mt-1 w-56 max-w-[calc(100vw-2rem)] rounded-lg border bg-white shadow-lg py-1">
+                            {ORDENAR_BEN_OPTIONS.map(opt => (
+                              <button key={opt.key} type="button" onClick={() => { setOrdenarBen(opt.key); setIsOrdenarBenOpen(false); }}
+                                className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 ${ordenarBen === opt.key ? 'text-[#003580] font-medium' : 'text-gray-700'}`}>
+                                {opt.label}
+                                {ordenarBen === opt.key && <Check className="h-3.5 w-3.5" />}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      </div>
+
+                      {selectedIds.size > 0 && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="destructive" disabled={isBulkDeleting}>
+                              <Trash2 className="h-3.5 w-3.5 mr-1" /> Excluir {selectedIds.size} selecionado{selectedIds.size !== 1 ? 's' : ''}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Excluir beneficiários selecionados?</AlertDialogTitle>
+                              <AlertDialogDescription>Essa ação não pode ser desfeita.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={excluirSelecionados} className="bg-red-600 hover:bg-red-700">Excluir</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </div>
+
+                    {/* Cabeçalho das colunas */}
+                    <div className="hidden sm:flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                      <div className="w-5 shrink-0" />
+                      <div className="flex-1 grid grid-cols-4 gap-x-3">
+                        <span>Nome Completo</span>
+                        <span>CPF</span>
+                        <span>Parentesco</span>
+                        <span>Idade</span>
+                      </div>
+                      <div className="w-4 shrink-0" />
+                    </div>
+
+                    <div className="space-y-2">
+                      {beneficiariosPaginados.map(b => {
+                        const open = expandedBenId === b.id;
+                        const idade = calculateAge(b.data_nascimento);
+                        return (
+                          <div key={b.id} className="border rounded-lg overflow-hidden bg-white">
+                            <div className="w-full flex items-center gap-3 p-3">
+                              <Checkbox checked={selectedIds.has(b.id)} onCheckedChange={() => toggleSelectOne(b.id)} onClick={e => e.stopPropagation()} className="shrink-0" />
+                              <button type="button" onClick={() => toggleExpandBen(b)} className="flex-1 flex items-center gap-3 text-left min-w-0">
+                                <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-1 text-sm min-w-0">
+                                  <span className="font-medium text-gray-800 truncate min-w-0">{b.nome_completo}</span>
+                                  <span className="text-gray-500 truncate min-w-0">{formatCpfCnpj(b.cpf)}</span>
+                                  <span className="text-gray-500 capitalize truncate min-w-0">{(b.parentesco || '—').toLowerCase()}</span>
+                                  <span className="text-gray-500 truncate min-w-0">{idade !== '' ? `${idade} anos` : '—'}</span>
+                                </div>
+                                <ChevronDown className={`h-4 w-4 text-gray-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+                              </button>
+                            </div>
+                            {open && (
+                              <div className="p-3 border-t bg-gray-50 space-y-3">
+                                <Badge variant="outline">{empresaLabel(b.empresa_id)}</Badge>
+                                <div className="space-y-1.5">
+                                  {TIPOS.map(({ key, label }) => {
+                                    const vinculo = planosDoBeneficiario(b.id).find(p => p.tipo === key);
+                                    const ap = vinculo ? apolices.find(a => a.id === vinculo.apolice_id) : null;
+                                    const sub = ap ? subApoliceOf(ap) : {};
+                                    const detailKey = `${b.id}-${key}`;
+                                    const detailOpen = expandedPlanoDetail === detailKey;
+                                    return (
+                                      <div key={key} className="bg-white border rounded-lg overflow-hidden">
+                                        <div className="flex items-center gap-2 flex-wrap px-3 py-2 text-sm">
+                                          <span className="font-medium w-14 shrink-0">{label}</span>
+                                          {vinculo ? (
+                                            <>
+                                              <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Ativo</Badge>
+                                              <span className="text-gray-600">{ap ? apoliceLabel(ap) : `#${vinculo.apolice_id}`}</span>
+                                              {vinculo.numero_carteirinha && <span className="text-gray-400">· carteirinha {vinculo.numero_carteirinha}</span>}
+                                              <button type="button" className="ml-auto text-gray-400 hover:text-[#003580] flex items-center gap-1 text-xs" onClick={() => setExpandedPlanoDetail(detailOpen ? null : detailKey)}>
+                                                Ampliar <ChevronDown className={`h-3.5 w-3.5 transition-transform ${detailOpen ? 'rotate-180' : ''}`} />
+                                              </button>
+                                            </>
+                                          ) : (
+                                            <Badge variant="outline" className="text-gray-400">Inativo</Badge>
+                                          )}
+                                        </div>
+                                        {vinculo && detailOpen && (
+                                          <div className="border-t bg-gray-50 px-3 py-2 grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-2 text-xs">
+                                            <div><span className="block text-gray-400">Nome do Plano</span><span className="text-gray-700">{sub.plano || '—'}</span></div>
+                                            {key === 'saude' && <div><span className="block text-gray-400">Acomodação</span><span className="text-gray-700">{vinculo.acomodacao || '—'}</span></div>}
+                                            <div><span className="block text-gray-400">Código da Empresa</span><span className="text-gray-700">{vinculo.codigo_empresa || '—'}</span></div>
+                                            <div><span className="block text-gray-400">Produto</span><span className="text-gray-700">{vinculo.produto || '—'}</span></div>
+                                            <div><span className="block text-gray-400">Data Inclusão</span><span className="text-gray-700">{vinculo.data_inclusao || '—'}</span></div>
+                                            <div><span className="block text-gray-400">Data Exclusão</span><span className="text-gray-700">{vinculo.data_exclusao || '—'}</span></div>
+                                            <div><span className="block text-gray-400">Número Carteirinha</span><span className="text-gray-700">{vinculo.numero_carteirinha || '—'}</span></div>
+                                            <div>
+                                              <span className="block text-gray-400">Link Carteirinha</span>
+                                              {vinculo.link_carteirinha ? <a href={vinculo.link_carteirinha} target="_blank" rel="noreferrer" className="text-[#003580] underline">abrir</a> : <span className="text-gray-700">—</span>}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  <Button size="sm" variant="outline" onClick={() => abrirEditarBen(b)}>Editar beneficiário</Button>
+                                  <Button size="sm" variant="outline" onClick={() => abrirVincularApolice(b)}>Vincular apólice</Button>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200" disabled={isDeletingBen}>
+                                        <Trash2 className="h-4 w-4 mr-1" /> Excluir
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Excluir {b.nome_completo}?</AlertDialogTitle>
+                                        <AlertDialogDescription>Essa ação não pode ser desfeita.</AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => excluirBeneficiario(b)} className="bg-red-600 hover:bg-red-700">Excluir</AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {beneficiariosFiltrados.length === 0 && <p className="text-center text-gray-400 py-8">Nenhum beneficiário com esse filtro.</p>}
+                    </div>
+
+                    {totalPaginasBen > 1 && (
+                      <div className="flex items-center justify-between pt-2">
+                        <p className="text-xs text-gray-400">Página {paginaBen} de {totalPaginasBen} · {beneficiariosFiltrados.length} beneficiários</p>
+                        <div className="flex items-center gap-1">
+                          <Button size="sm" variant="outline" disabled={paginaBen === 1} onClick={() => setPaginaBen(p => Math.max(1, p - 1))}><ChevronLeft className="h-4 w-4" /></Button>
+                          <Button size="sm" variant="outline" disabled={paginaBen === totalPaginasBen} onClick={() => setPaginaBen(p => Math.min(totalPaginasBen, p + 1))}><ChevronRight className="h-4 w-4" /></Button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {subVisaoGeral === 'solicitacoes' && (
+                  <div className="space-y-3">
+                    <Select value={filtroStatusSol} onValueChange={setFiltroStatusSol}>
+                      <SelectTrigger className="w-56 [&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="abertas">Pendentes + Em Processamento</SelectItem>
+                        <SelectItem value="PENDENTE">Pendentes</SelectItem>
+                        <SelectItem value="EM PROCESSAMENTO">Em Processamento</SelectItem>
+                        <SelectItem value="CONCLUIDA">Concluídas</SelectItem>
+                        <SelectItem value="REJEITADA">Rejeitadas</SelectItem>
+                        <SelectItem value="CANCELADA">Canceladas</SelectItem>
+                        <SelectItem value="todas">Todas</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <div className="space-y-2">
+                      {solicitacoesFiltradas.map(s => {
+                        const beneficiario = beneficiarios.find(b => b.id === s.beneficiario_id);
+                        const aberta = ['PENDENTE', 'EM PROCESSAMENTO'].includes(s.status);
+                        return (
+                          <div key={s.id} className="border rounded-lg bg-white p-3 space-y-2">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div className="min-w-0">
+                                <p className="font-medium text-gray-800 truncate">{beneficiario?.nome_completo || 'Beneficiário removido'}</p>
+                                <p className="text-xs text-gray-500">{empresaLabel(s.empresa_id)} · {getTempoDecorrido(s.data_solicitacao)}</p>
+                              </div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs text-gray-500 capitalize">{s.tipo_plano}</span>
+                                {getTipoBadge(s.tipo_solicitacao)}
+                                {getStatusBadge(s.status)}
+                              </div>
+                            </div>
+                            {(s.motivo || s.observacoes) && (
+                              <p className="text-xs text-gray-500 bg-gray-50 rounded p-2">
+                                {s.motivo && <span><strong>Motivo:</strong> {s.motivo} </span>}
+                                {s.observacoes && <span><strong>Obs:</strong> {s.observacoes}</span>}
+                              </p>
+                            )}
+                            {aberta && (
+                              <div className="flex justify-end gap-2">
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button size="sm" variant="ghost" className="text-gray-500 hover:text-red-600">Cancelar</Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Cancelar solicitação?</AlertDialogTitle>
+                                      <AlertDialogDescription>O cliente poderá solicitar novamente.</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Voltar</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => cancelarSolicitacao(s)} className="bg-red-600 hover:bg-red-700">Confirmar</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                                {s.status === 'PENDENTE' && (
+                                  <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => aceitarSolicitacao(s)} disabled={isAceitandoSolId === s.id}>
+                                    {isAceitandoSolId === s.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Aceitar
+                                  </Button>
+                                )}
+                                {s.status === 'EM PROCESSAMENTO' && (
+                                  <Button size="sm" variant="outline" onClick={() => abrirAdicionarDadosSol(s)}>Adicionar Dados</Button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {solicitacoesFiltradas.length === 0 && <p className="text-center text-gray-400 py-8">Nenhuma solicitação com esse filtro.</p>}
                     </div>
                   </div>
                 )}
 
-                {/* Solicitações — expande dentro do mesmo card */}
-                <div className="border-t pt-4">
-                  <button type="button" onClick={() => setIsSolicitacoesOpen(o => !o)} className="w-full flex items-center justify-between text-left">
-                    <span className="flex items-center gap-2 font-semibold text-sm text-gray-700">
-                      <ClipboardList className="h-4 w-4 text-[#003580]" /> Solicitações
-                      {solicitacoesPendentesCount > 0 && <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">{solicitacoesPendentesCount} pendente{solicitacoesPendentesCount !== 1 ? 's' : ''}</Badge>}
-                    </span>
-                    <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isSolicitacoesOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  {isSolicitacoesOpen && (
-                    <div className="mt-3 space-y-3">
-                      <Select value={filtroStatusSol} onValueChange={setFiltroStatusSol}>
-                        <SelectTrigger className="w-56 [&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="abertas">Pendentes + Em Processamento</SelectItem>
-                          <SelectItem value="PENDENTE">Pendentes</SelectItem>
-                          <SelectItem value="EM PROCESSAMENTO">Em Processamento</SelectItem>
-                          <SelectItem value="CONCLUIDA">Concluídas</SelectItem>
-                          <SelectItem value="REJEITADA">Rejeitadas</SelectItem>
-                          <SelectItem value="CANCELADA">Canceladas</SelectItem>
-                          <SelectItem value="todas">Todas</SelectItem>
-                        </SelectContent>
-                      </Select>
-
-                      <div className="space-y-2">
-                        {solicitacoesFiltradas.map(s => {
-                          const beneficiario = beneficiarios.find(b => b.id === s.beneficiario_id);
-                          const aberta = ['PENDENTE', 'EM PROCESSAMENTO'].includes(s.status);
-                          return (
-                            <div key={s.id} className="border rounded-lg bg-white p-3 space-y-2">
-                              <div className="flex items-center justify-between flex-wrap gap-2">
-                                <div className="min-w-0">
-                                  <p className="font-medium text-gray-800 truncate">{beneficiario?.nome_completo || 'Beneficiário removido'}</p>
-                                  <p className="text-xs text-gray-500">{empresaLabel(s.empresa_id)} · {getTempoDecorrido(s.data_solicitacao)}</p>
-                                </div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="text-xs text-gray-500 capitalize">{s.tipo_plano}</span>
-                                  {getTipoBadge(s.tipo_solicitacao)}
-                                  {getStatusBadge(s.status)}
-                                </div>
-                              </div>
-                              {(s.motivo || s.observacoes) && (
-                                <p className="text-xs text-gray-500 bg-gray-50 rounded p-2">
-                                  {s.motivo && <span><strong>Motivo:</strong> {s.motivo} </span>}
-                                  {s.observacoes && <span><strong>Obs:</strong> {s.observacoes}</span>}
-                                </p>
-                              )}
-                              {aberta && (
-                                <div className="flex justify-end gap-2">
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <Button size="sm" variant="ghost" className="text-gray-500 hover:text-red-600">Cancelar</Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Cancelar solicitação?</AlertDialogTitle>
-                                        <AlertDialogDescription>O cliente poderá solicitar novamente.</AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Voltar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => cancelarSolicitacao(s)} className="bg-red-600 hover:bg-red-700">Confirmar</AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
-                                  {s.status === 'PENDENTE' && (
-                                    <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => aceitarSolicitacao(s)} disabled={isAceitandoSolId === s.id}>
-                                      {isAceitandoSolId === s.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Aceitar
-                                    </Button>
-                                  )}
-                                  {s.status === 'EM PROCESSAMENTO' && (
-                                    <Button size="sm" variant="outline" onClick={() => abrirAdicionarDadosSol(s)}>Adicionar Dados</Button>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                        {solicitacoesFiltradas.length === 0 && <p className="text-center text-gray-400 py-8">Nenhuma solicitação com esse filtro.</p>}
+                {subVisaoGeral === 'coparticipacao' && (
+                  <div className="space-y-3">
+                    <div className="hidden sm:flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                      <div className="flex-1 grid grid-cols-5 gap-x-3">
+                        <span>Beneficiário</span>
+                        <span>Empresa</span>
+                        <span>Competência</span>
+                        <span>Valor</span>
+                        <span>Descrição</span>
                       </div>
                     </div>
-                  )}
-                </div>
 
-                {/* Coparticipação */}
-                <div className="border-t pt-4 space-y-3">
-                  <p className="flex items-center gap-2 font-semibold text-sm text-gray-700">
-                    <DollarSign className="h-4 w-4 text-[#003580]" /> Coparticipação
-                    <span className="bg-gray-100 text-gray-500 text-xs px-1.5 py-0.5 rounded-full">{coparticipacoesFiltradas.length}</span>
-                  </p>
-                  <div className="hidden sm:flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    <div className="flex-1 grid grid-cols-5 gap-x-3">
-                      <span>Beneficiário</span>
-                      <span>Empresa</span>
-                      <span>Competência</span>
-                      <span>Valor</span>
-                      <span>Descrição</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    {coparticipacoesFiltradas.map(c => (
-                      <div key={c.id} className="border rounded-lg bg-white p-3">
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-x-3 gap-y-1 text-sm">
-                          <span className="font-medium text-gray-800 truncate min-w-0">{c.beneficiarios?.nome_completo || '—'}</span>
-                          <span className="text-gray-500 truncate min-w-0">{empresaLabel(c.empresa_id)}</span>
-                          <span className="text-gray-500 truncate min-w-0">{c.competencia || '—'}</span>
-                          <span className="text-gray-500 truncate min-w-0">{formatCurrency(c.valor)}</span>
-                          <span className="text-gray-500 truncate min-w-0">{c.descricao || '—'}</span>
+                    <div className="space-y-2">
+                      {coparticipacoesFiltradas.map(c => (
+                        <div key={c.id} className="border rounded-lg bg-white p-3">
+                          <div className="grid grid-cols-2 sm:grid-cols-5 gap-x-3 gap-y-1 text-sm">
+                            <span className="font-medium text-gray-800 truncate min-w-0">{c.beneficiarios?.nome_completo || '—'}</span>
+                            <span className="text-gray-500 truncate min-w-0">{empresaLabel(c.empresa_id)}</span>
+                            <span className="text-gray-500 truncate min-w-0">{c.competencia || '—'}</span>
+                            <span className="text-gray-500 truncate min-w-0">{formatCurrency(c.valor)}</span>
+                            <span className="text-gray-500 truncate min-w-0">{c.descricao || '—'}</span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                    {coparticipacoesFiltradas.length === 0 && <p className="text-center text-gray-400 py-8">Nenhuma coparticipação com esse filtro.</p>}
+                      ))}
+                      {coparticipacoesFiltradas.length === 0 && <p className="text-center text-gray-400 py-8">Nenhuma coparticipação com esse filtro.</p>}
+                    </div>
                   </div>
-                </div>
+                )}
               </>
             ) : (
               <>
