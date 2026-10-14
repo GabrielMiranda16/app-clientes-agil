@@ -986,10 +986,22 @@ const GestaoGeralTestePage = () => {
                                     const vinculo = planos.find(p => p.beneficiario_id === b.id && p.tipo === key);
                                     const ap = vinculo ? apolices.find(a => a.id === vinculo.apolice_id) : null;
                                     const legacyAtivo = b[`${key}_ativo`] === true || b[`${key}_ativo`] === 'true';
-                                    const ativo = legacyAtivo || !!vinculo;
+                                    // Vida/Odonto normalmente cobrem toda a empresa automaticamente — não têm
+                                    // vínculo marcado pessoa por pessoa como Saúde. Se a empresa do beneficiário
+                                    // tem apólice ativa desse tipo, considera cobertura automática.
+                                    const apEmpresa = key !== 'saude'
+                                      ? apolices.find(a => Number(a.empresa_id) === Number(b.empresa_id) && a.ativo !== false && subApoliceOf(a).tipo === key)
+                                      : null;
+                                    const ativo = legacyAtivo || !!vinculo || !!apEmpresa;
                                     const detailKey = `${b.id}-${key}`;
                                     const detailOpen = expandedPlanoDetail === detailKey;
-                                    const nomePlano = vinculo ? (ap ? apoliceLabel(ap) : `#${vinculo.apolice_id}`) : (b[`${key}_plano_nome`] || '—');
+                                    const nomePlano = vinculo
+                                      ? (ap ? apoliceLabel(ap) : `#${vinculo.apolice_id}`)
+                                      : legacyAtivo
+                                        ? (b[`${key}_plano_nome`] || '—')
+                                        : apEmpresa
+                                          ? apoliceLabel(apEmpresa)
+                                          : '—';
                                     const carteirinha = vinculo?.numero_carteirinha || b[`${key}_numero_carteirinha`];
                                     const linkCarteirinha = vinculo?.link_carteirinha || b[`${key}_link_carteirinha`];
                                     return (
@@ -1011,7 +1023,7 @@ const GestaoGeralTestePage = () => {
                                         </div>
                                         {ativo && detailOpen && (
                                           <div className="border-t bg-gray-50 px-3 py-2 grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-2 text-xs">
-                                            <div><span className="block text-gray-400">Nome do Plano</span><span className="text-gray-700">{vinculo ? (ap ? subApoliceOf(ap).plano || '—' : '—') : (b[`${key}_plano_nome`] || '—')}</span></div>
+                                            <div><span className="block text-gray-400">Nome do Plano</span><span className="text-gray-700">{nomePlano}</span></div>
                                             {key === 'saude' && <div><span className="block text-gray-400">Acomodação</span><span className="text-gray-700">{vinculo?.acomodacao || b.saude_acomodacao || '—'}</span></div>}
                                             <div><span className="block text-gray-400">Código da Empresa</span><span className="text-gray-700">{vinculo?.codigo_empresa || b[`${key}_codigo_empresa`] || '—'}</span></div>
                                             <div><span className="block text-gray-400">Produto</span><span className="text-gray-700">{vinculo?.produto || b[`${key}_produto`] || '—'}</span></div>
