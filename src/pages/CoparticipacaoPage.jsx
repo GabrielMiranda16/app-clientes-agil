@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Plus, Download, Edit2, Trash2, ArrowLeft, Loader2, Search, Upload, CheckCircle2, AlertCircle, X, ChevronRight, ChevronDown } from 'lucide-react';
 import { useCompany } from '@/contexts/CompanyContext';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -41,6 +41,7 @@ const months = [
 
 const CoparticipacaoPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   const { selectedCompanyId } = useCompany();
@@ -92,6 +93,14 @@ const CoparticipacaoPage = () => {
     for (let i = 0; i < 6; i++) arr.push(currentYear - i);
     return arr;
   }, []);
+
+  useEffect(() => {
+    if (!location.state) return;
+    const { tipoTab: tipoInicial, selectedMonth: mesInicial, selectedYear: anoInicial } = location.state;
+    if (tipoInicial) setTipoTab(tipoInicial);
+    if (mesInicial) setSelectedMonth(String(mesInicial));
+    if (anoInicial) setSelectedYear(String(anoInicial));
+  }, [location.state]);
 
   useEffect(() => {
     const loadLogo = async () => {
