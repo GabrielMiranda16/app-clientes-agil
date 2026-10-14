@@ -571,8 +571,8 @@ const GestaoGeralTestePage = () => {
 
   const empresaOptions = (
     <>
-      <SelectItem value={String(matriz?.id)}>{matriz?.nome_fantasia || matriz?.razao_social} (Matriz)</SelectItem>
-      {filiais.map(f => <SelectItem key={f.id} value={String(f.id)}>{f.nome_fantasia || f.razao_social}</SelectItem>)}
+      <SelectItem value={String(matriz?.id)} className="truncate">{truncarTexto(matriz?.nome_fantasia || matriz?.razao_social || '', 30)} (Matriz)</SelectItem>
+      {filiais.map(f => <SelectItem key={f.id} value={String(f.id)} className="truncate">{truncarTexto(f.nome_fantasia || f.razao_social || '', 30)}</SelectItem>)}
     </>
   );
 
@@ -1417,8 +1417,8 @@ const GestaoGeralTestePage = () => {
             {visaoGestao === 'apolices' && (
               <>
                 <Select value={filtroEmpresaApolice} onValueChange={setFiltroEmpresaApolice}>
-                  <SelectTrigger className="w-56 [&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue placeholder="Empresa (CNPJ)" className="truncate min-w-0" /></SelectTrigger>
-                  <SelectContent><SelectItem value="todas">Todas as empresas</SelectItem>{empresaOptions}</SelectContent>
+                  <SelectTrigger className="w-full sm:w-56 [&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue placeholder="Empresa (CNPJ)" className="truncate min-w-0" /></SelectTrigger>
+                  <SelectContent className="max-w-[calc(100vw-3rem)]"><SelectItem value="todas">Todas as empresas</SelectItem>{empresaOptions}</SelectContent>
                 </Select>
 
                 <div className="space-y-2">
