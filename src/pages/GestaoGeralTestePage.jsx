@@ -1424,6 +1424,18 @@ const GestaoGeralTestePage = () => {
 
             {visaoGestao === 'apolices' && (
               <>
+                {/* Cabeçalho das colunas */}
+                <div className="hidden sm:flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  <div className="flex-1 grid grid-cols-4 gap-x-3">
+                    <span>Produto</span>
+                    <span>Operadora</span>
+                    <span>Plano</span>
+                    <span>Beneficiários</span>
+                  </div>
+                  <span className="shrink-0 w-28">Empresa</span>
+                  <div className="w-4 shrink-0" />
+                </div>
+
                 <div className="space-y-2">
                   {apolicesFiltradas.map(a => {
                     const sub = subApoliceOf(a);
