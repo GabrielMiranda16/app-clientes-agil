@@ -1426,13 +1426,13 @@ const GestaoGeralTestePage = () => {
               <>
                 {/* Cabeçalho das colunas */}
                 <div className="hidden sm:flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                  <div className="flex-1 grid grid-cols-4 gap-x-3">
+                  <div className="flex-1 grid grid-cols-5 gap-x-3">
                     <span>Produto</span>
                     <span>Operadora</span>
                     <span>Plano</span>
                     <span>Beneficiários</span>
+                    <span>Empresa</span>
                   </div>
-                  <span className="shrink-0 w-28">Empresa</span>
                   <div className="w-4 shrink-0" />
                 </div>
 
@@ -1443,13 +1443,13 @@ const GestaoGeralTestePage = () => {
                     return (
                       <div key={a.id} className="border rounded-lg overflow-hidden bg-white">
                         <button type="button" onClick={() => toggleExpandAp(a)} className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50">
-                          <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-1 text-sm min-w-0">
+                          <div className="flex-1 grid grid-cols-2 sm:grid-cols-5 gap-x-3 gap-y-1 text-sm min-w-0">
                             <span className="text-gray-500 capitalize truncate min-w-0">{sub.tipo || '—'}</span>
                             <span className="font-medium text-gray-800 truncate min-w-0">{sub.seguradora || '—'}</span>
                             <span className="text-gray-500 truncate min-w-0">{sub.plano || '—'}</span>
                             <span className="text-gray-500 truncate min-w-0">{contagemBeneficiariosApolice(a.id)} beneficiário{contagemBeneficiariosApolice(a.id) !== 1 ? 's' : ''}</span>
+                            <span className="hidden sm:block text-gray-500 truncate min-w-0">{empresaLabel(a.empresa_id)}</span>
                           </div>
-                          <Badge variant="outline" className="shrink-0 hidden sm:inline-flex">{empresaLabel(a.empresa_id)}</Badge>
                           <ChevronDown className={`h-4 w-4 text-gray-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
                         </button>
                         {open && (() => {
