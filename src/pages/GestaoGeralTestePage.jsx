@@ -220,6 +220,7 @@ const GestaoGeralTestePage = () => {
   const [ordenarBen, setOrdenarBen] = useState('nome_asc');
   const [filtroEmpresaApolice, setFiltroEmpresaApolice] = useState('todas');
   const [visaoGestao, setVisaoGestao] = useState('beneficiarios');
+  const [filtroCnpjApolice, setFiltroCnpjApolice] = useState('todas');
   const [filtroApolice, setFiltroApolice] = useState('todas');
   const [busca, setBusca] = useState('');
   const [paginaBen, setPaginaBen] = useState(1);
@@ -334,6 +335,7 @@ const GestaoGeralTestePage = () => {
   };
 
   useEffect(() => { if (matrizId) load(); }, [matrizId]);
+  useEffect(() => { setFiltroApolice('todas'); }, [filtroCnpjApolice]);
   useEffect(() => { setPaginaBen(1); }, [filtroEmpresaBen, filtroApolice, busca, filtroSituacaoBen, filtroParentescoBen]);
   useEffect(() => { setPaginaSol(1); }, [filtroStatusSol, filtroApolice]);
   useEffect(() => { setPaginaCopart(1); }, [filtroApolice]);
@@ -1034,16 +1036,30 @@ const GestaoGeralTestePage = () => {
                 </Select>
               </div>
               {visaoGestao !== 'apolices' ? (
-                <div className="flex-1">
-                  <Label className="text-xs">Apólice</Label>
-                  <Select value={filtroApolice} onValueChange={setFiltroApolice}>
-                    <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
-                    <SelectContent className="max-w-[calc(100vw-3rem)]">
-                      <SelectItem value="todas">Todas as apólices</SelectItem>
-                      {apolices.map(a => <SelectItem key={a.id} value={String(a.id)} className="truncate">{truncarTexto(apoliceLabel(a), 30)} — {truncarTexto(empresaLabel(a.empresa_id))}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <>
+                  <div className="flex-1">
+                    <Label className="text-xs">CNPJ</Label>
+                    <Select value={filtroCnpjApolice} onValueChange={setFiltroCnpjApolice}>
+                      <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+                      <SelectContent className="max-w-[calc(100vw-3rem)]">
+                        <SelectItem value="todas">Todos os CNPJs</SelectItem>
+                        {empresaOptions}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex-1">
+                    <Label className="text-xs">Apólice</Label>
+                    <Select value={filtroApolice} onValueChange={setFiltroApolice}>
+                      <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+                      <SelectContent className="max-w-[calc(100vw-3rem)]">
+                        <SelectItem value="todas">Todas as apólices</SelectItem>
+                        {apolices
+                          .filter(a => filtroCnpjApolice === 'todas' || Number(a.empresa_id) === Number(filtroCnpjApolice))
+                          .map(a => <SelectItem key={a.id} value={String(a.id)} className="truncate">{truncarTexto(apoliceLabel(a), 30)} — {truncarTexto(empresaLabel(a.empresa_id))}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
               ) : (
                 <div className="flex-1">
                   <Label className="text-xs">Empresa (CNPJ)</Label>
