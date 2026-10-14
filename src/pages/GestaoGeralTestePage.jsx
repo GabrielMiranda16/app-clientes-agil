@@ -351,6 +351,12 @@ const GestaoGeralTestePage = () => {
     return [sub.numero && `Apólice ${sub.numero}`, sub.seguradora].filter(Boolean).join(' · ') || `Apólice ${ap.id}`;
   };
 
+  const apoliceLabelComSegmento = (ap) => {
+    const sub = subApoliceOf(ap);
+    const tipoLabel = sub.tipo === 'saude' ? 'Saúde' : sub.tipo === 'vida' ? 'Vida' : sub.tipo === 'odonto' ? 'Odonto' : sub.tipo;
+    return [sub.numero && `Apólice ${sub.numero}`, sub.seguradora, tipoLabel].filter(Boolean).join(' · ') || `Apólice ${ap.id}`;
+  };
+
   const primeiroUltimoNome = (nomeCompleto) => {
     if (!nomeCompleto) return '';
     const partes = nomeCompleto.trim().split(/\s+/);
@@ -1055,7 +1061,7 @@ const GestaoGeralTestePage = () => {
                         <SelectItem value="todas">Todas as apólices</SelectItem>
                         {apolices
                           .filter(a => filtroCnpjApolice === 'todas' || Number(a.empresa_id) === Number(filtroCnpjApolice))
-                          .map(a => <SelectItem key={a.id} value={String(a.id)} className="truncate">{truncarTexto(apoliceLabel(a), 30)} — {truncarTexto(empresaLabel(a.empresa_id))}</SelectItem>)}
+                          .map(a => <SelectItem key={a.id} value={String(a.id)} className="truncate">{apoliceLabelComSegmento(a)}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
