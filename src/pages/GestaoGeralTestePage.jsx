@@ -573,8 +573,8 @@ const GestaoGeralTestePage = () => {
 
   const empresaOptions = (
     <>
-      <SelectItem value={String(matriz?.id)} className="truncate">{truncarTexto(matriz?.nome_fantasia || matriz?.razao_social || '', 30)} (Matriz)</SelectItem>
-      {filiais.map(f => <SelectItem key={f.id} value={String(f.id)} className="truncate">{truncarTexto(f.nome_fantasia || f.razao_social || '', 30)}</SelectItem>)}
+      <SelectItem value={String(matriz?.id)}>{formatCpfCnpj(matriz?.cnpj) || matriz?.nome_fantasia || matriz?.razao_social} (Matriz)</SelectItem>
+      {filiais.map(f => <SelectItem key={f.id} value={String(f.id)}>{formatCpfCnpj(f.cnpj) || f.nome_fantasia || f.razao_social}</SelectItem>)}
     </>
   );
 
