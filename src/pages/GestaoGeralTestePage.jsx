@@ -1033,7 +1033,7 @@ const GestaoGeralTestePage = () => {
                   </SelectContent>
                 </Select>
               </div>
-              {visaoGestao !== 'apolices' && (
+              {visaoGestao !== 'apolices' ? (
                 <div className="flex-1">
                   <Label className="text-xs">Apólice</Label>
                   <Select value={filtroApolice} onValueChange={setFiltroApolice}>
@@ -1042,6 +1042,14 @@ const GestaoGeralTestePage = () => {
                       <SelectItem value="todas">Todas as apólices</SelectItem>
                       {apolices.map(a => <SelectItem key={a.id} value={String(a.id)} className="truncate">{truncarTexto(apoliceLabel(a), 30)} — {truncarTexto(empresaLabel(a.empresa_id))}</SelectItem>)}
                     </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <div className="flex-1">
+                  <Label className="text-xs">Empresa (CNPJ)</Label>
+                  <Select value={filtroEmpresaApolice} onValueChange={setFiltroEmpresaApolice}>
+                    <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue placeholder="Empresa (CNPJ)" className="truncate min-w-0" /></SelectTrigger>
+                    <SelectContent className="max-w-[calc(100vw-3rem)]"><SelectItem value="todas">Todas as empresas</SelectItem>{empresaOptions}</SelectContent>
                   </Select>
                 </div>
               )}
@@ -1416,11 +1424,6 @@ const GestaoGeralTestePage = () => {
 
             {visaoGestao === 'apolices' && (
               <>
-                <Select value={filtroEmpresaApolice} onValueChange={setFiltroEmpresaApolice}>
-                  <SelectTrigger className="w-full sm:w-56 [&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue placeholder="Empresa (CNPJ)" className="truncate min-w-0" /></SelectTrigger>
-                  <SelectContent className="max-w-[calc(100vw-3rem)]"><SelectItem value="todas">Todas as empresas</SelectItem>{empresaOptions}</SelectContent>
-                </Select>
-
                 <div className="space-y-2">
                   {apolicesFiltradas.map(a => {
                     const sub = subApoliceOf(a);
