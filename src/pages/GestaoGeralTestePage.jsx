@@ -348,7 +348,20 @@ const GestaoGeralTestePage = () => {
 
   const qtdFiltrosBenAtivos = [filtroEmpresaBen !== 'todas', filtroSituacaoBen !== 'todos', filtroParentescoBen !== 'todos'].filter(Boolean).length;
 
-  const temVinculoComApolice = (beneficiarioId) => filtroApolice === 'todas' || planos.some(p => p.beneficiario_id === beneficiarioId && Number(p.apolice_id) === Number(filtroApolice));
+  // Mesma regra híbrida do card de beneficiário: vínculo explícito sempre conta;
+  // sem vínculo, Saúde exige a coluna legacy e Vida/Odonto cobrem a empresa toda.
+  const beneficiarioCobertoPorApolice = (beneficiarioId, apoliceId) => {
+    const apSel = apolices.find(a => a.id === Number(apoliceId));
+    if (!apSel) return false;
+    if (planos.some(p => p.beneficiario_id === beneficiarioId && Number(p.apolice_id) === apSel.id)) return true;
+    const b = beneficiarios.find(x => x.id === beneficiarioId);
+    if (!b || Number(b.empresa_id) !== Number(apSel.empresa_id)) return false;
+    const tipoSel = subApoliceOf(apSel).tipo;
+    if (tipoSel === 'saude') return b.saude_ativo === true || b.saude_ativo === 'true';
+    return true;
+  };
+
+  const temVinculoComApolice = (beneficiarioId) => filtroApolice === 'todas' || beneficiarioCobertoPorApolice(beneficiarioId, filtroApolice);
 
   const beneficiariosFiltrados = useMemo(() => {
     const lista = beneficiarios.filter(b => {
