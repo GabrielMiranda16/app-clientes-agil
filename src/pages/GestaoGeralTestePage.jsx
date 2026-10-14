@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
+import { useCompany } from '@/contexts/CompanyContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -178,6 +179,7 @@ const GestaoGeralTestePage = () => {
   const { matrizId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { setSelectedCompanyId } = useCompany();
 
   const [isLoading, setIsLoading] = useState(true);
   const [matriz, setMatriz] = useState(null);
@@ -343,6 +345,20 @@ const GestaoGeralTestePage = () => {
       if (cpfLimpo && (c.cpf_quem_utilizou || '').replace(/\D/g, '') === cpfLimpo) return true;
       if (nomeLimpo && (c.nome_quem_utilizou || '').trim().toLowerCase() === nomeLimpo) return true;
       return false;
+    });
+  };
+
+  const irParaCoparticipacao = (b) => {
+    const doMes = coparticipacoesDoUltimoMes(b);
+    if (doMes.length === 0) return;
+    const [ano, mes] = (doMes[0].competencia || '').split('-');
+    setSelectedCompanyId(b.empresa_id);
+    navigate('/coparticipacao', {
+      state: {
+        tipoTab: doMes[0].tipo || 'saude',
+        selectedMonth: mes ? Number(mes) : undefined,
+        selectedYear: ano ? Number(ano) : undefined,
+      },
     });
   };
 
@@ -1073,6 +1089,9 @@ const GestaoGeralTestePage = () => {
                                 <div className="flex flex-wrap gap-2">
                                   <Button size="sm" variant="outline" onClick={() => abrirEditarBen(b)}>Editar beneficiário</Button>
                                   <Button size="sm" variant="outline" onClick={() => abrirVincularApolice(b)}>Vincular apólice</Button>
+                                  {coparticipacoesDoUltimoMes(b).length > 0 && (
+                                    <Button size="sm" variant="outline" onClick={() => irParaCoparticipacao(b)}>Ver coparticipação</Button>
+                                  )}
                                   <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                       <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200" disabled={isDeletingBen}>
