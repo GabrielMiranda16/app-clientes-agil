@@ -862,7 +862,7 @@ const GestaoGeralTestePage = () => {
                     <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
                     <SelectContent className="max-w-[calc(100vw-3rem)]">
                       <SelectItem value="todas">Todas as apólices</SelectItem>
-                      {apolices.map(a => <SelectItem key={a.id} value={String(a.id)} className="truncate">{truncarTexto(apoliceLabel(a))} — {truncarTexto(empresaLabel(a.empresa_id))}</SelectItem>)}
+                      {apolices.map(a => <SelectItem key={a.id} value={String(a.id)} className="truncate">{truncarTexto(apoliceLabel(a), 30)} — {truncarTexto(empresaLabel(a.empresa_id))}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1342,7 +1342,7 @@ const GestaoGeralTestePage = () => {
                         <Select value={f.apolice_id} onValueChange={(v) => setVinculoForm(prev => ({ ...prev, [key]: { ...prev[key], apolice_id: v } }))}>
                           <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue placeholder="Selecione..." className="truncate min-w-0" /></SelectTrigger>
                           <SelectContent className="max-w-[calc(100vw-3rem)]">
-                            {apolicesDoTipo.map(a => <SelectItem key={a.id} value={String(a.id)} className="truncate">{truncarTexto(apoliceLabel(a))} — {truncarTexto(empresaLabel(a.empresa_id))}</SelectItem>)}
+                            {apolicesDoTipo.map(a => <SelectItem key={a.id} value={String(a.id)} className="truncate">{truncarTexto(apoliceLabel(a), 30)} — {truncarTexto(empresaLabel(a.empresa_id))}</SelectItem>)}
                             {apolicesDoTipo.length === 0 && <div className="px-3 py-2 text-xs text-gray-400">Nenhuma apólice de {label.toLowerCase()} nesse grupo ainda</div>}
                           </SelectContent>
                         </Select>
@@ -1414,7 +1414,7 @@ const GestaoGeralTestePage = () => {
                       <Select value={solDadosForm.apolice_id} onValueChange={(v) => setSolDadosForm(prev => ({ ...prev, apolice_id: v }))}>
                         <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue placeholder="Selecione..." className="truncate min-w-0" /></SelectTrigger>
                         <SelectContent className="max-w-[calc(100vw-3rem)]">
-                          {apolicesDoTipo.map(a => <SelectItem key={a.id} value={String(a.id)} className="truncate">{truncarTexto(apoliceLabel(a))} — {truncarTexto(empresaLabel(a.empresa_id))}</SelectItem>)}
+                          {apolicesDoTipo.map(a => <SelectItem key={a.id} value={String(a.id)} className="truncate">{truncarTexto(apoliceLabel(a), 30)} — {truncarTexto(empresaLabel(a.empresa_id))}</SelectItem>)}
                           {apolicesDoTipo.length === 0 && <div className="px-3 py-2 text-xs text-gray-400">Nenhuma apólice de {s.tipo_plano} nesse grupo ainda</div>}
                         </SelectContent>
                       </Select>
