@@ -729,10 +729,7 @@ const GestaoGeralTestePage = () => {
   };
 
   // ---------- Apólice: expandir + editar ----------
-  const toggleExpandAp = (ap) => {
-    if (expandedApId === ap.id) { setExpandedApId(null); return; }
-    setExpandedApId(ap.id);
-    setIsEditingApolice(false);
+  const resetApoliceForm = (ap) => {
     const sub = subApoliceOf(ap);
     setApoliceForm({
       tipo: sub.tipo || 'saude',
@@ -741,6 +738,13 @@ const GestaoGeralTestePage = () => {
       numero: sub.numero || '',
       valor_premio: sub.valor_premio ? maskBRL(String(Math.round(Number(sub.valor_premio) * 100))) : '',
     });
+  };
+
+  const toggleExpandAp = (ap) => {
+    if (expandedApId === ap.id) { setExpandedApId(null); return; }
+    setExpandedApId(ap.id);
+    setIsEditingApolice(false);
+    resetApoliceForm(ap);
     setContratoApoliceFile(null);
     setBoletosApolice([]);
     setLoadingBoletosApolice(true);
@@ -1469,7 +1473,17 @@ const GestaoGeralTestePage = () => {
 
                             {/* Dados — leitura ou edição */}
                             {isEditingApolice ? (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <div className="bg-white border rounded-lg p-3 space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <p className="text-xs font-semibold uppercase text-gray-400">Editando dados da apólice</p>
+                                  <div className="flex gap-2">
+                                    <Button variant="outline" size="sm" className="h-7" onClick={() => { resetApoliceForm(a); setIsEditingApolice(false); }}>Cancelar</Button>
+                                    <Button size="sm" className="h-7 bg-[#003580] hover:bg-[#002060] text-white" onClick={() => salvarApolice(a)} disabled={isSavingApolice}>
+                                      {isSavingApolice && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}Salvar
+                                    </Button>
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <div>
                                   <Label className="text-xs">Tipo</Label>
                                   <Select value={apoliceForm.tipo} onValueChange={(v) => setApoliceForm(prev => ({ ...prev, tipo: v }))}>
@@ -1494,6 +1508,7 @@ const GestaoGeralTestePage = () => {
                                 <div>
                                   <Label className="text-xs">Valor prêmio (R$)</Label>
                                   <Input value={apoliceForm.valor_premio} onChange={e => setApoliceForm(prev => ({ ...prev, valor_premio: maskBRL(e.target.value) }))} placeholder="0,00" />
+                                </div>
                                 </div>
                               </div>
                             ) : (
@@ -1584,7 +1599,7 @@ const GestaoGeralTestePage = () => {
                             </div>
 
                             {/* Ações */}
-                            <div className="flex justify-between items-center pt-1">
+                            <div className="flex justify-end pt-1">
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200" disabled={isDeletingApolice}>
@@ -1602,12 +1617,6 @@ const GestaoGeralTestePage = () => {
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>
-                              <div className="flex gap-2">
-                                <Button variant="outline" size="sm" onClick={() => setExpandedApId(null)}>Cancelar</Button>
-                                <Button size="sm" onClick={() => salvarApolice(a)} disabled={isSavingApolice} className="bg-[#003580] hover:bg-[#002060] text-white">
-                                  {isSavingApolice && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar
-                                </Button>
-                              </div>
                             </div>
                           </div>
                           );
