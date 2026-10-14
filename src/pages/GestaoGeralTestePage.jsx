@@ -264,6 +264,7 @@ const GestaoGeralTestePage = () => {
   const [apoliceForm, setApoliceForm] = useState({ seguradora: '', plano: '', numero: '', valor_premio: '', tipo: 'saude' });
   const [isSavingApolice, setIsSavingApolice] = useState(false);
   const [isDeletingApolice, setIsDeletingApolice] = useState(false);
+  const [isEditingApolice, setIsEditingApolice] = useState(false);
 
   const [contratoApoliceFile, setContratoApoliceFile] = useState(null);
   const [isSavingContrato, setIsSavingContrato] = useState(false);
@@ -566,7 +567,7 @@ const GestaoGeralTestePage = () => {
   };
 
   const contagemBeneficiariosApolice = (apoliceId) =>
-    new Set(planos.filter(p => Number(p.apolice_id) === Number(apoliceId)).map(p => p.beneficiario_id)).size;
+    beneficiarios.filter(b => beneficiarioCobertoPorApolice(b.id, apoliceId)).length;
 
   const empresaOptions = (
     <>
@@ -731,6 +732,7 @@ const GestaoGeralTestePage = () => {
   const toggleExpandAp = (ap) => {
     if (expandedApId === ap.id) { setExpandedApId(null); return; }
     setExpandedApId(ap.id);
+    setIsEditingApolice(false);
     const sub = subApoliceOf(ap);
     setApoliceForm({
       tipo: sub.tipo || 'saude',
@@ -877,7 +879,7 @@ const GestaoGeralTestePage = () => {
       const updated = await apolicesService.updateApolice(ap.id, { dados_adicionais: { ...dadosAtuais, sub_apolices: subs } });
       setApolices(prev => prev.map(a => a.id === updated.id ? updated : a));
       toast({ title: 'Apólice atualizada.' });
-      setExpandedApId(null);
+      setIsEditingApolice(false);
     } catch (err) {
       toast({ variant: 'destructive', title: 'Erro ao salvar apólice', description: err.message });
     } finally {
@@ -1465,27 +1467,52 @@ const GestaoGeralTestePage = () => {
                               )}
                             </div>
 
-                            {/* Campos editáveis */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              <div>
-                                <Label className="text-xs">Tipo</Label>
-                                <Select value={apoliceForm.tipo} onValueChange={(v) => setApoliceForm(prev => ({ ...prev, tipo: v }))}>
-                                  <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="saude">Saúde</SelectItem>
-                                    <SelectItem value="vida">Vida</SelectItem>
-                                    <SelectItem value="odonto">Odonto</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                            {/* Dados — leitura ou edição */}
+                            {isEditingApolice ? (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div>
+                                  <Label className="text-xs">Tipo</Label>
+                                  <Select value={apoliceForm.tipo} onValueChange={(v) => setApoliceForm(prev => ({ ...prev, tipo: v }))}>
+                                    <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="saude">Saúde</SelectItem>
+                                      <SelectItem value="vida">Vida</SelectItem>
+                                      <SelectItem value="odonto">Odonto</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div><Label className="text-xs">Número</Label><Input value={apoliceForm.numero} onChange={e => setApoliceForm(prev => ({ ...prev, numero: e.target.value }))} /></div>
+                                <div>
+                                  <Label className="text-xs">Seguradora</Label>
+                                  <Select value={apoliceForm.seguradora} onValueChange={(v) => setApoliceForm(prev => ({ ...prev, seguradora: v }))}>
+                                    <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue placeholder="Selecione..." className="truncate min-w-0" /></SelectTrigger>
+                                    <SelectContent>{SEGURADORAS.map(s => <SelectItem key={s.nome} value={s.nome}>{s.nome}</SelectItem>)}</SelectContent>
+                                  </Select>
+                                  {apoliceForm.seguradora && (() => { const s = SEGURADORAS.find(x => x.nome === apoliceForm.seguradora); return s?.logo ? <img src={s.logo} alt={s.nome} className="mt-1.5 h-6 object-contain" /> : null; })()}
+                                </div>
+                                <div><Label className="text-xs">Plano</Label><Input value={apoliceForm.plano} onChange={e => setApoliceForm(prev => ({ ...prev, plano: e.target.value }))} placeholder="Ex: Direto Nacional" /></div>
+                                <div>
+                                  <Label className="text-xs">Valor prêmio (R$)</Label>
+                                  <Input value={apoliceForm.valor_premio} onChange={e => setApoliceForm(prev => ({ ...prev, valor_premio: maskBRL(e.target.value) }))} placeholder="0,00" />
+                                </div>
                               </div>
-                              <div><Label className="text-xs">Número</Label><Input value={apoliceForm.numero} onChange={e => setApoliceForm(prev => ({ ...prev, numero: e.target.value }))} /></div>
-                              <div><Label className="text-xs">Seguradora</Label><Input value={apoliceForm.seguradora} onChange={e => setApoliceForm(prev => ({ ...prev, seguradora: e.target.value }))} placeholder="Ex: SulAmérica" /></div>
-                              <div><Label className="text-xs">Plano</Label><Input value={apoliceForm.plano} onChange={e => setApoliceForm(prev => ({ ...prev, plano: e.target.value }))} placeholder="Ex: Direto Nacional" /></div>
-                              <div>
-                                <Label className="text-xs">Valor prêmio (R$)</Label>
-                                <Input value={apoliceForm.valor_premio} onChange={e => setApoliceForm(prev => ({ ...prev, valor_premio: maskBRL(e.target.value) }))} placeholder="0,00" />
+                            ) : (
+                              <div className="bg-white border rounded-lg p-3">
+                                <div className="flex items-center justify-between mb-2">
+                                  <p className="text-xs font-semibold uppercase text-gray-400">Dados da apólice</p>
+                                  <Button size="sm" variant="ghost" className="h-7 text-[#003580] hover:bg-[#003580]/10" onClick={() => setIsEditingApolice(true)}>
+                                    <Edit className="h-3.5 w-3.5 mr-1" /> Editar
+                                  </Button>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                                  <div><p className="text-xs text-gray-400 uppercase">Tipo</p><p className="font-medium text-gray-700 capitalize">{sub.tipo || '—'}</p></div>
+                                  <div><p className="text-xs text-gray-400 uppercase">Número</p><p className="font-medium text-gray-700">{sub.numero || '—'}</p></div>
+                                  <div><p className="text-xs text-gray-400 uppercase">Seguradora</p><p className="font-medium text-gray-700">{sub.seguradora || '—'}</p></div>
+                                  <div><p className="text-xs text-gray-400 uppercase">Plano</p><p className="font-medium text-gray-700">{sub.plano || '—'}</p></div>
+                                  <div className="col-span-2 sm:col-span-1"><p className="text-xs text-gray-400 uppercase">Prêmio</p><p className="font-medium text-gray-700">{sub.valor_premio ? formatCurrency(sub.valor_premio) : '—'}</p></div>
+                                </div>
                               </div>
-                            </div>
+                            )}
                             {(seg?.phone || seg?.website) && (
                               <div className="text-xs text-gray-500 flex gap-3">
                                 {seg?.phone && <a href={`tel:${seg.phone.replace(/\D/g, '')}`} className="text-[#003580] hover:underline">📞 {seg.phone}</a>}
@@ -1776,7 +1803,14 @@ const GestaoGeralTestePage = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div><Label>Seguradora</Label><Input value={addApForm.seguradora} onChange={e => setAddApForm(prev => ({ ...prev, seguradora: e.target.value }))} placeholder="Ex: SulAmérica" /></div>
+            <div>
+              <Label>Seguradora</Label>
+              <Select value={addApForm.seguradora} onValueChange={(v) => setAddApForm(prev => ({ ...prev, seguradora: v }))}>
+                <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue placeholder="Selecione..." className="truncate min-w-0" /></SelectTrigger>
+                <SelectContent>{SEGURADORAS.map(s => <SelectItem key={s.nome} value={s.nome}>{s.nome}</SelectItem>)}</SelectContent>
+              </Select>
+              {addApForm.seguradora && (() => { const s = SEGURADORAS.find(x => x.nome === addApForm.seguradora); return s?.logo ? <img src={s.logo} alt={s.nome} className="mt-1.5 h-6 object-contain" /> : null; })()}
+            </div>
             <div><Label>Plano</Label><Input value={addApForm.plano} onChange={e => setAddApForm(prev => ({ ...prev, plano: e.target.value }))} placeholder="Ex: Direto Nacional" /></div>
             <div><Label>Número</Label><Input value={addApForm.numero} onChange={e => setAddApForm(prev => ({ ...prev, numero: e.target.value }))} /></div>
             <div>
