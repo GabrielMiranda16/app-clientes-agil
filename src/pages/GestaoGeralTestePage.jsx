@@ -13,9 +13,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Plus, ChevronDown, ChevronLeft, ChevronRight, Search, Trash2, Clock, CheckCircle2, XCircle, SlidersHorizontal, ArrowUpDown, Check } from 'lucide-react';
+import { Loader2, Plus, ChevronDown, ChevronLeft, ChevronRight, Search, Trash2, Clock, CheckCircle2, XCircle, SlidersHorizontal, ArrowUpDown, Check, Receipt, Upload, Edit, Download } from 'lucide-react';
 import { formatCpfCnpj, applyCpfMask, applyPhoneMask, applyCepMask } from '@/lib/masks';
 import { calculateAge, formatCurrency } from '@/lib/utils';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { SEGURADORAS } from '@/data/seguradoras';
 
 import { empresasService } from '@/services/empresasService';
 import { beneficiariosService } from '@/services/beneficiariosService';
@@ -23,6 +26,7 @@ import { apolicesService } from '@/services/apolicesService';
 import { beneficiarioPlanosService } from '@/services/beneficiarioPlanosService';
 import { coparticipacaoService } from '@/services/coparticipacaoService';
 import { solicitacoesService } from '@/services/solicitacoesService';
+import { boletosService } from '@/services/boletosService';
 
 const TIPOS = [
   { key: 'saude', label: 'Saúde' },
@@ -38,6 +42,18 @@ const ORDENAR_BEN_OPTIONS = [
 ];
 
 const subApoliceOf = (ap) => (ap.dados_adicionais?.sub_apolices || [])[0] || {};
+
+const MES_OPTS = (() => {
+  const opts = [];
+  const now = new Date();
+  for (const off of [0, 1, -1, -2]) {
+    const d = new Date(now.getFullYear(), now.getMonth() + off, 1);
+    const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const label = format(d, 'MMMM yyyy', { locale: ptBR });
+    opts.push({ val, label: label.charAt(0).toUpperCase() + label.slice(1) });
+  }
+  return opts;
+})();
 
 const maskBRL = (v) => {
   const digits = String(v || '').replace(/\D/g, '');
@@ -247,6 +263,21 @@ const GestaoGeralTestePage = () => {
   const [expandedApId, setExpandedApId] = useState(null);
   const [apoliceForm, setApoliceForm] = useState({ seguradora: '', plano: '', numero: '', valor_premio: '', tipo: 'saude' });
   const [isSavingApolice, setIsSavingApolice] = useState(false);
+  const [isDeletingApolice, setIsDeletingApolice] = useState(false);
+
+  const [contratoApoliceFile, setContratoApoliceFile] = useState(null);
+  const [isSavingContrato, setIsSavingContrato] = useState(false);
+
+  const [boletosApolice, setBoletosApolice] = useState([]);
+  const [loadingBoletosApolice, setLoadingBoletosApolice] = useState(false);
+  const [isBoletoUploadOpen, setIsBoletoUploadOpen] = useState(false);
+  const [boletoEditando, setBoletoEditando] = useState(null);
+  const [boletoMes, setBoletoMes] = useState(MES_OPTS[0]?.val || '');
+  const [boletoFile, setBoletoFile] = useState(null);
+  const [isSavingBoleto, setIsSavingBoleto] = useState(false);
+  const [boletoPreview, setBoletoPreview] = useState(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [baixandoBoletoId, setBaixandoBoletoId] = useState(null);
 
   const [isAddBenOpen, setIsAddBenOpen] = useState(false);
   const [addBenForm, setAddBenForm] = useState(emptyBenForm);
@@ -708,6 +739,131 @@ const GestaoGeralTestePage = () => {
       numero: sub.numero || '',
       valor_premio: sub.valor_premio ? maskBRL(String(Math.round(Number(sub.valor_premio) * 100))) : '',
     });
+    setContratoApoliceFile(null);
+    setBoletosApolice([]);
+    setLoadingBoletosApolice(true);
+    boletosService.getBoletosByApolice(ap.id).then(setBoletosApolice).catch(() => {}).finally(() => setLoadingBoletosApolice(false));
+  };
+
+  const formatDateAp = (d) => {
+    if (!d) return '—';
+    try { return format(new Date(String(d).slice(0, 10) + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR }); } catch { return d; }
+  };
+
+  const mesLabelAp = (mesStr) => {
+    try {
+      const [y, m] = mesStr.split('-');
+      const d = new Date(Number(y), Number(m) - 1, 1);
+      const l = format(d, 'MMMM yyyy', { locale: ptBR });
+      return l.charAt(0).toUpperCase() + l.slice(1);
+    } catch { return mesStr; }
+  };
+
+  const excluirApolice = async (ap) => {
+    setIsDeletingApolice(true);
+    try {
+      await apolicesService.deleteApolice(ap.id);
+      setApolices(prev => prev.filter(a => a.id !== ap.id));
+      setExpandedApId(null);
+      toast({ title: 'Apólice excluída.' });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro ao excluir', description: err.message });
+    } finally {
+      setIsDeletingApolice(false);
+    }
+  };
+
+  const handleUploadContratoApolice = async (ap) => {
+    if (!contratoApoliceFile) return;
+    setIsSavingContrato(true);
+    try {
+      const url = await apolicesService.uploadContratoSegmento(contratoApoliceFile, ap.id, `${apoliceForm.tipo || 'saude'}_0`);
+      const dadosAtuais = ap.dados_adicionais || {};
+      const subs = [...(dadosAtuais.sub_apolices || [])];
+      if (subs.length > 0) subs[0] = { ...subs[0], contrato_url: url };
+      else subs.push({ tipo: apoliceForm.tipo, contrato_url: url });
+      const updated = await apolicesService.updateApolice(ap.id, { dados_adicionais: { ...dadosAtuais, sub_apolices: subs } });
+      setApolices(prev => prev.map(a => a.id === updated.id ? updated : a));
+      setContratoApoliceFile(null);
+      toast({ title: 'Contrato atualizado.' });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro ao enviar contrato', description: err.message });
+    } finally {
+      setIsSavingContrato(false);
+    }
+  };
+
+  const openBoletoUpload = (boleto = null) => {
+    setBoletoEditando(boleto);
+    setBoletoMes(boleto?.mes_referencia || MES_OPTS[0]?.val || '');
+    setBoletoFile(null);
+    setIsBoletoUploadOpen(true);
+  };
+
+  const handleSaveBoleto = async () => {
+    if (!boletoFile) return toast({ variant: 'destructive', title: 'Selecione um PDF.' });
+    setIsSavingBoleto(true);
+    try {
+      let saved;
+      if (boletoEditando) {
+        saved = await boletosService.replaceBoleto(boletoEditando, boletoFile);
+        setBoletosApolice(prev => prev.map(b => b.id === saved.id ? saved : b));
+      } else {
+        saved = await boletosService.uploadBoleto(boletoFile, expandedApId, boletoMes);
+        setBoletosApolice(prev => {
+          const sem = prev.filter(b => b.mes_referencia !== boletoMes);
+          return [saved, ...sem].sort((a, b) => b.mes_referencia.localeCompare(a.mes_referencia));
+        });
+      }
+      toast({ title: boletoEditando ? 'Boleto atualizado.' : 'Boleto enviado.' });
+      setIsBoletoUploadOpen(false);
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro', description: err.message });
+    } finally {
+      setIsSavingBoleto(false);
+    }
+  };
+
+  const handleDeleteBoleto = async (boleto) => {
+    try {
+      await boletosService.deleteBoleto(boleto);
+      setBoletosApolice(prev => prev.filter(b => b.id !== boleto.id));
+      toast({ title: 'Boleto removido.' });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro', description: err.message });
+    }
+  };
+
+  const openBoletoPreview = async (boleto) => {
+    setLoadingPreview(true);
+    setBoletoPreview({ url: null, mes: boleto.mes_referencia });
+    try {
+      const url = await boletosService.getSignedUrl(boleto.arquivo_url);
+      setBoletoPreview({ url, mes: boleto.mes_referencia });
+    } catch {
+      setBoletoPreview({ url: boleto.arquivo_url, mes: boleto.mes_referencia });
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
+
+  const handleBaixarBoleto = async (boleto) => {
+    setBaixandoBoletoId(boleto.id);
+    try {
+      const url = await boletosService.getSignedUrl(boleto.arquivo_url);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `boleto-${boleto.mes_referencia}.pdf`;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch {
+      toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível baixar o boleto.' });
+    } finally {
+      setBaixandoBoletoId(null);
+    }
   };
 
   const salvarApolice = async (ap) => {
@@ -1275,9 +1431,41 @@ const GestaoGeralTestePage = () => {
                           <Badge variant="outline" className="shrink-0 hidden sm:inline-flex">{empresaLabel(a.empresa_id)}</Badge>
                           <ChevronDown className={`h-4 w-4 text-gray-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
                         </button>
-                        {open && (
-                          <div className="p-3 border-t bg-gray-50 space-y-3">
+                        {open && (() => {
+                          const status = apolicesService.getStatusApolice(a.vigencia_fim);
+                          const semVigencia = !a.vigencia_fim;
+                          const seg = SEGURADORAS.find(s => s.nome === sub.seguradora);
+                          const statusBadgeClass = semVigencia
+                            ? 'bg-green-100 text-green-800'
+                            : status.color === 'red' ? 'bg-red-100 text-red-800'
+                            : status.color === 'yellow' ? 'bg-yellow-100 text-yellow-800'
+                            : status.color === 'green' ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-600';
+                          return (
+                          <div className="p-3 border-t bg-gray-50 space-y-4">
                             <Badge variant="outline" className="sm:hidden">{empresaLabel(a.empresa_id)}</Badge>
+
+                            {/* Status + logo da seguradora */}
+                            <div className="flex items-start justify-between gap-3">
+                              <Badge className={statusBadgeClass}>{semVigencia ? 'Plano contínuo' : status.label}</Badge>
+                              {seg?.logo && <img src={seg.logo} alt={seg.nome} className="h-10 object-contain" />}
+                            </div>
+
+                            {/* Vigência / Data de inclusão */}
+                            <div className="grid grid-cols-2 gap-3 text-sm bg-white border rounded-lg p-3">
+                              <div>
+                                <p className="text-xs text-gray-400 uppercase">{semVigencia ? 'Data de Inclusão' : 'Início'}</p>
+                                <p className="font-medium text-gray-700">{formatDateAp(a.vigencia_inicio || a.created_at)}</p>
+                              </div>
+                              {!semVigencia && (
+                                <div>
+                                  <p className="text-xs text-gray-400 uppercase">Término</p>
+                                  <p className="font-medium text-gray-700">{formatDateAp(a.vigencia_fim)}</p>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Campos editáveis */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               <div>
                                 <Label className="text-xs">Tipo</Label>
@@ -1298,14 +1486,105 @@ const GestaoGeralTestePage = () => {
                                 <Input value={apoliceForm.valor_premio} onChange={e => setApoliceForm(prev => ({ ...prev, valor_premio: maskBRL(e.target.value) }))} placeholder="0,00" />
                               </div>
                             </div>
-                            <div className="flex justify-end gap-2">
-                              <Button variant="outline" size="sm" onClick={() => setExpandedApId(null)}>Cancelar</Button>
-                              <Button size="sm" onClick={() => salvarApolice(a)} disabled={isSavingApolice} className="bg-[#003580] hover:bg-[#002060] text-white">
-                                {isSavingApolice && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar
-                              </Button>
+                            {(seg?.phone || seg?.website) && (
+                              <div className="text-xs text-gray-500 flex gap-3">
+                                {seg?.phone && <a href={`tel:${seg.phone.replace(/\D/g, '')}`} className="text-[#003580] hover:underline">📞 {seg.phone}</a>}
+                                {seg?.website && <a href={seg.website} target="_blank" rel="noreferrer" className="text-[#003580] hover:underline">🌐 {seg.website.replace('https://www.', '')}</a>}
+                              </div>
+                            )}
+
+                            {/* Contrato */}
+                            <div className="bg-white border rounded-lg p-3 space-y-2">
+                              <p className="text-xs font-semibold uppercase text-gray-400">Contrato</p>
+                              <div className="flex items-center justify-between gap-2 flex-wrap">
+                                {sub.contrato_url ? (
+                                  <a href={sub.contrato_url} target="_blank" rel="noreferrer"><Button size="sm" variant="outline"><Download className="h-3.5 w-3.5 mr-1.5" />PDF</Button></a>
+                                ) : (
+                                  <span className="text-xs text-gray-400">Sem contrato</span>
+                                )}
+                                <div className="flex items-center gap-2">
+                                  <input type="file" accept=".pdf" className="text-xs max-w-[160px]" onChange={e => setContratoApoliceFile(e.target.files?.[0] || null)} />
+                                  <Button size="sm" variant="outline" disabled={!contratoApoliceFile || isSavingContrato} onClick={() => handleUploadContratoApolice(a)}>
+                                    {isSavingContrato ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
+                                    {sub.contrato_url ? 'Substituir' : 'Enviar'}
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Boletos */}
+                            <div className="bg-white border rounded-lg p-3 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <p className="text-xs font-semibold uppercase text-gray-400">Boletos</p>
+                                <Button size="sm" variant="ghost" className="text-[#003580] hover:bg-[#003580]/10" onClick={() => openBoletoUpload()}>
+                                  <Upload className="h-3.5 w-3.5 mr-1" /> Enviar boleto
+                                </Button>
+                              </div>
+                              {loadingBoletosApolice ? (
+                                <div className="flex justify-center py-4"><Loader2 className="h-4 w-4 animate-spin text-gray-400" /></div>
+                              ) : boletosApolice.length === 0 ? (
+                                <p className="text-xs text-gray-400 text-center py-3">Nenhum boleto enviado.</p>
+                              ) : (
+                                <div className="space-y-1.5">
+                                  {boletosApolice.map(bo => (
+                                    <div key={bo.id} className="flex items-center justify-between gap-2 p-2 bg-gray-50 rounded border text-xs">
+                                      <span className="font-medium text-gray-700">{mesLabelAp(bo.mes_referencia)}</span>
+                                      <div className="flex items-center gap-1">
+                                        <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white h-7 px-2" onClick={() => openBoletoPreview(bo)}>Visualizar</Button>
+                                        <Button variant="outline" size="icon" className="h-7 w-7" title="Baixar PDF" disabled={baixandoBoletoId === bo.id} onClick={() => handleBaixarBoleto(bo)}>
+                                          {baixandoBoletoId === bo.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+                                        </Button>
+                                        <Button variant="outline" size="icon" className="h-7 w-7" title="Substituir PDF" onClick={() => openBoletoUpload(bo)}>
+                                          <Edit className="h-3 w-3" />
+                                        </Button>
+                                        <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                            <Button variant="outline" size="icon" className="h-7 w-7 text-red-500 hover:text-red-700"><Trash2 className="h-3 w-3" /></Button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader><AlertDialogTitle>Remover boleto?</AlertDialogTitle></AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                              <AlertDialogAction onClick={() => handleDeleteBoleto(bo)} className="bg-red-600 hover:bg-red-700 text-white">Remover</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Ações */}
+                            <div className="flex justify-between items-center pt-1">
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200" disabled={isDeletingApolice}>
+                                    <Trash2 className="h-3.5 w-3.5 mr-1" /> Excluir apólice
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Excluir essa apólice?</AlertDialogTitle>
+                                    <AlertDialogDescription>Essa ação não pode ser desfeita.</AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => excluirApolice(a)} className="bg-red-600 hover:bg-red-700">Excluir</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                              <div className="flex gap-2">
+                                <Button variant="outline" size="sm" onClick={() => setExpandedApId(null)}>Cancelar</Button>
+                                <Button size="sm" onClick={() => salvarApolice(a)} disabled={isSavingApolice} className="bg-[#003580] hover:bg-[#002060] text-white">
+                                  {isSavingApolice && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar
+                                </Button>
+                              </div>
                             </div>
                           </div>
-                        )}
+                          );
+                        })()}
                       </div>
                     );
                   })}
@@ -1538,6 +1817,82 @@ const GestaoGeralTestePage = () => {
               {isSavingCopart && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Adicionar
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: upload/substituir boleto */}
+      <Dialog open={isBoletoUploadOpen} onOpenChange={setIsBoletoUploadOpen}>
+        <DialogContent className="w-[95vw] max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Receipt className="h-5 w-5 text-[#003580]" />
+              {boletoEditando ? 'Substituir Boleto' : 'Enviar Boleto'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {!boletoEditando && (
+              <div>
+                <Label className="text-xs">Mês de referência</Label>
+                <select
+                  value={boletoMes}
+                  onChange={e => setBoletoMes(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-[#003580]/30"
+                >
+                  {MES_OPTS.map(o => <option key={o.val} value={o.val}>{o.label}</option>)}
+                </select>
+              </div>
+            )}
+            {boletoEditando && (
+              <p className="text-sm text-gray-500">Substituindo boleto de <strong>{mesLabelAp(boletoEditando.mes_referencia)}</strong>.</p>
+            )}
+            <div>
+              <Label className="text-xs">Arquivo PDF</Label>
+              <label className="mt-1 flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 rounded-xl p-6 cursor-pointer hover:border-[#003580] hover:bg-blue-50/40 transition-colors">
+                <Receipt className="h-7 w-7 text-gray-300" />
+                {boletoFile ? (
+                  <p className="text-sm font-medium text-[#003580]">{boletoFile.name}</p>
+                ) : (
+                  <p className="text-sm text-gray-500">Clique ou arraste o PDF do boleto aqui</p>
+                )}
+                <input type="file" accept=".pdf" className="hidden" onChange={e => e.target.files?.[0] && setBoletoFile(e.target.files[0])} />
+              </label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsBoletoUploadOpen(false)}>Cancelar</Button>
+            <Button className="bg-[#003580] hover:bg-[#002060] text-white" disabled={!boletoFile || isSavingBoleto} onClick={handleSaveBoleto}>
+              {isSavingBoleto ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
+              {boletoEditando ? 'Substituir' : 'Enviar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: visualizar boleto */}
+      <Dialog open={!!boletoPreview} onOpenChange={(openState) => { if (!openState) setBoletoPreview(null); }}>
+        <DialogContent className="w-[95vw] max-w-4xl h-[90vh] p-0 flex flex-col overflow-hidden">
+          <DialogHeader className="px-5 pt-4 pb-3 border-b flex flex-row items-center justify-between pr-12">
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Receipt className="h-5 w-5 text-[#003580]" />
+              Boleto — {boletoPreview ? mesLabelAp(boletoPreview.mes) : ''}
+            </DialogTitle>
+            {boletoPreview?.url && (
+              <a href={boletoPreview.url} download target="_blank" rel="noopener noreferrer">
+                <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white">
+                  <Download className="h-4 w-4 mr-1.5" /> Baixar PDF
+                </Button>
+              </a>
+            )}
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden bg-gray-100">
+            {loadingPreview || !boletoPreview?.url ? (
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-8 w-8 animate-spin text-[#003580]" />
+              </div>
+            ) : (
+              <iframe src={boletoPreview.url} className="w-full h-full border-0" title="Boleto PDF" />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </DashboardLayout>
