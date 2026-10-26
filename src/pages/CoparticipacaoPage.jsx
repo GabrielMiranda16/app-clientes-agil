@@ -69,8 +69,9 @@ const CoparticipacaoPage = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [tipoTab, setTipoTab] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState('__all__');
-  const [selectedYear, setSelectedYear] = useState('__all__');
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(String(now.getMonth() + 1));
+  const [selectedYear, setSelectedYear] = useState(String(now.getFullYear()));
 
   const [currentDependents, setCurrentDependents] = useState([]);
   const [selectedDependentId, setSelectedDependentId] = useState('titular');
@@ -920,7 +921,14 @@ const CoparticipacaoPage = () => {
                   <button
                     key={tipo}
                     type="button"
-                    onClick={() => { setTipoTab(tipo); setSelectedMonth('__all__'); setSelectedYear('__all__'); setSearchTerm(''); setSelectedColaboradorId('__all__'); }}
+                    onClick={() => {
+                      const now = new Date();
+                      setTipoTab(tipo);
+                      setSelectedMonth(String(now.getMonth() + 1));
+                      setSelectedYear(String(now.getFullYear()));
+                      setSearchTerm('');
+                      setSelectedColaboradorId('__all__');
+                    }}
                     className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${
                       tipoTab === tipo
                         ? 'border-[#003580] bg-[#003580] text-white shadow'
