@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate, useParams, useLocation, Navigate } from 'react-router-dom';
-import { Download, FileText, ArrowLeft, Calendar, Loader2, Search, ChevronRight, ChevronDown } from 'lucide-react';
+import { Download, FileText, ArrowLeft, Calendar, Loader2, Search, ChevronRight, ChevronDown, Filter, ArrowUpDown } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useCompany } from '@/contexts/CompanyContext';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
@@ -107,8 +108,15 @@ const CoparticipacaoClientePage = () => {
   const [logoBase64, setLogoBase64] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const nowRef = new Date();
+  const currentMonthStr = String(nowRef.getMonth() + 1);
+  const currentYearStr = String(nowRef.getFullYear());
+  const [startMonth, setStartMonth] = useState(currentMonthStr);
+  const [startYear, setStartYear] = useState(currentYearStr);
+  const [endMonth, setEndMonth] = useState(currentMonthStr);
+  const [endYear, setEndYear] = useState(currentYearStr);
+  const [sortBy, setSortBy] = useState('competencia'); // 'competencia' | 'valor' | 'beneficiario'
+  const [sortDir, setSortDir] = useState('asc'); // 'asc' | 'desc'
   const [tipoFiltro, setTipoFiltro] = useState('saude');
   const [selectedColaboradorId, setSelectedColaboradorId] = useState('__all__');
   const [currentPage, setCurrentPage] = useState(1);
@@ -200,27 +208,51 @@ const CoparticipacaoClientePage = () => {
     return arr;
   }, []);
 
+  const getBeneficiarioName = (id) => {
+    const ben = beneficiarios.find(b => String(b.id) === String(id));
+    return ben ? ben.nome_completo : 'Desconhecido';
+  };
+
+  const periodKey = (year, month) => Number(year) * 12 + Number(month);
+  const isSingleMonth = startMonth === endMonth && startYear === endYear;
+
   const filteredCoparticipacoes = useMemo(() => {
     if (!empresaId) return [];
-    const monthPadded = String(selectedMonth).padStart(2, '0');
-    const selectedPeriod = `${selectedYear}-${monthPadded}`;
     let result = coparticipacoes.filter(c =>
       String(c.empresa_id) === String(empresaId) &&
-      c.competencia === selectedPeriod &&
       (c.tipo === tipoFiltro || (!c.tipo && tipoFiltro === 'saude'))
     );
+    if (startMonth && startYear && endMonth && endYear) {
+      const keyStart = periodKey(startYear, startMonth);
+      const keyEnd = periodKey(endYear, endMonth);
+      const lo = Math.min(keyStart, keyEnd);
+      const hi = Math.max(keyStart, keyEnd);
+      result = result.filter(c => {
+        const [cy, cm] = String(c.competencia || '').split('-').map(Number);
+        if (!cy || !cm) return false;
+        const ck = periodKey(cy, cm);
+        return ck >= lo && ck <= hi;
+      });
+    }
     if (selectedColaboradorId && selectedColaboradorId !== '__all__') {
       result = result.filter(c => String(c.beneficiario_id) === String(selectedColaboradorId));
     }
+    result = [...result].sort((a, b) => {
+      let cmp;
+      if (sortBy === 'valor') cmp = parseFloat(a.valor || 0) - parseFloat(b.valor || 0);
+      else if (sortBy === 'beneficiario') cmp = getBeneficiarioName(a.beneficiario_id).localeCompare(getBeneficiarioName(b.beneficiario_id));
+      else cmp = String(a.competencia).localeCompare(String(b.competencia));
+      return sortDir === 'desc' ? -cmp : cmp;
+    });
     return result;
-  }, [coparticipacoes, empresaId, selectedMonth, selectedYear, tipoFiltro, selectedColaboradorId]);
+  }, [coparticipacoes, empresaId, startMonth, startYear, endMonth, endYear, tipoFiltro, selectedColaboradorId, sortBy, sortDir, beneficiarios]);
 
   const totalMes = useMemo(() => {
     return filteredCoparticipacoes.reduce((acc, curr) => acc + (parseFloat(curr.valor) || 0), 0);
   }, [filteredCoparticipacoes]);
 
-  useEffect(() => { setCurrentPage(1); }, [filteredCoparticipacoes.length, tipoFiltro, selectedColaboradorId, selectedMonth, selectedYear]);
-  useEffect(() => { setSelectedRowIds(new Set()); }, [tipoFiltro, selectedColaboradorId, selectedMonth, selectedYear]);
+  useEffect(() => { setCurrentPage(1); }, [filteredCoparticipacoes.length, tipoFiltro, selectedColaboradorId, startMonth, startYear, endMonth, endYear]);
+  useEffect(() => { setSelectedRowIds(new Set()); }, [tipoFiltro, selectedColaboradorId, startMonth, startYear, endMonth, endYear]);
 
   const dadosParaExportar = selectedRowIds.size > 0
     ? filteredCoparticipacoes.filter(c => selectedRowIds.has(c.id))
@@ -229,15 +261,26 @@ const CoparticipacaoClientePage = () => {
 
   const totalPages = Math.max(1, Math.ceil(filteredCoparticipacoes.length / ITEMS_PER_PAGE));
   const pageData = filteredCoparticipacoes.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-
-  const getBeneficiarioName = (id) => {
-    const ben = beneficiarios.find(b => String(b.id) === String(id));
-    return ben ? ben.nome_completo : 'Desconhecido';
-  };
+  const periodIsDefault = startMonth === currentMonthStr && startYear === currentYearStr && endMonth === currentMonthStr && endYear === currentYearStr;
+  const activeFilterCount =
+    (periodIsDefault ? 0 : 1) +
+    (selectedColaboradorId !== '__all__' ? 1 : 0);
 
   const getMonthName = (monthValue) => {
-    const month = months.find(m => m.value === monthValue);
+    const month = months.find(m => String(m.value) === String(monthValue));
     return month ? month.label : '';
+  };
+
+  const getPeriodLabel = () => {
+    if (!startMonth || !startYear || !endMonth || !endYear) return 'Selecione o período';
+    if (isSingleMonth) return `${getMonthName(startMonth)} de ${startYear}`;
+    return `${getMonthName(startMonth)} de ${startYear} a ${getMonthName(endMonth)} de ${endYear}`;
+  };
+
+  const getPeriodSlug = () => {
+    if (!startMonth || !startYear || !endMonth || !endYear) return 'periodo';
+    if (isSingleMonth) return `${startYear}-${String(startMonth).padStart(2, '0')}`;
+    return `${startYear}-${String(startMonth).padStart(2, '0')}_a_${endYear}-${String(endMonth).padStart(2, '0')}`;
   };
 
   const handleExportPDF = () => {
@@ -248,9 +291,7 @@ const CoparticipacaoClientePage = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const empresaAtual = empresas.find(e => String(e.id) === String(empresaId));
-    const mesLabel = getMonthName(selectedMonth);
     const tipoLabel = tipoFiltro === 'saude' ? 'Saúde' : 'Odonto';
-    const monthPadded = String(selectedMonth).padStart(2, '0');
 
     // Cabeçalho azul
     doc.setFillColor(0, 53, 128);
@@ -286,7 +327,7 @@ const CoparticipacaoClientePage = () => {
     doc.setFontSize(9);
     doc.setFont(undefined, 'normal');
     doc.setTextColor(100, 100, 100);
-    doc.text(`Período: ${mesLabel} de ${selectedYear}`, 14, 55);
+    doc.text(`Período: ${getPeriodLabel()}`, 14, 55);
 
     const tableColumn = ["Beneficiário Titular", "Quem Utilizou", "CPF Utilizador", "Descrição", "Valor (R$)"];
     const tableRows = dadosParaExportar.map(item => [
@@ -320,7 +361,7 @@ const CoparticipacaoClientePage = () => {
       doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 14, h - 8);
     }
 
-    doc.save(`coparticipacao_${tipoFiltro}_${empresaAtual?.cnpj}_${selectedYear}-${monthPadded}.pdf`);
+    doc.save(`coparticipacao_${tipoFiltro}_${empresaAtual?.cnpj}_${getPeriodSlug()}.pdf`);
   };
 
   const handleExportExcel = () => {
@@ -343,8 +384,7 @@ const CoparticipacaoClientePage = () => {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Coparticipação");
     worksheet["!cols"] = [{ wch: 30 }, { wch: 30 }, { wch: 15 }, { wch: 40 }, { wch: 15 }];
 
-    const monthPadded = String(selectedMonth).padStart(2, '0');
-    XLSX.writeFile(workbook, `coparticipacao_${tipoFiltro}_${empresaAtual?.cnpj}_${selectedYear}-${monthPadded}.xlsx`);
+    XLSX.writeFile(workbook, `coparticipacao_${tipoFiltro}_${empresaAtual?.cnpj}_${getPeriodSlug()}.xlsx`);
   };
 
   if (loading) {
@@ -424,34 +464,106 @@ const CoparticipacaoClientePage = () => {
                   </SelectContent>
                 </Select>
               </div>
-              {/* Month & Year */}
-              <div className="flex gap-4">
-                <div className="flex-1 space-y-2">
-                  <Label>Mês</Label>
-                  <Select value={String(selectedMonth)} onValueChange={(value) => setSelectedMonth(parseInt(value))}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Selecione um mês" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {months.map(m => (
-                        <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex-1 space-y-2">
-                  <Label>Ano</Label>
-                  <Select value={String(selectedYear)} onValueChange={(value) => setSelectedYear(parseInt(value))}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Selecione um ano" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {years.map(y => (
-                        <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Filtros: período, colaborador, ordenação */}
+              <div className="space-y-2">
+                <Label>Filtros</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="w-full justify-start relative">
+                      <Filter className="mr-2 h-4 w-4" /> Filtros
+                      {activeFilterCount > 0 && (
+                        <span className="ml-2 inline-flex items-center justify-center h-5 min-w-5 px-1 rounded-full bg-[#003580] text-white text-[11px] font-semibold">
+                          {activeFilterCount}
+                        </span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80" align="start">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs">Período</Label>
+                        <div className="flex gap-2">
+                          <div className="flex-1 space-y-1">
+                            <Label className="text-xs">De</Label>
+                            <div className="flex gap-1">
+                              <Select value={startMonth} onValueChange={setStartMonth}>
+                                <SelectTrigger className="w-full"><SelectValue placeholder="Mês" /></SelectTrigger>
+                                <SelectContent>
+                                  {months.map(m => (
+                                    <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Select value={startYear} onValueChange={setStartYear}>
+                                <SelectTrigger className="w-20"><SelectValue placeholder="Ano" /></SelectTrigger>
+                                <SelectContent>
+                                  {years.map(y => (
+                                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <div className="flex-1 space-y-1">
+                            <Label className="text-xs">Até</Label>
+                            <div className="flex gap-1">
+                              <Select value={endMonth} onValueChange={setEndMonth}>
+                                <SelectTrigger className="w-full"><SelectValue placeholder="Mês" /></SelectTrigger>
+                                <SelectContent>
+                                  {months.map(m => (
+                                    <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Select value={endYear} onValueChange={setEndYear}>
+                                <SelectTrigger className="w-20"><SelectValue placeholder="Ano" /></SelectTrigger>
+                                <SelectContent>
+                                  {years.map(y => (
+                                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-xs">Colaborador</Label>
+                        <ColaboradorSearchSelect
+                          beneficiarios={beneficiariosDaEmpresa}
+                          value={selectedColaboradorId}
+                          onChange={setSelectedColaboradorId}
+                        />
+                      </div>
+
+                      <div className="border-t pt-3 space-y-1">
+                        <Label className="text-xs">Ordenar por</Label>
+                        <div className="flex gap-2">
+                          <Select value={sortBy} onValueChange={setSortBy}>
+                            <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="competencia">Mês</SelectItem>
+                              <SelectItem value="valor">Valor</SelectItem>
+                              <SelectItem value="beneficiario">Beneficiário</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            title={sortDir === 'asc' ? 'Crescente' : 'Decrescente'}
+                            onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
+                          >
+                            <ArrowUpDown className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </CardContent>
           </Card>
@@ -478,7 +590,7 @@ const CoparticipacaoClientePage = () => {
                 })()}
               </CardDescription>
               <CardDescription className="text-blue-100">
-                Total de coparticipações de {tipoLabel.toLowerCase()} lançadas em {getMonthName(selectedMonth)} de {selectedYear}
+                Total de coparticipações de {tipoLabel.toLowerCase()} lançadas em {getPeriodLabel()}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -508,11 +620,6 @@ const CoparticipacaoClientePage = () => {
               )}
             </CardTitle>
             <div className="flex flex-wrap gap-2 items-center">
-              <ColaboradorSearchSelect
-                beneficiarios={beneficiariosDaEmpresa}
-                value={selectedColaboradorId}
-                onChange={setSelectedColaboradorId}
-              />
               <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={dadosParaExportar.length === 0}>
                 <Download className="mr-2 h-4 w-4" /> Baixar Excel{selectedRowIds.size > 0 ? ` (${selectedRowIds.size})` : ''}
               </Button>
