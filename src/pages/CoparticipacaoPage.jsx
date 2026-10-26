@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Download, Edit2, Trash2, ArrowLeft, Loader2, Search, Upload, CheckCircle2, AlertCircle, X, ChevronRight, ChevronDown } from 'lucide-react';
+import { Plus, Download, Edit2, Trash2, ArrowLeft, Loader2, Search, Upload, CheckCircle2, AlertCircle, X, ChevronRight, ChevronDown, Filter, ArrowUpDown } from 'lucide-react';
 import { useCompany } from '@/contexts/CompanyContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/components/ui/use-toast';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -72,6 +73,8 @@ const CoparticipacaoPage = () => {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(String(now.getMonth() + 1));
   const [selectedYear, setSelectedYear] = useState(String(now.getFullYear()));
+  const [sortBy, setSortBy] = useState('competencia'); // 'competencia' | 'valor' | 'beneficiario'
+  const [sortDir, setSortDir] = useState('asc'); // 'asc' | 'desc'
 
   const [currentDependents, setCurrentDependents] = useState([]);
   const [selectedDependentId, setSelectedDependentId] = useState('titular');
@@ -417,12 +420,20 @@ const CoparticipacaoPage = () => {
       );
     }
 
-    return filtered.sort((a, b) => String(a.competencia).localeCompare(String(b.competencia)));
+    const sorted = [...filtered].sort((a, b) => {
+      let cmp;
+      if (sortBy === 'valor') cmp = parseFloat(a.valor || 0) - parseFloat(b.valor || 0);
+      else if (sortBy === 'beneficiario') cmp = getBeneficiarioName(a.beneficiario_id).localeCompare(getBeneficiarioName(b.beneficiario_id));
+      else cmp = String(a.competencia).localeCompare(String(b.competencia));
+      return sortDir === 'desc' ? -cmp : cmp;
+    });
+
+    return sorted;
   };
 
   const coparticipacoesFiltradas = useMemo(
     () => getCoparticipacoesByTipo(tipoTab),
-    [coparticipacoes, selectedCompanyId, tipoTab, selectedMonth, selectedYear, searchTerm, beneficiarios, selectedColaboradorId]
+    [coparticipacoes, selectedCompanyId, tipoTab, selectedMonth, selectedYear, searchTerm, beneficiarios, selectedColaboradorId, sortBy, sortDir]
   );
 
   const beneficiariosFiltrados = useMemo(() => {
@@ -706,6 +717,11 @@ const CoparticipacaoPage = () => {
     useEffect(() => { setCurrentPage(1); }, [selectedColaboradorId, searchTerm, selectedMonth, selectedYear, tipo]);
     const totalPages = Math.max(1, Math.ceil(data.length / ITEMS_PER_PAGE));
     const pageData = data.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    const activeFilterCount =
+      (selectedMonth !== '__all__' ? 1 : 0) +
+      (selectedYear !== '__all__' ? 1 : 0) +
+      (selectedColaboradorId !== '__all__' ? 1 : 0) +
+      (searchTerm.trim() !== '' ? 1 : 0);
 
     return (
       <Card>
@@ -713,49 +729,100 @@ const CoparticipacaoPage = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <CardTitle>Histórico de Lançamentos</CardTitle>
             <div className="flex flex-wrap gap-2">
-              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger className="w-full md:w-36">
-                  <SelectValue placeholder="Mês" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">Todos os meses</SelectItem>
-                  {months.map(m => (
-                    <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger className="w-full md:w-28">
-                  <SelectValue placeholder="Ano" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">Todos</SelectItem>
-                  {years.map(y => (
-                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={selectedColaboradorId} onValueChange={setSelectedColaboradorId}>
-                <SelectTrigger className="w-full md:w-52">
-                  <SelectValue placeholder="Todos os colaboradores" />
-                </SelectTrigger>
-                <SelectContent className="max-h-[320px] overflow-y-auto">
-                  <SelectItem value="__all__">Todos os colaboradores</SelectItem>
-                  {beneficiariosFiltrados.map(b => (
-                    <SelectItem key={b.id} value={String(b.id)}>{b.nome_completo}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="relative w-full md:w-48">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                <Input
-                  type="search"
-                  placeholder="Buscar..."
-                  className="pl-9"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="relative">
+                    <Filter className="mr-2 h-4 w-4" /> Filtros
+                    {activeFilterCount > 0 && (
+                      <span className="ml-2 inline-flex items-center justify-center h-5 min-w-5 px-1 rounded-full bg-[#003580] text-white text-[11px] font-semibold">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80" align="start">
+                  <div className="space-y-4">
+                    <div className="flex gap-2">
+                      <div className="flex-1 space-y-1">
+                        <Label className="text-xs">Mês</Label>
+                        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                          <SelectTrigger className="w-full"><SelectValue placeholder="Mês" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Todos os meses</SelectItem>
+                            {months.map(m => (
+                              <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <Label className="text-xs">Ano</Label>
+                        <Select value={selectedYear} onValueChange={setSelectedYear}>
+                          <SelectTrigger className="w-full"><SelectValue placeholder="Ano" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Todos</SelectItem>
+                            {years.map(y => (
+                              <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs">Colaborador</Label>
+                      <Select value={selectedColaboradorId} onValueChange={setSelectedColaboradorId}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Todos os colaboradores" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[280px] overflow-y-auto">
+                          <SelectItem value="__all__">Todos os colaboradores</SelectItem>
+                          {beneficiariosFiltrados.map(b => (
+                            <SelectItem key={b.id} value={String(b.id)}>{b.nome_completo}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs">Buscar</Label>
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                        <Input
+                          type="search"
+                          placeholder="Nome, descrição, mês..."
+                          className="pl-9"
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-3 space-y-1">
+                      <Label className="text-xs">Ordenar por</Label>
+                      <div className="flex gap-2">
+                        <Select value={sortBy} onValueChange={setSortBy}>
+                          <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="competencia">Mês</SelectItem>
+                            <SelectItem value="valor">Valor</SelectItem>
+                            <SelectItem value="beneficiario">Beneficiário</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          title={sortDir === 'asc' ? 'Crescente' : 'Decrescente'}
+                          onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
+                        >
+                          <ArrowUpDown className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
               <Button variant="outline" size="sm" onClick={() => handleExportPDF(data, tipo)} disabled={data.length === 0}>
                 <Download className="mr-2 h-4 w-4" /> PDF
               </Button>
