@@ -368,17 +368,6 @@ const CoparticipacaoPage = () => {
 
   const periodKey = (year, month) => Number(year) * 12 + Number(month);
 
-  const setLastNMonths = (n) => {
-    const now = new Date();
-    const endY = now.getFullYear();
-    const endM = now.getMonth() + 1;
-    const startDate = new Date(endY, endM - 1 - (n - 1), 1);
-    setStartMonth(String(startDate.getMonth() + 1));
-    setStartYear(String(startDate.getFullYear()));
-    setEndMonth(String(endM));
-    setEndYear(String(endY));
-  };
-
   const setThisMonth = () => {
     const now = new Date();
     setStartMonth(String(now.getMonth() + 1));
@@ -762,22 +751,6 @@ const CoparticipacaoPage = () => {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label className="text-xs">Período</Label>
-                      <div className="flex gap-1.5">
-                        <button type="button" onClick={setThisMonth}
-                          className="flex-1 px-1.5 py-1 rounded-md border border-gray-200 bg-white text-[11px] font-medium text-gray-600 hover:border-[#003580] hover:text-[#003580] transition-all">
-                          Este mês
-                        </button>
-                        {[3, 4, 6, 12].map(n => (
-                          <button
-                            key={n}
-                            type="button"
-                            onClick={() => setLastNMonths(n)}
-                            className="flex-1 px-1.5 py-1 rounded-md border border-gray-200 bg-white text-[11px] font-medium text-gray-600 hover:border-[#003580] hover:text-[#003580] transition-all"
-                          >
-                            Últ. {n}m
-                          </button>
-                        ))}
-                      </div>
                       <div className="flex gap-2">
                         <div className="flex-1 space-y-1">
                           <Label className="text-xs">De</Label>
