@@ -75,6 +75,11 @@ const CoparticipacaoPage = () => {
   const [selectedYear, setSelectedYear] = useState(String(now.getFullYear()));
   const [sortBy, setSortBy] = useState('competencia'); // 'competencia' | 'valor' | 'beneficiario'
   const [sortDir, setSortDir] = useState('asc'); // 'asc' | 'desc'
+  const [periodMode, setPeriodMode] = useState('unico'); // 'unico' | 'intervalo'
+  const [startMonth, setStartMonth] = useState('');
+  const [startYear, setStartYear] = useState('');
+  const [endMonth, setEndMonth] = useState('');
+  const [endYear, setEndYear] = useState('');
 
   const [currentDependents, setCurrentDependents] = useState([]);
   const [selectedDependentId, setSelectedDependentId] = useState('titular');
@@ -361,7 +366,25 @@ const CoparticipacaoPage = () => {
     return month ? month.label : '';
   };
 
+  const periodKey = (year, month) => Number(year) * 12 + Number(month);
+
+  const setLastNMonths = (n) => {
+    const now = new Date();
+    const endY = now.getFullYear();
+    const endM = now.getMonth() + 1;
+    const startDate = new Date(endY, endM - 1 - (n - 1), 1);
+    setPeriodMode('intervalo');
+    setStartMonth(String(startDate.getMonth() + 1));
+    setStartYear(String(startDate.getFullYear()));
+    setEndMonth(String(endM));
+    setEndYear(String(endY));
+  };
+
   const getPeriodLabel = () => {
+    if (periodMode === 'intervalo') {
+      if (!startMonth || !startYear || !endMonth || !endYear) return 'Selecione o intervalo';
+      return `${getMonthName(startMonth)} de ${startYear} a ${getMonthName(endMonth)} de ${endYear}`;
+    }
     const hasMonth = selectedMonth !== '__all__';
     const hasYear = selectedYear !== '__all__';
     if (hasMonth && hasYear) return `${getMonthName(selectedMonth)} de ${selectedYear}`;
@@ -371,6 +394,10 @@ const CoparticipacaoPage = () => {
   };
 
   const getPeriodSlug = () => {
+    if (periodMode === 'intervalo') {
+      if (!startMonth || !startYear || !endMonth || !endYear) return 'intervalo';
+      return `${startYear}-${String(startMonth).padStart(2, '0')}_a_${endYear}-${String(endMonth).padStart(2, '0')}`;
+    }
     const hasMonth = selectedMonth !== '__all__';
     const hasYear = selectedYear !== '__all__';
     if (hasMonth && hasYear) return `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
@@ -379,9 +406,9 @@ const CoparticipacaoPage = () => {
     return 'completo';
   };
 
-  // Quando o filtro está em "Todos", novos lançamentos/importações usam o mês atual como padrão
+  // Quando o filtro não aponta pra um único mês concreto, novos lançamentos/importações usam o mês atual como padrão
   const getEffectiveMonthYear = () => {
-    if (selectedMonth !== '__all__' && selectedYear !== '__all__') {
+    if (periodMode === 'unico' && selectedMonth !== '__all__' && selectedYear !== '__all__') {
       return { month: selectedMonth, year: selectedYear };
     }
     const now = new Date();
@@ -397,7 +424,22 @@ const CoparticipacaoPage = () => {
       (c.tipo === tipo || (!c.tipo && tipo === 'saude'))
     );
 
-    if (selectedYear !== '__all__' || selectedMonth !== '__all__') {
+    if (periodMode === 'intervalo') {
+      if (startMonth && startYear && endMonth && endYear) {
+        const keyStart = periodKey(startYear, startMonth);
+        const keyEnd = periodKey(endYear, endMonth);
+        const lo = Math.min(keyStart, keyEnd);
+        const hi = Math.max(keyStart, keyEnd);
+        filtered = filtered.filter(c => {
+          const [cy, cm] = String(c.competencia || '').split('-').map(Number);
+          if (!cy || !cm) return false;
+          const ck = periodKey(cy, cm);
+          return ck >= lo && ck <= hi;
+        });
+      } else {
+        filtered = [];
+      }
+    } else if (selectedYear !== '__all__' || selectedMonth !== '__all__') {
       filtered = filtered.filter(c => {
         const [cy, cm] = String(c.competencia || '').split('-');
         if (!cy || !cm) return false;
@@ -433,7 +475,7 @@ const CoparticipacaoPage = () => {
 
   const coparticipacoesFiltradas = useMemo(
     () => getCoparticipacoesByTipo(tipoTab),
-    [coparticipacoes, selectedCompanyId, tipoTab, selectedMonth, selectedYear, searchTerm, beneficiarios, selectedColaboradorId, sortBy, sortDir]
+    [coparticipacoes, selectedCompanyId, tipoTab, selectedMonth, selectedYear, searchTerm, beneficiarios, selectedColaboradorId, sortBy, sortDir, periodMode, startMonth, startYear, endMonth, endYear]
   );
 
   const beneficiariosFiltrados = useMemo(() => {
@@ -714,12 +756,14 @@ const CoparticipacaoPage = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [expandedId, setExpandedId] = useState(null);
     const ITEMS_PER_PAGE = 10;
-    useEffect(() => { setCurrentPage(1); }, [selectedColaboradorId, searchTerm, selectedMonth, selectedYear, tipo]);
+    useEffect(() => { setCurrentPage(1); }, [selectedColaboradorId, searchTerm, selectedMonth, selectedYear, tipo, periodMode, startMonth, startYear, endMonth, endYear]);
     const totalPages = Math.max(1, Math.ceil(data.length / ITEMS_PER_PAGE));
     const pageData = data.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
     const activeFilterCount =
-      (selectedMonth !== '__all__' ? 1 : 0) +
-      (selectedYear !== '__all__' ? 1 : 0) +
+      (periodMode === 'intervalo'
+        ? (startMonth && startYear && endMonth && endYear ? 1 : 0)
+        : (selectedMonth !== '__all__' ? 1 : 0) + (selectedYear !== '__all__' ? 1 : 0)
+      ) +
       (selectedColaboradorId !== '__all__' ? 1 : 0);
 
     return (
@@ -741,31 +785,113 @@ const CoparticipacaoPage = () => {
                 </PopoverTrigger>
                 <PopoverContent className="w-80" align="start">
                   <div className="space-y-4">
-                    <div className="flex gap-2">
-                      <div className="flex-1 space-y-1">
-                        <Label className="text-xs">Mês</Label>
-                        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                          <SelectTrigger className="w-full"><SelectValue placeholder="Mês" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__all__">Todos os meses</SelectItem>
-                            {months.map(m => (
-                              <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        {[['unico', 'Mês específico'], ['intervalo', 'Intervalo']].map(([mode, label]) => (
+                          <button
+                            key={mode}
+                            type="button"
+                            onClick={() => setPeriodMode(mode)}
+                            className={`flex-1 px-2 py-1.5 rounded-md border text-xs font-semibold transition-all ${
+                              periodMode === mode
+                                ? 'border-[#003580] bg-[#003580] text-white'
+                                : 'border-gray-200 bg-white text-gray-600 hover:border-[#003580] hover:text-[#003580]'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
                       </div>
-                      <div className="flex-1 space-y-1">
-                        <Label className="text-xs">Ano</Label>
-                        <Select value={selectedYear} onValueChange={setSelectedYear}>
-                          <SelectTrigger className="w-full"><SelectValue placeholder="Ano" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__all__">Todos</SelectItem>
-                            {years.map(y => (
-                              <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+
+                      {periodMode === 'unico' ? (
+                        <div className="flex gap-2">
+                          <div className="flex-1 space-y-1">
+                            <Label className="text-xs">Mês</Label>
+                            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                              <SelectTrigger className="w-full"><SelectValue placeholder="Mês" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__all__">Todos os meses</SelectItem>
+                                {months.map(m => (
+                                  <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <Label className="text-xs">Ano</Label>
+                            <Select value={selectedYear} onValueChange={setSelectedYear}>
+                              <SelectTrigger className="w-full"><SelectValue placeholder="Ano" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__all__">Todos</SelectItem>
+                                {years.map(y => (
+                                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="flex gap-1.5">
+                            {[3, 4, 6, 12].map(n => (
+                              <button
+                                key={n}
+                                type="button"
+                                onClick={() => setLastNMonths(n)}
+                                className="flex-1 px-1.5 py-1 rounded-md border border-gray-200 bg-white text-[11px] font-medium text-gray-600 hover:border-[#003580] hover:text-[#003580] transition-all"
+                              >
+                                Últ. {n}m
+                              </button>
                             ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <div className="flex-1 space-y-1">
+                              <Label className="text-xs">De</Label>
+                              <div className="flex gap-1">
+                                <Select value={startMonth} onValueChange={setStartMonth}>
+                                  <SelectTrigger className="w-full"><SelectValue placeholder="Mês" /></SelectTrigger>
+                                  <SelectContent>
+                                    {months.map(m => (
+                                      <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <Select value={startYear} onValueChange={setStartYear}>
+                                  <SelectTrigger className="w-20"><SelectValue placeholder="Ano" /></SelectTrigger>
+                                  <SelectContent>
+                                    {years.map(y => (
+                                      <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <div className="flex-1 space-y-1">
+                              <Label className="text-xs">Até</Label>
+                              <div className="flex gap-1">
+                                <Select value={endMonth} onValueChange={setEndMonth}>
+                                  <SelectTrigger className="w-full"><SelectValue placeholder="Mês" /></SelectTrigger>
+                                  <SelectContent>
+                                    {months.map(m => (
+                                      <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <Select value={endYear} onValueChange={setEndYear}>
+                                  <SelectTrigger className="w-20"><SelectValue placeholder="Ano" /></SelectTrigger>
+                                  <SelectContent>
+                                    {years.map(y => (
+                                      <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-1">
@@ -841,7 +967,7 @@ const CoparticipacaoPage = () => {
           ) : data.length === 0 ? (
             <div className="px-4 py-8 text-center text-gray-500">
               {selectedCompanyId
-                ? `Nenhum registro de ${tipo === 'saude' ? 'Saúde' : 'Odonto'} encontrado${selectedMonth !== '__all__' || selectedYear !== '__all__' ? ` para ${getPeriodLabel()}` : ''}.`
+                ? `Nenhum registro de ${tipo === 'saude' ? 'Saúde' : 'Odonto'} encontrado${(periodMode === 'intervalo' || selectedMonth !== '__all__' || selectedYear !== '__all__') ? ` para ${getPeriodLabel()}` : ''}.`
                 : 'Selecione uma empresa no dashboard para visualizar os registros.'}
             </div>
           ) : (
@@ -986,8 +1112,10 @@ const CoparticipacaoPage = () => {
                     onClick={() => {
                       const now = new Date();
                       setTipoTab(tipo);
+                      setPeriodMode('unico');
                       setSelectedMonth(String(now.getMonth() + 1));
                       setSelectedYear(String(now.getFullYear()));
+                      setStartMonth(''); setStartYear(''); setEndMonth(''); setEndYear('');
                       setSearchTerm('');
                       setSelectedColaboradorId('__all__');
                     }}
