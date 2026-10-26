@@ -71,6 +71,11 @@ const CoparticipacaoPage = () => {
   const [tipoTab, setTipoTab] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
+  const [periodMode, setPeriodMode] = useState('unico'); // 'unico' | 'intervalo'
+  const [startMonth, setStartMonth] = useState('');
+  const [startYear, setStartYear] = useState('');
+  const [endMonth, setEndMonth] = useState('');
+  const [endYear, setEndYear] = useState('');
 
   const [currentDependents, setCurrentDependents] = useState([]);
   const [selectedDependentId, setSelectedDependentId] = useState('titular');
@@ -357,17 +362,61 @@ const CoparticipacaoPage = () => {
     return month ? month.label : '';
   };
 
+  const periodKey = (year, month) => Number(year) * 12 + Number(month);
+
+  const getPeriodLabel = () => {
+    if (periodMode === 'intervalo') {
+      return `${getMonthName(startMonth)} de ${startYear} a ${getMonthName(endMonth)} de ${endYear}`;
+    }
+    return `${getMonthName(selectedMonth)} de ${selectedYear}`;
+  };
+
+  const getPeriodSlug = () => {
+    if (periodMode === 'intervalo') {
+      return `${startYear}-${String(startMonth).padStart(2, '0')}_a_${endYear}-${String(endMonth).padStart(2, '0')}`;
+    }
+    return `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
+  };
+
+  const setLastNMonths = (n) => {
+    const now = new Date();
+    const endY = now.getFullYear();
+    const endM = now.getMonth() + 1;
+    const startDate = new Date(endY, endM - 1 - (n - 1), 1);
+    setPeriodMode('intervalo');
+    setStartMonth(String(startDate.getMonth() + 1));
+    setStartYear(String(startDate.getFullYear()));
+    setEndMonth(String(endM));
+    setEndYear(String(endY));
+  };
+
   const getCoparticipacoesByTipo = (tipo) => {
     if (!selectedCompanyId) return [];
     const selectedId = String(selectedCompanyId);
-    const monthPadded = String(selectedMonth).padStart(2, '0');
-    const selectedPeriod = `${selectedYear}-${monthPadded}`;
 
     let filtered = coparticipacoes.filter(c =>
       String(c.empresa_id) === selectedId &&
-      c.competencia === selectedPeriod &&
       (c.tipo === tipo || (!c.tipo && tipo === 'saude'))
     );
+
+    if (periodMode === 'intervalo') {
+      if (!startMonth || !startYear || !endMonth || !endYear) return [];
+      const keyStart = periodKey(startYear, startMonth);
+      const keyEnd = periodKey(endYear, endMonth);
+      const lo = Math.min(keyStart, keyEnd);
+      const hi = Math.max(keyStart, keyEnd);
+      filtered = filtered.filter(c => {
+        const [cy, cm] = String(c.competencia || '').split('-').map(Number);
+        if (!cy || !cm) return false;
+        const ck = periodKey(cy, cm);
+        return ck >= lo && ck <= hi;
+      });
+    } else {
+      if (!selectedMonth || !selectedYear) return [];
+      const monthPadded = String(selectedMonth).padStart(2, '0');
+      const selectedPeriod = `${selectedYear}-${monthPadded}`;
+      filtered = filtered.filter(c => c.competencia === selectedPeriod);
+    }
 
     if (selectedColaboradorId && selectedColaboradorId !== '__all__') {
       filtered = filtered.filter(item => String(item.beneficiario_id) === String(selectedColaboradorId));
@@ -382,12 +431,12 @@ const CoparticipacaoPage = () => {
       );
     }
 
-    return filtered;
+    return filtered.sort((a, b) => String(a.competencia).localeCompare(String(b.competencia)));
   };
 
   const coparticipacoesFiltradas = useMemo(
     () => getCoparticipacoesByTipo(tipoTab),
-    [coparticipacoes, selectedCompanyId, tipoTab, selectedMonth, selectedYear, searchTerm, beneficiarios, selectedColaboradorId]
+    [coparticipacoes, selectedCompanyId, tipoTab, selectedMonth, selectedYear, searchTerm, beneficiarios, selectedColaboradorId, periodMode, startMonth, startYear, endMonth, endYear]
   );
 
   const beneficiariosFiltrados = useMemo(() => {
@@ -551,7 +600,6 @@ const CoparticipacaoPage = () => {
     }
     const tipoExport = tipo || tipoTab;
     const tipoLabel = tipoExport === 'saude' ? 'Saúde' : 'Odonto';
-    const monthPadded = String(selectedMonth).padStart(2, '0');
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
 
@@ -590,7 +638,10 @@ const CoparticipacaoPage = () => {
     doc.setFontSize(9);
     doc.setFont(undefined, 'normal');
     doc.setTextColor(100, 100, 100);
-    doc.text(`Período: ${getMonthName(selectedMonth)} de ${selectedYear}`, 14, 55);
+    doc.text(`Período: ${getPeriodLabel()}`, 14, 55);
+    if (selectedColaboradorId && selectedColaboradorId !== '__all__') {
+      doc.text(`Beneficiário: ${getBeneficiarioName(selectedColaboradorId)}`, 14, 60);
+    }
 
     const tableColumn = ["Mês", "Beneficiário", "CNPJ/CPF", "Quem Utilizou", "CPF Utilizador", "Valor (R$)", "Descrição"];
     const tableRows = data.map(item => {
@@ -616,7 +667,7 @@ const CoparticipacaoPage = () => {
     doc.autoTable({
       head: [tableColumn],
       body: tableRows,
-      startY: 60,
+      startY: selectedColaboradorId && selectedColaboradorId !== '__all__' ? 65 : 60,
       headStyles: { fillColor: [0, 53, 128], textColor: 255, fontStyle: 'bold' },
       alternateRowStyles: { fillColor: [245, 248, 255] },
       styles: { fontSize: 8, cellPadding: 3 },
@@ -632,7 +683,7 @@ const CoparticipacaoPage = () => {
       doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 14, h - 8);
     }
 
-    doc.save(`coparticipacao_${tipoExport}_${selectedCompanyId}_${selectedYear}-${monthPadded}.pdf`);
+    doc.save(`coparticipacao_${tipoExport}_${selectedCompanyId}_${getPeriodSlug()}.pdf`);
     toast({ description: "Exportação PDF concluída!" });
   };
 
@@ -657,7 +708,7 @@ const CoparticipacaoPage = () => {
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Coparticipacao");
-    XLSX.writeFile(workbook, `coparticipacao_${tipoExport}_${selectedCompanyId}_${selectedYear}-${String(selectedMonth).padStart(2,'0')}.xlsx`);
+    XLSX.writeFile(workbook, `coparticipacao_${tipoExport}_${selectedCompanyId}_${getPeriodSlug()}.xlsx`);
     toast({ description: "Exportação Excel concluída!" });
   };
 
@@ -666,7 +717,7 @@ const CoparticipacaoPage = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [expandedId, setExpandedId] = useState(null);
     const ITEMS_PER_PAGE = 10;
-    useEffect(() => { setCurrentPage(1); }, [selectedColaboradorId, searchTerm, selectedMonth, selectedYear, tipo]);
+    useEffect(() => { setCurrentPage(1); }, [selectedColaboradorId, searchTerm, selectedMonth, selectedYear, tipo, periodMode, startMonth, startYear, endMonth, endYear]);
     const totalPages = Math.max(1, Math.ceil(data.length / ITEMS_PER_PAGE));
     const pageData = data.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
@@ -875,39 +926,119 @@ const CoparticipacaoPage = () => {
               </div>
             </div>
 
-            {/* Passo 2 — Mês e Ano (só aparece após escolher tipo) */}
+            {/* Passo 2 — Período (só aparece após escolher tipo) */}
             {tipoTab && (
-              <div className="flex flex-wrap gap-4 items-end border-t pt-4">
-                <div className="space-y-1">
-                  <Label>Mês</Label>
-                  <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(v)}>
-                    <SelectTrigger className="w-40"><SelectValue placeholder="Selecione o mês" /></SelectTrigger>
-                    <SelectContent>
-                      {months.map(m => (
-                        <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div className="space-y-3 border-t pt-4">
+                <div className="flex gap-3">
+                  {[['unico', 'Mês único'], ['intervalo', 'Intervalo de meses']].map(([mode, label]) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setPeriodMode(mode)}
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+                        periodMode === mode
+                          ? 'border-[#003580] bg-[#003580] text-white'
+                          : 'border-gray-200 bg-white text-gray-600 hover:border-[#003580] hover:text-[#003580]'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
-                <div className="space-y-1">
-                  <Label>Ano</Label>
-                  <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(v)}>
-                    <SelectTrigger className="w-28"><SelectValue placeholder="Ano" /></SelectTrigger>
-                    <SelectContent>
-                      {years.map(y => (
-                        <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+
+                {periodMode === 'unico' ? (
+                  <div className="flex flex-wrap gap-4 items-end">
+                    <div className="space-y-1">
+                      <Label>Mês</Label>
+                      <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(v)}>
+                        <SelectTrigger className="w-40"><SelectValue placeholder="Selecione o mês" /></SelectTrigger>
+                        <SelectContent>
+                          {months.map(m => (
+                            <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Ano</Label>
+                      <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(v)}>
+                        <SelectTrigger className="w-28"><SelectValue placeholder="Ano" /></SelectTrigger>
+                        <SelectContent>
+                          {years.map(y => (
+                            <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      {[3, 6, 12].map(n => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => setLastNMonths(n)}
+                          className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-xs font-medium text-gray-600 hover:border-[#003580] hover:text-[#003580] transition-all"
+                        >
+                          Últimos {n} meses
+                        </button>
                       ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                    </div>
+                    <div className="flex flex-wrap gap-4 items-end">
+                      <div className="space-y-1">
+                        <Label>De</Label>
+                        <div className="flex gap-2">
+                          <Select value={String(startMonth)} onValueChange={(v) => setStartMonth(v)}>
+                            <SelectTrigger className="w-32"><SelectValue placeholder="Mês" /></SelectTrigger>
+                            <SelectContent>
+                              {months.map(m => (
+                                <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Select value={String(startYear)} onValueChange={(v) => setStartYear(v)}>
+                            <SelectTrigger className="w-24"><SelectValue placeholder="Ano" /></SelectTrigger>
+                            <SelectContent>
+                              {years.map(y => (
+                                <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Até</Label>
+                        <div className="flex gap-2">
+                          <Select value={String(endMonth)} onValueChange={(v) => setEndMonth(v)}>
+                            <SelectTrigger className="w-32"><SelectValue placeholder="Mês" /></SelectTrigger>
+                            <SelectContent>
+                              {months.map(m => (
+                                <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Select value={String(endYear)} onValueChange={(v) => setEndYear(v)}>
+                            <SelectTrigger className="w-24"><SelectValue placeholder="Ano" /></SelectTrigger>
+                            <SelectContent>
+                              {years.map(y => (
+                                <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
           </CardContent>
         </Card>
 
-        {/* Passo 3 — Histórico (só aparece após escolher tipo + mês + ano) */}
-        {tipoTab && selectedMonth && selectedYear && <HistoricoCard tipo={tipoTab} />}
+        {/* Passo 3 — Histórico (só aparece após escolher tipo + período completo) */}
+        {tipoTab && (periodMode === 'unico' ? (selectedMonth && selectedYear) : (startMonth && startYear && endMonth && endYear)) && <HistoricoCard tipo={tipoTab} />}
 
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogContent className="sm:max-w-[600px]">

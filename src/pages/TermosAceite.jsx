@@ -144,7 +144,7 @@ const TermosAceite = () => {
             </div>
             <div>
               <p className="font-semibold text-gray-800 mb-1">5. Segurança, Armazenamento e Retenção</p>
-              <p>Adotamos medidas técnicas e administrativas para proteger seus dados contra acesso não autorizado. Os dados de apólices ativas são mantidos pelo prazo contratual e por, no mínimo, <strong>5 anos</strong> após o encerramento, conforme exigido pelo Código Civil e normativas da SUSEP. Dados de acesso e auditoria são retidos por <strong>12 meses</strong>.</p>
+              <p>Adotamos medidas técnicas e administrativas para proteger seus dados contra acesso não autorizado. Os dados de apólices ativas são mantidos pelo prazo contratual e por, no mínimo, <strong>5 anos</strong> após o encerramento, conforme exigido pelo Código Civil e normativas da SUSEP. Os dados de coparticipação, por estarem vinculados à apólice e sua auditoria financeira, seguem o mesmo prazo de retenção. Dados de acesso e auditoria são retidos por <strong>12 meses</strong>.</p>
             </div>
             <div>
               <p className="font-semibold text-gray-800 mb-1">6. Seus Direitos (LGPD)</p>
