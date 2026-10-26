@@ -720,8 +720,7 @@ const CoparticipacaoPage = () => {
     const activeFilterCount =
       (selectedMonth !== '__all__' ? 1 : 0) +
       (selectedYear !== '__all__' ? 1 : 0) +
-      (selectedColaboradorId !== '__all__' ? 1 : 0) +
-      (searchTerm.trim() !== '' ? 1 : 0);
+      (selectedColaboradorId !== '__all__' ? 1 : 0);
 
     return (
       <Card>
@@ -784,20 +783,6 @@ const CoparticipacaoPage = () => {
                       </Select>
                     </div>
 
-                    <div className="space-y-1">
-                      <Label className="text-xs">Buscar</Label>
-                      <div className="relative">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                        <Input
-                          type="search"
-                          placeholder="Nome, descrição, mês..."
-                          className="pl-9"
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
                     <div className="border-t pt-3 space-y-1">
                       <Label className="text-xs">Ordenar por</Label>
                       <div className="flex gap-2">
@@ -823,6 +808,16 @@ const CoparticipacaoPage = () => {
                   </div>
                 </PopoverContent>
               </Popover>
+              <div className="relative w-full md:w-48">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  type="search"
+                  placeholder="Buscar..."
+                  className="pl-9"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
               <Button variant="outline" size="sm" onClick={() => handleExportPDF(data, tipo)} disabled={data.length === 0}>
                 <Download className="mr-2 h-4 w-4" /> PDF
               </Button>
