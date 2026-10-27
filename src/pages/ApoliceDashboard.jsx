@@ -71,12 +71,12 @@ const MES_OPTS = (() => {
 const ApoliceDashboard = () => {
   const { apoliceId } = useParams();
   const { user } = useAuth();
-  const { setSelectedCompanyId } = useCompany();
+  const { setSelectedCompanyId, isViewingAsClient } = useCompany();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const isAdmin = user?.perfil === 'CEO' || user?.perfil === 'ADM';
-  const isCliente = user?.perfil === 'CLIENTE';
+  const isAdmin = (user?.perfil === 'CEO' || user?.perfil === 'ADM') && !isViewingAsClient;
+  const isCliente = user?.perfil === 'CLIENTE' || isViewingAsClient;
 
   const [loading, setLoading] = useState(true);
   const [apolice, setApolice] = useState(null);

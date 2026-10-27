@@ -30,7 +30,7 @@ const normalizeTipo = (tipo) => TIPO_LABELS[tipo] || tipo;
 const SelectApolice = () => {
   const { segmento } = useParams();
   const { user } = useAuth();
-  const { selectedCompanyId } = useCompany();
+  const { selectedCompanyId, isViewingAsClient } = useCompany();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [apolices, setApolices] = useState([]);
@@ -40,7 +40,7 @@ const SelectApolice = () => {
   useEffect(() => {
     // CEO/ADM "visualizando como cliente" usam a empresa selecionada no contexto;
     // CLIENTE sempre usa a própria empresa vinculada ao login
-    const empresaId = user?.perfil !== 'CLIENTE' && selectedCompanyId
+    const empresaId = user?.perfil !== 'CLIENTE' && isViewingAsClient && selectedCompanyId
       ? selectedCompanyId
       : (user?.empresa_matriz_id || user?.empresa_id);
     if (!empresaId) { setLoading(false); return; }
@@ -57,7 +57,7 @@ const SelectApolice = () => {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [user, segmento, selectedCompanyId]);
+  }, [user, segmento, selectedCompanyId, isViewingAsClient]);
 
   const formatDate = (d) => {
     if (!d) return '—';

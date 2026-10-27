@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link, useNavigate, useLocation, useParams, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useCompany } from '@/contexts/CompanyContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -59,6 +60,7 @@ import { supabaseClient } from '@/lib/supabase';
 
 const DashboardLayout = ({ children }) => {
   const { user, logout } = useAuth();
+  const { isViewingAsClient, setIsViewingAsClient } = useCompany();
   const navigate = useNavigate();
   const location = useLocation();
   const { empresaId } = useParams();
@@ -181,6 +183,7 @@ const DashboardLayout = ({ children }) => {
   };
 
   const handleGoBack = () => {
+    setIsViewingAsClient(false);
     if (user?.perfil === 'CEO') {
       navigate('/ceo');
     } else if (user?.perfil === 'ADM') {
@@ -224,7 +227,7 @@ const DashboardLayout = ({ children }) => {
   };
 
   const isClientDashboard = location.pathname.startsWith('/cliente/');
-  const isAdminViewingClient = (user?.perfil === 'CEO' || user?.perfil === 'ADM') && isClientDashboard;
+  const isAdminViewingClient = (user?.perfil === 'CEO' || user?.perfil === 'ADM') && (isClientDashboard || isViewingAsClient);
   const currentEmpresa = isClientDashboard ? empresas.find(e => e.id === Number(empresaId)) : null;
   const isApolicePage = location.pathname.startsWith('/apolice/');
 

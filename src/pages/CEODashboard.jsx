@@ -68,7 +68,7 @@ const labelAlertaAdm = { vencido: 'Alerta vencido', hoje: 'Hoje!', em_breve: 'Em
 const CEODashboard = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { setSelectedCompanyId } = useCompany();
+  const { setSelectedCompanyId, setIsViewingAsClient } = useCompany();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -606,6 +606,7 @@ const CEODashboard = () => {
   const handleViewAsClient = (empresa) => {
     const matrizId = empresa.tipo === 'FILIAL' ? empresa.empresa_matriz_id : empresa.id;
     setSelectedCompanyId(Number(matrizId));
+    setIsViewingAsClient(true);
     navigate('/select-segmento');
   };
 

@@ -23,7 +23,7 @@ const SEGMENTO_CONFIG = {
 
 const SelectSegmento = () => {
   const { user } = useAuth();
-  const { selectedCompanyId } = useCompany();
+  const { selectedCompanyId, isViewingAsClient } = useCompany();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
@@ -36,7 +36,7 @@ const SelectSegmento = () => {
       try {
         // CEO/ADM "visualizando como cliente" usam a empresa selecionada no contexto;
         // CLIENTE sempre usa a própria empresa vinculada ao login
-        const empresaId = user.perfil !== 'CLIENTE' && selectedCompanyId
+        const empresaId = user.perfil !== 'CLIENTE' && isViewingAsClient && selectedCompanyId
           ? selectedCompanyId
           : (user.empresa_matriz_id || user.empresa_id);
         if (empresaId) {
@@ -60,7 +60,7 @@ const SelectSegmento = () => {
       }
     };
     fetchData();
-  }, [user, selectedCompanyId]);
+  }, [user, selectedCompanyId, isViewingAsClient]);
 
   const handleSelectSegmento = (segmento) => {
     const slug = SEGMENTOS[segmento]?.slug || segmento.toLowerCase().replace(/_/g, '-');
