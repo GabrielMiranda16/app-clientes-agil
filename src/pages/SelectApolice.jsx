@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useCompany } from '@/contexts/CompanyContext';
 import { apolicesService, SEGMENTOS } from '@/services/apolicesService';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +30,7 @@ const normalizeTipo = (tipo) => TIPO_LABELS[tipo] || tipo;
 const SelectApolice = () => {
   const { segmento } = useParams();
   const { user } = useAuth();
+  const { selectedCompanyId } = useCompany();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [apolices, setApolices] = useState([]);
@@ -36,7 +38,11 @@ const SelectApolice = () => {
   const segConfig = SEGMENTOS[segmento] || SEGMENTOS[segmento?.toUpperCase()] || Object.values(SEGMENTOS).find(s => s.slug === segmento);
 
   useEffect(() => {
-    const empresaId = user?.empresa_matriz_id || user?.empresa_id;
+    // CEO/ADM "visualizando como cliente" usam a empresa selecionada no contexto;
+    // CLIENTE sempre usa a própria empresa vinculada ao login
+    const empresaId = user?.perfil !== 'CLIENTE' && selectedCompanyId
+      ? selectedCompanyId
+      : (user?.empresa_matriz_id || user?.empresa_id);
     if (!empresaId) { setLoading(false); return; }
 
     apolicesService.getApolicesByMatriz(empresaId)
@@ -51,7 +57,7 @@ const SelectApolice = () => {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [user, segmento]);
+  }, [user, segmento, selectedCompanyId]);
 
   const formatDate = (d) => {
     if (!d) return '—';

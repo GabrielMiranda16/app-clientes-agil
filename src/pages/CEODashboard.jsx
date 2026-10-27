@@ -27,6 +27,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useCompany } from '@/contexts/CompanyContext';
 import { formatCurrency } from '@/lib/utils';
 import { supabaseClient } from '@/lib/supabase';
 
@@ -67,6 +68,7 @@ const labelAlertaAdm = { vencido: 'Alerta vencido', hoje: 'Hoje!', em_breve: 'Em
 const CEODashboard = () => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { setSelectedCompanyId } = useCompany();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -600,6 +602,12 @@ const CEODashboard = () => {
 
   const handleNextPage = () => { if (solicitacaoCurrentPage < totalSolicitacaoPages) setSolicitacaoCurrentPage(prev => prev + 1); };
   const handlePreviousPage = () => { if (solicitacaoCurrentPage > 1) setSolicitacaoCurrentPage(prev => prev - 1); };
+
+  const handleViewAsClient = (empresa) => {
+    const matrizId = empresa.tipo === 'FILIAL' ? empresa.empresa_matriz_id : empresa.id;
+    setSelectedCompanyId(Number(matrizId));
+    navigate('/select-segmento');
+  };
 
   // ── Gestão de clientes (criar/editar/excluir/filial) — portado de AdminDashboard.jsx ──
   const handleEmpresaInputChange = (e, setter, isCpfField = false) => {
@@ -1422,7 +1430,7 @@ const CEODashboard = () => {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                           <DropdownMenuItem onClick={() => navigate(`/admin/cliente/${empresa.id}`)}>Acessar</DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => navigate(`/cliente/${empresa.id}`)}>Visualizar</DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => handleViewAsClient(empresa)}>Visualizar</DropdownMenuItem>
                                           <DropdownMenuItem onClick={() => openEditEmpresaModal(empresa)}>Editar acesso</DropdownMenuItem>
                                           <DropdownMenuItem onClick={() => openAddFilialModal(empresa)}>Adicionar filial</DropdownMenuItem>
                                           <DropdownMenuItem onClick={() => { if (window.confirm('Excluir este cliente e sua conta de acesso? Só é possível se não houver filiais cadastradas.')) deleteMatriz(empresa.id); }} className="text-red-600 focus:text-red-600">
@@ -1492,7 +1500,7 @@ const CEODashboard = () => {
                                   </div>
                                   <div className="grid grid-cols-2 gap-2 mt-2">
                                     <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white" onClick={() => navigate(`/admin/cliente/${empresa.id}`)}>Acessar</Button>
-                                    <Button size="sm" variant="outline" onClick={() => navigate(`/cliente/${empresa.id}`)}>Visualizar</Button>
+                                    <Button size="sm" variant="outline" onClick={() => handleViewAsClient(empresa)}>Visualizar</Button>
                                   </div>
                                   <div className="grid grid-cols-3 gap-2">
                                     <Button size="sm" variant="outline" onClick={() => openEditEmpresaModal(empresa)}>Editar</Button>

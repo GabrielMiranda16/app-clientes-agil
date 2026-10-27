@@ -76,8 +76,8 @@ const AppRoutes = () => {
         <Route path="/coparticipacao" element={<ProtectedRoute allowedRoles={['CEO', 'ADM']}><CoparticipacaoPage /></ProtectedRoute>} />
         <Route path="/cliente/:empresaId" element={<ProtectedRoute allowedRoles={['CEO', 'ADM', 'CLIENTE']}><ClientDashboard /></ProtectedRoute>} />
         <Route path="/cliente/:empresaId/coparticipacao" element={<ProtectedRoute allowedRoles={['CEO', 'ADM', 'CLIENTE']}><CoparticipacaoClientePage /></ProtectedRoute>} />
-        <Route path="/select-segmento" element={<ProtectedRoute allowedRoles={['CLIENTE']}><SelectSegmento /></ProtectedRoute>} />
-        <Route path="/select-apolice/:segmento" element={<ProtectedRoute allowedRoles={['CLIENTE']}><SelectApolice /></ProtectedRoute>} />
+        <Route path="/select-segmento" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><SelectSegmento /></ProtectedRoute>} />
+        <Route path="/select-apolice/:segmento" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><SelectApolice /></ProtectedRoute>} />
         <Route path="/apolice/:apoliceId" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><ApoliceDashboard /></ProtectedRoute>} />
         <Route path="/force-change-password" element={<ProtectedRoute allowedRoles={['CEO','ADM','CLIENTE','PARCEIRO']}><ForceChangePassword /></ProtectedRoute>} />
         <Route path="/orcamento/:slug" element={<OrcamentoPublicoPage />} />

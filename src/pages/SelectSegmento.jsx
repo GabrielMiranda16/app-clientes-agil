@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useCompany } from '@/contexts/CompanyContext';
 import { apolicesService, SEGMENTOS } from '@/services/apolicesService';
 import { supabaseClient } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ const SEGMENTO_CONFIG = {
 
 const SelectSegmento = () => {
   const { user } = useAuth();
+  const { selectedCompanyId } = useCompany();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
@@ -32,8 +34,11 @@ const SelectSegmento = () => {
     if (!user) return;
     const fetchData = async () => {
       try {
-        // Support both empresa_matriz_id and empresa_id (for PF clients)
-        const empresaId = user.empresa_matriz_id || user.empresa_id;
+        // CEO/ADM "visualizando como cliente" usam a empresa selecionada no contexto;
+        // CLIENTE sempre usa a própria empresa vinculada ao login
+        const empresaId = user.perfil !== 'CLIENTE' && selectedCompanyId
+          ? selectedCompanyId
+          : (user.empresa_matriz_id || user.empresa_id);
         if (empresaId) {
           const [empResult, apolices] = await Promise.all([
             supabaseClient.from('empresas').select('*').eq('id', empresaId).single(),
@@ -55,7 +60,7 @@ const SelectSegmento = () => {
       }
     };
     fetchData();
-  }, [user]);
+  }, [user, selectedCompanyId]);
 
   const handleSelectSegmento = (segmento) => {
     const slug = SEGMENTOS[segmento]?.slug || segmento.toLowerCase().replace(/_/g, '-');
