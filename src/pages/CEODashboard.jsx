@@ -1422,7 +1422,7 @@ const CEODashboard = () => {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                           <DropdownMenuItem onClick={() => navigate(`/admin/cliente/${empresa.id}`)}>Acessar</DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => navigate(`/admin/cliente/${empresa.id}`)}>Visualizar</DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => navigate(`/cliente/${empresa.id}`)}>Visualizar</DropdownMenuItem>
                                           <DropdownMenuItem onClick={() => openEditEmpresaModal(empresa)}>Editar acesso</DropdownMenuItem>
                                           <DropdownMenuItem onClick={() => openAddFilialModal(empresa)}>Adicionar filial</DropdownMenuItem>
                                           <DropdownMenuItem onClick={() => { if (window.confirm('Excluir este cliente e sua conta de acesso? Só é possível se não houver filiais cadastradas.')) deleteMatriz(empresa.id); }} className="text-red-600 focus:text-red-600">
@@ -1492,7 +1492,7 @@ const CEODashboard = () => {
                                   </div>
                                   <div className="grid grid-cols-2 gap-2 mt-2">
                                     <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white" onClick={() => navigate(`/admin/cliente/${empresa.id}`)}>Acessar</Button>
-                                    <Button size="sm" variant="outline" onClick={() => navigate(`/admin/cliente/${empresa.id}`)}>Visualizar</Button>
+                                    <Button size="sm" variant="outline" onClick={() => navigate(`/cliente/${empresa.id}`)}>Visualizar</Button>
                                   </div>
                                   <div className="grid grid-cols-3 gap-2">
                                     <Button size="sm" variant="outline" onClick={() => openEditEmpresaModal(empresa)}>Editar</Button>
