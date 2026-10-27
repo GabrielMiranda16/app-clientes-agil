@@ -17,6 +17,12 @@ const SEGMENTO_LABEL: Record<string, string> = {
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
+  if (req.headers.get('x-cron-secret') !== Deno.env.get('CRON_SECRET')) {
+    return new Response(JSON.stringify({ error: 'Não autenticado.' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
