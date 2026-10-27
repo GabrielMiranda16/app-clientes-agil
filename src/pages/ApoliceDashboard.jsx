@@ -659,10 +659,12 @@ const ApoliceDashboard = () => {
                                 {sub.numero && <p className="text-xs text-gray-400">Nº {sub.numero}</p>}
                               </div>
                               {sub.contrato_url ? (
-                                <Button size="sm" variant="outline" onClick={async () => {
-                                  const url = await apolicesService.getContratoSignedUrl(sub.contrato_url);
-                                  if (url) window.open(url, '_blank', 'noopener,noreferrer');
-                                  else toast({ variant: 'destructive', title: 'Erro ao abrir contrato.' });
+                                <Button size="sm" variant="outline" onClick={() => {
+                                  const win = window.open('', '_blank', 'noopener,noreferrer');
+                                  apolicesService.getContratoSignedUrl(sub.contrato_url).then(url => {
+                                    if (url && win) win.location.href = url;
+                                    else { win?.close(); toast({ variant: 'destructive', title: 'Erro ao abrir contrato.' }); }
+                                  });
                                 }}><Download className="mr-1.5 h-3.5 w-3.5" />PDF</Button>
                               ) : (
                                 <span className="text-xs text-gray-400">Sem contrato</span>
@@ -678,10 +680,12 @@ const ApoliceDashboard = () => {
                       <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Download className="h-4 w-4" /> Contrato</CardTitle></CardHeader>
                       <CardContent>
                         {apolice.contrato_url ? (
-                          <Button className="w-full sm:w-auto" onClick={async () => {
-                            const url = await apolicesService.getContratoSignedUrl(apolice.contrato_url);
-                            if (url) window.open(url, '_blank', 'noopener,noreferrer');
-                            else toast({ variant: 'destructive', title: 'Erro ao abrir contrato.' });
+                          <Button className="w-full sm:w-auto" onClick={() => {
+                            const win = window.open('', '_blank', 'noopener,noreferrer');
+                            apolicesService.getContratoSignedUrl(apolice.contrato_url).then(url => {
+                              if (url && win) win.location.href = url;
+                              else { win?.close(); toast({ variant: 'destructive', title: 'Erro ao abrir contrato.' }); }
+                            });
                           }}><Download className="mr-2 h-4 w-4" />Baixar Contrato (PDF)</Button>
                         ) : (
                           <p className="text-sm text-gray-400">Nenhum contrato disponível. Entre em contato com o administrador.</p>

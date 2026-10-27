@@ -563,10 +563,12 @@ const AdminSegmentoPage = () => {
                                 )}
                                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${sc.badge}`}>{status.label}</span>
                                 {ap.contrato_url && (
-                                  <button type="button" onClick={async () => {
-                                    const url = await apolicesService.getContratoSignedUrl(ap.contrato_url);
-                                    if (url) window.open(url, '_blank', 'noopener,noreferrer');
-                                    else toast({ variant: 'destructive', title: 'Erro ao abrir contrato.' });
+                                  <button type="button" onClick={() => {
+                                    const win = window.open('', '_blank', 'noopener,noreferrer');
+                                    apolicesService.getContratoSignedUrl(ap.contrato_url).then(url => {
+                                      if (url && win) win.location.href = url;
+                                      else { win?.close(); toast({ variant: 'destructive', title: 'Erro ao abrir contrato.' }); }
+                                    });
                                   }} className="text-blue-500 hover:text-blue-700">
                                     <ExternalLink className="h-4 w-4" />
                                   </button>
@@ -770,10 +772,12 @@ const AdminSegmentoPage = () => {
                         }}
                       />
                       {sub.contrato_url && (
-                        <button type="button" onClick={async () => {
-                          const url = await apolicesService.getContratoSignedUrl(sub.contrato_url);
-                          if (url) window.open(url, '_blank', 'noopener,noreferrer');
-                          else toast({ variant: 'destructive', title: 'Erro ao abrir contrato.' });
+                        <button type="button" onClick={() => {
+                          const win = window.open('', '_blank', 'noopener,noreferrer');
+                          apolicesService.getContratoSignedUrl(sub.contrato_url).then(url => {
+                            if (url && win) win.location.href = url;
+                            else { win?.close(); toast({ variant: 'destructive', title: 'Erro ao abrir contrato.' }); }
+                          });
                         }} className="text-xs text-blue-600 hover:underline mt-1 flex items-center gap-1">
                           <FileText className="h-3 w-3" /> PDF atual
                         </button>
@@ -788,10 +792,12 @@ const AdminSegmentoPage = () => {
             {editingApolice?.contrato_url && (
               <div className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200">
                 <FileText className="h-4 w-4 text-[#003580] shrink-0" />
-                <button type="button" onClick={async () => {
-                  const url = await apolicesService.getContratoSignedUrl(editingApolice.contrato_url);
-                  if (url) window.open(url, '_blank', 'noopener,noreferrer');
-                  else toast({ variant: 'destructive', title: 'Erro ao abrir contrato.' });
+                <button type="button" onClick={() => {
+                  const win = window.open('', '_blank', 'noopener,noreferrer');
+                  apolicesService.getContratoSignedUrl(editingApolice.contrato_url).then(url => {
+                    if (url && win) win.location.href = url;
+                    else { win?.close(); toast({ variant: 'destructive', title: 'Erro ao abrir contrato.' }); }
+                  });
                 }} className="text-sm text-blue-600 hover:underline flex-1 truncate text-left">PDF atual</button>
                 <Button type="button" variant="ghost" size="sm" className="text-red-500 hover:text-red-700 h-7 px-2" onClick={handleDeleteContrato}>
                   <Trash2 className="h-3.5 w-3.5" />

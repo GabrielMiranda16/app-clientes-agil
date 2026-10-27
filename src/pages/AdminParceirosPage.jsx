@@ -938,14 +938,16 @@ const AdminParceirosPage = () => {
 
   const abrirDocumentoStorage = async (urlOuPath) => {
     if (!urlOuPath) return;
+    const win = window.open('', '_blank', 'noopener,noreferrer');
     const match = urlOuPath.match(/\/storage\/v1\/object\/(?:public|sign)\/orcamento-documentos\/(.+)$/);
     const path = match ? match[1].split('?')[0] : urlOuPath;
     const { data, error } = await supabase.storage.from('orcamento-documentos').createSignedUrl(path, 3600);
     if (error || !data?.signedUrl) {
+      win?.close();
       toast({ variant: 'destructive', title: 'Erro ao abrir documento.', description: error?.message });
       return;
     }
-    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    if (win) win.location.href = data.signedUrl;
   };
 
   const handleExcluirComprovante = async (index) => {
