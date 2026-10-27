@@ -12,7 +12,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Building, ChevronRight, AlertTriangle, Heart, Car, Plane, Home, PawPrint, Building2, Package, Monitor, Loader2, Users, FileText, Trash2, Edit, Search } from 'lucide-react';
+import { ArrowLeft, Building, ChevronRight, AlertTriangle, Heart, Car, Plane, Home, PawPrint, Building2, Package, Monitor, Loader2, Users, FileText, Trash2, Edit, Search, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { applyCnpjMask, applyCpfMask, applyCepMask } from '@/lib/masks';
 
@@ -271,9 +271,16 @@ const AdminClientePage = () => {
                     {matriz.nome_fantasia && <p className="text-gray-500 text-sm">{matriz.razao_social}</p>}
                   </div>
                 </div>
-                <span className="inline-flex items-center px-3 py-1 rounded-full bg-[#003580]/10 text-[#003580] text-xs font-semibold self-start sm:self-center">
-                  MATRIZ
-                </span>
+                <div className="flex items-center gap-2 self-start sm:self-center">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full bg-[#003580]/10 text-[#003580] text-xs font-semibold">
+                    MATRIZ
+                  </span>
+                  {canManage && (
+                    <Button size="sm" variant="outline" onClick={() => navigate(`/cliente/${matriz.id}`)}>
+                      <Eye className="h-3.5 w-3.5 mr-1.5" /> Visualizar como Cliente
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
             <CardContent className="pt-4 pb-4">
@@ -319,6 +326,9 @@ const AdminClientePage = () => {
                           </div>
                           {canManage && (
                             <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-gray-700" title="Visualizar como Cliente" onClick={() => navigate(`/cliente/${f.id}`)}>
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-400 hover:text-blue-600" onClick={() => handleOpenEditFilial(f)}>
                               <Edit className="h-3.5 w-3.5" />
                             </Button>
