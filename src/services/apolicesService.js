@@ -12,6 +12,18 @@ export const SEGMENTOS = {
 };
 
 export const apolicesService = {
+  async getContratoSignedUrl(urlOuPath) {
+    if (!urlOuPath) return null;
+    const match = urlOuPath.match(/\/storage\/v1\/object\/(?:public|sign)\/apolices-contratos\/(.+)$/);
+    const path = match ? match[1].split('?')[0] : urlOuPath;
+    const { data, error } = await supabase.storage.from('apolices-contratos').createSignedUrl(path, 3600);
+    if (error || !data?.signedUrl) {
+      console.error('Erro ao gerar link assinado do contrato:', error);
+      return null;
+    }
+    return data.signedUrl;
+  },
+
   async getApolicesByEmpresa(empresa_id) {
     try {
       const { data, error } = await supabase

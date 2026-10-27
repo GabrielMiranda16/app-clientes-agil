@@ -936,6 +936,18 @@ const AdminParceirosPage = () => {
     try { const arr = JSON.parse(path); return Array.isArray(arr) ? arr : [path]; } catch { return [path]; }
   };
 
+  const abrirDocumentoStorage = async (urlOuPath) => {
+    if (!urlOuPath) return;
+    const match = urlOuPath.match(/\/storage\/v1\/object\/(?:public|sign)\/orcamento-documentos\/(.+)$/);
+    const path = match ? match[1].split('?')[0] : urlOuPath;
+    const { data, error } = await supabase.storage.from('orcamento-documentos').createSignedUrl(path, 3600);
+    if (error || !data?.signedUrl) {
+      toast({ variant: 'destructive', title: 'Erro ao abrir documento.', description: error?.message });
+      return;
+    }
+    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+  };
+
   const handleExcluirComprovante = async (index) => {
     try {
       const { data: com } = await supabase.from('comissoes').select('id, comprovante_path').eq('orcamento_id', expandedId).maybeSingle();
@@ -1794,9 +1806,9 @@ const AdminParceirosPage = () => {
               <div key={d.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-sm">
                 <span className="text-gray-700 truncate flex-1">{d.tipo_documento}</span>
                 <span className="text-xs text-gray-400 mr-2">{d.nome_arquivo}</span>
-                <a href={d.storage_path} target="_blank" rel="noreferrer" className="text-blue-500 hover:text-blue-700 shrink-0">
+                <button type="button" onClick={() => abrirDocumentoStorage(d.storage_path)} className="text-blue-500 hover:text-blue-700 shrink-0">
                   <Eye className="h-4 w-4" />
-                </a>
+                </button>
               </div>
             ))}
           </div>
@@ -1823,9 +1835,9 @@ const AdminParceirosPage = () => {
             {docs.map(d => (
               <div key={d.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-sm">
                 <span className="text-gray-700 truncate flex-1">{d.tipo_documento}</span>
-                <a href={d.storage_path} target="_blank" rel="noreferrer" className="text-blue-500 hover:text-blue-700">
+                <button type="button" onClick={() => abrirDocumentoStorage(d.storage_path)} className="text-blue-500 hover:text-blue-700">
                   <Eye className="h-4 w-4" />
-                </a>
+                </button>
               </div>
             ))}
           </div>
@@ -1914,10 +1926,10 @@ const AdminParceirosPage = () => {
               <p className="text-xs font-medium text-gray-600">Comprovantes enviados ({comps.length})</p>
               {comps.map((url, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <a href={url} target="_blank" rel="noreferrer"
+                  <button type="button" onClick={() => abrirDocumentoStorage(url)}
                     className="flex items-center gap-1.5 text-sm text-[#003580] hover:underline font-medium flex-1">
                     <Eye className="h-4 w-4" /> Comprovante {comps.length > 1 ? i + 1 : ''}
-                  </a>
+                  </button>
                   <button onClick={() => handleExcluirComprovante(i)}
                     className="text-red-400 hover:text-red-600 p-0.5 rounded transition-colors" title="Excluir comprovante">
                     <X className="h-3.5 w-3.5" />

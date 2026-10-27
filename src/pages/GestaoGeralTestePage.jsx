@@ -1577,7 +1577,11 @@ const GestaoGeralTestePage = () => {
                               <p className="text-xs font-semibold uppercase text-gray-400">Contrato</p>
                               <div className="flex items-center justify-between gap-2 flex-wrap">
                                 {sub.contrato_url ? (
-                                  <a href={sub.contrato_url} target="_blank" rel="noreferrer"><Button size="sm" variant="outline"><Download className="h-3.5 w-3.5 mr-1.5" />PDF</Button></a>
+                                  <Button size="sm" variant="outline" onClick={async () => {
+                                    const url = await apolicesService.getContratoSignedUrl(sub.contrato_url);
+                                    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+                                    else toast({ variant: 'destructive', title: 'Erro ao abrir contrato.' });
+                                  }}><Download className="h-3.5 w-3.5 mr-1.5" />PDF</Button>
                                 ) : (
                                   <span className="text-xs text-gray-400">Sem contrato</span>
                                 )}
