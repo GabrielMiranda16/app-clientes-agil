@@ -97,8 +97,6 @@ const CEODashboard = () => {
   // Filter State
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
-  const [selectedCompany, setSelectedCompany] = useState(null);
 
   // Solicitacoes Filter State & Modal
   const [solicitacaoStatusFilter, setSolicitacaoStatusFilter] = useState("all");
@@ -602,8 +600,6 @@ const CEODashboard = () => {
 
   const handleNextPage = () => { if (solicitacaoCurrentPage < totalSolicitacaoPages) setSolicitacaoCurrentPage(prev => prev + 1); };
   const handlePreviousPage = () => { if (solicitacaoCurrentPage > 1) setSolicitacaoCurrentPage(prev => prev - 1); };
-
-  const handleViewCompany = (company) => { setSelectedCompany(company); setIsCompanyModalOpen(true); };
 
   // ── Gestão de clientes (criar/editar/excluir/filial) — portado de AdminDashboard.jsx ──
   const handleEmpresaInputChange = (e, setter, isCpfField = false) => {
@@ -1426,7 +1422,7 @@ const CEODashboard = () => {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                           <DropdownMenuItem onClick={() => navigate(`/admin/cliente/${empresa.id}`)}>Acessar</DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => handleViewCompany(empresa)}>Visualizar</DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => navigate(`/admin/cliente/${empresa.id}`)}>Visualizar</DropdownMenuItem>
                                           <DropdownMenuItem onClick={() => openEditEmpresaModal(empresa)}>Editar acesso</DropdownMenuItem>
                                           <DropdownMenuItem onClick={() => openAddFilialModal(empresa)}>Adicionar filial</DropdownMenuItem>
                                           <DropdownMenuItem onClick={() => { if (window.confirm('Excluir este cliente e sua conta de acesso? Só é possível se não houver filiais cadastradas.')) deleteMatriz(empresa.id); }} className="text-red-600 focus:text-red-600">
@@ -1496,7 +1492,7 @@ const CEODashboard = () => {
                                   </div>
                                   <div className="grid grid-cols-2 gap-2 mt-2">
                                     <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white" onClick={() => navigate(`/admin/cliente/${empresa.id}`)}>Acessar</Button>
-                                    <Button size="sm" variant="outline" onClick={() => handleViewCompany(empresa)}>Visualizar</Button>
+                                    <Button size="sm" variant="outline" onClick={() => navigate(`/admin/cliente/${empresa.id}`)}>Visualizar</Button>
                                   </div>
                                   <div className="grid grid-cols-3 gap-2">
                                     <Button size="sm" variant="outline" onClick={() => openEditEmpresaModal(empresa)}>Editar</Button>
@@ -2200,7 +2196,6 @@ const CEODashboard = () => {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={isCompanyModalOpen} onOpenChange={setIsCompanyModalOpen}><DialogContent className="sm:max-w-[600px]"><DialogHeader><DialogTitle>Detalhes da Empresa</DialogTitle></DialogHeader>{selectedCompany && (<div className="grid gap-4 py-4"><div className="grid grid-cols-2 gap-4"><div><Label className="text-xs text-muted-foreground">Nome Fantasia</Label><div className="font-medium text-base">{selectedCompany.nome_fantasia}</div></div><div><Label className="text-xs text-muted-foreground">Razão Social</Label><div className="font-medium text-base">{selectedCompany.razao_social}</div></div><div><Label className="text-xs text-muted-foreground">CNPJ</Label><div className="font-medium text-base">{selectedCompany.cnpj}</div></div><div><Label className="text-xs text-muted-foreground">Status</Label><div><Badge variant={selectedCompany.status === 'Ativa' ? 'default' : 'destructive'} className={selectedCompany.status === 'Ativa' ? 'bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800' : 'bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800'}>{selectedCompany.status}</Badge></div></div><div><Label className="text-xs text-muted-foreground">Total de Beneficiários</Label><div className="font-medium text-base">{selectedCompany.beneficiariosCount}</div></div><div><Label className="text-xs text-muted-foreground">Administradores</Label><div className="font-medium text-base">{selectedCompany.adminsCount}</div></div></div></div>)}<DialogFooter><Button type="button" variant="outline" onClick={() => setIsCompanyModalOpen(false)}>Fechar</Button></DialogFooter></DialogContent></Dialog>
         <Dialog open={isSolicitacaoModalOpen} onOpenChange={setIsSolicitacaoModalOpen}><DialogContent className="sm:max-w-[500px]"><DialogHeader><DialogTitle>Detalhes da Solicitação</DialogTitle><DialogDescription>Visualizar informações completas da solicitação.</DialogDescription></DialogHeader>{selectedSolicitacao && (<div className="grid gap-4 py-4"><div className="grid grid-cols-2 gap-4"><div className="col-span-2 sm:col-span-1"><Label className="text-xs text-muted-foreground">ID da Solicitação</Label><div className="font-mono text-sm">{selectedSolicitacao.id}</div></div><div className="col-span-2 sm:col-span-1"><Label className="text-xs text-muted-foreground">Data</Label><div className="text-sm">{formatDate(selectedSolicitacao.data_solicitacao)}</div></div><div className="col-span-2"><Label className="text-xs text-muted-foreground">Empresa</Label><div className="text-base font-medium">{selectedSolicitacao.empresa?.nome_fantasia || 'N/A'}</div></div><div className="col-span-2"><Label className="text-xs text-muted-foreground">Beneficiário</Label><div className="text-base font-medium">{selectedSolicitacao.beneficiario?.nome_completo || 'N/A'}</div></div><div className="col-span-2 sm:col-span-1"><Label className="text-xs text-muted-foreground">Tipo</Label><div className="text-sm font-medium">{selectedSolicitacao.tipo_solicitacao}</div></div><div className="col-span-2 sm:col-span-1"><Label className="text-xs text-muted-foreground">Status</Label><div className="mt-1"><Badge variant={selectedSolicitacao.status === 'REJEITADA' ? 'destructive' : selectedSolicitacao.status === 'CONCLUIDA' ? 'default' : 'outline'} className={selectedSolicitacao.status === 'CONCLUIDA' ? 'bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800 border-green-200' : selectedSolicitacao.status === 'PENDENTE' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100 hover:text-yellow-800 border-yellow-200' : selectedSolicitacao.status === 'EM PROCESSAMENTO' ? 'bg-blue-100 text-blue-800 hover:bg-blue-100 hover:text-blue-800 border-blue-200' : ''}>{selectedSolicitacao.status}</Badge></div></div>{selectedSolicitacao.motivo && (<div className="col-span-2"><Label className="text-xs text-muted-foreground">Motivo</Label><div className="text-sm p-2 bg-slate-50 rounded border mt-1">{selectedSolicitacao.motivo}</div></div>)}</div></div>)}<DialogFooter><Button type="button" onClick={() => setIsSolicitacaoModalOpen(false)}>Fechar</Button></DialogFooter></DialogContent></Dialog>
 
       {/* Modal Novo Cliente */}
