@@ -1406,12 +1406,12 @@ const ClientDashboard = () => {
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                {user?.perfil === 'CLIENTE' && (
+                {(user?.perfil === 'CLIENTE' || isViewingAsClient) && (
                   <Button variant="ghost" onClick={() => navigate(`/cliente/${empresaId}/coparticipacao`, { state: location.state })} className="text-white/80 hover:text-white hover:bg-white/10 border border-white/20 shrink-0">
                     <DollarSign className="mr-2 h-4 w-4" /> Minha Coparticipação <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
                 )}
-                {user?.perfil === 'CLIENTE' && (
+                {(user?.perfil === 'CLIENTE' || isViewingAsClient) && (
                   <Button
                     variant="ghost"
                     onClick={() => setBoletoSelectorOpen(true)}
@@ -1429,7 +1429,7 @@ const ClientDashboard = () => {
                     <Upload className="mr-2 h-4 w-4" /> Importar Beneficiários
                   </Button>
                 )}
-                {(user?.perfil === 'ADM' || user?.perfil === 'CEO') && (
+                {isAdmin && (
                   <Button variant="ghost" onClick={() => { setImportPlanosStep('upload'); setImportPlanosRows([]); setIsImportPlanosOpen(true); }} className="text-white/80 hover:text-white hover:bg-white/10 border border-white/20 shrink-0">
                     <FileSpreadsheet className="mr-2 h-4 w-4" /> Importar Planos
                   </Button>
@@ -1767,8 +1767,8 @@ const ClientDashboard = () => {
           )}
         </motion.div>
 
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}><DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] p-0 flex flex-col overflow-hidden"><DialogHeader className="px-4 pt-4"><DialogTitle>{editingBeneficiario ? 'Editar' : 'Adicionar'} Beneficiário</DialogTitle></DialogHeader><form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">{isModalOpen && <ModalFormContent formData={formData} setFormData={setFormData} age={age} titulares={titulares} beneficiario={editingBeneficiario} isCliente={user.perfil === 'CLIENTE'} openSolicitacaoDialog={openSolicitacaoDialog} renderPlanStatusCard={renderPlanStatusCard} setIsExclusaoModalOpen={setIsExclusaoModalOpen} setExclusaoData={setExclusaoData} handleSolicitarAlteracao={handleSolicitarAlteracao} />}<DialogFooter className="px-4 mt-4 pb-4"><Button type="submit" disabled={isSubmitting} className="bg-[#003580] hover:bg-[#002060] text-white">{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar</Button></DialogFooter></form></DialogContent></Dialog>
-        {editingBeneficiario && user.perfil === 'CLIENTE' && (<Dialog open={isSolicitacaoDialogOpen} onOpenChange={(open) => { if (!open) setIsSolicitacaoDialogOpen(false); }}><DialogContent className="sm:max-w-[425px] sm:max-h-[80vh] overflow-y-auto"><DialogHeader><DialogTitle>Solicitar Inclusão</DialogTitle><DialogDescription>Selecione os planos que deseja solicitar para este beneficiário.</DialogDescription></DialogHeader><div className="py-4 space-y-4">{renderPlanSelectionItem('saude', 'Plano de Saúde', Hospital, 'text-[#003580]')}{renderPlanSelectionItem('vida', 'Seguro de Vida', Heart, 'text-[#003580]')}{renderPlanSelectionItem('odonto', 'Plano Odonto', Smile, 'text-[#003580]')}</div><DialogFooter><Button variant="outline" onClick={() => setIsSolicitacaoDialogOpen(false)}>Fechar</Button><Button onClick={confirmSolicitacao}>Confirmar Solicitação</Button></DialogFooter></DialogContent></Dialog>)}
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}><DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] p-0 flex flex-col overflow-hidden"><DialogHeader className="px-4 pt-4"><DialogTitle>{editingBeneficiario ? 'Editar' : 'Adicionar'} Beneficiário</DialogTitle></DialogHeader><form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">{isModalOpen && <ModalFormContent formData={formData} setFormData={setFormData} age={age} titulares={titulares} beneficiario={editingBeneficiario} isCliente={user.perfil === 'CLIENTE' || isViewingAsClient} openSolicitacaoDialog={openSolicitacaoDialog} renderPlanStatusCard={renderPlanStatusCard} setIsExclusaoModalOpen={setIsExclusaoModalOpen} setExclusaoData={setExclusaoData} handleSolicitarAlteracao={handleSolicitarAlteracao} />}<DialogFooter className="px-4 mt-4 pb-4"><Button type="submit" disabled={isSubmitting} className="bg-[#003580] hover:bg-[#002060] text-white">{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar</Button></DialogFooter></form></DialogContent></Dialog>
+        {editingBeneficiario && (user.perfil === 'CLIENTE' || isViewingAsClient) && (<Dialog open={isSolicitacaoDialogOpen} onOpenChange={(open) => { if (!open) setIsSolicitacaoDialogOpen(false); }}><DialogContent className="sm:max-w-[425px] sm:max-h-[80vh] overflow-y-auto"><DialogHeader><DialogTitle>Solicitar Inclusão</DialogTitle><DialogDescription>Selecione os planos que deseja solicitar para este beneficiário.</DialogDescription></DialogHeader><div className="py-4 space-y-4">{renderPlanSelectionItem('saude', 'Plano de Saúde', Hospital, 'text-[#003580]')}{renderPlanSelectionItem('vida', 'Seguro de Vida', Heart, 'text-[#003580]')}{renderPlanSelectionItem('odonto', 'Plano Odonto', Smile, 'text-[#003580]')}</div><DialogFooter><Button variant="outline" onClick={() => setIsSolicitacaoDialogOpen(false)}>Fechar</Button><Button onClick={confirmSolicitacao}>Confirmar Solicitação</Button></DialogFooter></DialogContent></Dialog>)}
         <Dialog open={isExclusaoModalOpen} onOpenChange={setIsExclusaoModalOpen}>
           <DialogContent className="w-[95vw] sm:max-w-md">
             <DialogHeader><DialogTitle>Solicitar Exclusão de Plano</DialogTitle></DialogHeader>
