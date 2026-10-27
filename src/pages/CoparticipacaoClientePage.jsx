@@ -119,6 +119,7 @@ const CoparticipacaoClientePage = () => {
   const [sortDir, setSortDir] = useState('asc'); // 'asc' | 'desc'
   const [tipoFiltro, setTipoFiltro] = useState('saude');
   const [selectedColaboradorId, setSelectedColaboradorId] = useState('__all__');
+  const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedId, setExpandedId] = useState(null);
   const [selectedRowIds, setSelectedRowIds] = useState(new Set());
@@ -237,6 +238,17 @@ const CoparticipacaoClientePage = () => {
     if (selectedColaboradorId && selectedColaboradorId !== '__all__') {
       result = result.filter(c => String(c.beneficiario_id) === String(selectedColaboradorId));
     }
+    if (searchTerm) {
+      const lower = searchTerm.toLowerCase();
+      const digits = searchTerm.replace(/\D/g, '');
+      result = result.filter(item =>
+        getBeneficiarioName(item.beneficiario_id).toLowerCase().includes(lower) ||
+        (item.nome_quem_utilizou || '').toLowerCase().includes(lower) ||
+        (digits && (item.cpf_quem_utilizou || '').includes(digits)) ||
+        (item.descricao || '').toLowerCase().includes(lower) ||
+        (item.competencia || '').toLowerCase().includes(lower)
+      );
+    }
     result = [...result].sort((a, b) => {
       let cmp;
       if (sortBy === 'valor') cmp = parseFloat(a.valor || 0) - parseFloat(b.valor || 0);
@@ -245,14 +257,14 @@ const CoparticipacaoClientePage = () => {
       return sortDir === 'desc' ? -cmp : cmp;
     });
     return result;
-  }, [coparticipacoes, empresaId, startMonth, startYear, endMonth, endYear, tipoFiltro, selectedColaboradorId, sortBy, sortDir, beneficiarios]);
+  }, [coparticipacoes, empresaId, startMonth, startYear, endMonth, endYear, tipoFiltro, selectedColaboradorId, sortBy, sortDir, beneficiarios, searchTerm]);
 
   const totalMes = useMemo(() => {
     return filteredCoparticipacoes.reduce((acc, curr) => acc + (parseFloat(curr.valor) || 0), 0);
   }, [filteredCoparticipacoes]);
 
-  useEffect(() => { setCurrentPage(1); }, [filteredCoparticipacoes.length, tipoFiltro, selectedColaboradorId, startMonth, startYear, endMonth, endYear]);
-  useEffect(() => { setSelectedRowIds(new Set()); }, [tipoFiltro, selectedColaboradorId, startMonth, startYear, endMonth, endYear]);
+  useEffect(() => { setCurrentPage(1); }, [filteredCoparticipacoes.length, tipoFiltro, selectedColaboradorId, startMonth, startYear, endMonth, endYear, searchTerm]);
+  useEffect(() => { setSelectedRowIds(new Set()); }, [tipoFiltro, selectedColaboradorId, startMonth, startYear, endMonth, endYear, searchTerm]);
 
   const dadosParaExportar = selectedRowIds.size > 0
     ? filteredCoparticipacoes.filter(c => selectedRowIds.has(c.id))
@@ -620,6 +632,16 @@ const CoparticipacaoClientePage = () => {
               )}
             </CardTitle>
             <div className="flex flex-wrap gap-2 items-center">
+              <div className="relative w-full sm:w-56">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  type="search"
+                  placeholder="Buscar por nome, CPF ou descrição..."
+                  className="pl-9"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
               <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={dadosParaExportar.length === 0}>
                 <Download className="mr-2 h-4 w-4" /> Baixar Excel{selectedRowIds.size > 0 ? ` (${selectedRowIds.size})` : ''}
               </Button>
