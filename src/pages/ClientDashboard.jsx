@@ -392,7 +392,7 @@ const EmpresaSwitcher = ({ empresa, todasEmpresas, onNavigate }) => {
 const ClientDashboard = () => {
   // 1. All Hooks Declaration
   const { empresaId: paramEmpresaId } = useParams();
-  const { setSelectedCompanyId } = useCompany();
+  const { setSelectedCompanyId, isViewingAsClient } = useCompany();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -1345,7 +1345,7 @@ const ClientDashboard = () => {
   // Adicionar/excluir/importar em massa exigem perfil ADM ou CEO — CLIENTE só
   // tem permissão (RLS) para ver e editar dados; mudanças de vínculo passam
   // pelo fluxo de Solicitação de Inclusão/Exclusão.
-  const isAdmin = user.perfil === 'ADM' || user.perfil === 'CEO';
+  const isAdmin = (user.perfil === 'ADM' || user.perfil === 'CEO') && !isViewingAsClient;
 
   return (
     <>
@@ -1355,7 +1355,7 @@ const ClientDashboard = () => {
 
           {/* Breadcrumb */}
           {(() => {
-            const isAdmin = user?.perfil === 'CEO' || user?.perfil === 'ADM';
+            const isAdmin = (user?.perfil === 'CEO' || user?.perfil === 'ADM') && !isViewingAsClient;
             const fromState = location.state;
             if (isAdmin) {
               return (
