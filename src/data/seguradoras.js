@@ -128,16 +128,16 @@ export const SEGURADORAS = [
     ],
   },
   {
-    nome: 'NotreDame Intermédica',
-    logo: '', // TODO: Gabriel precisa subir a logo pro Storage e colar a URL aqui
-    phone: '0800 723 1234',
-    website: 'https://www.gndi.com.br',
+    nome: 'Hapvida',
+    logo: 'https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/28126b3a3ba8bd1705127066b1f20e10.png',
+    phone: '0800 018 3456',
+    website: 'https://www.hapvida.com.br',
     categorias: ['SAUDE', 'ODONTOLOGICO'],
     diferenciais: [
-      { titulo: 'Rede própria verticalizada', descricao: 'A NotreDame Intermédica (Grupo Hapvida NotreDame Intermédica) é dona dos próprios hospitais, clínicas, laboratórios e prontos-socorros — não depende de credenciamento com terceiros pra boa parte do atendimento. Esse modelo verticalizado reduz custos e permite preços mais competitivos sem abrir mão de estrutura própria.' },
-      { titulo: 'Forte presença no interior e na Grande SP', descricao: 'Historicamente uma das operadoras com maior capilaridade no interior de São Paulo e na Grande São Paulo, com unidades próprias em dezenas de cidades — relevante pra empresas com funcionários fora da capital, onde outras operadoras têm rede mais limitada.' },
-      { titulo: 'Um dos maiores grupos de saúde do Brasil', descricao: 'Depois da fusão com a Hapvida, o grupo se tornou uma das maiores operadoras de planos de saúde do país em número de beneficiários, com escala suficiente pra sustentar preços competitivos mesmo em contratos PME pequenos (poucas vidas).' },
-      { titulo: 'Foco histórico em PME', descricao: 'Diferente de operadoras focadas no público de alta renda, a NotreDame Intermédica sempre teve forte atuação em planos coletivos empresariais de pequeno e médio porte — é uma das operadoras mais lembradas no mercado quando o assunto é convênio médico pra empresa pequena.' },
+      { titulo: 'Rede própria verticalizada', descricao: 'A Hapvida (resultado da fusão com a NotreDame Intermédica, que vem sendo incorporada à marca Hapvida) é dona dos próprios hospitais, clínicas, laboratórios e prontos-socorros — não depende de credenciamento com terceiros pra boa parte do atendimento. Esse modelo verticalizado reduz custos e permite preços mais competitivos sem abrir mão de estrutura própria.' },
+      { titulo: 'Maior operadora de saúde da América Latina', descricao: 'Depois da fusão entre Hapvida e NotreDame Intermédica, o grupo se tornou a maior operadora de planos de saúde da América Latina em número de beneficiários, com escala suficiente pra sustentar preços competitivos mesmo em contratos PME pequenos (poucas vidas).' },
+      { titulo: 'Forte presença no interior e fora da capital', descricao: 'Historicamente uma das operadoras com maior capilaridade no interior e em regiões fora dos grandes centros, com unidades próprias em dezenas de cidades — relevante pra empresas com funcionários fora da capital, onde outras operadoras têm rede mais limitada.' },
+      { titulo: 'Foco histórico em PME', descricao: 'A base NotreDame Intermédica, hoje parte da Hapvida, sempre teve forte atuação em planos coletivos empresariais de pequeno e médio porte — é uma das operadoras mais lembradas no mercado quando o assunto é convênio médico pra empresa pequena.' },
     ],
     diferenciais_odonto: [
       { titulo: 'Plano odontológico com rede própria e credenciada', descricao: 'Combina clínicas odontológicas próprias com uma rede credenciada ampla, cobrindo as principais especialidades (clínica geral, endodontia, periodontia, cirurgia) com boa disponibilidade de horários.' },
