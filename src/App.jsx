@@ -18,6 +18,7 @@ const ParceiroDashboard        = lazy(() => import('@/pages/ParceiroDashboard'))
 const AdminClientePage         = lazy(() => import('@/pages/AdminClientePage'));
 const AdminSegmentoPage        = lazy(() => import('@/pages/AdminSegmentoPage'));
 const GestaoGeralTestePage     = lazy(() => import('@/pages/GestaoGeralTestePage'));
+const ProspeccaoTestePage      = lazy(() => import('@/pages/ProspeccaoTestePage'));
 const ClientDashboard          = lazy(() => import('@/pages/ClientDashboard'));
 const UnauthorizedPage         = lazy(() => import('@/pages/Unauthorized'));
 const SelectSegmento           = lazy(() => import('@/pages/SelectSegmento'));
@@ -72,6 +73,7 @@ const AppRoutes = () => {
         <Route path="/admin/cliente/:matrizId/segmento/:segmento" element={<ProtectedRoute allowedRoles={['CEO', 'ADM']}><AdminSegmentoPage /></ProtectedRoute>} />
         {/* Página de teste — não linkada em nenhum menu, só acessível pela URL direta */}
         <Route path="/admin/teste/gestao-geral/:matrizId" element={<ProtectedRoute allowedRoles={['CEO', 'ADM']}><GestaoGeralTestePage /></ProtectedRoute>} />
+        <Route path="/admin/teste/prospeccao" element={<ProtectedRoute allowedRoles={['CEO', 'ADM']}><ProspeccaoTestePage /></ProtectedRoute>} />
         <Route path="/solicitacoes" element={<ProtectedRoute allowedRoles={['CEO', 'ADM']}><SolicitacoesPage /></ProtectedRoute>} />
         <Route path="/coparticipacao" element={<ProtectedRoute allowedRoles={['CEO', 'ADM']}><CoparticipacaoPage /></ProtectedRoute>} />
         <Route path="/cliente/:empresaId" element={<ProtectedRoute allowedRoles={['CEO', 'ADM', 'CLIENTE']}><ClientDashboard /></ProtectedRoute>} />
