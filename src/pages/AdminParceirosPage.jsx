@@ -139,10 +139,14 @@ const faixaKey = (id) => `faixa_${id.replace(/-/g, '_').replace('+', 'plus')}`;
 const CAMPOS_SEGMENTO = {
   SAUDE: [
     { key: 'tipo', label: 'Modalidade do plano', type: 'select', options: ['INDIVIDUAL', 'MEI', 'PME', 'PJ'] },
+    { key: 'nome_empresa', label: 'Nome da empresa', type: 'text', placeholder: 'Ex: Empresa ABC Ltda', optional: true },
+    { key: 'cnpj_empresa', label: 'CNPJ da empresa', type: 'text', placeholder: 'Ex: 00.000.000/0001-00', optional: true },
     { key: 'vidas', label: 'Nº de vidas', type: 'number', placeholder: 'Ex: 3' },
   ],
   ODONTOLOGICO: [
     { key: 'tipo', label: 'Modalidade do plano', type: 'select', options: ['INDIVIDUAL', 'MEI', 'PME', 'PJ'] },
+    { key: 'nome_empresa', label: 'Nome da empresa', type: 'text', placeholder: 'Ex: Empresa ABC Ltda', optional: true },
+    { key: 'cnpj_empresa', label: 'CNPJ da empresa', type: 'text', placeholder: 'Ex: 00.000.000/0001-00', optional: true },
     { key: 'vidas', label: 'Nº de vidas', type: 'number', placeholder: 'Ex: 2' },
   ],
   AUTO: [
@@ -535,9 +539,6 @@ const AdminParceirosPage = () => {
   useEffect(() => {
     const ld = location.state?.leadData;
     if (!ld) return;
-    const linhaEmpresa = ld.nome_empresa || ld.cnpj
-      ? `Empresa: ${ld.nome_empresa || ''}${ld.cnpj ? ` — CNPJ: ${ld.cnpj}` : ''}`
-      : '';
     setNovoForm(f => ({
       ...f,
       cliente_nome: ld.cliente_nome || '',
@@ -546,12 +547,13 @@ const AdminParceirosPage = () => {
       cliente_cpf: ld.cliente_cpf || '',
       cliente_data_nascimento: ld.cliente_data_nascimento || '',
       segmento: ld.segmento || '',
-      observacoes: linhaEmpresa,
     }));
     if (['SAUDE', 'ODONTOLOGICO'].includes(ld.segmento)) {
       setSegData(s => ({
         ...s,
         vidas: ld.num_vidas || '',
+        nome_empresa: ld.nome_empresa || '',
+        cnpj_empresa: ld.cnpj || '',
         tipo: (ld.nome_empresa || ld.cnpj) ? 'PME' : (s.tipo || ''),
       }));
     }

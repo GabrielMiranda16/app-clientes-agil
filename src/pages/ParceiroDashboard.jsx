@@ -80,6 +80,8 @@ const SEGMENTO_CAMPOS = {
       { value: 'PME',        label: 'PME (até 99 vidas)' },
       { value: 'PJ',         label: 'PJ (acima de 100 vidas)' },
     ]},
+    { key: 'nome_empresa', label: 'Nome da empresa', placeholder: 'Ex: Empresa ABC Ltda', optional: true },
+    { key: 'cnpj_empresa', label: 'CNPJ da empresa', placeholder: 'Ex: 00.000.000/0001-00', optional: true },
     { key: 'qtd_vidas', label: 'Número de vidas', type: 'number', placeholder: 'Ex: 3' },
     { key: 'cidade', label: 'Cidade', placeholder: 'Ex: São Paulo' },
     { key: 'estado', label: 'Estado', type: 'select', options: ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'] },
