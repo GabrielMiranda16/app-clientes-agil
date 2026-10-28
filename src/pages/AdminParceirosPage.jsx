@@ -535,6 +535,9 @@ const AdminParceirosPage = () => {
   useEffect(() => {
     const ld = location.state?.leadData;
     if (!ld) return;
+    const linhaEmpresa = ld.nome_empresa || ld.cnpj
+      ? `Empresa: ${ld.nome_empresa || ''}${ld.cnpj ? ` — CNPJ: ${ld.cnpj}` : ''}`
+      : '';
     setNovoForm(f => ({
       ...f,
       cliente_nome: ld.cliente_nome || '',
@@ -543,7 +546,18 @@ const AdminParceirosPage = () => {
       cliente_cpf: ld.cliente_cpf || '',
       cliente_data_nascimento: ld.cliente_data_nascimento || '',
       segmento: ld.segmento || '',
+      observacoes: linhaEmpresa,
     }));
+    if (['SAUDE', 'ODONTOLOGICO'].includes(ld.segmento)) {
+      setSegData(s => ({
+        ...s,
+        vidas: ld.num_vidas || '',
+        tipo: (ld.nome_empresa || ld.cnpj) ? 'PME' : (s.tipo || ''),
+      }));
+    }
+    if (ld.tem_plano_atual) {
+      setCenarios([{ tem_plano: true, operadora: ld.plano_atual_operadora || '', valor: ld.plano_atual_valor || '', vidas: {} }]);
+    }
     setCriarModal(true);
     window.history.replaceState({}, document.title);
   }, [location.state]);

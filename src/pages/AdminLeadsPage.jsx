@@ -237,6 +237,12 @@ const AdminLeadsPage = () => {
           cliente_data_nascimento: lead.data_nascimento || '',
           segmento: lead.segmento || '',
           lead_id: lead.id,
+          cnpj: lead.cnpj || '',
+          nome_empresa: lead.nome_empresa || '',
+          num_vidas: lead.num_vidas || '',
+          tem_plano_atual: lead.tem_plano_atual || false,
+          plano_atual_operadora: lead.plano_atual_operadora || '',
+          plano_atual_valor: lead.plano_atual_valor || '',
         },
       },
     });
