@@ -3,6 +3,16 @@ import { supabase } from '@/lib/customSupabaseClient';
 const PAGE_SIZE = 24;
 
 export const prospeccaoLeadsService = {
+  async listarTodos({ tier = 'Hot' } = {}) {
+    const { data, error } = await supabase
+      .from('prospeccao_leads')
+      .select('*')
+      .eq('tier', tier)
+      .order('score', { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  },
+
   async listarAgrupadoPorEmpresa({ tier = 'Hot' } = {}) {
     const { data, error } = await supabase
       .from('prospeccao_leads')
