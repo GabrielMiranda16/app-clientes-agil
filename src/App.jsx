@@ -33,8 +33,8 @@ const OrcamentoPublicoPage     = lazy(() => import('@/pages/OrcamentoPublicoPage
 const NotFound                 = lazy(() => import('@/pages/NotFound'));
 
 const PageLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-soft-gradient">
-    <Loader2 className="h-8 w-8 animate-spin text-white" />
+  <div className="min-h-screen flex items-center justify-center bg-white">
+    <Loader2 className="h-8 w-8 animate-spin text-[#003580]" />
   </div>
 );
 
