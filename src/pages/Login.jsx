@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -25,8 +24,6 @@ const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  const logoUrl = "/logo.png";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -86,87 +83,107 @@ const LoginPage = () => {
         <title>Login - Ágil Seguros</title>
         <meta name="description" content="Acesse sua conta no sistema Ágil Seguros." />
       </Helmet>
-      <div className="flex flex-col items-center justify-center p-4 bg-soft-gradient overflow-hidden" style={{ height: '100dvh' }}>
-        <motion.div
-          initial={{ opacity: 0, y: -20, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="flex flex-col items-center w-full max-w-sm"
-        >
-          {/* Logo fora do card */}
-          <img
-            src="https://storage.googleapis.com/hostinger-horizons-assets-prod/bcb47250-76a3-434c-9312-56a9dba14a6f/247eb5219c397bb2ed2bcac42f39a442.png"
-            alt="Ágil Seguros"
-            className="h-24 w-auto object-contain mb-3"
-          />
+      <div className="w-full bg-white flex flex-col lg:flex-row overflow-hidden" style={{ height: '100dvh' }}>
+        {/* Desktop: imagem no lado esquerdo */}
+        <div className="hidden lg:block lg:w-1/2 p-6">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6 }}
+            className="w-full h-full rounded-[32px] overflow-hidden"
+          >
+            <img
+              src="/login-familia.jpg"
+              alt="Família protegida pela Ágil Seguros"
+              className="w-full h-full object-cover"
+            />
+          </motion.div>
+        </div>
 
-          <Card className="w-full bg-white/90 border-0 backdrop-blur-md shadow-2xl">
-            <CardHeader className="text-center pt-4 pb-2">
-              <CardDescription className="text-gray-500">Bem-vindo ao app da Ágil Seguros</CardDescription>
-            </CardHeader>
-            <CardContent className="pb-4">
-              <form onSubmit={handleSubmit} className="space-y-3">
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-gray-700">Email</Label>
+        {/* Login */}
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-6 overflow-y-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="w-full max-w-sm"
+          >
+            <div className="flex flex-col items-center lg:items-start text-center lg:text-left mb-5">
+              <img
+                src="/logo.png"
+                alt="Ágil Seguros"
+                className="w-36 sm:w-40 h-auto mb-4"
+              />
+              <h1
+                className="lg:hidden font-light text-black leading-[1.1] tracking-tight mb-2"
+                style={{ fontSize: "clamp(1.7rem, 6.5vw, 2.1rem)" }}
+              >
+                Bem-vindo ao app da Ágil Seguros
+              </h1>
+              <p className="hidden lg:block text-gray-500">Bem-vindo ao app da Ágil Seguros</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-gray-700">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="border-[#c8e0f5] focus:border-[#003580] bg-[#f0f7ff]"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="password" className="text-gray-700">Senha</Label>
+                <div className="relative">
                   <Input
-                    id="email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(e); }}
                     required
-                    className="border-[#c8e0f5] focus:border-[#003580] bg-[#f0f7ff]"
+                    className="border-[#c8e0f5] focus:border-[#003580] bg-[#f0f7ff] pr-10"
                   />
+                  <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-gray-700">Senha</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(e); }}
-                      required
-                      className="border-[#c8e0f5] focus:border-[#003580] bg-[#f0f7ff] pr-10"
-                    />
-                    <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    id="remember"
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 accent-[#003580] cursor-pointer"
-                  />
-                  <label htmlFor="remember" className="text-sm text-gray-600 cursor-pointer select-none">
-                    Lembrar de mim
-                  </label>
-                </div>
-                <Button type="submit" className="w-full rounded-full font-bold text-white" style={{ background: '#003580' }} disabled={isLoggingIn}>
-                  {isLoggingIn ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Entrando...
-                    </>
-                  ) : 'Entrar'}
-                </Button>
-                <button
-                  type="button"
-                  onClick={() => { setIsForgotOpen(true); setForgotEmail(email); }}
-                  className="w-full text-center text-sm text-[#003580] hover:underline mt-1"
-                >
-                  Esqueci minha senha
-                </button>
-              </form>
-            </CardContent>
-          </Card>
-        </motion.div>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  id="remember"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 accent-[#003580] cursor-pointer"
+                />
+                <label htmlFor="remember" className="text-sm text-gray-600 cursor-pointer select-none">
+                  Lembrar de mim
+                </label>
+              </div>
+              <Button type="submit" className="w-full rounded-full font-bold text-white" style={{ background: '#003580' }} disabled={isLoggingIn}>
+                {isLoggingIn ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Entrando...
+                  </>
+                ) : 'Entrar'}
+              </Button>
+              <button
+                type="button"
+                onClick={() => { setIsForgotOpen(true); setForgotEmail(email); }}
+                className="w-full text-center text-sm text-[#003580] hover:underline mt-1"
+              >
+                Esqueci minha senha
+              </button>
+            </form>
+          </motion.div>
+        </div>
       </div>
 
       <Dialog open={isForgotOpen} onOpenChange={setIsForgotOpen}>
