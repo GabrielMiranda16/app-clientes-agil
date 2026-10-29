@@ -116,7 +116,7 @@ const LoginPage = () => {
               />
               <h1
                 className="font-light text-black leading-[1.1] tracking-tight"
-                style={{ fontSize: "clamp(1.7rem, 3.2vw, 2.6rem)" }}
+                style={{ fontSize: "clamp(1.7rem, 2.4vw, 2.1rem)" }}
               >
                 Bem-vindo ao app da Ágil Seguros
               </h1>
