@@ -111,7 +111,7 @@ const LoginPage = () => {
       </Helmet>
       <div className="w-full bg-white flex flex-col lg:flex-row overflow-hidden" style={{ height: '100dvh' }}>
         {/* Desktop: imagem no lado esquerdo */}
-        <div className="hidden lg:block lg:w-1/2 p-6">
+        <div className="hidden lg:block lg:w-3/5 p-6">
           <motion.div
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -123,7 +123,7 @@ const LoginPage = () => {
         </div>
 
         {/* Login */}
-        <div className="w-full lg:w-1/2 flex-1 flex items-center justify-center p-6 lg:p-16 overflow-y-auto">
+        <div className="w-full lg:w-2/5 flex-1 flex items-center justify-center p-6 lg:p-16 overflow-y-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
