@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,10 @@ import { motion } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
 import { Helmet } from 'react-helmet';
 import { authService } from '@/services/authService';
+import { supabase } from '@/lib/customSupabaseClient';
+import TurnstileWidget from '@/components/TurnstileWidget';
+
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
 const LoginPage = () => {
   const savedEmail = localStorage.getItem('agil_remember_email') || '';
@@ -21,17 +25,36 @@ const LoginPage = () => {
   const [isForgotOpen, setIsForgotOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [isSendingReset, setIsSendingReset] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState(null);
+  const turnstileRef = useRef(null);
   const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!captchaToken) {
+      toast({ variant: 'destructive', title: 'Verificação de segurança', description: 'Aguarde a verificação do captcha antes de entrar.' });
+      return;
+    }
+
     if (rememberMe) localStorage.setItem('agil_remember_email', email);
     else localStorage.removeItem('agil_remember_email');
     setIsLoggingIn(true);
 
     try {
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-turnstile', {
+        body: { token: captchaToken },
+      });
+      if (verifyError || !verifyData?.success) {
+        toast({ variant: 'destructive', title: 'Verificação de segurança falhou', description: 'Tente novamente.' });
+        turnstileRef.current?.reset();
+        setCaptchaToken(null);
+        setIsLoggingIn(false);
+        return;
+      }
+
       const user = await login(email, password);
 
       toast({
@@ -55,6 +78,8 @@ const LoginPage = () => {
           ? "E-mail ou senha incorretos."
           : `Erro: ${error.message || JSON.stringify(error)}`,
       });
+      turnstileRef.current?.reset();
+      setCaptchaToken(null);
     } finally {
       setIsLoggingIn(false);
     }
@@ -165,7 +190,18 @@ const LoginPage = () => {
                   Lembrar de mim
                 </label>
               </div>
-              <Button type="submit" className="w-full rounded-full font-bold text-white lg:h-12 lg:text-base" style={{ background: '#003580' }} disabled={isLoggingIn}>
+
+              {TURNSTILE_SITE_KEY && (
+                <TurnstileWidget
+                  ref={turnstileRef}
+                  siteKey={TURNSTILE_SITE_KEY}
+                  action="login"
+                  onVerify={setCaptchaToken}
+                  onExpire={() => setCaptchaToken(null)}
+                />
+              )}
+
+              <Button type="submit" className="w-full rounded-full font-bold text-white lg:h-12 lg:text-base" style={{ background: '#003580' }} disabled={isLoggingIn || !captchaToken}>
                 {isLoggingIn ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
