@@ -12,6 +12,7 @@ import { Helmet } from 'react-helmet';
 import { authService } from '@/services/authService';
 import { supabase } from '@/lib/customSupabaseClient';
 import TurnstileWidget from '@/components/TurnstileWidget';
+import GloboAnimation from '@/components/GloboAnimation';
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
@@ -117,11 +118,7 @@ const LoginPage = () => {
             transition={{ duration: 0.6 }}
             className="w-full h-full rounded-[32px] overflow-hidden"
           >
-            <img
-              src="/login-familia.jpg"
-              alt="Família protegida pela Ágil Seguros"
-              className="w-full h-full object-cover"
-            />
+            <GloboAnimation />
           </motion.div>
         </div>
 
