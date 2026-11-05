@@ -214,11 +214,9 @@ const GestaoGeralTestePage = () => {
   const [isSavingSolDados, setIsSavingSolDados] = useState(false);
   const [isAceitandoSolId, setIsAceitandoSolId] = useState(null);
 
-  const [filtroEmpresaBen, setFiltroEmpresaBen] = useState('todas');
   const [filtroSituacaoBen, setFiltroSituacaoBen] = useState('todos');
   const [filtroParentescoBen, setFiltroParentescoBen] = useState('todos');
   const [ordenarBen, setOrdenarBen] = useState('nome_asc');
-  const [filtroEmpresaApolice, setFiltroEmpresaApolice] = useState('todas');
   const [visaoGestao, setVisaoGestao] = useState('beneficiarios');
   const [filtroCnpjApolice, setFiltroCnpjApolice] = useState('todas');
   const [filtroApolice, setFiltroApolice] = useState('todas');
@@ -336,14 +334,15 @@ const GestaoGeralTestePage = () => {
 
   useEffect(() => { if (matrizId) load(); }, [matrizId]);
   useEffect(() => { setFiltroApolice('todas'); }, [filtroCnpjApolice]);
-  useEffect(() => { setPaginaBen(1); }, [filtroEmpresaBen, filtroApolice, busca, filtroSituacaoBen, filtroParentescoBen]);
+  useEffect(() => { setPaginaBen(1); }, [filtroCnpjApolice, filtroApolice, busca, filtroSituacaoBen, filtroParentescoBen]);
   useEffect(() => { setPaginaSol(1); }, [filtroStatusSol, filtroApolice]);
   useEffect(() => { setPaginaCopart(1); }, [filtroApolice]);
 
   const empresaLabel = (empresaId) => {
     const e = todasEmpresas.find(x => x.id === Number(empresaId));
     if (!e) return '—';
-    return e.nome_fantasia || e.razao_social || `Empresa ${empresaId}`;
+    const nome = e.nome_fantasia || e.razao_social || `Empresa ${empresaId}`;
+    return Number(empresaId) === Number(matriz?.id) ? `⭐ ${nome}` : nome;
   };
 
   const apoliceLabel = (ap) => {
@@ -355,6 +354,16 @@ const GestaoGeralTestePage = () => {
     const sub = subApoliceOf(ap);
     const tipoLabel = sub.tipo === 'saude' ? 'Saúde' : sub.tipo === 'vida' ? 'Vida' : sub.tipo === 'odonto' ? 'Odonto' : sub.tipo;
     return [sub.numero && `Apólice ${sub.numero}`, sub.seguradora, tipoLabel].filter(Boolean).join(' · ') || `Apólice ${ap.id}`;
+  };
+
+  // Quando nenhum CNPJ específico está selecionado (vendo o grupo inteiro),
+  // a apólice precisa indicar de qual empresa é — e marcar com ⭐ as que são
+  // da matriz, já que é isso que o Gabriel pediu pra distinguir na lista.
+  const apoliceLabelComEmpresa = (ap) => {
+    const base = apoliceLabelComSegmento(ap);
+    const isMatriz = Number(ap.empresa_id) === Number(matriz?.id);
+    const nome = nomeEmpresa(ap.empresa);
+    return `${isMatriz ? '⭐ ' : ''}${base} — ${nome}`;
   };
 
   const primeiroUltimoNome = (nomeCompleto) => {
@@ -402,7 +411,7 @@ const GestaoGeralTestePage = () => {
     });
   };
 
-  const qtdFiltrosBenAtivos = [filtroEmpresaBen !== 'todas', filtroSituacaoBen !== 'todos', filtroParentescoBen !== 'todos'].filter(Boolean).length;
+  const qtdFiltrosBenAtivos = [filtroSituacaoBen !== 'todos', filtroParentescoBen !== 'todos'].filter(Boolean).length;
 
   // Mesma regra híbrida do card de beneficiário: vínculo explícito sempre conta;
   // sem vínculo, Saúde exige a coluna legacy e Vida/Odonto cobrem a empresa toda.
@@ -421,7 +430,7 @@ const GestaoGeralTestePage = () => {
 
   const beneficiariosFiltrados = useMemo(() => {
     const lista = beneficiarios.filter(b => {
-      if (filtroEmpresaBen !== 'todas' && Number(b.empresa_id) !== Number(filtroEmpresaBen)) return false;
+      if (filtroCnpjApolice !== 'todas' && Number(b.empresa_id) !== Number(filtroCnpjApolice)) return false;
       if (!temVinculoComApolice(b.id)) return false;
       if (busca && !(b.nome_completo || '').toLowerCase().includes(busca.toLowerCase()) && !(b.cpf || '').includes(busca)) return false;
       if (filtroSituacaoBen !== 'todos' && b.situacao !== filtroSituacaoBen) return false;
@@ -435,7 +444,7 @@ const GestaoGeralTestePage = () => {
     if (ordenarBen === 'idade_asc') ordenada.sort((a, b) => new Date(b.data_nascimento || 0) - new Date(a.data_nascimento || 0));
     if (ordenarBen === 'idade_desc') ordenada.sort((a, b) => new Date(a.data_nascimento || 0) - new Date(b.data_nascimento || 0));
     return ordenada;
-  }, [beneficiarios, planos, filtroEmpresaBen, filtroApolice, busca, filtroSituacaoBen, filtroParentescoBen, ordenarBen]);
+  }, [beneficiarios, planos, filtroCnpjApolice, filtroApolice, busca, filtroSituacaoBen, filtroParentescoBen, ordenarBen]);
 
   const ITENS_POR_PAGINA = 20;
 
@@ -446,8 +455,8 @@ const GestaoGeralTestePage = () => {
   }, [beneficiariosFiltrados, paginaBen]);
 
   const apolicesFiltradas = useMemo(() => {
-    return apolices.filter(a => filtroEmpresaApolice === 'todas' || Number(a.empresa_id) === Number(filtroEmpresaApolice));
-  }, [apolices, filtroEmpresaApolice]);
+    return apolices.filter(a => filtroCnpjApolice === 'todas' || Number(a.empresa_id) === Number(filtroCnpjApolice));
+  }, [apolices, filtroCnpjApolice]);
 
   const coparticipacoesFiltradas = useMemo(() => {
     return coparticipacoes.filter(c => temVinculoComApolice(c.beneficiario_id));
@@ -577,10 +586,12 @@ const GestaoGeralTestePage = () => {
   const contagemBeneficiariosApolice = (apoliceId) =>
     beneficiarios.filter(b => beneficiarioCobertoPorApolice(b.id, apoliceId)).length;
 
+  const nomeEmpresa = (e) => e?.nome_fantasia || e?.razao_social || formatCpfCnpj(e?.cnpj) || '—';
+
   const empresaOptions = (
     <>
-      <SelectItem value={String(matriz?.id)}>{formatCpfCnpj(matriz?.cnpj) || matriz?.nome_fantasia || matriz?.razao_social} (Matriz)</SelectItem>
-      {filiais.map(f => <SelectItem key={f.id} value={String(f.id)}>{formatCpfCnpj(f.cnpj) || f.nome_fantasia || f.razao_social}</SelectItem>)}
+      <SelectItem value={String(matriz?.id)}>⭐ {nomeEmpresa(matriz)} (Matriz)</SelectItem>
+      {filiais.map(f => <SelectItem key={f.id} value={String(f.id)}>{nomeEmpresa(f)}</SelectItem>)}
     </>
   );
 
@@ -1041,37 +1052,31 @@ const GestaoGeralTestePage = () => {
                   </SelectContent>
                 </Select>
               </div>
-              {visaoGestao !== 'apolices' ? (
-                <>
-                  <div className="flex-1">
-                    <Label className="text-xs">CNPJ</Label>
-                    <Select value={filtroCnpjApolice} onValueChange={setFiltroCnpjApolice}>
-                      <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
-                      <SelectContent className="max-w-[calc(100vw-3rem)]">
-                        <SelectItem value="todas">Todos os CNPJs</SelectItem>
-                        {empresaOptions}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex-1">
-                    <Label className="text-xs">Apólice</Label>
-                    <Select value={filtroApolice} onValueChange={setFiltroApolice}>
-                      <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
-                      <SelectContent className="max-w-[calc(100vw-3rem)]">
-                        <SelectItem value="todas">Todas as apólices</SelectItem>
-                        {apolices
-                          .filter(a => filtroCnpjApolice === 'todas' || Number(a.empresa_id) === Number(filtroCnpjApolice))
-                          .map(a => <SelectItem key={a.id} value={String(a.id)} className="truncate">{apoliceLabelComSegmento(a)}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </>
-              ) : (
+              <div className="flex-1">
+                <Label className="text-xs">CNPJ</Label>
+                <Select value={filtroCnpjApolice} onValueChange={setFiltroCnpjApolice}>
+                  <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+                  <SelectContent className="max-w-[calc(100vw-3rem)]">
+                    <SelectItem value="todas">Todos os CNPJs (grupo inteiro)</SelectItem>
+                    {empresaOptions}
+                  </SelectContent>
+                </Select>
+              </div>
+              {visaoGestao !== 'apolices' && (
                 <div className="flex-1">
-                  <Label className="text-xs">Empresa (CNPJ)</Label>
-                  <Select value={filtroEmpresaApolice} onValueChange={setFiltroEmpresaApolice}>
-                    <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue placeholder="Empresa (CNPJ)" className="truncate min-w-0" /></SelectTrigger>
-                    <SelectContent className="max-w-[calc(100vw-3rem)]"><SelectItem value="todas">Todas as empresas</SelectItem>{empresaOptions}</SelectContent>
+                  <Label className="text-xs">Apólice</Label>
+                  <Select value={filtroApolice} onValueChange={setFiltroApolice}>
+                    <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
+                    <SelectContent className="max-w-[calc(100vw-3rem)]">
+                      <SelectItem value="todas">Todas as apólices</SelectItem>
+                      {apolices
+                        .filter(a => filtroCnpjApolice === 'todas' || Number(a.empresa_id) === Number(filtroCnpjApolice))
+                        .map(a => (
+                          <SelectItem key={a.id} value={String(a.id)} className="truncate">
+                            {filtroCnpjApolice === 'todas' ? apoliceLabelComEmpresa(a) : apoliceLabelComSegmento(a)}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
                   </Select>
                 </div>
               )}
@@ -1091,13 +1096,6 @@ const GestaoGeralTestePage = () => {
                         </Button>
                         {isFiltroBenOpen && (
                           <div className="absolute z-50 mt-1 w-72 max-w-[calc(100vw-2rem)] rounded-lg border bg-white shadow-lg p-3 space-y-3">
-                            <div>
-                              <Label className="text-xs">Empresa (CNPJ)</Label>
-                              <Select value={filtroEmpresaBen} onValueChange={setFiltroEmpresaBen}>
-                                <SelectTrigger className="[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1"><SelectValue className="truncate min-w-0" /></SelectTrigger>
-                                <SelectContent><SelectItem value="todas">Todas as empresas</SelectItem>{empresaOptions}</SelectContent>
-                              </Select>
-                            </div>
                             <div>
                               <Label className="text-xs">Situação</Label>
                               <Select value={filtroSituacaoBen} onValueChange={setFiltroSituacaoBen}>
@@ -1122,7 +1120,7 @@ const GestaoGeralTestePage = () => {
                               </Select>
                             </div>
                             {qtdFiltrosBenAtivos > 0 && (
-                              <button type="button" className="text-xs text-[#003580] hover:underline" onClick={() => { setFiltroEmpresaBen('todas'); setFiltroSituacaoBen('todos'); setFiltroParentescoBen('todos'); }}>
+                              <button type="button" className="text-xs text-[#003580] hover:underline" onClick={() => { setFiltroSituacaoBen('todos'); setFiltroParentescoBen('todos'); }}>
                                 Limpar filtros
                               </button>
                             )}
