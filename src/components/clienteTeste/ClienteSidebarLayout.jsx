@@ -11,7 +11,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import {
-  ShieldCheck, Users, Wallet, ChevronLeft, ChevronRight, LogOut, Menu, X,
+  Home, Users, Wallet, LogOut, Menu, X,
   Lock, UserCog, Loader2, Bot, HelpCircle, Landmark,
 } from 'lucide-react';
 import { formatCpfCnpj } from '@/lib/masks';
@@ -19,13 +19,10 @@ import { validatePasswordStrength } from '@/lib/userValidator';
 import { supabaseClient } from '@/lib/supabase';
 import { authService } from '@/services/authService';
 
-const SIDEBAR_COLLAPSED_KEY = 'cliente_teste_sidebar_collapsed';
-
 const ClienteSidebarLayout = ({ children }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1');
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const [clientEmpresa, setClientEmpresa] = useState(null);
@@ -45,10 +42,6 @@ const ClienteSidebarLayout = ({ children }) => {
   const [isCepLoading, setIsCepLoading] = useState(false);
   const [isSavingDados, setIsSavingDados] = useState(false);
 
-  useEffect(() => {
-    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? '1' : '0');
-  }, [collapsed]);
-
   const empresaId = user?.empresa_matriz_id || user?.empresa_id;
 
   useEffect(() => {
@@ -60,7 +53,7 @@ const ClienteSidebarLayout = ({ children }) => {
   const isPF = clientEmpresa?.cnpj && clientEmpresa.cnpj.replace(/\D/g, '').length === 11;
 
   const navItems = [
-    { to: '/select-segmento/teste', icon: ShieldCheck, label: 'Meus Seguros' },
+    { to: '/select-segmento/teste', icon: Home, label: 'Meus Seguros' },
     ...(empresaId ? [
       { to: `/cliente/${empresaId}`, icon: Users, label: 'Beneficiários' },
       { to: `/cliente/${empresaId}/coparticipacao`, icon: Wallet, label: 'Coparticipação' },
@@ -181,79 +174,70 @@ const ClienteSidebarLayout = ({ children }) => {
     }
   };
 
-  const NavItem = ({ to, icon: Icon, label, onClick }) => (
+  // Ícone com indicador de ativo (barra navy à esquerda), igual ao card
+  // selecionado em Meus Seguros — mesma linguagem visual em todo o app.
+  const IconNavItem = ({ to, icon: Icon, label, onClick }) => (
+    <NavLink to={to} onClick={onClick} title={label} className="relative flex items-center justify-center w-full py-1">
+      {({ isActive }) => (
+        <>
+          {isActive && <span className="absolute left-0 top-1/2 -translate-y-1/2 h-7 w-1 rounded-r-full bg-[#003580]" />}
+          <span className={`flex items-center justify-center w-11 h-11 rounded-xl transition-colors ${
+            isActive ? 'bg-[#003580]/10 text-[#003580]' : 'text-gray-400 hover:text-[#003580] hover:bg-gray-50'
+          }`}>
+            <Icon className="h-5 w-5" />
+          </span>
+        </>
+      )}
+    </NavLink>
+  );
+
+  const IconButton = ({ icon: Icon, label, onClick, danger }) => (
+    <button
+      onClick={onClick}
+      title={label}
+      className={`flex items-center justify-center w-11 h-11 rounded-xl transition-colors ${
+        danger ? 'text-gray-400 hover:text-red-600 hover:bg-red-50' : 'text-gray-400 hover:text-[#003580] hover:bg-gray-50'
+      }`}
+    >
+      <Icon className="h-5 w-5" />
+    </button>
+  );
+
+  const NavItemComTexto = ({ to, icon: Icon, label, onClick }) => (
     <NavLink
       to={to}
       onClick={onClick}
       className={({ isActive }) =>
         `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
           isActive ? 'text-[#003580]' : 'text-gray-500 hover:text-[#003580]'
-        } ${collapsed ? 'justify-center' : ''}`
+        }`
       }
-      title={collapsed ? label : undefined}
     >
       <Icon className="h-5 w-5 flex-shrink-0" />
-      {!collapsed && <span>{label}</span>}
+      <span>{label}</span>
     </NavLink>
   );
 
-  const AccountButton = ({ icon: Icon, label, onClick }) => (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:text-[#003580] transition-colors w-full ${collapsed ? 'justify-center' : ''}`}
-      title={collapsed ? label : undefined}
-    >
-      <Icon className="h-5 w-5 flex-shrink-0" />
-      {!collapsed && <span>{label}</span>}
-    </button>
-  );
-
   return (
-    <div className="min-h-screen flex bg-white" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-      {/* Sidebar — desktop */}
-      <aside
-        className={`hidden sm:flex fixed inset-y-0 left-0 z-30 flex-col bg-white border-r border-gray-100 transition-all duration-200 ${
-          collapsed ? 'w-[72px]' : 'w-[240px]'
-        }`}
-      >
-        <div className="h-20 flex items-center justify-center border-b border-gray-100 px-4 flex-shrink-0">
-          {collapsed ? (
-            <span className="text-2xl font-extrabold text-[#003580]">Á</span>
-          ) : (
-            <img src="/logo.png" alt="Ágil Seguros" className="h-10 w-auto object-contain" />
-          )}
+    <div className="min-h-screen flex bg-[#F7F8FA]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      {/* Sidebar — desktop: rail estreito só com ícones (+ tooltip no hover) */}
+      <aside className="hidden sm:flex fixed inset-y-0 left-0 z-30 w-20 flex-col items-center bg-white border-r border-gray-100 py-6">
+        <div className="mb-8 flex-shrink-0">
+          <span className="text-xl font-extrabold text-[#003580]">Á</span>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1">
-          {navItems.map((item) => <NavItem key={item.to} {...item} />)}
+        <nav className="flex-1 flex flex-col items-center gap-1 w-full">
+          {navItems.map((item) => <IconNavItem key={item.to} {...item} />)}
         </nav>
 
-        <div className="border-t border-gray-100 p-3 space-y-1 flex-shrink-0">
-          <AccountButton icon={UserCog} label="Dados" onClick={openDados} />
-          <AccountButton icon={Lock} label="Alterar Senha" onClick={() => setIsPasswordModalOpen(true)} />
-          <button
-            onClick={handleLogout}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:text-red-600 transition-colors w-full ${collapsed ? 'justify-center' : ''}`}
-            title={collapsed ? 'Sair' : undefined}
-          >
-            <LogOut className="h-5 w-5 flex-shrink-0" />
-            {!collapsed && <span>Sair</span>}
-          </button>
-          <button
-            onClick={() => setCollapsed((v) => !v)}
-            className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-[#003580] transition-colors w-full"
-          >
-            {collapsed ? <ChevronRight className="h-5 w-5" /> : (
-              <>
-                <ChevronLeft className="h-5 w-5" />
-                <span>Recolher</span>
-              </>
-            )}
-          </button>
+        <div className="flex flex-col items-center gap-1 pt-4 mt-2 border-t border-gray-100 w-full flex-shrink-0">
+          <IconButton icon={UserCog} label="Dados" onClick={openDados} />
+          <IconButton icon={Lock} label="Alterar Senha" onClick={() => setIsPasswordModalOpen(true)} />
+          <IconButton icon={LogOut} label="Sair" onClick={handleLogout} danger />
         </div>
       </aside>
 
-      {/* Topbar — mobile */}
+      {/* Topbar — mobile (mantém texto, rail de ícone só faz sentido no desktop) */}
       <div className="sm:hidden fixed top-0 inset-x-0 z-30 h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4">
         <img src="/logo.png" alt="Ágil Seguros" className="h-8 w-auto object-contain" />
         <button
@@ -276,11 +260,23 @@ const ClienteSidebarLayout = ({ children }) => {
           >
             <nav className="px-4 py-3 space-y-1">
               {navItems.map((item) => (
-                <NavItem key={item.to} {...item} onClick={() => setMobileOpen(false)} />
+                <NavItemComTexto key={item.to} {...item} onClick={() => setMobileOpen(false)} />
               ))}
               <div className="border-t border-gray-100 pt-2 mt-1 space-y-1">
-                <AccountButton icon={UserCog} label="Dados" onClick={() => { openDados(); setMobileOpen(false); }} />
-                <AccountButton icon={Lock} label="Alterar Senha" onClick={() => { setIsPasswordModalOpen(true); setMobileOpen(false); }} />
+                <button
+                  onClick={() => { openDados(); setMobileOpen(false); }}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:text-[#003580] transition-colors w-full"
+                >
+                  <UserCog className="h-5 w-5 flex-shrink-0" />
+                  <span>Dados</span>
+                </button>
+                <button
+                  onClick={() => { setIsPasswordModalOpen(true); setMobileOpen(false); }}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:text-[#003580] transition-colors w-full"
+                >
+                  <Lock className="h-5 w-5 flex-shrink-0" />
+                  <span>Alterar Senha</span>
+                </button>
                 <button
                   onClick={handleLogout}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:text-red-600 transition-colors w-full"
@@ -295,11 +291,7 @@ const ClienteSidebarLayout = ({ children }) => {
       </AnimatePresence>
 
       {/* Conteúdo */}
-      <main
-        className={`flex-1 min-h-screen transition-all duration-200 pt-16 sm:pt-0 ${
-          collapsed ? 'sm:ml-[72px]' : 'sm:ml-[240px]'
-        }`}
-      >
+      <main className="flex-1 min-h-screen pt-16 sm:pt-0 sm:ml-20">
         <div className="max-w-6xl mx-auto px-5 sm:px-10 py-8 sm:py-12">
           {children}
         </div>
