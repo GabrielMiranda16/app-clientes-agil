@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { apolicesService } from '@/services/apolicesService';
+import { boletosService } from '@/services/boletosService';
 import { SEGURADORAS } from '@/data/seguradoras';
 import { useToast } from '@/components/ui/use-toast';
 import {
-  Building2, ChevronDown, Download, ArrowRight, Users, Loader2,
+  Building2, ChevronRight, Download, ArrowRight, Users, Loader2, Receipt,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -28,6 +29,11 @@ const formatDate = (d) => {
 
 const logoDaSeguradora = (nome) => SEGURADORAS.find(s => s.nome === nome)?.logo;
 
+const formatMesReferencia = (mesRef) => {
+  if (!mesRef) return '—';
+  try { return format(new Date(`${mesRef}-01T00:00:00`), 'MMMM/yyyy', { locale: ptBR }); } catch { return mesRef; }
+};
+
 const Campo = ({ label, value }) => (
   !value ? null : (
     <div>
@@ -42,6 +48,9 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true }) => {
   const { toast } = useToast();
   const [expanded, setExpanded] = useState(false);
   const [baixando, setBaixando] = useState(false);
+  const [boletos, setBoletos] = useState(null);
+  const [loadingBoletos, setLoadingBoletos] = useState(false);
+  const [baixandoBoletoId, setBaixandoBoletoId] = useState(null);
 
   const isSVD = apolice.segmento === 'SAUDE_VIDA_ODONTO';
   const isSVDSemVigencia = isSVD && !apolice.vigencia_fim;
@@ -52,6 +61,29 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true }) => {
   const segLabel = SEGMENTO_CONFIG[apolice.segmento]?.label || apolice.segmento;
   const subs = apolice.dados_adicionais?.sub_apolices?.filter(s => s.tipo || s.numero);
   const dados = apolice.dados_adicionais || {};
+
+  // Boletos só existem pra Saúde/Vida/Odonto — busca só quando expande, e só
+  // uma vez (boletos continua null até o primeiro fetch terminar).
+  useEffect(() => {
+    if (!expanded || !isSVD || boletos !== null) return;
+    setLoadingBoletos(true);
+    boletosService.getBoletosByApolice(apolice.id)
+      .then((lista) => setBoletos(lista || []))
+      .catch(() => setBoletos([]))
+      .finally(() => setLoadingBoletos(false));
+  }, [expanded, isSVD, apolice.id, boletos]);
+
+  const handleBaixarBoleto = (boleto) => {
+    setBaixandoBoletoId(boleto.id);
+    const win = window.open('', '_blank', 'noopener,noreferrer');
+    boletosService.getSignedUrl(boleto.arquivo_url).then((url) => {
+      if (url && win) win.location.href = url;
+      else {
+        win?.close();
+        toast({ variant: 'destructive', title: 'Erro ao abrir boleto.' });
+      }
+    }).finally(() => setBaixandoBoletoId(null));
+  };
 
   const handleBaixarContrato = () => {
     if (!apolice.contrato_url) return;
@@ -89,7 +121,7 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true }) => {
         </span>
         <span className="hidden sm:block text-sm text-gray-600">{formatDate(apolice.vigencia_inicio)}</span>
         <span className="hidden sm:block text-sm text-gray-600">{apolice.numero_apolice || '—'}</span>
-        <ChevronDown className={`w-4 h-4 text-gray-300 justify-self-end transition-transform ${expanded ? 'rotate-180' : ''}`} />
+        <ChevronRight className={`w-4 h-4 text-gray-300 justify-self-end transition-transform ${expanded ? 'rotate-90' : ''}`} />
       </button>
 
       <AnimatePresence>
@@ -175,6 +207,34 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true }) => {
                   <Campo label="Marca" value={dados.marca} />
                   <Campo label="Modelo" value={dados.modelo} />
                   <Campo label="Série" value={dados.numero_serie} />
+                </div>
+              )}
+
+              {/* Boletos — só Saúde/Vida/Odonto */}
+              {isSVD && (
+                <div>
+                  <p className="flex items-center gap-1.5 text-[11px] text-gray-400 uppercase tracking-wide font-semibold mb-2">
+                    <Receipt className="w-3 h-3" /> Boletos
+                  </p>
+                  {loadingBoletos ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-gray-300" />
+                  ) : boletos?.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {boletos.map((b) => (
+                        <button
+                          key={b.id}
+                          onClick={() => handleBaixarBoleto(b)}
+                          disabled={baixandoBoletoId === b.id}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 text-xs font-medium text-gray-700 bg-white hover:border-[#003580] hover:text-[#003580] transition-colors disabled:opacity-50 capitalize"
+                        >
+                          {baixandoBoletoId === b.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                          {formatMesReferencia(b.mes_referencia)}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-400">Nenhum boleto disponível no momento.</p>
+                  )}
                 </div>
               )}
 
