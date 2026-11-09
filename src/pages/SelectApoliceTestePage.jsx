@@ -5,7 +5,10 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useCompany } from '@/contexts/CompanyContext';
 import { apolicesService, SEGMENTOS } from '@/services/apolicesService';
 import { SEGURADORAS } from '@/data/seguradoras';
-import { ArrowLeft, Loader2, FileText, Plus, Pencil, Check, X, ArrowRight, Building2 } from 'lucide-react';
+import {
+  ArrowLeft, Loader2, FileText, Plus, Pencil, Check, X, ArrowRight, Building2,
+  Search, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight,
+} from 'lucide-react';
 import ClienteSidebarLayout from '@/components/clienteTeste/ClienteSidebarLayout';
 import ApoliceExpandableRow from '@/components/clienteTeste/ApoliceExpandableRow';
 import {
@@ -17,6 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 
 const QTD_SLOTS = 3;
+const ITENS_POR_PAGINA_OPCOES = [5, 10, 15, 25];
 
 const logoDaSeguradora = (nome) => SEGURADORAS.find(s => s.nome === nome)?.logo;
 
@@ -38,6 +42,9 @@ const SelectApoliceTestePage = () => {
   const [modoEdicao, setModoEdicao] = useState(false);
   const [editandoSlot, setEditandoSlot] = useState(null);
   const [selecaoModal, setSelecaoModal] = useState('');
+  const [busca, setBusca] = useState('');
+  const [itensPorPagina, setItensPorPagina] = useState(5);
+  const [pagina, setPagina] = useState(1);
 
   const segConfig = SEGMENTOS[segmento] || SEGMENTOS[segmento?.toUpperCase()] || Object.values(SEGMENTOS).find(s => s.slug === segmento);
   const isSVD = segmento?.toLowerCase().replace(/_/g, '-') === 'saude-vida-odonto';
@@ -118,6 +125,20 @@ const SelectApoliceTestePage = () => {
     });
   }, [apolices, isSVD]);
 
+  const linhasFiltradas = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
+    if (!termo) return linhasTabela;
+    return linhasTabela.filter((linha) => {
+      const seguradora = linha.displayOverride?.seguradora || linha.apolice.seguradora || '';
+      const numero = linha.displayOverride?.numero || linha.apolice.numero_apolice || '';
+      return seguradora.toLowerCase().includes(termo) || numero.toLowerCase().includes(termo);
+    });
+  }, [linhasTabela, busca]);
+
+  const totalPaginas = Math.max(1, Math.ceil(linhasFiltradas.length / itensPorPagina));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const linhasPagina = linhasFiltradas.slice((paginaAtual - 1) * itensPorPagina, paginaAtual * itensPorPagina);
+
   const segLabel = segConfig?.label || segmento?.toLowerCase().replace(/_/g, ' ');
 
   if (loading) {
@@ -142,7 +163,7 @@ const SelectApoliceTestePage = () => {
 
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">{segLabel}</h1>
-            <p className="text-gray-400 text-sm">{apolices.length} {apolices.length === 1 ? 'apólice encontrada' : 'apólices encontradas'}</p>
+            <p className="text-gray-400 text-sm">Todas suas apólices abaixo.</p>
           </div>
 
           {isSVD && (
@@ -222,17 +243,70 @@ const SelectApoliceTestePage = () => {
               <p className="text-gray-400 mt-2">Entre em contato com o administrador.</p>
             </div>
           ) : (
-            <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-              <div className="grid grid-cols-[1fr_auto_auto_auto] sm:grid-cols-[1.6fr_1fr_1fr_40px] gap-4 px-5 py-3 bg-gray-50 text-xs font-bold text-gray-500 uppercase tracking-wide">
-                <span>Apólice</span>
-                <span className="hidden sm:block">Vigente desde</span>
-                <span className="hidden sm:block">Número da apólice</span>
-                <span></span>
+            <>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      value={busca}
+                      onChange={(e) => { setBusca(e.target.value); setPagina(1); }}
+                      placeholder="Buscar por Seguradora/Operadora"
+                      className="pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-[#003580]/20 focus:border-[#003580]"
+                    />
+                  </div>
+                  <button
+                    title="Em breve"
+                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 bg-white"
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5" /> Filtros <ChevronDown className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-3 text-sm text-gray-500">
+                  <span className="hidden sm:inline">Itens por página</span>
+                  <div className="relative">
+                    <select
+                      value={itensPorPagina}
+                      onChange={(e) => { setItensPorPagina(Number(e.target.value)); setPagina(1); }}
+                      className="appearance-none pl-3 pr-7 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-900 bg-white focus:outline-none"
+                    >
+                      {ITENS_POR_PAGINA_OPCOES.map((n) => (
+                        <option key={n} value={n}>{String(n).padStart(2, '0')}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                  </div>
+                  <span>{paginaAtual} de {totalPaginas}</span>
+                  <button
+                    onClick={() => setPagina((p) => Math.max(1, p - 1))}
+                    disabled={paginaAtual <= 1}
+                    className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white disabled:opacity-40"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
+                    disabled={paginaAtual >= totalPaginas}
+                    className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white disabled:opacity-40"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-              {linhasTabela.map((linha) => (
-                <ApoliceExpandableRow key={linha.key} apolice={linha.apolice} showSegmento={false} displayOverride={linha.displayOverride} />
-              ))}
-            </div>
+
+              <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+                <div className="grid grid-cols-[1fr_auto_auto_auto] sm:grid-cols-[1.6fr_1fr_1fr_40px] gap-4 px-5 py-3 bg-gray-50 text-xs font-bold text-gray-500 uppercase tracking-wide">
+                  <span>Apólice</span>
+                  <span className="hidden sm:block">Vigente desde</span>
+                  <span className="hidden sm:block">Número da apólice</span>
+                  <span></span>
+                </div>
+                {linhasPagina.map((linha) => (
+                  <ApoliceExpandableRow key={linha.key} apolice={linha.apolice} showSegmento={false} displayOverride={linha.displayOverride} />
+                ))}
+              </div>
+            </>
           )}
         </div>
       </ClienteSidebarLayout>
