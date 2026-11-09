@@ -196,7 +196,7 @@ const ClienteSidebarLayout = ({ children }) => {
   // "group") está em hover — overflow-hidden no <aside> esconde o texto
   // enquanto a barra está estreita.
   const IconNavItem = ({ to, icon: Icon, label, onClick }) => (
-    <NavLink to={to} onClick={onClick} className="relative flex items-center w-full px-[18px] py-1">
+    <NavLink to={to} onClick={onClick} className="relative flex items-center w-full px-[26px] py-1">
       {({ isActive }) => (
         <>
           {isActive && <span className="absolute left-0 top-1/2 -translate-y-1/2 h-7 w-1 rounded-r-full bg-[#003580]" />}
@@ -216,7 +216,7 @@ const ClienteSidebarLayout = ({ children }) => {
   const IconButton = ({ icon: Icon, label, onClick, danger }) => (
     <button
       onClick={onClick}
-      className={`flex items-center w-full px-[18px] py-1 rounded-xl transition-colors ${
+      className={`flex items-center w-full px-[26px] py-1 rounded-xl transition-colors ${
         danger ? 'text-gray-400 hover:text-red-600' : 'text-gray-400 hover:text-[#003580]'
       }`}
     >
@@ -245,15 +245,15 @@ const ClienteSidebarLayout = ({ children }) => {
   return (
     <div className="min-h-screen flex bg-[#F7F8FA]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
       {/* Sidebar — desktop: rail estreito que expande no hover, mostrando os nomes */}
-      <aside className="group hidden sm:flex fixed inset-y-0 left-0 z-40 w-20 hover:w-60 flex-col items-start bg-white border-r border-gray-100 py-6 overflow-hidden transition-[width] duration-200 ease-out shadow-none hover:shadow-xl">
+      <aside className="group hidden sm:flex fixed inset-y-0 left-0 z-40 w-24 hover:w-64 flex-col items-start bg-white border-r border-gray-100 py-6 overflow-hidden transition-[width] duration-200 ease-out shadow-none hover:shadow-xl">
         <div className="relative mb-8 flex-shrink-0 w-full h-11">
           {/* Colapsado: "Á" centralizado no rail estreito */}
-          <span className="absolute inset-0 flex items-center justify-center text-xl font-extrabold text-[#003580] opacity-100 group-hover:opacity-0 transition-opacity duration-100">
+          <span className="absolute inset-0 flex items-center justify-center text-3xl font-extrabold text-[#003580] opacity-100 group-hover:opacity-0 transition-opacity duration-100">
             Á
           </span>
           {/* Expandido (hover): logo completo */}
-          <div className="absolute inset-0 flex items-center pl-[18px] opacity-0 group-hover:opacity-100 transition-opacity duration-150 group-hover:delay-100">
-            <img src="/logo.png" alt="Ágil Seguros" className="h-8 w-auto object-contain" />
+          <div className="absolute inset-0 flex items-center pl-[26px] opacity-0 group-hover:opacity-100 transition-opacity duration-150 group-hover:delay-100">
+            <img src="/logo.png" alt="Ágil Seguros" className="h-11 w-auto object-contain" />
           </div>
         </div>
 
@@ -322,7 +322,7 @@ const ClienteSidebarLayout = ({ children }) => {
       </AnimatePresence>
 
       {/* Conteúdo */}
-      <main className="flex-1 min-h-screen pt-16 sm:pt-0 sm:ml-20">
+      <main className="flex-1 min-h-screen pt-16 sm:pt-0 sm:ml-24">
         <div className="w-full px-5 sm:px-10 py-8 sm:py-12">
           {children}
         </div>
