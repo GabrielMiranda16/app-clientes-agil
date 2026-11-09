@@ -607,7 +607,10 @@ const CEODashboard = () => {
     const matrizId = empresa.tipo === 'FILIAL' ? empresa.empresa_matriz_id : empresa.id;
     setSelectedCompanyId(Number(matrizId));
     setIsViewingAsClient(true);
-    navigate('/select-segmento');
+    // Cliente fake do redesign em teste — vai direto pra versão nova.
+    // Clientes reais continuam indo pro /select-segmento de produção.
+    const isClienteTesteDesign = empresa.cnpj?.replace(/\D/g, '') === '11144477735';
+    navigate(isClienteTesteDesign ? '/select-segmento/teste' : '/select-segmento');
   };
 
   // ── Gestão de clientes (criar/editar/excluir/filial) — portado de AdminDashboard.jsx ──
