@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useCompany } from '@/contexts/CompanyContext';
 import { apolicesService, SEGMENTOS } from '@/services/apolicesService';
 import { SEGURADORAS } from '@/data/seguradoras';
-import { ArrowLeft, Loader2, FileText, Plus, Pencil, ArrowRight, Building2, HeartPulse, Smile, HeartHandshake } from 'lucide-react';
+import { ArrowLeft, Loader2, FileText, Plus, Pencil, Check, X, ArrowRight, Building2 } from 'lucide-react';
 import ClienteSidebarLayout from '@/components/clienteTeste/ClienteSidebarLayout';
 import ApoliceExpandableRow from '@/components/clienteTeste/ApoliceExpandableRow';
 import {
@@ -16,13 +16,15 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 
-const TIPOS_ATALHO = [
-  { tipo: 'saude',  label: 'Saúde',  Icon: HeartPulse },
-  { tipo: 'odonto', label: 'Odonto', Icon: Smile },
-  { tipo: 'vida',   label: 'Vida',   Icon: HeartHandshake },
-];
+const QTD_SLOTS = 3;
 
 const logoDaSeguradora = (nome) => SEGURADORAS.find(s => s.nome === nome)?.logo;
+
+const descricaoApolice = (apolice) => {
+  const subs = (apolice.dados_adicionais?.sub_apolices || []).filter(s => s.tipo);
+  if (subs.length > 0) return subs.map(s => s.tipo).join(' + ');
+  return apolice.numero_apolice || '—';
+};
 
 const SelectApoliceTestePage = () => {
   const { segmento } = useParams();
@@ -32,12 +34,14 @@ const SelectApoliceTestePage = () => {
   const [loading, setLoading] = useState(true);
   const [apolices, setApolices] = useState([]);
   const [empresaId, setEmpresaId] = useState(null);
-  const [atalhos, setAtalhos] = useState({});
-  const [editandoTipo, setEditandoTipo] = useState(null);
+  const [atalhos, setAtalhos] = useState(Array(QTD_SLOTS).fill(null));
+  const [modoEdicao, setModoEdicao] = useState(false);
+  const [editandoSlot, setEditandoSlot] = useState(null);
   const [selecaoModal, setSelecaoModal] = useState('');
 
   const segConfig = SEGMENTOS[segmento] || SEGMENTOS[segmento?.toUpperCase()] || Object.values(SEGMENTOS).find(s => s.slug === segmento);
   const isSVD = segmento?.toLowerCase().replace(/_/g, '-') === 'saude-vida-odonto';
+  const storageKey = `atalhos_${segmento}_${empresaId}`;
 
   useEffect(() => {
     const id = user?.perfil !== 'CLIENTE' && isViewingAsClient && selectedCompanyId
@@ -58,48 +62,61 @@ const SelectApoliceTestePage = () => {
   useEffect(() => {
     if (!isSVD || !empresaId) return;
     try {
-      const raw = localStorage.getItem(`atalhos_svd_${empresaId}`);
+      const raw = localStorage.getItem(storageKey);
       if (raw) setAtalhos(JSON.parse(raw));
     } catch { /* localStorage indisponível ou corrompido — ignora */ }
-  }, [isSVD, empresaId]);
-
-  const opcoesPorTipo = useMemo(() => {
-    const map = { saude: [], odonto: [], vida: [] };
-    apolices.forEach((ap) => {
-      (ap.dados_adicionais?.sub_apolices || []).forEach((sub) => {
-        const tipo = sub.tipo?.toLowerCase();
-        if (map[tipo] && !map[tipo].some(o => o.apoliceId === ap.id)) {
-          map[tipo].push({ apoliceId: ap.id, seguradora: ap.seguradora, numero: sub.numero || ap.numero_apolice });
-        }
-      });
-    });
-    return map;
-  }, [apolices]);
+  }, [isSVD, empresaId, storageKey]);
 
   const salvarAtalhos = (next) => {
     setAtalhos(next);
-    try { localStorage.setItem(`atalhos_svd_${empresaId}`, JSON.stringify(next)); } catch { /* ignora */ }
+    try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* ignora */ }
   };
 
-  const abrirEdicao = (tipo) => {
-    setSelecaoModal(atalhos[tipo] ? String(atalhos[tipo]) : '');
-    setEditandoTipo(tipo);
+  const abrirPicker = (slot) => {
+    setSelecaoModal(atalhos[slot] ? String(atalhos[slot]) : '');
+    setEditandoSlot(slot);
   };
 
   const handleSalvarAtalho = () => {
     if (!selecaoModal) return;
-    salvarAtalhos({ ...atalhos, [editandoTipo]: Number(selecaoModal) });
-    setEditandoTipo(null);
+    const next = [...atalhos];
+    next[editandoSlot] = Number(selecaoModal);
+    salvarAtalhos(next);
+    setEditandoSlot(null);
   };
 
-  const handleAcessarAtalho = (tipo) => {
-    const apoliceId = atalhos[tipo];
-    const apolice = apolices.find(ap => ap.id === apoliceId);
+  const handleRemoverAtalho = (slot) => {
+    const next = [...atalhos];
+    next[slot] = null;
+    salvarAtalhos(next);
+  };
+
+  const handleAcessarAtalho = (slot) => {
+    const apolice = apolices.find(ap => ap.id === atalhos[slot]);
     if (!apolice) return;
     navigate(`/cliente/${empresaId}`, {
       state: { from: 'apolice', apoliceId: apolice.id, segmento: apolice.segmento, segLabel: 'Saúde, Vida e Odonto', apoliceNum: apolice.numero_apolice },
     });
   };
+
+  // Uma apólice de saúde/vida/odonto pode agrupar vários sub-tipos (sub_apolices)
+  // com seguradora/número próprios — flatten pra lista exibir uma linha por sub-tipo.
+  const linhasTabela = useMemo(() => {
+    if (!isSVD) return apolices.map(ap => ({ key: ap.id, apolice: ap }));
+    return apolices.flatMap((ap) => {
+      const subs = (ap.dados_adicionais?.sub_apolices || []).filter(s => s.tipo || s.numero);
+      if (subs.length === 0) return [{ key: ap.id, apolice: ap }];
+      return subs.map((sub, i) => ({
+        key: `${ap.id}-${i}`,
+        apolice: ap,
+        displayOverride: {
+          seguradora: sub.seguradora || ap.seguradora,
+          numero: sub.numero || ap.numero_apolice,
+          tipoLabel: sub.tipo,
+        },
+      }));
+    });
+  }, [apolices, isSVD]);
 
   const segLabel = segConfig?.label || segmento?.toLowerCase().replace(/_/g, ' ');
 
@@ -129,59 +146,72 @@ const SelectApoliceTestePage = () => {
           </div>
 
           {isSVD && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {TIPOS_ATALHO.map(({ tipo, label, Icon }) => {
-                const apoliceId = atalhos[tipo];
-                const apolice = apoliceId ? apolices.find(ap => ap.id === apoliceId) : null;
-                const logo = apolice ? logoDaSeguradora(apolice.seguradora) : null;
-                const temOpcoes = opcoesPorTipo[tipo]?.length > 0;
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">Atalhos</p>
+                <button
+                  onClick={() => setModoEdicao(v => !v)}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#003580] transition-colors"
+                >
+                  {modoEdicao ? <Check className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+                  {modoEdicao ? 'Concluído' : 'Editar'}
+                </button>
+              </div>
 
-                if (apolice) {
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {Array.from({ length: QTD_SLOTS }).map((_, slot) => {
+                  const apolice = atalhos[slot] ? apolices.find(ap => ap.id === atalhos[slot]) : null;
+
+                  if (apolice) {
+                    const logo = logoDaSeguradora(apolice.seguradora);
+                    return (
+                      <div key={slot} className="relative">
+                        {modoEdicao && (
+                          <button
+                            onClick={() => handleRemoverAtalho(slot)}
+                            className="absolute -top-2 -left-2 z-10 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center shadow hover:bg-red-600 transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => (modoEdicao ? abrirPicker(slot) : handleAcessarAtalho(slot))}
+                          className={`group w-full flex items-center gap-3 bg-white rounded-2xl shadow-sm px-4 py-3.5 text-left transition-colors border ${modoEdicao ? 'border-dashed border-gray-300' : 'border-gray-100 hover:border-[#003580] hover:bg-[#F0F5FC]'}`}
+                        >
+                          <span className="w-10 h-10 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            {logo ? <img src={logo} alt={apolice.seguradora} className="w-full h-full object-contain p-1.5" /> : <Building2 className="w-4 h-4 text-gray-400" />}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block font-bold text-gray-900 text-sm truncate">{apolice.seguradora}</span>
+                            <span className="block text-xs text-gray-400 truncate">{descricaoApolice(apolice)}</span>
+                          </span>
+                          {!modoEdicao && (
+                            <span className="w-8 h-8 rounded-full bg-gray-100 group-hover:bg-[#003580] flex items-center justify-center flex-shrink-0 transition-colors">
+                              <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-white transition-colors" />
+                            </span>
+                          )}
+                        </button>
+                      </div>
+                    );
+                  }
+
                   return (
                     <button
-                      key={tipo}
-                      onClick={() => handleAcessarAtalho(tipo)}
-                      className="group relative flex items-center gap-3 bg-white border border-gray-100 hover:border-[#003580] hover:bg-[#F0F5FC] rounded-2xl shadow-sm px-4 py-3.5 text-left transition-colors"
+                      key={slot}
+                      onClick={() => abrirPicker(slot)}
+                      className="flex items-center gap-3 bg-white border border-dashed border-gray-200 hover:border-[#003580] rounded-2xl px-4 py-3.5 text-left transition-colors"
                     >
-                      <span
-                        onClick={(e) => { e.stopPropagation(); abrirEdicao(tipo); }}
-                        className="absolute top-2 right-2 p-1 rounded-full text-gray-300 hover:text-[#003580] hover:bg-white transition-colors"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </span>
-                      <span className="w-10 h-10 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        {logo ? <img src={logo} alt={apolice.seguradora} className="w-full h-full object-contain p-1.5" /> : <Building2 className="w-4 h-4 text-gray-400" />}
+                      <span className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center flex-shrink-0">
+                        <Plus className="w-4 h-4 text-gray-400" />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-[11px] text-[#003580] font-bold uppercase tracking-wide">{label}</span>
-                        <span className="block font-bold text-gray-900 text-sm truncate">{apolice.seguradora}</span>
-                        <span className="block text-xs text-gray-400 truncate">{opcoesPorTipo[tipo]?.find(o => o.apoliceId === apolice.id)?.numero || apolice.numero_apolice}</span>
-                      </span>
-                      <span className="w-8 h-8 rounded-full bg-gray-100 group-hover:bg-[#003580] flex items-center justify-center flex-shrink-0 transition-colors">
-                        <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-white transition-colors" />
+                        <span className="block font-bold text-gray-900 text-sm">Adicione uma apólice</span>
+                        <span className="block text-xs text-gray-400">Atalho rápido pra gestão</span>
                       </span>
                     </button>
                   );
-                }
-
-                return (
-                  <button
-                    key={tipo}
-                    onClick={() => temOpcoes && abrirEdicao(tipo)}
-                    disabled={!temOpcoes}
-                    className="flex items-center gap-3 bg-white border border-dashed border-gray-200 hover:border-[#003580] rounded-2xl px-4 py-3.5 text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <span className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center flex-shrink-0">
-                      <Plus className="w-4 h-4 text-gray-400" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block font-bold text-gray-900 text-sm">{label}</span>
-                      <span className="block text-xs text-gray-400">{temOpcoes ? 'Adicionar atalho' : 'Nenhuma apólice disponível'}</span>
-                    </span>
-                    <Icon className="w-4 h-4 text-gray-300 flex-shrink-0" />
-                  </button>
-                );
-              })}
+                })}
+              </div>
             </div>
           )}
 
@@ -199,35 +229,46 @@ const SelectApoliceTestePage = () => {
                 <span className="hidden sm:block">Número da apólice</span>
                 <span></span>
               </div>
-              {apolices.map((ap) => (
-                <ApoliceExpandableRow key={ap.id} apolice={ap} showSegmento={false} />
+              {linhasTabela.map((linha) => (
+                <ApoliceExpandableRow key={linha.key} apolice={linha.apolice} showSegmento={false} displayOverride={linha.displayOverride} />
               ))}
             </div>
           )}
         </div>
       </ClienteSidebarLayout>
 
-      <Dialog open={!!editandoTipo} onOpenChange={(open) => !open && setEditandoTipo(null)}>
+      <Dialog open={editandoSlot !== null} onOpenChange={(open) => !open && setEditandoSlot(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Atalho de {TIPOS_ATALHO.find(t => t.tipo === editandoTipo)?.label}</DialogTitle>
+            <DialogTitle>Selecionar apólice</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-gray-500">Escolha a apólice que vai aparecer como atalho direto pra gestão.</p>
+          <p className="text-sm text-gray-500">Escolha qual apólice vai aparecer como atalho direto pra gestão.</p>
           <Select value={selecaoModal} onValueChange={setSelecaoModal}>
             <SelectTrigger>
               <SelectValue placeholder="Selecione uma apólice" />
             </SelectTrigger>
             <SelectContent>
-              {(opcoesPorTipo[editandoTipo] || []).map((op) => (
-                <SelectItem key={op.apoliceId} value={String(op.apoliceId)}>
-                  {op.seguradora} {op.numero ? `· ${op.numero}` : ''}
+              {apolices.map((ap) => (
+                <SelectItem key={ap.id} value={String(ap.id)}>
+                  {ap.seguradora} · {descricaoApolice(ap)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditandoTipo(null)}>Cancelar</Button>
-            <Button className="bg-[#003580] hover:bg-[#002060]" disabled={!selecaoModal} onClick={handleSalvarAtalho}>Salvar</Button>
+          <DialogFooter className="sm:justify-between">
+            {editandoSlot !== null && atalhos[editandoSlot] ? (
+              <Button
+                variant="ghost"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={() => { handleRemoverAtalho(editandoSlot); setEditandoSlot(null); }}
+              >
+                Remover atalho
+              </Button>
+            ) : <span />}
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setEditandoSlot(null)}>Cancelar</Button>
+              <Button className="bg-[#003580] hover:bg-[#002060]" disabled={!selecaoModal} onClick={handleSalvarAtalho}>Salvar</Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -43,7 +43,7 @@ const Campo = ({ label, value }) => (
   )
 );
 
-const ApoliceExpandableRow = ({ apolice, showSegmento = true }) => {
+const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [expanded, setExpanded] = useState(false);
@@ -57,8 +57,10 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true }) => {
   const statusRaw = apolicesService.getStatusApolice(apolice.vigencia_fim);
   const status = isSVDSemVigencia ? { color: 'green', dias: undefined } : statusRaw;
   const style = STATUS_STYLE[status.color];
-  const logo = logoDaSeguradora(apolice.seguradora);
-  const segLabel = SEGMENTO_CONFIG[apolice.segmento]?.label || apolice.segmento;
+  const displaySeguradora = displayOverride?.seguradora || apolice.seguradora;
+  const displayNumero = displayOverride?.numero || apolice.numero_apolice;
+  const logo = logoDaSeguradora(displaySeguradora);
+  const segLabel = displayOverride?.tipoLabel || SEGMENTO_CONFIG[apolice.segmento]?.label || apolice.segmento;
   const subs = apolice.dados_adicionais?.sub_apolices?.filter(s => s.tipo || s.numero);
   const dados = apolice.dados_adicionais || {};
 
@@ -112,15 +114,15 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true }) => {
       >
         <span className="flex items-center gap-3 min-w-0">
           <span className="w-9 h-9 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-            {logo ? <img src={logo} alt={apolice.seguradora} className="w-full h-full object-contain p-1" /> : <Building2 className="w-4 h-4 text-gray-400" />}
+            {logo ? <img src={logo} alt={displaySeguradora} className="w-full h-full object-contain p-1" /> : <Building2 className="w-4 h-4 text-gray-400" />}
           </span>
           <span className="min-w-0">
-            <span className="block font-bold text-gray-900 text-sm truncate">{apolice.seguradora}</span>
-            {showSegmento && <span className="block text-xs text-gray-400 truncate">{segLabel}</span>}
+            <span className="block font-bold text-gray-900 text-sm truncate">{displaySeguradora}</span>
+            {(showSegmento || displayOverride?.tipoLabel) && <span className="block text-xs text-gray-400 truncate">{segLabel}</span>}
           </span>
         </span>
         <span className="hidden sm:block text-sm text-gray-600">{formatDate(apolice.vigencia_inicio)}</span>
-        <span className="hidden sm:block text-sm text-gray-600">{apolice.numero_apolice || '—'}</span>
+        <span className="hidden sm:block text-sm text-gray-600">{displayNumero || '—'}</span>
         <ChevronRight className={`w-4 h-4 text-gray-300 justify-self-end transition-transform ${expanded ? 'rotate-90' : ''}`} />
       </button>
 
@@ -155,7 +157,7 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true }) => {
 
               {/* Campos gerais */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <Campo label="Seguradora" value={apolice.seguradora} />
+                <Campo label="Seguradora" value={displaySeguradora} />
                 {!isSVD && <Campo label="Valor do Prêmio" value={apolice.valor_premio ? `R$ ${Number(apolice.valor_premio).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : null} />}
                 {apolice.descricao && <Campo label="Observações" value={apolice.descricao} />}
               </div>
