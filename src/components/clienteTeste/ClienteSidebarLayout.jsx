@@ -50,6 +50,22 @@ const ClienteSidebarLayout = ({ children }) => {
       .then(({ data }) => { if (data) setClientEmpresa(data); });
   }, [empresaId]);
 
+  // O widget flutuante da Gi (injetado no <body> por um script externo em
+  // DashboardLayout) não é renderizado por essa página de teste, mas se o
+  // script já rodou antes nessa mesma aba (ex: visitando uma página de
+  // produção), ele fica "pendurado" no DOM e sobrevive à navegação. Escondo
+  // enquanto estiver numa página de teste e devolvo a visibilidade ao sair.
+  useEffect(() => {
+    const btn = document.getElementById('gi-btn');
+    const panel = document.getElementById('gi-panel');
+    if (btn) btn.style.display = 'none';
+    if (panel) panel.style.display = 'none';
+    return () => {
+      if (btn) btn.style.display = '';
+      if (panel) panel.style.display = '';
+    };
+  }, []);
+
   const isPF = clientEmpresa?.cnpj && clientEmpresa.cnpj.replace(/\D/g, '').length === 11;
 
   const navItems = [
@@ -292,7 +308,7 @@ const ClienteSidebarLayout = ({ children }) => {
 
       {/* Conteúdo */}
       <main className="flex-1 min-h-screen pt-16 sm:pt-0 sm:ml-20">
-        <div className="max-w-6xl mx-auto px-5 sm:px-10 py-8 sm:py-12">
+        <div className="w-full px-5 sm:px-10 py-8 sm:py-12">
           {children}
         </div>
       </main>
