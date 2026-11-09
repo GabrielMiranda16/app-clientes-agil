@@ -118,12 +118,12 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride })
           </span>
           <span className="min-w-0">
             <span className="block font-bold text-gray-900 text-sm truncate">{displaySeguradora}</span>
-            {(showSegmento || displayOverride?.tipoLabel) && <span className="block text-xs text-gray-600 truncate">{segLabel}</span>}
+            {(showSegmento || displayOverride?.tipoLabel) && <span className="block text-xs text-gray-900 truncate">{segLabel}</span>}
           </span>
         </span>
         <span className="hidden sm:block text-sm text-gray-900">{formatDate(apolice.vigencia_inicio)}</span>
         <span className="hidden sm:block text-sm text-gray-900">{displayNumero || '—'}</span>
-        <ChevronRight className={`w-5 h-5 text-gray-900 justify-self-end transition-transform ${expanded ? 'rotate-90' : ''}`} />
+        <ChevronRight className={`w-4 h-4 text-gray-900 justify-self-end transition-transform ${expanded ? 'rotate-90' : ''}`} />
       </button>
 
       <AnimatePresence>
