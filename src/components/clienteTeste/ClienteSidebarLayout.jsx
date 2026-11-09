@@ -252,7 +252,7 @@ const ClienteSidebarLayout = ({ children }) => {
             Á
           </span>
           {/* Expandido (hover): logo completo */}
-          <div className="absolute inset-0 flex items-center pl-[26px] opacity-0 group-hover:opacity-100 transition-opacity duration-150 group-hover:delay-100">
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 group-hover:delay-100">
             <img src="/logo.png" alt="Ágil Seguros" className="h-11 w-auto object-contain" />
           </div>
         </div>
