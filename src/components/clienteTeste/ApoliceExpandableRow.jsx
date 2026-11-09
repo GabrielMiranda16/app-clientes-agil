@@ -240,14 +240,18 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true }) => {
 
               {/* Ações */}
               <div className="flex flex-wrap items-center gap-2 pt-1">
-                {!isSVD && apolice.contrato_url && (
-                  <button
-                    onClick={handleBaixarContrato}
-                    disabled={baixando}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-gray-200 text-xs font-semibold text-gray-700 bg-white hover:border-[#003580] hover:text-[#003580] transition-colors disabled:opacity-50"
-                  >
-                    {baixando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} Baixar Contrato
-                  </button>
+                {!isSVD && (
+                  apolice.contrato_url ? (
+                    <button
+                      onClick={handleBaixarContrato}
+                      disabled={baixando}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-gray-200 text-xs font-semibold text-gray-700 bg-white hover:border-[#003580] hover:text-[#003580] transition-colors disabled:opacity-50"
+                    >
+                      {baixando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} Baixar Contrato
+                    </button>
+                  ) : (
+                    <span className="text-xs text-gray-400">Nenhum contrato disponível. Entre em contato com o administrador.</span>
+                  )
                 )}
                 {isSVD && (
                   <button
