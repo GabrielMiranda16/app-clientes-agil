@@ -6,7 +6,7 @@ import { useCompany } from '@/contexts/CompanyContext';
 import { apolicesService, SEGMENTOS } from '@/services/apolicesService';
 import { supabaseClient } from '@/lib/supabase';
 import { motion } from 'framer-motion';
-import { HeartPulse, Car, Plane, Home, PawPrint, Building2, Package, Monitor, Loader2 } from 'lucide-react';
+import { HeartPulse, Car, Plane, Home, PawPrint, Building2, Package, Monitor, Loader2, MessageCircle } from 'lucide-react';
 import ClienteSidebarLayout from '@/components/clienteTeste/ClienteSidebarLayout';
 
 const SEGMENTO_CONFIG = {
@@ -68,6 +68,15 @@ const SelectSegmentoTestePage = () => {
     seg => (apolicesPorSegmento[seg]?.length || 0) > 0
   );
 
+  const segmentosNaoContratados = Object.keys(SEGMENTO_CONFIG).filter(
+    seg => !segmentosDisponiveis.includes(seg)
+  );
+
+  const linkWhatsapp = (label) => {
+    const msg = `Olá! Sou cliente da Ágil Seguros e gostaria de saber mais sobre ${label}.`;
+    return `https://wa.me/5511999996863?text=${encodeURIComponent(msg)}`;
+  };
+
   const empresaNome = empresa?.nome_fantasia || empresa?.razao_social || '';
 
   if (loading) {
@@ -125,6 +134,44 @@ const SelectSegmentoTestePage = () => {
                 );
               })}
             </motion.div>
+          )}
+
+          {segmentosNaoContratados.length > 0 && (
+            <div className="pt-6 border-t border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-500 mb-1">Outros serviços Ágil</h2>
+              <p className="text-xs text-gray-400 mb-4">Fale com seu corretor e amplie sua proteção</p>
+
+              <motion.div
+                initial="hidden" animate="visible"
+                variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
+                className="grid grid-cols-2 md:grid-cols-4 gap-4"
+              >
+                {segmentosNaoContratados.map((seg) => {
+                  const config = SEGMENTO_CONFIG[seg];
+                  if (!config) return null;
+                  const { Icon, label, descricao } = config;
+                  return (
+                    <motion.a
+                      key={seg}
+                      href={linkWhatsapp(label)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+                      className="bg-white border border-gray-100 rounded-2xl p-5 flex flex-col hover:border-[#003580]/30 transition-colors"
+                    >
+                      <div className="w-12 h-12 rounded-2xl border border-gray-200 flex items-center justify-center mb-4">
+                        <Icon className="w-6 h-6 text-gray-400" />
+                      </div>
+                      <p className="font-bold text-gray-900 text-sm leading-snug mb-1">{label}</p>
+                      <p className="text-xs text-gray-400 mb-4 flex-grow">{descricao}</p>
+                      <span className="flex items-center justify-center gap-1.5 w-full text-center border border-[#003580] text-[#003580] text-xs font-semibold py-2 rounded-full mt-auto">
+                        <MessageCircle className="w-3.5 h-3.5" /> Fale com seu corretor
+                      </span>
+                    </motion.a>
+                  );
+                })}
+              </motion.div>
+            </div>
           )}
         </div>
       </ClienteSidebarLayout>
