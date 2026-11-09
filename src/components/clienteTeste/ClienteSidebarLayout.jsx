@@ -192,15 +192,21 @@ const ClienteSidebarLayout = ({ children }) => {
 
   // Ícone com indicador de ativo (barra navy à esquerda), igual ao card
   // selecionado em Meus Seguros — mesma linguagem visual em todo o app.
+  // O nome só aparece quando a barra inteira (o <aside> com className
+  // "group") está em hover — overflow-hidden no <aside> esconde o texto
+  // enquanto a barra está estreita.
   const IconNavItem = ({ to, icon: Icon, label, onClick }) => (
-    <NavLink to={to} onClick={onClick} title={label} className="relative flex items-center justify-center w-full py-1">
+    <NavLink to={to} onClick={onClick} className="relative flex items-center w-full px-[18px] py-1">
       {({ isActive }) => (
         <>
           {isActive && <span className="absolute left-0 top-1/2 -translate-y-1/2 h-7 w-1 rounded-r-full bg-[#003580]" />}
-          <span className={`flex items-center justify-center w-11 h-11 rounded-xl transition-colors ${
-            isActive ? 'bg-[#003580]/10 text-[#003580]' : 'text-gray-400 hover:text-[#003580] hover:bg-gray-50'
+          <span className={`flex items-center justify-center w-11 h-11 rounded-xl flex-shrink-0 transition-colors ${
+            isActive ? 'bg-[#003580]/10 text-[#003580]' : 'text-gray-400 group-hover:text-gray-500 hover:text-[#003580] hover:bg-gray-50'
           }`}>
             <Icon className="h-5 w-5" />
+          </span>
+          <span className={`ml-3 text-sm font-medium whitespace-nowrap transition-colors ${isActive ? 'text-[#003580]' : 'text-gray-600'}`}>
+            {label}
           </span>
         </>
       )}
@@ -210,12 +216,14 @@ const ClienteSidebarLayout = ({ children }) => {
   const IconButton = ({ icon: Icon, label, onClick, danger }) => (
     <button
       onClick={onClick}
-      title={label}
-      className={`flex items-center justify-center w-11 h-11 rounded-xl transition-colors ${
-        danger ? 'text-gray-400 hover:text-red-600 hover:bg-red-50' : 'text-gray-400 hover:text-[#003580] hover:bg-gray-50'
+      className={`flex items-center w-full px-[18px] py-1 rounded-xl transition-colors ${
+        danger ? 'text-gray-400 hover:text-red-600' : 'text-gray-400 hover:text-[#003580]'
       }`}
     >
-      <Icon className="h-5 w-5" />
+      <span className="flex items-center justify-center w-11 h-11 rounded-xl flex-shrink-0">
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className="ml-3 text-sm font-medium whitespace-nowrap">{label}</span>
     </button>
   );
 
@@ -236,17 +244,17 @@ const ClienteSidebarLayout = ({ children }) => {
 
   return (
     <div className="min-h-screen flex bg-[#F7F8FA]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-      {/* Sidebar — desktop: rail estreito só com ícones (+ tooltip no hover) */}
-      <aside className="hidden sm:flex fixed inset-y-0 left-0 z-30 w-20 flex-col items-center bg-white border-r border-gray-100 py-6">
-        <div className="mb-8 flex-shrink-0">
+      {/* Sidebar — desktop: rail estreito que expande no hover, mostrando os nomes */}
+      <aside className="group hidden sm:flex fixed inset-y-0 left-0 z-40 w-20 hover:w-60 flex-col items-start bg-white border-r border-gray-100 py-6 overflow-hidden transition-[width] duration-200 ease-out shadow-none hover:shadow-xl">
+        <div className="mb-8 flex-shrink-0 px-[18px] flex items-center justify-center w-11 h-11">
           <span className="text-xl font-extrabold text-[#003580]">Á</span>
         </div>
 
-        <nav className="flex-1 flex flex-col items-center gap-1 w-full">
+        <nav className="flex-1 flex flex-col gap-1 w-full">
           {navItems.map((item) => <IconNavItem key={item.to} {...item} />)}
         </nav>
 
-        <div className="flex flex-col items-center gap-1 pt-4 mt-2 border-t border-gray-100 w-full flex-shrink-0">
+        <div className="flex flex-col gap-1 pt-4 mt-2 border-t border-gray-100 w-full flex-shrink-0">
           <IconButton icon={UserCog} label="Dados" onClick={openDados} />
           <IconButton icon={Lock} label="Alterar Senha" onClick={() => setIsPasswordModalOpen(true)} />
           <IconButton icon={LogOut} label="Sair" onClick={handleLogout} danger />
