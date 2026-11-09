@@ -24,6 +24,7 @@ const UnauthorizedPage         = lazy(() => import('@/pages/Unauthorized'));
 const SelectSegmento           = lazy(() => import('@/pages/SelectSegmento'));
 const SelectSegmentoTestePage  = lazy(() => import('@/pages/SelectSegmentoTestePage'));
 const OutrosSegmentosTestePage = lazy(() => import('@/pages/OutrosSegmentosTestePage'));
+const SelectApoliceTestePage   = lazy(() => import('@/pages/SelectApoliceTestePage'));
 const GiTestePage              = lazy(() => import('@/pages/GiTestePage'));
 const AjudaTestePage           = lazy(() => import('@/pages/AjudaTestePage'));
 const SeguradorasTestePage     = lazy(() => import('@/pages/SeguradorasTestePage'));
@@ -87,6 +88,7 @@ const AppRoutes = () => {
         {/* Páginas de teste do redesign do Cliente — não linkadas em nenhum menu, só acessíveis pela URL direta */}
         <Route path="/select-segmento/teste" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><SelectSegmentoTestePage /></ProtectedRoute>} />
         <Route path="/select-segmento/teste/outros" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><OutrosSegmentosTestePage /></ProtectedRoute>} />
+        <Route path="/select-apolice/:segmento/teste" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><SelectApoliceTestePage /></ProtectedRoute>} />
         <Route path="/fale-com-a-gi/teste" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><GiTestePage /></ProtectedRoute>} />
         <Route path="/ajuda/teste" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><AjudaTestePage /></ProtectedRoute>} />
         <Route path="/seguradoras/teste" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><SeguradorasTestePage /></ProtectedRoute>} />
