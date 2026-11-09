@@ -4,38 +4,17 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useCompany } from '@/contexts/CompanyContext';
 import { apolicesService, SEGMENTOS } from '@/services/apolicesService';
-import { SEGURADORAS } from '@/data/seguradoras';
 import { supabaseClient } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import {
-  HeartPulse, Car, Plane, Home, PawPrint, Building2, Package, Monitor, Loader2,
+  Building2, Loader2,
   MessageCircle, Search, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight, ArrowRight, Shield,
 } from 'lucide-react';
 import ClienteSidebarLayout from '@/components/clienteTeste/ClienteSidebarLayout';
-
-const SEGMENTO_CONFIG = {
-  SAUDE_VIDA_ODONTO: { label: 'Saúde, Vida e Odonto', descricao: 'Planos de saúde, seguro de vida e planos odontológicos', Icon: HeartPulse },
-  AUTO_FROTA:        { label: 'Auto e Frota',          descricao: 'Proteção completa para veículos e frotas',             Icon: Car      },
-  VIAGEM:            { label: 'Viagem',                descricao: 'Cobertura nacional e internacional para viagens',      Icon: Plane    },
-  RESIDENCIAL:       { label: 'Residencial',           descricao: 'Proteção completa para sua residência',               Icon: Home     },
-  PET_SAUDE:         { label: 'Pet Saúde',             descricao: 'Cuidados veterinários para seu pet',                  Icon: PawPrint },
-  EMPRESARIAL:       { label: 'Empresarial',           descricao: 'Proteção para patrimônio e operações empresariais',   Icon: Building2},
-  CARGAS:            { label: 'Cargas',                descricao: 'Proteção para transporte de cargas e mercadorias',    Icon: Package  },
-  EQUIPAMENTOS:      { label: 'Equipamentos',          descricao: 'Cobertura para equipamentos e maquinários',           Icon: Monitor  },
-};
-
-const formatDate = (iso) => {
-  if (!iso) return '—';
-  const [ano, mes, dia] = iso.split('-');
-  return `${dia}/${mes}/${ano}`;
-};
+import ApoliceExpandableRow from '@/components/clienteTeste/ApoliceExpandableRow';
+import { SEGMENTO_CONFIG, SEGMENTOS_IMPORTANTES } from '@/components/clienteTeste/segmentoConfig';
 
 const ITENS_POR_PAGINA_OPCOES = [5, 10, 15, 25];
-
-// Os 5 segmentos de maior relevância pro negócio aparecem como cards
-// próprios (igual a referência) — o restante que o cliente tiver
-// contratado entra agrupado no card "Outros Seguros".
-const SEGMENTOS_IMPORTANTES = ['SAUDE_VIDA_ODONTO', 'AUTO_FROTA', 'RESIDENCIAL', 'VIAGEM', 'EMPRESARIAL'];
 
 const SelectSegmentoTestePage = () => {
   const { user } = useAuth();
@@ -106,8 +85,6 @@ const SelectSegmentoTestePage = () => {
     const msg = `Olá! Sou cliente da Ágil Seguros e gostaria de saber mais sobre ${label}.`;
     return `https://wa.me/5511999996863?text=${encodeURIComponent(msg)}`;
   };
-
-  const logoDaSeguradora = (nome) => SEGURADORAS.find(s => s.nome === nome)?.logo;
 
   const apolicesFiltradas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
@@ -310,30 +287,9 @@ const SelectSegmentoTestePage = () => {
               {apolicesPagina.length === 0 ? (
                 <div className="px-5 py-10 text-center text-sm text-gray-400">Nenhuma apólice encontrada.</div>
               ) : (
-                apolicesPagina.map((ap) => {
-                  const logo = logoDaSeguradora(ap.seguradora);
-                  const segLabel = SEGMENTO_CONFIG[ap.segmento]?.label || ap.segmento;
-                  return (
-                    <button
-                      key={ap.id}
-                      onClick={() => navigate(`/apolice/${ap.id}`)}
-                      className="w-full grid grid-cols-[1fr_auto_auto_auto] sm:grid-cols-[1.6fr_1fr_1fr_40px] gap-4 items-center px-5 py-4 border-t border-gray-100 hover:bg-gray-50 transition-colors text-left"
-                    >
-                      <span className="flex items-center gap-3 min-w-0">
-                        <span className="w-9 h-9 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                          {logo ? <img src={logo} alt={ap.seguradora} className="w-full h-full object-contain p-1" /> : <Building2 className="w-4 h-4 text-gray-400" />}
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block font-bold text-gray-900 text-sm truncate">{ap.seguradora}</span>
-                          <span className="block text-xs text-gray-400 truncate">{segLabel}</span>
-                        </span>
-                      </span>
-                      <span className="hidden sm:block text-sm text-gray-600">{formatDate(ap.vigencia_inicio)}</span>
-                      <span className="hidden sm:block text-sm text-gray-600">{ap.numero_apolice || '—'}</span>
-                      <ArrowRight className="w-4 h-4 text-gray-300 justify-self-end" />
-                    </button>
-                  );
-                })
+                apolicesPagina.map((ap) => (
+                  <ApoliceExpandableRow key={ap.id} apolice={ap} />
+                ))
               )}
             </div>
           </div>
