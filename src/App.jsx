@@ -22,6 +22,7 @@ const ProspeccaoTestePage      = lazy(() => import('@/pages/ProspeccaoTestePage'
 const ClientDashboard          = lazy(() => import('@/pages/ClientDashboard'));
 const UnauthorizedPage         = lazy(() => import('@/pages/Unauthorized'));
 const SelectSegmento           = lazy(() => import('@/pages/SelectSegmento'));
+const SelectSegmentoTestePage  = lazy(() => import('@/pages/SelectSegmentoTestePage'));
 const SelectApolice            = lazy(() => import('@/pages/SelectApolice'));
 const ApoliceDashboard         = lazy(() => import('@/pages/ApoliceDashboard'));
 const SolicitacoesPage         = lazy(() => import('@/pages/SolicitacoesPage'));
@@ -79,6 +80,8 @@ const AppRoutes = () => {
         <Route path="/cliente/:empresaId" element={<ProtectedRoute allowedRoles={['CEO', 'ADM', 'CLIENTE']}><ClientDashboard /></ProtectedRoute>} />
         <Route path="/cliente/:empresaId/coparticipacao" element={<ProtectedRoute allowedRoles={['CEO', 'ADM', 'CLIENTE']}><CoparticipacaoClientePage /></ProtectedRoute>} />
         <Route path="/select-segmento" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><SelectSegmento /></ProtectedRoute>} />
+        {/* Página de teste do redesign do Cliente — não linkada em nenhum menu, só acessível pela URL direta */}
+        <Route path="/select-segmento/teste" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><SelectSegmentoTestePage /></ProtectedRoute>} />
         <Route path="/select-apolice/:segmento" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><SelectApolice /></ProtectedRoute>} />
         <Route path="/apolice/:apoliceId" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><ApoliceDashboard /></ProtectedRoute>} />
         <Route path="/force-change-password" element={<ProtectedRoute allowedRoles={['CEO','ADM','CLIENTE','PARCEIRO']}><ForceChangePassword /></ProtectedRoute>} />
