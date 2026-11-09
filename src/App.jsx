@@ -23,6 +23,9 @@ const ClientDashboard          = lazy(() => import('@/pages/ClientDashboard'));
 const UnauthorizedPage         = lazy(() => import('@/pages/Unauthorized'));
 const SelectSegmento           = lazy(() => import('@/pages/SelectSegmento'));
 const SelectSegmentoTestePage  = lazy(() => import('@/pages/SelectSegmentoTestePage'));
+const GiTestePage              = lazy(() => import('@/pages/GiTestePage'));
+const AjudaTestePage           = lazy(() => import('@/pages/AjudaTestePage'));
+const SeguradorasTestePage     = lazy(() => import('@/pages/SeguradorasTestePage'));
 const SelectApolice            = lazy(() => import('@/pages/SelectApolice'));
 const ApoliceDashboard         = lazy(() => import('@/pages/ApoliceDashboard'));
 const SolicitacoesPage         = lazy(() => import('@/pages/SolicitacoesPage'));
@@ -80,8 +83,11 @@ const AppRoutes = () => {
         <Route path="/cliente/:empresaId" element={<ProtectedRoute allowedRoles={['CEO', 'ADM', 'CLIENTE']}><ClientDashboard /></ProtectedRoute>} />
         <Route path="/cliente/:empresaId/coparticipacao" element={<ProtectedRoute allowedRoles={['CEO', 'ADM', 'CLIENTE']}><CoparticipacaoClientePage /></ProtectedRoute>} />
         <Route path="/select-segmento" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><SelectSegmento /></ProtectedRoute>} />
-        {/* Página de teste do redesign do Cliente — não linkada em nenhum menu, só acessível pela URL direta */}
+        {/* Páginas de teste do redesign do Cliente — não linkadas em nenhum menu, só acessíveis pela URL direta */}
         <Route path="/select-segmento/teste" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><SelectSegmentoTestePage /></ProtectedRoute>} />
+        <Route path="/fale-com-a-gi/teste" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><GiTestePage /></ProtectedRoute>} />
+        <Route path="/ajuda/teste" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><AjudaTestePage /></ProtectedRoute>} />
+        <Route path="/seguradoras/teste" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><SeguradorasTestePage /></ProtectedRoute>} />
         <Route path="/select-apolice/:segmento" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><SelectApolice /></ProtectedRoute>} />
         <Route path="/apolice/:apoliceId" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><ApoliceDashboard /></ProtectedRoute>} />
         <Route path="/force-change-password" element={<ProtectedRoute allowedRoles={['CEO','ADM','CLIENTE','PARCEIRO']}><ForceChangePassword /></ProtectedRoute>} />

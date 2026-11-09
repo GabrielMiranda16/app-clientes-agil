@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import {
   ShieldCheck, Users, Wallet, ChevronLeft, ChevronRight, LogOut, Menu, X,
-  Lock, UserCog, Loader2,
+  Lock, UserCog, Loader2, Bot, HelpCircle, Landmark,
 } from 'lucide-react';
 import { formatCpfCnpj } from '@/lib/masks';
 import { validatePasswordStrength } from '@/lib/userValidator';
@@ -65,6 +65,9 @@ const ClienteSidebarLayout = ({ children }) => {
       { to: `/cliente/${empresaId}`, icon: Users, label: 'Beneficiários' },
       { to: `/cliente/${empresaId}/coparticipacao`, icon: Wallet, label: 'Coparticipação' },
     ] : []),
+    { to: '/fale-com-a-gi/teste', icon: Bot, label: 'Fale com a Gi' },
+    { to: '/ajuda/teste', icon: HelpCircle, label: 'Ajuda' },
+    { to: '/seguradoras/teste', icon: Landmark, label: 'Seguradoras' },
   ];
 
   const handleLogout = () => {
@@ -226,7 +229,7 @@ const ClienteSidebarLayout = ({ children }) => {
         </nav>
 
         <div className="border-t border-gray-100 p-3 space-y-1 flex-shrink-0">
-          <AccountButton icon={UserCog} label={isPF ? 'Meus Dados' : 'Dados da Empresa'} onClick={openDados} />
+          <AccountButton icon={UserCog} label="Dados" onClick={openDados} />
           <AccountButton icon={Lock} label="Alterar Senha" onClick={() => setIsPasswordModalOpen(true)} />
           <button
             onClick={handleLogout}
@@ -276,7 +279,7 @@ const ClienteSidebarLayout = ({ children }) => {
                 <NavItem key={item.to} {...item} onClick={() => setMobileOpen(false)} />
               ))}
               <div className="border-t border-gray-100 pt-2 mt-1 space-y-1">
-                <AccountButton icon={UserCog} label={isPF ? 'Meus Dados' : 'Dados da Empresa'} onClick={() => { openDados(); setMobileOpen(false); }} />
+                <AccountButton icon={UserCog} label="Dados" onClick={() => { openDados(); setMobileOpen(false); }} />
                 <AccountButton icon={Lock} label="Alterar Senha" onClick={() => { setIsPasswordModalOpen(true); setMobileOpen(false); }} />
                 <button
                   onClick={handleLogout}
@@ -371,7 +374,7 @@ const ClienteSidebarLayout = ({ children }) => {
       <Dialog open={isDadosModalOpen} onOpenChange={setIsDadosModalOpen}>
         <DialogContent className="w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{isPF ? 'Meus Dados' : 'Dados da Empresa'}</DialogTitle>
+            <DialogTitle>Dados</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSaveDados} className="space-y-4 py-2">
             <div>
