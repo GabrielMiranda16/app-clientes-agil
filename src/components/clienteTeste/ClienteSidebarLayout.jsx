@@ -6,6 +6,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
@@ -16,6 +17,7 @@ import {
 import { formatCpfCnpj } from '@/lib/masks';
 import { validatePasswordStrength } from '@/lib/userValidator';
 import { supabaseClient } from '@/lib/supabase';
+import { authService } from '@/services/authService';
 
 const SIDEBAR_COLLAPSED_KEY = 'cliente_teste_sidebar_collapsed';
 
@@ -34,6 +36,8 @@ const ClienteSidebarLayout = ({ children }) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [isPassSubmitting, setIsPassSubmitting] = useState(false);
+  const [confirmarAlteracao, setConfirmarAlteracao] = useState(false);
+  const [isForgotSubmitting, setIsForgotSubmitting] = useState(false);
 
   // Modal Meus Dados
   const [isDadosModalOpen, setIsDadosModalOpen] = useState(false);
@@ -120,6 +124,10 @@ const ClienteSidebarLayout = ({ children }) => {
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
+    if (!confirmarAlteracao) {
+      toast({ variant: 'destructive', title: 'Confirmação necessária', description: 'Marque a caixa confirmando que deseja alterar sua senha.' });
+      return;
+    }
     const passErrors = validatePasswordStrength(newPassword);
     if (passErrors.length > 0) {
       toast({ variant: 'destructive', title: 'Senha fraca', description: passErrors[0] });
@@ -144,10 +152,29 @@ const ClienteSidebarLayout = ({ children }) => {
       setOldPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
+      setConfirmarAlteracao(false);
     } catch (error) {
       toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível salvar a nova senha.' });
     } finally {
       setIsPassSubmitting(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!user?.email) return;
+    setIsForgotSubmitting(true);
+    try {
+      await authService.resetPassword(user.email);
+      toast({ title: 'E-mail enviado', description: `Enviamos uma nova senha pra ${user.email}. Faça login com ela e troque por uma nova.` });
+      setIsPasswordModalOpen(false);
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      setConfirmarAlteracao(false);
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível enviar o e-mail de recuperação.' });
+    } finally {
+      setIsForgotSubmitting(false);
     }
   };
 
@@ -283,7 +310,17 @@ const ClienteSidebarLayout = ({ children }) => {
           </DialogHeader>
           <form onSubmit={handleChangePassword} className="space-y-4">
             <div>
-              <Label>Senha antiga</Label>
+              <div className="flex items-center justify-between">
+                <Label>Senha antiga</Label>
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={isForgotSubmitting}
+                  className="text-xs font-medium text-[#003580] hover:underline disabled:opacity-50"
+                >
+                  {isForgotSubmitting ? 'Enviando...' : 'Esqueceu sua senha?'}
+                </button>
+              </div>
               <Input type="password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} />
             </div>
             <div>
@@ -307,11 +344,21 @@ const ClienteSidebarLayout = ({ children }) => {
               <Label>Confirmar nova senha</Label>
               <Input type="password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} />
             </div>
+            <div className="flex items-start gap-2 pt-1">
+              <Checkbox
+                id="confirmar-alteracao-senha"
+                checked={confirmarAlteracao}
+                onCheckedChange={(checked) => setConfirmarAlteracao(checked === true)}
+              />
+              <Label htmlFor="confirmar-alteracao-senha" className="text-sm font-normal leading-snug cursor-pointer">
+                Confirmo que desejo alterar minha senha
+              </Label>
+            </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsPasswordModalOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isPassSubmitting} className="bg-[#003580] hover:bg-[#002060] text-white">
+              <Button type="submit" disabled={isPassSubmitting || !confirmarAlteracao} className="bg-[#003580] hover:bg-[#002060] text-white">
                 {isPassSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Salvar
               </Button>
