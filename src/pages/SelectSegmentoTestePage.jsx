@@ -300,7 +300,7 @@ const SelectSegmentoTestePage = () => {
             </div>
 
             <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-              <div className="grid grid-cols-[1fr_auto_auto_auto] sm:grid-cols-[minmax(0,1fr)_160px_180px_32px] gap-4 px-5 py-3 bg-gray-50 text-xs font-bold text-gray-500 uppercase tracking-wide">
+              <div className="grid grid-cols-[1fr_auto_auto_auto] sm:grid-cols-[1.6fr_1fr_1fr_40px] gap-4 px-5 py-3 bg-gray-50 text-xs font-bold text-gray-500 uppercase tracking-wide">
                 <span>Apólice</span>
                 <span className="hidden sm:block">Vigente desde</span>
                 <span className="hidden sm:block">Número da apólice</span>
@@ -317,7 +317,7 @@ const SelectSegmentoTestePage = () => {
                     <button
                       key={ap.id}
                       onClick={() => navigate(`/apolice/${ap.id}`)}
-                      className="w-full grid grid-cols-[1fr_auto_auto_auto] sm:grid-cols-[minmax(0,1fr)_160px_180px_32px] gap-4 items-center px-5 py-4 border-t border-gray-100 hover:bg-gray-50 transition-colors text-left"
+                      className="w-full grid grid-cols-[1fr_auto_auto_auto] sm:grid-cols-[1.6fr_1fr_1fr_40px] gap-4 items-center px-5 py-4 border-t border-gray-100 hover:bg-gray-50 transition-colors text-left"
                     >
                       <span className="flex items-center gap-3 min-w-0">
                         <span className="w-9 h-9 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">

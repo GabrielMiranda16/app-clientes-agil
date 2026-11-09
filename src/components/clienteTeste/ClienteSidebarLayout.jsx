@@ -205,7 +205,7 @@ const ClienteSidebarLayout = ({ children }) => {
           }`}>
             <Icon className="h-5 w-5" />
           </span>
-          <span className={`ml-3 text-sm font-medium whitespace-nowrap transition-colors ${isActive ? 'text-[#003580]' : 'text-gray-600'}`}>
+          <span className={`ml-3 text-sm font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-150 group-hover:delay-100 ${isActive ? 'text-[#003580]' : 'text-gray-600'}`}>
             {label}
           </span>
         </>
@@ -223,7 +223,7 @@ const ClienteSidebarLayout = ({ children }) => {
       <span className="flex items-center justify-center w-11 h-11 rounded-xl flex-shrink-0">
         <Icon className="h-5 w-5" />
       </span>
-      <span className="ml-3 text-sm font-medium whitespace-nowrap">{label}</span>
+      <span className="ml-3 text-sm font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-150 group-hover:delay-100">{label}</span>
     </button>
   );
 
@@ -246,8 +246,15 @@ const ClienteSidebarLayout = ({ children }) => {
     <div className="min-h-screen flex bg-[#F7F8FA]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
       {/* Sidebar — desktop: rail estreito que expande no hover, mostrando os nomes */}
       <aside className="group hidden sm:flex fixed inset-y-0 left-0 z-40 w-20 hover:w-60 flex-col items-start bg-white border-r border-gray-100 py-6 overflow-hidden transition-[width] duration-200 ease-out shadow-none hover:shadow-xl">
-        <div className="mb-8 flex-shrink-0 px-[18px] flex items-center justify-center w-11 h-11">
-          <span className="text-xl font-extrabold text-[#003580]">Á</span>
+        <div className="relative mb-8 flex-shrink-0 w-full h-11">
+          {/* Colapsado: "Á" centralizado no rail estreito */}
+          <span className="absolute inset-0 flex items-center justify-center text-xl font-extrabold text-[#003580] opacity-100 group-hover:opacity-0 transition-opacity duration-100">
+            Á
+          </span>
+          {/* Expandido (hover): logo completo */}
+          <div className="absolute inset-0 flex items-center pl-[18px] opacity-0 group-hover:opacity-100 transition-opacity duration-150 group-hover:delay-100">
+            <img src="/logo.png" alt="Ágil Seguros" className="h-8 w-auto object-contain" />
+          </div>
         </div>
 
         <nav className="flex-1 flex flex-col gap-1 w-full">
