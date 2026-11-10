@@ -61,28 +61,55 @@ const BeneficiarioExpandableRow = ({ beneficiario: b }) => {
             transition={{ duration: 0.2, ease: 'easeInOut' }}
             className="overflow-hidden bg-white"
           >
-            <div className="px-5 py-5 space-y-3">
-              {PLANOS.map(({ key, label }) => {
-                const ativo = !!b[`${key}_ativo`];
-                return (
-                  <div key={key} className="bg-gray-50 rounded-lg px-4 py-3">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-gray-900 text-sm w-14 flex-shrink-0">{label}</span>
-                      <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${ativo ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
-                        {ativo ? 'Ativo' : 'Inativo'}
-                      </span>
-                    </div>
-                    {ativo && (
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-3">
-                        <Campo label="Nome do Plano" value={b[`${key}_plano_nome`]} />
-                        <Campo label="Número Carteirinha" value={b[`${key}_numero_carteirinha`]} />
-                        <Campo label="Data Inclusão" value={formatDate(b[`${key}_data_inclusao`])} />
-                        <Campo label="Data Exclusão" value={b[`${key}_data_exclusao`] ? formatDate(b[`${key}_data_exclusao`]) : null} />
+            <div className="px-5 py-5 space-y-5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <Campo label="Nome da Mãe" value={b.nome_mae} />
+                <Campo label="Celular" value={b.celular} />
+                <Campo label="E-mail" value={b.email_beneficiario} />
+                <Campo label="Matrícula" value={b.matricula_empresa} />
+                <Campo label="Data de Admissão" value={formatDate(b.data_admissao)} />
+                <Campo label="Data de Nascimento" value={formatDate(b.data_nascimento)} />
+                <Campo label="Situação" value={b.situacao} />
+                <Campo
+                  label="Endereço"
+                  value={[b.rua, b.numero && `nº ${b.numero}`, b.complemento, b.bairro, b.cidade && b.estado ? `${b.cidade}/${b.estado}` : b.cidade, b.cep && `CEP ${b.cep}`].filter(Boolean).join(', ') || null}
+                />
+              </div>
+
+              <div className="space-y-3">
+                {PLANOS.map(({ key, label }) => {
+                  const ativo = !!b[`${key}_ativo`];
+                  const linkCarteirinha = b[`${key}_link_carteirinha`];
+                  return (
+                    <div key={key} className="bg-gray-50 rounded-lg px-4 py-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-gray-900 text-sm w-14 flex-shrink-0">{label}</span>
+                        <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${ativo ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
+                          {ativo ? 'Ativo' : 'Inativo'}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                      {ativo && (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-3">
+                          <Campo label="Nome do Plano" value={b[`${key}_plano_nome`]} />
+                          <Campo label="Número Carteirinha" value={b[`${key}_numero_carteirinha`]} />
+                          <div>
+                            <p className="text-[11px] text-gray-400 uppercase tracking-wide font-semibold">Link Carteirinha</p>
+                            {linkCarteirinha ? (
+                              <a href={linkCarteirinha} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-[#003580] underline">abrir</a>
+                            ) : (
+                              <p className="text-sm font-semibold text-gray-400">—</p>
+                            )}
+                          </div>
+                          <Campo label="Data Inclusão" value={formatDate(b[`${key}_data_inclusao`])} />
+                          <Campo label="Data Exclusão" value={b[`${key}_data_exclusao`] ? formatDate(b[`${key}_data_exclusao`]) : null} />
+                          <Campo label="Código da Empresa" value={b[`${key}_codigo_empresa`]} />
+                          <Campo label="Produto" value={b[`${key}_produto`]} />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </motion.div>
         )}

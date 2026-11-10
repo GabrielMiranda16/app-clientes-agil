@@ -7,8 +7,9 @@ import { apolicesService, SEGMENTOS } from '@/services/apolicesService';
 import { beneficiariosService } from '@/services/beneficiariosService';
 import { supabaseClient } from '@/lib/supabase';
 import { SEGURADORAS } from '@/data/seguradoras';
+import { applyCpfMask, applyPhoneMask } from '@/lib/masks';
 import {
-  ArrowLeft, Loader2, FileText, Plus, Pencil, Check, X, ArrowRight, Building2, Users,
+  ArrowLeft, Loader2, FileText, Plus, Pencil, Check, X, ArrowRight, Building2, Users, UserPlus,
   Search, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import ClienteSidebarLayout from '@/components/clienteTeste/ClienteSidebarLayout';
@@ -21,6 +22,11 @@ import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/components/ui/use-toast';
+
+const EMPTY_BEN_FORM = { nome_completo: '', cpf: '', parentesco: 'TITULAR', data_nascimento: '', celular: '', email_beneficiario: '' };
 
 const QTD_SLOTS = 6;
 const ITENS_POR_PAGINA_OPCOES = [5, 10, 15, 25];
@@ -38,6 +44,7 @@ const SelectApoliceTestePage = () => {
   const { user } = useAuth();
   const { selectedCompanyId, isViewingAsClient } = useCompany();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [apolices, setApolices] = useState([]);
   const [empresaId, setEmpresaId] = useState(null);
@@ -52,6 +59,9 @@ const SelectApoliceTestePage = () => {
   const [buscaBen, setBuscaBen] = useState('');
   const [itensPorPaginaBen, setItensPorPaginaBen] = useState(10);
   const [paginaBen, setPaginaBen] = useState(1);
+  const [isAddBenOpen, setIsAddBenOpen] = useState(false);
+  const [addBenForm, setAddBenForm] = useState(EMPTY_BEN_FORM);
+  const [isSavingBen, setIsSavingBen] = useState(false);
 
   const segConfig = SEGMENTOS[segmento] || SEGMENTOS[segmento?.toUpperCase()] || Object.values(SEGMENTOS).find(s => s.slug === segmento);
   const isSVD = segmento?.toLowerCase().replace(/_/g, '-') === 'saude-vida-odonto';
@@ -140,6 +150,25 @@ const SelectApoliceTestePage = () => {
     const next = [...atalhos];
     next[slot] = null;
     salvarAtalhos(next);
+  };
+
+  const handleCriarBeneficiario = async () => {
+    if (!addBenForm.nome_completo || !addBenForm.cpf) {
+      toast({ variant: 'destructive', title: 'Preencha nome e CPF.' });
+      return;
+    }
+    setIsSavingBen(true);
+    try {
+      const created = await beneficiariosService.createBeneficiario({ ...addBenForm, empresa_id: empresaId });
+      setBeneficiarios((prev) => [created, ...prev]);
+      toast({ title: 'Beneficiário adicionado.' });
+      setIsAddBenOpen(false);
+      setAddBenForm(EMPTY_BEN_FORM);
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro ao adicionar', description: err.message });
+    } finally {
+      setIsSavingBen(false);
+    }
   };
 
   const handleAcessarAtalho = (slot) => {
@@ -363,7 +392,15 @@ const SelectApoliceTestePage = () => {
 
           {isSVD && (
             <div className="pt-2">
-              <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Vidas</h2>
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="text-2xl font-bold tracking-tight text-gray-900">Vidas</h2>
+                <button
+                  onClick={() => { setAddBenForm(EMPTY_BEN_FORM); setIsAddBenOpen(true); }}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#003580] transition-colors"
+                >
+                  <UserPlus className="w-3.5 h-3.5" /> Adicionar beneficiário
+                </button>
+              </div>
               <p className="text-gray-400 text-sm mb-5">Todas as pessoas vinculadas aos seus seguros abaixo.</p>
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
@@ -474,6 +511,58 @@ const SelectApoliceTestePage = () => {
               <Button variant="outline" onClick={() => setEditandoSlot(null)}>Cancelar</Button>
               <Button className="bg-[#003580] hover:bg-[#002060]" disabled={!selecaoModal} onClick={handleSalvarAtalho}>Salvar</Button>
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isAddBenOpen} onOpenChange={setIsAddBenOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adicionar beneficiário</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Nome Completo *</Label>
+              <Input value={addBenForm.nome_completo} onChange={(e) => setAddBenForm((f) => ({ ...f, nome_completo: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">CPF *</Label>
+                <Input value={addBenForm.cpf} onChange={(e) => setAddBenForm((f) => ({ ...f, cpf: applyCpfMask(e.target.value) }))} />
+              </div>
+              <div>
+                <Label className="text-xs">Parentesco</Label>
+                <Select value={addBenForm.parentesco} onValueChange={(v) => setAddBenForm((f) => ({ ...f, parentesco: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="TITULAR">Titular</SelectItem>
+                    <SelectItem value="CONJUGE">Cônjuge</SelectItem>
+                    <SelectItem value="FILHO">Filho(a)</SelectItem>
+                    <SelectItem value="OUTRO">Outro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Data de Nascimento</Label>
+                <Input type="date" value={addBenForm.data_nascimento} onChange={(e) => setAddBenForm((f) => ({ ...f, data_nascimento: e.target.value }))} />
+              </div>
+              <div>
+                <Label className="text-xs">Celular</Label>
+                <Input value={addBenForm.celular} onChange={(e) => setAddBenForm((f) => ({ ...f, celular: applyPhoneMask(e.target.value) }))} />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">E-mail</Label>
+              <Input type="email" value={addBenForm.email_beneficiario} onChange={(e) => setAddBenForm((f) => ({ ...f, email_beneficiario: e.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddBenOpen(false)}>Cancelar</Button>
+            <Button className="bg-[#003580] hover:bg-[#002060]" disabled={isSavingBen} onClick={handleCriarBeneficiario}>
+              {isSavingBen ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null} Salvar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
