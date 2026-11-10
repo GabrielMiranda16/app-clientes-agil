@@ -72,6 +72,12 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride })
   // combinado inteiro (ex: lista "Apólices" da home, sem flatten).
   const subsParaDetalhar = !displayOverride && isSVD ? subs : null;
   const formatMoney = (v) => v ? `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : null;
+  // Apólice pode ser da matriz ou de uma filial do grupo — deixa isso visível em toda linha.
+  const empresaLabel = apolice.empresa
+    ? `${apolice.empresa.tipo === 'MATRIZ' ? '⭐ ' : ''}${apolice.empresa.nome_fantasia || apolice.empresa.razao_social}`
+    : null;
+  const segOuTipoLabel = (showSegmento || displayOverride?.tipoLabel) ? segLabel : null;
+  const subtitulo = [segOuTipoLabel, empresaLabel].filter(Boolean).join(' · ');
 
   // Boletos só existem pra Saúde/Vida/Odonto — busca só quando expande, e só
   // uma vez (boletos continua null até o primeiro fetch terminar).
@@ -127,7 +133,7 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride })
           </span>
           <span className="min-w-0">
             <span className="block font-bold text-gray-900 text-sm truncate">{displaySeguradora}</span>
-            {(showSegmento || displayOverride?.tipoLabel) && <span className="block text-xs text-gray-400 truncate">{segLabel}</span>}
+            {subtitulo && <span className="block text-xs text-gray-400 truncate">{subtitulo}</span>}
           </span>
         </span>
         <span className="hidden sm:block text-sm text-gray-600">{formatDate(apolice.vigencia_inicio)}</span>
@@ -154,6 +160,7 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride })
                   </span>
                 </div>
                 <Campo label="Segmento" value={segLabel} />
+                <Campo label="Empresa" value={empresaLabel} />
                 {(!isSVD || displayOverride) && (
                   <>
                     <Campo label="Número da Apólice" value={displayNumero} />

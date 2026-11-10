@@ -57,6 +57,11 @@ const descricaoApolice = (apolice) => {
   return apolice.numero_apolice || '—';
 };
 
+// Apólice pode ser da matriz ou de uma filial do grupo — deixa isso visível.
+const empresaLabelDe = (apolice) => apolice.empresa
+  ? `${apolice.empresa.tipo === 'MATRIZ' ? '⭐ ' : ''}${apolice.empresa.nome_fantasia || apolice.empresa.razao_social}`
+  : null;
+
 const SelectApoliceTestePage = () => {
   const { segmento } = useParams();
   const { user } = useAuth();
@@ -102,12 +107,14 @@ const SelectApoliceTestePage = () => {
       .finally(() => setLoading(false));
 
     if (isSVD) {
-      supabaseClient.from('empresas').select('id').eq('empresa_matriz_id', id)
-        .then(({ data: filiais }) => {
-          const grupoIds = [id, ...(filiais || []).map(f => f.id)];
-          return Promise.all(grupoIds.map(gid => beneficiariosService.getBeneficiariosByEmpresa(gid).catch(() => [])));
+      supabaseClient.from('empresas').select('id, nome_fantasia, razao_social, tipo').or(`id.eq.${id},empresa_matriz_id.eq.${id}`)
+        .then(({ data: empresasDoGrupo }) => {
+          const empresaMap = Object.fromEntries((empresasDoGrupo || []).map(e => [e.id, e]));
+          const grupoIds = (empresasDoGrupo || []).map(e => e.id);
+          return Promise.all(grupoIds.map(gid => beneficiariosService.getBeneficiariosByEmpresa(gid).catch(() => [])))
+            .then((listas) => listas.flat().map(b => ({ ...b, empresa: empresaMap[b.empresa_id] || null })));
         })
-        .then((listas) => setBeneficiarios(listas.flat().filter(b => !b.data_exclusao)))
+        .then((flat) => setBeneficiarios(flat.filter(b => !b.data_exclusao)))
         .catch(console.error);
     }
   }, [user, segmento, selectedCompanyId, isViewingAsClient, isSVD]);
@@ -321,7 +328,7 @@ const SelectApoliceTestePage = () => {
                   if (linha) {
                     const apolice = linha.apolice;
                     const seguradora = linha.displayOverride?.seguradora || apolice.seguradora;
-                    const descricao = linha.displayOverride?.tipoLabel || descricaoApolice(apolice);
+                    const descricao = [linha.displayOverride?.tipoLabel || descricaoApolice(apolice), empresaLabelDe(apolice)].filter(Boolean).join(' · ');
                     const logo = logoDaSeguradora(seguradora);
                     return (
                       <div key={slot} className="relative">
@@ -610,6 +617,7 @@ const SelectApoliceTestePage = () => {
               {linhasTabela.map((linha) => (
                 <SelectItem key={linha.key} value={linha.key}>
                   {(linha.displayOverride?.seguradora || linha.apolice.seguradora)} · {(linha.displayOverride?.tipoLabel || descricaoApolice(linha.apolice))} · {(linha.displayOverride?.numero || linha.apolice.numero_apolice || '—')}
+                  {empresaLabelDe(linha.apolice) ? ` · ${empresaLabelDe(linha.apolice)}` : ''}
                 </SelectItem>
               ))}
             </SelectContent>

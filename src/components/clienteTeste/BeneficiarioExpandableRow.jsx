@@ -38,6 +38,10 @@ const Campo = ({ label, value }) => (
 const BeneficiarioExpandableRow = ({ beneficiario: b }) => {
   const [expanded, setExpanded] = useState(false);
   const idade = calcularIdade(b.data_nascimento);
+  // Beneficiário pode ser da matriz ou de uma filial do grupo — deixa isso visível.
+  const empresaLabel = b.empresa
+    ? `${b.empresa.tipo === 'MATRIZ' ? '⭐ ' : ''}${b.empresa.nome_fantasia || b.empresa.razao_social}`
+    : null;
 
   return (
     <div className="border-t border-gray-100 first:border-t-0">
@@ -45,7 +49,10 @@ const BeneficiarioExpandableRow = ({ beneficiario: b }) => {
         onClick={() => setExpanded((v) => !v)}
         className="w-full grid grid-cols-[1fr_auto_auto] sm:grid-cols-[1.6fr_1fr_1fr_1fr_40px] gap-4 items-center px-5 py-4 bg-white transition-colors text-left"
       >
-        <span className="font-bold text-gray-900 text-sm truncate">{b.nome_completo}</span>
+        <span className="min-w-0">
+          <span className="block font-bold text-gray-900 text-sm truncate">{b.nome_completo}</span>
+          {empresaLabel && <span className="block text-[11px] text-gray-400 truncate">{empresaLabel}</span>}
+        </span>
         <span className="hidden sm:block text-sm text-gray-900">{b.cpf ? formatCpfCnpj(b.cpf) : '—'}</span>
         <span className="hidden sm:block text-sm text-gray-900 capitalize">{(b.parentesco || '—').toLowerCase()}</span>
         <span className="text-sm text-gray-900">{idade !== null ? `${idade} anos` : '—'}</span>
@@ -63,6 +70,7 @@ const BeneficiarioExpandableRow = ({ beneficiario: b }) => {
           >
             <div className="px-5 py-5 space-y-5">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <Campo label="Empresa" value={empresaLabel} />
                 <Campo label="Nome da Mãe" value={b.nome_mae} />
                 <Campo label="Celular" value={b.celular} />
                 <Campo label="E-mail" value={b.email_beneficiario} />
