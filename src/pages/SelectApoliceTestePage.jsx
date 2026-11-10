@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 
-const QTD_SLOTS = 3;
+const QTD_SLOTS = 6;
 const ITENS_POR_PAGINA_OPCOES = [5, 10, 15, 25];
 
 const logoDaSeguradora = (nome) => SEGURADORAS.find(s => s.nome === nome)?.logo;
@@ -79,40 +79,14 @@ const SelectApoliceTestePage = () => {
     try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* ignora */ }
   };
 
-  const abrirPicker = (slot) => {
-    setSelecaoModal(atalhos[slot] ? String(atalhos[slot]) : '');
-    setEditandoSlot(slot);
-  };
-
-  const handleSalvarAtalho = () => {
-    if (!selecaoModal) return;
-    const next = [...atalhos];
-    next[editandoSlot] = Number(selecaoModal);
-    salvarAtalhos(next);
-    setEditandoSlot(null);
-  };
-
-  const handleRemoverAtalho = (slot) => {
-    const next = [...atalhos];
-    next[slot] = null;
-    salvarAtalhos(next);
-  };
-
-  const handleAcessarAtalho = (slot) => {
-    const apolice = apolices.find(ap => ap.id === atalhos[slot]);
-    if (!apolice) return;
-    navigate(`/cliente/${empresaId}`, {
-      state: { from: 'apolice', apoliceId: apolice.id, segmento: apolice.segmento, segLabel: 'Saúde, Vida e Odonto', apoliceNum: apolice.numero_apolice },
-    });
-  };
-
   // Uma apólice de saúde/vida/odonto pode agrupar vários sub-tipos (sub_apolices)
-  // com seguradora/número próprios — flatten pra lista exibir uma linha por sub-tipo.
+  // com seguradora/número próprios — flatten pra lista exibir/selecionar uma linha
+  // por sub-tipo (cada sub-apólice conta como uma apólice selecionável à parte).
   const linhasTabela = useMemo(() => {
-    if (!isSVD) return apolices.map(ap => ({ key: ap.id, apolice: ap }));
+    if (!isSVD) return apolices.map(ap => ({ key: String(ap.id), apolice: ap }));
     return apolices.flatMap((ap) => {
       const subs = (ap.dados_adicionais?.sub_apolices || []).filter(s => s.tipo || s.numero);
-      if (subs.length === 0) return [{ key: ap.id, apolice: ap }];
+      if (subs.length === 0) return [{ key: String(ap.id), apolice: ap }];
       return subs.map((sub, i) => ({
         key: `${ap.id}-${i}`,
         apolice: ap,
@@ -124,6 +98,38 @@ const SelectApoliceTestePage = () => {
       }));
     });
   }, [apolices, isSVD]);
+
+  const linhasPorKey = useMemo(
+    () => Object.fromEntries(linhasTabela.map((linha) => [linha.key, linha])),
+    [linhasTabela]
+  );
+
+  const abrirPicker = (slot) => {
+    setSelecaoModal(atalhos[slot] || '');
+    setEditandoSlot(slot);
+  };
+
+  const handleSalvarAtalho = () => {
+    if (!selecaoModal) return;
+    const next = [...atalhos];
+    next[editandoSlot] = selecaoModal;
+    salvarAtalhos(next);
+    setEditandoSlot(null);
+  };
+
+  const handleRemoverAtalho = (slot) => {
+    const next = [...atalhos];
+    next[slot] = null;
+    salvarAtalhos(next);
+  };
+
+  const handleAcessarAtalho = (slot) => {
+    const linha = linhasPorKey[atalhos[slot]];
+    if (!linha) return;
+    navigate(`/cliente/${empresaId}`, {
+      state: { from: 'apolice', apoliceId: linha.apolice.id, segmento: linha.apolice.segmento, segLabel: linha.displayOverride?.tipoLabel || 'Saúde, Vida e Odonto', apoliceNum: linha.displayOverride?.numero || linha.apolice.numero_apolice },
+    });
+  };
 
   const linhasFiltradas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
@@ -182,12 +188,15 @@ const SelectApoliceTestePage = () => {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {Array.from({ length: QTD_SLOTS }).map((_, slot) => {
-                  const apolice = atalhos[slot] ? apolices.find(ap => ap.id === atalhos[slot]) : null;
+                  const linha = atalhos[slot] ? linhasPorKey[atalhos[slot]] : null;
 
-                  if (apolice) {
-                    const logo = logoDaSeguradora(apolice.seguradora);
+                  if (linha) {
+                    const apolice = linha.apolice;
+                    const seguradora = linha.displayOverride?.seguradora || apolice.seguradora;
+                    const descricao = linha.displayOverride?.tipoLabel || descricaoApolice(apolice);
+                    const logo = logoDaSeguradora(seguradora);
                     return (
                       <div key={slot} className="relative">
                         {modoEdicao && (
@@ -200,18 +209,18 @@ const SelectApoliceTestePage = () => {
                         )}
                         <button
                           onClick={() => (modoEdicao ? abrirPicker(slot) : handleAcessarAtalho(slot))}
-                          className="group w-full flex items-center gap-3 bg-white border border-transparent hover:border-[#003580] rounded-2xl px-4 py-3.5 text-left transition-colors"
+                          className="group w-full flex items-center gap-3 bg-white border border-gray-100 hover:border-[#003580] rounded-2xl px-4 py-2.5 text-left transition-colors"
                         >
                           <span className="w-10 h-10 rounded-full bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
-                            {logo ? <img src={logo} alt={apolice.seguradora} className="w-full h-full object-contain p-1.5" /> : <Building2 className="w-4 h-4 text-gray-400" />}
+                            {logo ? <img src={logo} alt={seguradora} className="w-full h-full object-contain p-1.5" /> : <Building2 className="w-4 h-4 text-gray-400" />}
                           </span>
                           <span className="min-w-0 flex-1">
-                            <span className="block font-bold text-gray-900 text-sm truncate">{apolice.seguradora}</span>
-                            <span className="block text-xs text-gray-400 truncate">{descricaoApolice(apolice)}</span>
+                            <span className="block font-bold text-gray-900 text-sm truncate">{seguradora}</span>
+                            <span className="block text-xs text-gray-400 truncate">{descricao}</span>
                           </span>
                           {!modoEdicao && (
-                            <span className="w-8 h-8 rounded-full bg-gray-100 group-hover:bg-[#003580] flex items-center justify-center flex-shrink-0 transition-colors">
-                              <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-white transition-colors" />
+                            <span className="w-8 h-8 rounded-full group-hover:bg-[#003580] flex items-center justify-center flex-shrink-0 transition-colors">
+                              <ArrowRight className="w-4 h-4 text-gray-900 group-hover:text-white transition-colors" />
                             </span>
                           )}
                         </button>
@@ -223,10 +232,10 @@ const SelectApoliceTestePage = () => {
                     <button
                       key={slot}
                       onClick={() => abrirPicker(slot)}
-                      className="flex items-center gap-3 bg-white border border-transparent hover:border-[#003580] rounded-2xl px-4 py-3.5 text-left transition-colors"
+                      className="group flex items-center gap-3 bg-white border border-gray-100 hover:border-[#003580] rounded-2xl px-4 py-2.5 text-left transition-colors"
                     >
                       <span className="w-10 h-10 rounded-full bg-white flex items-center justify-center flex-shrink-0">
-                        <Plus className="w-4 h-4 text-gray-400" />
+                        <Plus className="w-4 h-4 text-gray-400 group-hover:text-[#003580] transition-colors" />
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block font-bold text-gray-900 text-sm">Adicione uma apólice</span>
@@ -330,9 +339,9 @@ const SelectApoliceTestePage = () => {
               <SelectValue placeholder="Selecione uma apólice" />
             </SelectTrigger>
             <SelectContent>
-              {apolices.map((ap) => (
-                <SelectItem key={ap.id} value={String(ap.id)}>
-                  {ap.seguradora} · {descricaoApolice(ap)}
+              {linhasTabela.map((linha) => (
+                <SelectItem key={linha.key} value={linha.key}>
+                  {(linha.displayOverride?.seguradora || linha.apolice.seguradora)} · {(linha.displayOverride?.tipoLabel || descricaoApolice(linha.apolice))} · {(linha.displayOverride?.numero || linha.apolice.numero_apolice || '—')}
                 </SelectItem>
               ))}
             </SelectContent>
