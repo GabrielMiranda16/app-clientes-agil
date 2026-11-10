@@ -6,7 +6,6 @@ import { useCompany } from '@/contexts/CompanyContext';
 import { apolicesService, SEGMENTOS } from '@/services/apolicesService';
 import { beneficiariosService } from '@/services/beneficiariosService';
 import { supabaseClient } from '@/lib/supabase';
-import { formatCpfCnpj } from '@/lib/masks';
 import { motion } from 'framer-motion';
 import {
   Building2, Loader2, Users,
@@ -14,13 +13,8 @@ import {
 } from 'lucide-react';
 import ClienteSidebarLayout from '@/components/clienteTeste/ClienteSidebarLayout';
 import ApoliceExpandableRow from '@/components/clienteTeste/ApoliceExpandableRow';
+import BeneficiarioExpandableRow from '@/components/clienteTeste/BeneficiarioExpandableRow';
 import { SEGMENTO_CONFIG, SEGMENTOS_IMPORTANTES } from '@/components/clienteTeste/segmentoConfig';
-
-const PLANO_CHIPS = [
-  { key: 'saude_ativo',  label: 'Saúde'  },
-  { key: 'odonto_ativo', label: 'Odonto' },
-  { key: 'vida_ativo',   label: 'Vida'   },
-];
 
 const ITENS_POR_PAGINA_OPCOES = [5, 10, 15, 25];
 
@@ -38,6 +32,10 @@ const SelectSegmentoTestePage = () => {
   const [busca, setBusca] = useState('');
   const [itensPorPagina, setItensPorPagina] = useState(5);
   const [pagina, setPagina] = useState(1);
+
+  const [buscaBen, setBuscaBen] = useState('');
+  const [itensPorPaginaBen, setItensPorPaginaBen] = useState(10);
+  const [paginaBen, setPaginaBen] = useState(1);
 
   useEffect(() => {
     if (!user) return;
@@ -143,6 +141,22 @@ const SelectSegmentoTestePage = () => {
   const linhasPagina = linhasFiltradas.slice(
     (paginaAtual - 1) * itensPorPagina,
     paginaAtual * itensPorPagina
+  );
+
+  const beneficiariosFiltrados = useMemo(() => {
+    const termo = buscaBen.trim().toLowerCase();
+    if (!termo) return beneficiarios;
+    return beneficiarios.filter((b) =>
+      b.nome_completo?.toLowerCase().includes(termo) ||
+      b.cpf?.toLowerCase().includes(termo)
+    );
+  }, [beneficiarios, buscaBen]);
+
+  const totalPaginasBen = Math.max(1, Math.ceil(beneficiariosFiltrados.length / itensPorPaginaBen));
+  const paginaAtualBen = Math.min(paginaBen, totalPaginasBen);
+  const beneficiariosPagina = beneficiariosFiltrados.slice(
+    (paginaAtualBen - 1) * itensPorPaginaBen,
+    paginaAtualBen * itensPorPaginaBen
   );
 
   const primeiroNome = (empresa?.razao_social || '').trim().split(' ')[0] || '';
@@ -336,32 +350,76 @@ const SelectSegmentoTestePage = () => {
           {/* Vidas — beneficiários da empresa (matriz + filiais) */}
           <div className="pt-2">
             <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Vidas</h2>
-            <p className="text-gray-400 text-sm mb-5">{beneficiarios.length} {beneficiarios.length === 1 ? 'pessoa vinculada' : 'pessoas vinculadas'} aos seus seguros.</p>
+            <p className="text-gray-400 text-sm mb-5">Todas as pessoas vinculadas aos seus seguros abaixo.</p>
 
-            <div className="bg-white rounded-2xl overflow-hidden">
-              <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[1.6fr_1fr_1fr] gap-4 px-5 py-3 bg-white text-xs font-bold text-gray-500 uppercase tracking-wide">
-                <span>Nome</span>
-                <span className="hidden sm:block">CPF</span>
-                <span>Planos</span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    value={buscaBen}
+                    onChange={(e) => { setBuscaBen(e.target.value); setPaginaBen(1); }}
+                    placeholder="Buscar por Nome/CPF"
+                    className="pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-[#003580]/20 focus:border-[#003580]"
+                  />
+                </div>
+                <button
+                  title="Em breve"
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 bg-white"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5" /> Filtros <ChevronDown className="w-3.5 h-3.5" />
+                </button>
               </div>
 
-              {beneficiarios.length === 0 ? (
+              <div className="flex items-center gap-3 text-sm text-gray-500">
+                <span className="hidden sm:inline">Itens por página</span>
+                <div className="relative">
+                  <select
+                    value={itensPorPaginaBen}
+                    onChange={(e) => { setItensPorPaginaBen(Number(e.target.value)); setPaginaBen(1); }}
+                    className="appearance-none pl-3 pr-7 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-900 bg-white focus:outline-none"
+                  >
+                    {ITENS_POR_PAGINA_OPCOES.map((n) => (
+                      <option key={n} value={n}>{String(n).padStart(2, '0')}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                </div>
+                <span>{paginaAtualBen} de {totalPaginasBen}</span>
+                <button
+                  onClick={() => setPaginaBen((p) => Math.max(1, p - 1))}
+                  disabled={paginaAtualBen <= 1}
+                  className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white disabled:opacity-40"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setPaginaBen((p) => Math.min(totalPaginasBen, p + 1))}
+                  disabled={paginaAtualBen >= totalPaginasBen}
+                  className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white disabled:opacity-40"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl overflow-hidden">
+              <div className="hidden sm:grid grid-cols-[1.6fr_1fr_1fr_1fr_40px] gap-4 px-5 py-3 bg-white text-xs font-bold text-gray-500 uppercase tracking-wide">
+                <span>Nome</span>
+                <span>CPF</span>
+                <span>Parentesco</span>
+                <span>Idade</span>
+                <span></span>
+              </div>
+
+              {beneficiariosPagina.length === 0 ? (
                 <div className="px-5 py-10 text-center text-sm text-gray-400 flex flex-col items-center gap-2">
                   <Users className="w-8 h-8 text-gray-300" />
-                  Nenhuma vida vinculada.
+                  Nenhuma vida encontrada.
                 </div>
               ) : (
-                beneficiarios.map((b) => (
-                  <div key={b.id} className="grid grid-cols-[1fr_auto] sm:grid-cols-[1.6fr_1fr_1fr] gap-4 items-center px-5 py-4 border-t border-gray-100">
-                    <span className="font-bold text-gray-900 text-sm truncate">{b.nome_completo}</span>
-                    <span className="hidden sm:block text-sm text-gray-900">{b.cpf ? formatCpfCnpj(b.cpf) : '—'}</span>
-                    <span className="flex flex-wrap gap-1.5">
-                      {PLANO_CHIPS.filter(p => b[p.key]).map(p => (
-                        <span key={p.key} className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700">{p.label}</span>
-                      ))}
-                      {PLANO_CHIPS.every(p => !b[p.key]) && <span className="text-xs text-gray-400">—</span>}
-                    </span>
-                  </div>
+                beneficiariosPagina.map((b) => (
+                  <BeneficiarioExpandableRow key={b.id} beneficiario={b} />
                 ))
               )}
             </div>
