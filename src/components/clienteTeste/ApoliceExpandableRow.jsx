@@ -63,6 +63,14 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride })
   const segLabel = displayOverride?.tipoLabel || SEGMENTO_CONFIG[apolice.segmento]?.label || apolice.segmento;
   const subs = apolice.dados_adicionais?.sub_apolices?.filter(s => s.tipo || s.numero);
   const dados = apolice.dados_adicionais || {};
+  const premio = displayOverride ? displayOverride.valorPremio : apolice.valor_premio;
+  const contratoUrl = displayOverride ? displayOverride.contratoUrl : apolice.contrato_url;
+  // Quando a linha já representa uma sub-apólice específica (displayOverride) ou
+  // o segmento não é SVD, trata como uma única apólice (1 número/seguradora/prêmio).
+  // Só mostra o detalhamento por sub-tipo quando a linha representa o registro
+  // combinado inteiro (ex: lista "Apólices" da home, sem flatten).
+  const subsParaDetalhar = !displayOverride && isSVD ? subs : null;
+  const formatMoney = (v) => v ? `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : null;
 
   // Boletos só existem pra Saúde/Vida/Odonto — busca só quando expande, e só
   // uma vez (boletos continua null até o primeiro fetch terminar).
@@ -87,12 +95,12 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride })
     }).finally(() => setBaixandoBoletoId(null));
   };
 
-  const handleBaixarContrato = () => {
-    if (!apolice.contrato_url) return;
+  const handleBaixarContrato = (url = contratoUrl) => {
+    if (!url) return;
     setBaixando(true);
     const win = window.open('', '_blank', 'noopener,noreferrer');
-    apolicesService.getContratoSignedUrl(apolice.contrato_url).then((url) => {
-      if (url && win) win.location.href = url;
+    apolicesService.getContratoSignedUrl(url).then((signedUrl) => {
+      if (signedUrl && win) win.location.href = signedUrl;
       else {
         win?.close();
         toast({ variant: 'destructive', title: 'Erro ao abrir contrato.' });
@@ -136,43 +144,48 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride })
             className="overflow-hidden bg-white"
           >
             <div className="px-5 py-5 space-y-5">
-              {/* Status + vigência */}
-              <div className="flex flex-wrap items-center gap-3">
-                <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${style.chip}`}>
-                  {isSVDSemVigencia ? 'Ativa' : style.label}
-                </span>
-                {isSVDSemVigencia ? (
-                  <span className="text-xs text-emerald-600 font-medium">Plano contínuo</span>
-                ) : (
-                  <span className="text-xs text-gray-500">
-                    {formatDate(apolice.vigencia_inicio)} → {formatDate(apolice.vigencia_fim)}
-                    {status.dias !== undefined && status.color !== 'green' && (
-                      <span className="ml-1 font-medium" style={{ color: status.color === 'red' ? '#dc2626' : '#d97706' }}>
-                        · {status.color === 'red' ? `venceu há ${Math.abs(status.dias)} dias` : `vence em ${status.dias} dias`}
-                      </span>
-                    )}
-                  </span>
-                )}
-              </div>
-
-              {/* Campos gerais */}
+              {/* Status, Segmento, Número, Seguradora */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <Campo label="Seguradora" value={displaySeguradora} />
-                {!isSVD && <Campo label="Valor do Prêmio" value={apolice.valor_premio ? `R$ ${Number(apolice.valor_premio).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : null} />}
-                {apolice.descricao && <Campo label="Observações" value={apolice.descricao} />}
+                <div>
+                  <p className="text-[11px] text-gray-400 uppercase tracking-wide font-semibold">Status</p>
+                  <span className={`inline-block mt-0.5 text-[11px] font-semibold px-2.5 py-1 rounded-full ${style.chip}`}>
+                    {isSVDSemVigencia ? 'Ativa' : style.label}
+                  </span>
+                </div>
+                <Campo label="Segmento" value={segLabel} />
+                {(!isSVD || displayOverride) && (
+                  <>
+                    <Campo label="Número da Apólice" value={displayNumero} />
+                    <Campo label="Seguradora" value={displaySeguradora} />
+                  </>
+                )}
+                {(!isSVD || displayOverride) && <Campo label="Prêmio" value={formatMoney(premio)} />}
               </div>
 
-              {/* Sub-apólices (SVD) */}
-              {subs?.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {subs.map((s, i) => (
-                    <div key={i}>
-                      {s.tipo && <p className="text-[11px] text-[#003580] font-bold uppercase tracking-wide">{normalizeTipo(s.tipo)}</p>}
-                      <Campo label="Apólice" value={s.numero} />
+              {/* Detalhamento por sub-tipo — só quando a linha representa o registro combinado inteiro */}
+              {subsParaDetalhar?.length > 0 && (
+                <div className="space-y-2">
+                  {subsParaDetalhar.map((s, i) => (
+                    <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-3 bg-gray-50 rounded-lg">
+                      <Campo label="Tipo" value={normalizeTipo(s.tipo)} />
+                      <Campo label="Número da Apólice" value={s.numero} />
+                      <Campo label="Seguradora" value={s.seguradora} />
+                      <Campo label="Prêmio" value={formatMoney(s.valor_premio)} />
                     </div>
                   ))}
                 </div>
               )}
+
+              {/* Vigência / Data de Inclusão */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <Campo label={isSVDSemVigencia ? 'Data de Inclusão do Plano' : 'Início'} value={formatDate(apolice.vigencia_inicio)} />
+                <Campo label="Término" value={isSVDSemVigencia ? 'Plano contínuo' : formatDate(apolice.vigencia_fim)} />
+                {status.dias !== undefined && !isSVDSemVigencia && (
+                  <Campo label="Dias restantes" value={status.color === 'red' ? `Vencida há ${Math.abs(status.dias)} dias` : `${status.dias} dias`} />
+                )}
+              </div>
+
+              {apolice.descricao && <Campo label="Observações" value={apolice.descricao} />}
 
               {/* Dados específicos por segmento */}
               {apolice.segmento === 'AUTO_FROTA' && (dados.veiculos || []).length > 0 && (
@@ -212,6 +225,50 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride })
                 </div>
               )}
 
+              {/* Contratos */}
+              {subsParaDetalhar?.length > 0 ? (
+                <div>
+                  <p className="text-[11px] text-gray-400 uppercase tracking-wide font-semibold mb-2">Contratos</p>
+                  <div className="space-y-2">
+                    {subsParaDetalhar.map((s, i) => (
+                      <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800">{normalizeTipo(s.tipo) || `Apólice ${i + 1}`}</p>
+                          {s.seguradora && <p className="text-xs text-gray-500">{s.seguradora}</p>}
+                          {s.numero && <p className="text-xs text-gray-400">Nº {s.numero}</p>}
+                        </div>
+                        {s.contrato_url ? (
+                          <button
+                            onClick={() => handleBaixarContrato(s.contrato_url)}
+                            disabled={baixando}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-gray-700 bg-white hover:text-[#003580] transition-colors disabled:opacity-50"
+                          >
+                            {baixando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} PDF
+                          </button>
+                        ) : (
+                          <span className="text-xs text-gray-400">Sem contrato</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-[11px] text-gray-400 uppercase tracking-wide font-semibold mb-2">Contrato</p>
+                  {contratoUrl ? (
+                    <button
+                      onClick={() => handleBaixarContrato()}
+                      disabled={baixando}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-gray-700 bg-white hover:text-[#003580] transition-colors disabled:opacity-50"
+                    >
+                      {baixando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} Baixar Contrato
+                    </button>
+                  ) : (
+                    <p className="text-xs text-gray-400">Nenhum contrato disponível. Entre em contato com o administrador.</p>
+                  )}
+                </div>
+              )}
+
               {/* Boletos — só Saúde/Vida/Odonto */}
               {isSVD && (
                 <div>
@@ -242,19 +299,6 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride })
 
               {/* Ações */}
               <div className="flex flex-wrap items-center gap-2 pt-1">
-                {!isSVD && (
-                  apolice.contrato_url ? (
-                    <button
-                      onClick={handleBaixarContrato}
-                      disabled={baixando}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-gray-700 bg-white hover:text-[#003580] transition-colors disabled:opacity-50"
-                    >
-                      {baixando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} Baixar Contrato
-                    </button>
-                  ) : (
-                    <span className="text-xs text-gray-400">Nenhum contrato disponível. Entre em contato com o administrador.</span>
-                  )
-                )}
                 {isSVD && (
                   <button
                     onClick={handleAcessarGestao}

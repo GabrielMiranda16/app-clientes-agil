@@ -94,6 +94,8 @@ const SelectApoliceTestePage = () => {
           seguradora: sub.seguradora || ap.seguradora,
           numero: sub.numero || ap.numero_apolice,
           tipoLabel: sub.tipo,
+          valorPremio: sub.valor_premio,
+          contratoUrl: sub.contrato_url,
         },
       }));
     });
