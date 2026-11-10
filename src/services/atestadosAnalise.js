@@ -61,33 +61,43 @@ export const marcasDoAtestado = (a) => {
   return marcas;
 };
 
+const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
 export const analisarAtestados = (atestados) => {
   const hoje = new Date();
   const inicioJanela = paraIso(new Date(hoje.getFullYear() - 1, hoje.getMonth(), hoje.getDate()));
-  const afastamentos = atestados.filter((a) => a.tipo !== 'COMPARECIMENTO' && a.data_inicio >= inicioJanela);
-  const nomeDe = (a) => a.beneficiarios?.nome_completo || '—';
+  const recentes = atestados.filter((a) => a.data_inicio >= inicioJanela);
+  const ehAfastamento = (a) => a.tipo !== 'COMPARECIMENTO';
+  const afastamentos = recentes.filter(ehAfastamento);
 
-  const pessoas = new Map();
-  afastamentos.forEach((a) => {
-    const p = pessoas.get(a.beneficiario_id) || { id: a.beneficiario_id, nome: nomeDe(a), itens: [] };
+  const mapa = new Map();
+  recentes.forEach((a) => {
+    const p = mapa.get(a.beneficiario_id) || { id: a.beneficiario_id, nome: a.beneficiarios?.nome_completo || '—', cpf: a.beneficiarios?.cpf, itens: [] };
     p.itens.push(a);
-    pessoas.set(a.beneficiario_id, p);
+    mapa.set(a.beneficiario_id, p);
   });
-
-  const ranking = [...pessoas.values()].map((p) => {
-    const dias = p.itens.reduce((s, a) => s + diasDoAtestado(a), 0);
-    const cids = new Set(p.itens.filter((a) => a.cid).map((a) => a.cid.toUpperCase()));
-    return { id: p.id, nome: p.nome, qtd: p.itens.length, dias, cids, bradford: p.itens.length ** 2 * dias };
-  }).sort((x, y) => y.bradford - x.bradford || y.qtd - x.qtd).slice(0, 10);
 
   const alertas = [];
 
-  pessoas.forEach((p) => {
+  const pessoas = [...mapa.values()].map((p) => {
+    const itens = [...p.itens].sort((x, y) => y.data_inicio.localeCompare(x.data_inicio));
+    const afast = itens.filter(ehAfastamento);
+    const dias = afast.reduce((s, a) => s + diasDoAtestado(a), 0);
+    const cids = new Map();
+    afast.filter((a) => a.cid).forEach((a) => {
+      const cid = a.cid.toUpperCase();
+      const atual = cids.get(cid) || { cid, qtd: 0, dias: 0 };
+      atual.qtd += 1;
+      atual.dias += diasDoAtestado(a);
+      cids.set(cid, atual);
+    });
+    const meus = [];
+
     const porCid = new Map();
-    p.itens.forEach((a) => {
-      const dias = diasDoAtestado(a);
-      if (dias > LIMITE_INSS) {
-        alertas.push({ tipo: 'INSS', chave: `inss-unico-${a.id}`, titulo: `${p.nome}: atestado de ${dias} dias`, detalhe: `Acima de ${LIMITE_INSS} dias a empresa paga só os primeiros ${LIMITE_INSS}. Encaminhar ao INSS.` });
+    afast.forEach((a) => {
+      const d = diasDoAtestado(a);
+      if (d > LIMITE_INSS) {
+        meus.push({ tipo: 'INSS', chave: `inss-unico-${a.id}`, titulo: `Atestado de ${d} dias`, detalhe: `Acima de ${LIMITE_INSS} dias a empresa paga só os primeiros ${LIMITE_INSS}. Encaminhar ao INSS.` });
         return;
       }
       if (!a.cid) return;
@@ -99,20 +109,28 @@ export const analisarAtestados = (atestados) => {
       let maior = 0;
       ordenada.forEach((base, i) => {
         const soma = ordenada.slice(i).filter((a) => diferencaDias(base.data_inicio, a.data_inicio) <= JANELA_INSS)
-          .reduce((s, a) => s + diasDoAtestado(a), 0);
+          .reduce((t, a) => t + diasDoAtestado(a), 0);
         maior = Math.max(maior, soma);
       });
       if (ordenada.length > 1 && maior > LIMITE_INSS) {
-        alertas.push({ tipo: 'INSS', chave: `inss-${p.id}-${cid}`, titulo: `${p.nome}: ${maior} dias pelo CID ${cid} em ${JANELA_INSS} dias`, detalhe: `Atestados pelo mesmo CID em até ${JANELA_INSS} dias são somados. Passou de ${LIMITE_INSS} dias: encaminhar ao INSS.` });
+        meus.push({ tipo: 'INSS', chave: `inss-${p.id}-${cid}`, titulo: `${maior} dias pelo CID ${cid} em ${JANELA_INSS} dias`, detalhe: `Atestados pelo mesmo CID em até ${JANELA_INSS} dias são somados. Passou de ${LIMITE_INSS} dias: encaminhar ao INSS.` });
       }
     });
 
-    const curtos = p.itens.filter((a) => diasDoAtestado(a) <= 2);
+    const curtos = afast.filter((a) => diasDoAtestado(a) <= 2);
     const suspeitos = curtos.filter((a) => coladoEmFeriado(a) || emendaFimDeSemana(a));
     if (curtos.length >= 3 && suspeitos.length / curtos.length >= 0.6) {
-      alertas.push({ tipo: 'PADRAO', chave: `padrao-${p.id}`, titulo: `${p.nome}: ${suspeitos.length} de ${curtos.length} atestados curtos emendam folga`, detalhe: 'Atestados de 1 ou 2 dias colados em fim de semana ou feriado.' });
+      meus.push({ tipo: 'PADRAO', chave: `padrao-${p.id}`, titulo: `${suspeitos.length} de ${curtos.length} atestados curtos emendam folga`, detalhe: 'Atestados de 1 ou 2 dias colados em fim de semana ou feriado.' });
     }
-  });
+
+    meus.forEach((al) => alertas.push({ ...al, pessoaId: p.id, titulo: `${p.nome}: ${al.titulo.charAt(0).toLowerCase()}${al.titulo.slice(1)}` }));
+
+    return {
+      id: p.id, nome: p.nome, cpf: p.cpf, itens,
+      qtd: afast.length, dias, cids: [...cids.values()].sort((x, y) => y.dias - x.dias),
+      bradford: afast.length ** 2 * dias, alertas: meus,
+    };
+  }).sort((x, y) => y.bradford - x.bradford || y.qtd - x.qtd || x.nome.localeCompare(y.nome));
 
   const medicos = new Map();
   afastamentos.filter((a) => a.crm).forEach((a) => {
@@ -131,7 +149,24 @@ export const analisarAtestados = (atestados) => {
   const ordem = { INSS: 0, MEDICO: 1, PADRAO: 2 };
   alertas.sort((x, y) => ordem[x.tipo] - ordem[y.tipo]);
 
-  return { ranking, alertas };
+  const porMes = [];
+  for (let i = 11; i >= 0; i -= 1) {
+    const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+    const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const doMes = afastamentos.filter((a) => a.data_inicio.slice(0, 7) === chave);
+    porMes.push({ mes: `${MESES[d.getMonth()]}/${String(d.getFullYear()).slice(2)}`, atestados: doMes.length, dias: doMes.reduce((t, a) => t + diasDoAtestado(a), 0) });
+  }
+
+  const cidsGeral = new Map();
+  afastamentos.forEach((a) => {
+    const cid = a.cid ? a.cid.toUpperCase() : 'Sem CID';
+    cidsGeral.set(cid, (cidsGeral.get(cid) || 0) + diasDoAtestado(a));
+  });
+  const porCid = [...cidsGeral.entries()].map(([cid, dias]) => ({ cid, dias })).sort((x, y) => y.dias - x.dias).slice(0, 6);
+
+  const diasTotal = afastamentos.reduce((t, a) => t + diasDoAtestado(a), 0);
+
+  return { pessoas, alertas, porMes, porCid, diasTotal, totalAtestados: afastamentos.length };
 };
 
 export const acharDuplicado = (atestados, novo) => atestados.find((a) =>
