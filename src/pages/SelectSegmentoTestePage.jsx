@@ -86,22 +86,46 @@ const SelectSegmentoTestePage = () => {
     return `https://wa.me/5511999996863?text=${encodeURIComponent(msg)}`;
   };
 
-  const apolicesFiltradas = useMemo(() => {
+  // Uma apólice de saúde/vida/odonto pode agrupar vários sub-tipos (sub_apolices)
+  // com seguradora/número próprios — cada sub-tipo é uma apólice à parte, então
+  // vira uma linha separada aqui, igual na página de Saúde/Vida/Odonto.
+  const linhasFlat = useMemo(() => {
+    return apolicesFlat.flatMap((ap) => {
+      if (ap.segmento !== 'SAUDE_VIDA_ODONTO') return [{ key: String(ap.id), apolice: ap }];
+      const subs = (ap.dados_adicionais?.sub_apolices || []).filter(s => s.tipo || s.numero);
+      if (subs.length === 0) return [{ key: String(ap.id), apolice: ap }];
+      return subs.map((sub, i) => ({
+        key: `${ap.id}-${i}`,
+        apolice: ap,
+        displayOverride: {
+          seguradora: sub.seguradora || ap.seguradora,
+          numero: sub.numero || ap.numero_apolice,
+          tipoLabel: sub.tipo,
+          valorPremio: sub.valor_premio,
+          contratoUrl: sub.contrato_url,
+        },
+      }));
+    });
+  }, [apolicesFlat]);
+
+  const linhasFiltradas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
-    if (!termo) return apolicesFlat;
-    return apolicesFlat.filter((ap) => {
-      const label = SEGMENTO_CONFIG[ap.segmento]?.label || '';
+    if (!termo) return linhasFlat;
+    return linhasFlat.filter((linha) => {
+      const seguradora = linha.displayOverride?.seguradora || linha.apolice.seguradora || '';
+      const numero = linha.displayOverride?.numero || linha.apolice.numero_apolice || '';
+      const label = linha.displayOverride?.tipoLabel || SEGMENTO_CONFIG[linha.apolice.segmento]?.label || '';
       return (
-        ap.seguradora?.toLowerCase().includes(termo) ||
-        ap.numero_apolice?.toLowerCase().includes(termo) ||
+        seguradora.toLowerCase().includes(termo) ||
+        numero.toLowerCase().includes(termo) ||
         label.toLowerCase().includes(termo)
       );
     });
-  }, [apolicesFlat, busca]);
+  }, [linhasFlat, busca]);
 
-  const totalPaginas = Math.max(1, Math.ceil(apolicesFiltradas.length / itensPorPagina));
+  const totalPaginas = Math.max(1, Math.ceil(linhasFiltradas.length / itensPorPagina));
   const paginaAtual = Math.min(pagina, totalPaginas);
-  const apolicesPagina = apolicesFiltradas.slice(
+  const linhasPagina = linhasFiltradas.slice(
     (paginaAtual - 1) * itensPorPagina,
     paginaAtual * itensPorPagina
   );
@@ -284,11 +308,11 @@ const SelectSegmentoTestePage = () => {
                 <span></span>
               </div>
 
-              {apolicesPagina.length === 0 ? (
+              {linhasPagina.length === 0 ? (
                 <div className="px-5 py-10 text-center text-sm text-gray-400">Nenhuma apólice encontrada.</div>
               ) : (
-                apolicesPagina.map((ap) => (
-                  <ApoliceExpandableRow key={ap.id} apolice={ap} />
+                linhasPagina.map((linha) => (
+                  <ApoliceExpandableRow key={linha.key} apolice={linha.apolice} displayOverride={linha.displayOverride} />
                 ))
               )}
             </div>

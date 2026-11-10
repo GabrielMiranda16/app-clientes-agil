@@ -53,7 +53,8 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride })
   const [baixandoBoletoId, setBaixandoBoletoId] = useState(null);
 
   const isSVD = apolice.segmento === 'SAUDE_VIDA_ODONTO';
-  const isSVDSemVigencia = isSVD && !apolice.vigencia_fim;
+  // Saúde, Vida e Odonto são planos contínuos — nunca têm data de término.
+  const isSVDSemVigencia = isSVD;
   const statusRaw = apolicesService.getStatusApolice(apolice.vigencia_fim);
   const status = isSVDSemVigencia ? { color: 'green', dias: undefined } : statusRaw;
   const style = STATUS_STYLE[status.color];
@@ -302,17 +303,11 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride })
                 {isSVD && (
                   <button
                     onClick={handleAcessarGestao}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-gray-700 bg-white hover:text-[#003580] transition-colors"
+                    className="flex items-center gap-1.5 ml-auto px-4 py-2 rounded-full bg-[#003580] text-white text-xs font-semibold hover:bg-[#002060] transition-colors"
                   >
-                    <Users className="w-3.5 h-3.5" /> Acessar Gestão
+                    <Users className="w-3.5 h-3.5" /> Acessar Gestão <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 )}
-                <button
-                  onClick={() => navigate(`/apolice/${apolice.id}`)}
-                  className="flex items-center gap-1.5 ml-auto px-4 py-2 rounded-full bg-[#003580] text-white text-xs font-semibold hover:bg-[#002060] transition-colors"
-                >
-                  Acessar apólice <ArrowRight className="w-3.5 h-3.5" />
-                </button>
               </div>
             </div>
           </motion.div>
