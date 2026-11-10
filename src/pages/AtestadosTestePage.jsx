@@ -8,9 +8,7 @@ import { ArrowLeft, Loader2, Stethoscope, Plus, Trash2, Sparkles, FileText, Uplo
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ClienteSidebarLayout from '@/components/clienteTeste/ClienteSidebarLayout';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select';
@@ -368,12 +366,16 @@ const AtestadosTestePage = () => {
         </div>
       </ClienteSidebarLayout>
 
-      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="bg-white max-h-[90vh] overflow-y-auto" style={{ fontFamily: "'DM Sans', sans-serif", '--background': '0 0% 100%' }}>
-          <DialogHeader>
-            <DialogTitle>Adicionar atestado</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
+      <Sheet open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <SheetContent
+          side="right"
+          className="bg-white w-full sm:max-w-[480px] p-0 flex flex-col gap-0"
+          style={{ fontFamily: "'DM Sans', sans-serif", '--background': '0 0% 100%' }}
+        >
+          <SheetHeader className="px-6 py-5 border-b border-gray-100 text-left">
+            <SheetTitle>Adicionar atestado</SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-3">
             <input ref={fileRef} type="file" accept=".pdf,image/jpeg,image/png,image/webp" className="hidden" onChange={handleArquivo} />
             <button
               type="button"
@@ -461,14 +463,14 @@ const AtestadosTestePage = () => {
               <Input {...campo('observacoes')} />
             </div>
           </div>
-          <DialogFooter>
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-gray-100">
             <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancelar</Button>
             <Button className="bg-[#003580] hover:bg-[#002060]" disabled={isSaving || isLendo} onClick={handleCriar}>
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null} Salvar
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 };
