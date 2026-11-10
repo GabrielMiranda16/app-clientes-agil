@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 // o cache HTTP por site de origem pra recursos de terceiros, entao um header
 // Cache-Control novo no servidor da Gi nao alcanca uma copia ja cacheada aqui
 // antes dele existir. Trocar a query string forca buscar de novo.
-const GI_WIDGET_URL = 'https://agil-seguros.fly.dev/static/widget.js?v=2';
+const GI_WIDGET_URL = 'https://agil-seguros.fly.dev/static/widget.js?v=4';
 
 const ChatWidget = () => {
   useEffect(() => {
