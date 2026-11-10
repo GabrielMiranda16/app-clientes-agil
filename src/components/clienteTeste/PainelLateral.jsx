@@ -7,7 +7,7 @@ export const PainelLateral = ({ open, onOpenChange, title, children }) => (
     <SheetContent
       side="right"
       overlayClassName="bg-black/20"
-      className="bg-white w-full sm:max-w-[480px] p-0 flex flex-col gap-0"
+      className="bg-white w-full sm:max-w-[480px] p-0 flex flex-col gap-0 overflow-hidden sm:rounded-l-[32px] border-l-0"
       style={{ fontFamily: "'DM Sans', sans-serif", '--background': '0 0% 100%' }}
     >
       <SheetHeader className="px-6 py-5 border-b border-gray-100 text-left space-y-0">
