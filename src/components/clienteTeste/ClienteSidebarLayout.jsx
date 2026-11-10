@@ -7,9 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from '@/components/ui/dialog';
+import { PainelLateral, PainelCorpo, PainelRodape } from '@/components/clienteTeste/PainelLateral';
 import {
   Home, Users, Wallet, LogOut, Menu, X,
   Lock, UserCog, Loader2, Bot, HelpCircle, Landmark,
@@ -329,12 +327,9 @@ const ClienteSidebarLayout = ({ children }) => {
       </main>
 
       {/* Modal Alterar Senha */}
-      <Dialog open={isPasswordModalOpen} onOpenChange={setIsPasswordModalOpen}>
-        <DialogContent className="sm:max-w-lg bg-white" style={{ fontFamily: "'DM Sans', sans-serif", '--background': '0 0% 100%' }}>
-          <DialogHeader>
-            <DialogTitle>Alterar Senha</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleChangePassword} className="space-y-4">
+      <PainelLateral open={isPasswordModalOpen} onOpenChange={setIsPasswordModalOpen} title="Alterar Senha">
+          <form onSubmit={handleChangePassword} className="flex-1 min-h-0 flex flex-col">
+            <PainelCorpo className="space-y-4">
             <div>
               <div className="flex items-center justify-between">
                 <Label>Senha antiga</Label>
@@ -380,7 +375,8 @@ const ClienteSidebarLayout = ({ children }) => {
                 Confirmo que desejo alterar minha senha
               </Label>
             </div>
-            <DialogFooter>
+            </PainelCorpo>
+            <PainelRodape>
               <Button type="button" variant="outline" onClick={() => setIsPasswordModalOpen(false)}>
                 Cancelar
               </Button>
@@ -388,18 +384,14 @@ const ClienteSidebarLayout = ({ children }) => {
                 {isPassSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Salvar
               </Button>
-            </DialogFooter>
+            </PainelRodape>
           </form>
-        </DialogContent>
-      </Dialog>
+      </PainelLateral>
 
       {/* Modal Meus Dados / Dados da Empresa */}
-      <Dialog open={isDadosModalOpen} onOpenChange={setIsDadosModalOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto bg-white" style={{ fontFamily: "'DM Sans', sans-serif", '--background': '0 0% 100%' }}>
-          <DialogHeader>
-            <DialogTitle>Dados</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSaveDados} className="space-y-4 py-2">
+      <PainelLateral open={isDadosModalOpen} onOpenChange={setIsDadosModalOpen} title="Dados">
+          <form onSubmit={handleSaveDados} className="flex-1 min-h-0 flex flex-col">
+            <PainelCorpo className="space-y-4">
             <div>
               <Label>{isPF ? 'Nome Completo' : 'Razão Social'}</Label>
               <Input value={dadosForm.razao_social || ''} onChange={e => setDadosForm(p => ({ ...p, razao_social: e.target.value }))} />
@@ -444,15 +436,15 @@ const ClienteSidebarLayout = ({ children }) => {
               <div><Label>Cidade</Label><Input value={dadosForm.cidade || ''} readOnly className="bg-gray-50 text-gray-500" /></div>
             </div>
             <div><Label>Estado</Label><Input value={dadosForm.estado || ''} readOnly className="bg-gray-50 text-gray-500 w-full sm:w-24" /></div>
-            <DialogFooter>
+            </PainelCorpo>
+            <PainelRodape>
               <Button type="button" variant="outline" onClick={() => setIsDadosModalOpen(false)}>Cancelar</Button>
               <Button type="submit" disabled={isSavingDados} className="bg-[#003580] hover:bg-[#002060] text-white">
                 {isSavingDados && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Salvar
               </Button>
-            </DialogFooter>
+            </PainelRodape>
           </form>
-        </DialogContent>
-      </Dialog>
+      </PainelLateral>
     </div>
   );
 };

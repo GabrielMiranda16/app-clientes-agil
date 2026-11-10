@@ -8,7 +8,7 @@ import { ArrowLeft, Loader2, Stethoscope, Plus, Trash2, Sparkles, FileText, Uplo
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ClienteSidebarLayout from '@/components/clienteTeste/ClienteSidebarLayout';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { PainelLateral, PainelCorpo, PainelRodape } from '@/components/clienteTeste/PainelLateral';
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select';
@@ -366,16 +366,8 @@ const AtestadosTestePage = () => {
         </div>
       </ClienteSidebarLayout>
 
-      <Sheet open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <SheetContent
-          side="right"
-          className="bg-white w-full sm:max-w-[480px] p-0 flex flex-col gap-0"
-          style={{ fontFamily: "'DM Sans', sans-serif", '--background': '0 0% 100%' }}
-        >
-          <SheetHeader className="px-6 py-5 border-b border-gray-100 text-left">
-            <SheetTitle>Adicionar atestado</SheetTitle>
-          </SheetHeader>
-          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-3">
+      <PainelLateral open={isAddOpen} onOpenChange={setIsAddOpen} title="Adicionar atestado">
+          <PainelCorpo className="space-y-3">
             <input ref={fileRef} type="file" accept=".pdf,image/jpeg,image/png,image/webp" className="hidden" onChange={handleArquivo} />
             <button
               type="button"
@@ -462,15 +454,14 @@ const AtestadosTestePage = () => {
               <Label className="text-xs">Observações</Label>
               <Input {...campo('observacoes')} />
             </div>
-          </div>
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-gray-100">
+          </PainelCorpo>
+          <PainelRodape>
             <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancelar</Button>
             <Button className="bg-[#003580] hover:bg-[#002060]" disabled={isSaving || isLendo} onClick={handleCriar}>
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null} Salvar
             </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
+          </PainelRodape>
+      </PainelLateral>
     </>
   );
 };

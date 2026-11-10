@@ -15,9 +15,7 @@ import {
 import ClienteSidebarLayout from '@/components/clienteTeste/ClienteSidebarLayout';
 import ApoliceExpandableRow from '@/components/clienteTeste/ApoliceExpandableRow';
 import BeneficiarioExpandableRow from '@/components/clienteTeste/BeneficiarioExpandableRow';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from '@/components/ui/dialog';
+import { PainelLateral, PainelCorpo, PainelRodape } from '@/components/clienteTeste/PainelLateral';
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select';
@@ -609,11 +607,8 @@ const SelectApoliceTestePage = () => {
         </div>
       </ClienteSidebarLayout>
 
-      <Dialog open={editandoSlot !== null} onOpenChange={(open) => !open && setEditandoSlot(null)}>
-        <DialogContent className="bg-white" style={{ fontFamily: "'DM Sans', sans-serif", '--background': '0 0% 100%' }}>
-          <DialogHeader>
-            <DialogTitle>Selecionar apólice</DialogTitle>
-          </DialogHeader>
+      <PainelLateral open={editandoSlot !== null} onOpenChange={(open) => !open && setEditandoSlot(null)} title="Selecionar apólice">
+          <PainelCorpo className="space-y-4">
           <p className="text-sm text-gray-500">Escolha qual apólice vai aparecer como atalho direto pra gestão.</p>
           <Select value={selecaoModal} onValueChange={setSelecaoModal}>
             <SelectTrigger>
@@ -628,7 +623,8 @@ const SelectApoliceTestePage = () => {
               ))}
             </SelectContent>
           </Select>
-          <DialogFooter className="sm:justify-between">
+          </PainelCorpo>
+          <PainelRodape className="justify-between">
             {editandoSlot !== null && atalhos[editandoSlot] ? (
               <Button
                 variant="ghost"
@@ -642,16 +638,11 @@ const SelectApoliceTestePage = () => {
               <Button variant="outline" onClick={() => setEditandoSlot(null)}>Cancelar</Button>
               <Button className="bg-[#003580] hover:bg-[#002060]" disabled={!selecaoModal} onClick={handleSalvarAtalho}>Salvar</Button>
             </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </PainelRodape>
+      </PainelLateral>
 
-      <Dialog open={isAddBenOpen} onOpenChange={setIsAddBenOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto bg-white" style={{ fontFamily: "'DM Sans', sans-serif", '--background': '0 0% 100%' }}>
-          <DialogHeader>
-            <DialogTitle>Adicionar beneficiário</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+      <PainelLateral open={isAddBenOpen} onOpenChange={setIsAddBenOpen} title="Adicionar beneficiário">
+          <PainelCorpo className="space-y-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-[#003580] mb-2">Dados Pessoais</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -745,15 +736,14 @@ const SelectApoliceTestePage = () => {
                 <div><Label className="text-xs">Estado</Label><Input value={addBenForm.estado} onChange={(e) => setAddBenForm((f) => ({ ...f, estado: e.target.value }))} /></div>
               </div>
             </div>
-          </div>
-          <DialogFooter>
+          </PainelCorpo>
+          <PainelRodape>
             <Button variant="outline" onClick={() => setIsAddBenOpen(false)}>Cancelar</Button>
             <Button className="bg-[#003580] hover:bg-[#002060]" disabled={isSavingBen} onClick={handleCriarBeneficiario}>
               {isSavingBen ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null} Salvar
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </PainelRodape>
+      </PainelLateral>
     </>
   );
 };
