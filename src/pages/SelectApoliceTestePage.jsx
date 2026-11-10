@@ -597,7 +597,7 @@ const SelectApoliceTestePage = () => {
       </ClienteSidebarLayout>
 
       <Dialog open={editandoSlot !== null} onOpenChange={(open) => !open && setEditandoSlot(null)}>
-        <DialogContent className="bg-white" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <DialogContent className="bg-white" style={{ fontFamily: "'DM Sans', sans-serif", '--background': '0 0% 100%' }}>
           <DialogHeader>
             <DialogTitle>Selecionar apólice</DialogTitle>
           </DialogHeader>
@@ -633,7 +633,7 @@ const SelectApoliceTestePage = () => {
       </Dialog>
 
       <Dialog open={isAddBenOpen} onOpenChange={setIsAddBenOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto bg-white" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto bg-white" style={{ fontFamily: "'DM Sans', sans-serif", '--background': '0 0% 100%' }}>
           <DialogHeader>
             <DialogTitle>Adicionar beneficiário</DialogTitle>
           </DialogHeader>
