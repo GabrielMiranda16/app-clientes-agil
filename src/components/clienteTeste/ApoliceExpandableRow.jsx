@@ -6,7 +6,7 @@ import { boletosService } from '@/services/boletosService';
 import { SEGURADORAS } from '@/data/seguradoras';
 import { useToast } from '@/components/ui/use-toast';
 import {
-  Building2, ChevronRight, Download, ArrowRight, Users, Loader2, Receipt,
+  Building2, ChevronRight, Download, Users, Loader2, Receipt,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -303,9 +303,9 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride })
                 {isSVD && (
                   <button
                     onClick={handleAcessarGestao}
-                    className="flex items-center gap-1.5 ml-auto px-4 py-2 rounded-full bg-[#003580] text-white text-xs font-semibold hover:bg-[#002060] transition-colors"
+                    className="flex items-center gap-1.5 ml-auto px-4 py-2 rounded-full text-xs font-semibold text-gray-900 bg-white hover:text-[#003580] transition-colors"
                   >
-                    <Users className="w-3.5 h-3.5" /> Acessar Gestão <ArrowRight className="w-3.5 h-3.5" />
+                    <Users className="w-3.5 h-3.5" /> Acessar Gestão
                   </button>
                 )}
               </div>
