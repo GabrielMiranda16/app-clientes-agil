@@ -107,13 +107,13 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride })
   };
 
   return (
-    <div className="border-t border-gray-100 first:border-t-0">
+    <div>
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full grid grid-cols-[1fr_auto_auto_auto] sm:grid-cols-[1.6fr_1fr_1fr_40px] gap-4 items-center px-5 py-4 hover:bg-gray-50 transition-colors text-left"
+        className="w-full grid grid-cols-[1fr_auto_auto_auto] sm:grid-cols-[1.6fr_1fr_1fr_40px] gap-4 items-center px-5 py-4 bg-white transition-colors text-left"
       >
         <span className="flex items-center gap-3 min-w-0">
-          <span className="w-9 h-9 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+          <span className="w-9 h-9 rounded-full bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
             {logo ? <img src={logo} alt={displaySeguradora} className="w-full h-full object-contain p-1" /> : <Building2 className="w-4 h-4 text-gray-400" />}
           </span>
           <span className="min-w-0">
@@ -133,7 +133,7 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride })
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2, ease: 'easeInOut' }}
-            className="overflow-hidden bg-gray-50/60"
+            className="overflow-hidden bg-white"
           >
             <div className="px-5 py-5 space-y-5">
               {/* Status + vigência */}
@@ -227,7 +227,7 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride })
                           key={b.id}
                           onClick={() => handleBaixarBoleto(b)}
                           disabled={baixandoBoletoId === b.id}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 text-xs font-medium text-gray-700 bg-white hover:border-[#003580] hover:text-[#003580] transition-colors disabled:opacity-50 capitalize"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-gray-700 bg-white hover:text-[#003580] transition-colors disabled:opacity-50 capitalize"
                         >
                           {baixandoBoletoId === b.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
                           {formatMesReferencia(b.mes_referencia)}
@@ -247,7 +247,7 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride })
                     <button
                       onClick={handleBaixarContrato}
                       disabled={baixando}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-gray-200 text-xs font-semibold text-gray-700 bg-white hover:border-[#003580] hover:text-[#003580] transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-gray-700 bg-white hover:text-[#003580] transition-colors disabled:opacity-50"
                     >
                       {baixando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} Baixar Contrato
                     </button>
@@ -258,7 +258,7 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride })
                 {isSVD && (
                   <button
                     onClick={handleAcessarGestao}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-gray-200 text-xs font-semibold text-gray-700 bg-white hover:border-[#003580] hover:text-[#003580] transition-colors"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-gray-700 bg-white hover:text-[#003580] transition-colors"
                   >
                     <Users className="w-3.5 h-3.5" /> Acessar Gestão
                   </button>

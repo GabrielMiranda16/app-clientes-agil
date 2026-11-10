@@ -197,9 +197,9 @@ const SelectApoliceTestePage = () => {
                         )}
                         <button
                           onClick={() => (modoEdicao ? abrirPicker(slot) : handleAcessarAtalho(slot))}
-                          className={`group w-full flex items-center gap-3 bg-white rounded-2xl shadow-sm px-4 py-3.5 text-left transition-colors border ${modoEdicao ? 'border-dashed border-gray-300' : 'border-gray-100 hover:border-[#003580] hover:bg-[#F0F5FC]'}`}
+                          className="group w-full flex items-center gap-3 bg-white rounded-2xl px-4 py-3.5 text-left transition-colors"
                         >
-                          <span className="w-10 h-10 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          <span className="w-10 h-10 rounded-full bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
                             {logo ? <img src={logo} alt={apolice.seguradora} className="w-full h-full object-contain p-1.5" /> : <Building2 className="w-4 h-4 text-gray-400" />}
                           </span>
                           <span className="min-w-0 flex-1">
@@ -220,9 +220,9 @@ const SelectApoliceTestePage = () => {
                     <button
                       key={slot}
                       onClick={() => abrirPicker(slot)}
-                      className="flex items-center gap-3 bg-white border border-dashed border-gray-200 hover:border-[#003580] rounded-2xl px-4 py-3.5 text-left transition-colors"
+                      className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3.5 text-left transition-colors"
                     >
-                      <span className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center flex-shrink-0">
+                      <span className="w-10 h-10 rounded-full bg-white flex items-center justify-center flex-shrink-0">
                         <Plus className="w-4 h-4 text-gray-400" />
                       </span>
                       <span className="min-w-0 flex-1">
@@ -252,12 +252,12 @@ const SelectApoliceTestePage = () => {
                       value={busca}
                       onChange={(e) => { setBusca(e.target.value); setPagina(1); }}
                       placeholder="Buscar por Seguradora/Operadora"
-                      className="pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-[#003580]/20 focus:border-[#003580]"
+                      className="pl-9 pr-4 py-2.5 rounded-xl bg-white text-sm w-64 focus:outline-none"
                     />
                   </div>
                   <button
                     title="Em breve"
-                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 bg-white"
+                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-700 bg-white"
                   >
                     <SlidersHorizontal className="w-3.5 h-3.5" /> Filtros <ChevronDown className="w-3.5 h-3.5" />
                   </button>
@@ -269,7 +269,7 @@ const SelectApoliceTestePage = () => {
                     <select
                       value={itensPorPagina}
                       onChange={(e) => { setItensPorPagina(Number(e.target.value)); setPagina(1); }}
-                      className="appearance-none pl-3 pr-7 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-900 bg-white focus:outline-none"
+                      className="appearance-none pl-3 pr-7 py-2 rounded-xl text-sm font-semibold text-gray-900 bg-white focus:outline-none"
                     >
                       {ITENS_POR_PAGINA_OPCOES.map((n) => (
                         <option key={n} value={n}>{String(n).padStart(2, '0')}</option>
@@ -281,22 +281,22 @@ const SelectApoliceTestePage = () => {
                   <button
                     onClick={() => setPagina((p) => Math.max(1, p - 1))}
                     disabled={paginaAtual <= 1}
-                    className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white disabled:opacity-40"
+                    className="w-9 h-9 flex items-center justify-center rounded-xl bg-white disabled:opacity-40"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
                     disabled={paginaAtual >= totalPaginas}
-                    className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white disabled:opacity-40"
+                    className="w-9 h-9 flex items-center justify-center rounded-xl bg-white disabled:opacity-40"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
-              <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-                <div className="grid grid-cols-[1fr_auto_auto_auto] sm:grid-cols-[1.6fr_1fr_1fr_40px] gap-4 px-5 py-3 bg-gray-50 text-xs font-bold text-gray-500 uppercase tracking-wide">
+              <div className="bg-white rounded-2xl overflow-hidden">
+                <div className="grid grid-cols-[1fr_auto_auto_auto] sm:grid-cols-[1.6fr_1fr_1fr_40px] gap-4 px-5 py-3 bg-white text-xs font-bold text-gray-500 uppercase tracking-wide">
                   <span>Apólice</span>
                   <span className="hidden sm:block">Vigente desde</span>
                   <span className="hidden sm:block">Número da apólice</span>
