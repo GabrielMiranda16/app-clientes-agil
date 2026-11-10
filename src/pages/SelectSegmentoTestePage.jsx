@@ -157,8 +157,8 @@ const SelectSegmentoTestePage = () => {
                       <Icon className="w-5 h-5 text-gray-700 group-hover:text-[#003580] transition-colors" />
                     </span>
                     <span className="font-bold text-gray-900 text-sm flex-1">{label}</span>
-                    <span className="w-8 h-8 rounded-full bg-gray-100 group-hover:bg-[#003580] flex items-center justify-center flex-shrink-0 transition-colors">
-                      <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-white transition-colors" />
+                    <span className="w-8 h-8 rounded-full group-hover:bg-[#003580] flex items-center justify-center flex-shrink-0 transition-colors">
+                      <ArrowRight className="w-4 h-4 text-gray-900 group-hover:text-white transition-colors" />
                     </span>
                   </motion.button>
                 );
@@ -174,8 +174,8 @@ const SelectSegmentoTestePage = () => {
                     <Shield className="w-5 h-5 text-gray-700 group-hover:text-[#003580] transition-colors" />
                   </span>
                   <span className="font-bold text-gray-900 text-sm flex-1">Outros Seguros</span>
-                  <span className="w-8 h-8 rounded-full bg-gray-100 group-hover:bg-[#003580] flex items-center justify-center flex-shrink-0 transition-colors">
-                    <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-white transition-colors" />
+                  <span className="w-8 h-8 rounded-full group-hover:bg-[#003580] flex items-center justify-center flex-shrink-0 transition-colors">
+                    <ArrowRight className="w-4 h-4 text-gray-900 group-hover:text-white transition-colors" />
                   </span>
                 </motion.button>
               )}
