@@ -445,7 +445,7 @@ const SelectApoliceTestePage = () => {
                 </div>
 
                 {/* Média de idade */}
-                <div className="flex flex-col items-center justify-center p-5 text-center">
+                <div className="flex flex-col items-start justify-center p-5 text-left">
                   <p className="text-[11px] text-gray-400 uppercase tracking-wide font-semibold mb-1">Média de idade</p>
                   <p className="text-6xl font-bold text-gray-900">{resumoVidas.mediaIdade ?? '—'}{resumoVidas.mediaIdade !== null && <span className="text-xl font-semibold text-gray-400"> anos</span>}</p>
                 </div>
