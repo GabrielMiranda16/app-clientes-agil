@@ -151,7 +151,7 @@ const SelectSegmentoTestePage = () => {
                     key={seg}
                     variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
                     onClick={() => handleSelectSegmento(seg)}
-                    className="group flex items-center gap-3 bg-white border border-gray-100 hover:border-[#003580] hover:bg-[#F0F5FC] rounded-2xl shadow-sm px-4 py-2.5 text-left transition-colors"
+                    className="group flex items-center gap-3 bg-white hover:bg-[#F0F5FC] rounded-2xl px-4 py-2.5 text-left transition-colors"
                   >
                     <span className="w-11 h-11 flex items-center justify-center flex-shrink-0">
                       <Icon className="w-5 h-5 text-gray-700 group-hover:text-[#003580] transition-colors" />
@@ -168,7 +168,7 @@ const SelectSegmentoTestePage = () => {
                 <motion.button
                   variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
                   onClick={() => navigate('/select-segmento/teste/outros')}
-                  className="group flex items-center gap-3 bg-white border border-gray-100 hover:border-[#003580] hover:bg-[#F0F5FC] rounded-2xl shadow-sm px-4 py-2.5 text-left transition-colors"
+                  className="group flex items-center gap-3 bg-white hover:bg-[#F0F5FC] rounded-2xl px-4 py-2.5 text-left transition-colors"
                 >
                   <span className="w-11 h-11 flex items-center justify-center flex-shrink-0">
                     <Shield className="w-5 h-5 text-gray-700 group-hover:text-[#003580] transition-colors" />
@@ -276,7 +276,7 @@ const SelectSegmentoTestePage = () => {
               </div>
             </div>
 
-            <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl overflow-hidden">
               <div className="grid grid-cols-[1fr_auto_auto_auto] sm:grid-cols-[1.6fr_1fr_1fr_40px] gap-4 px-5 py-3 bg-gray-50 text-xs font-bold text-gray-500 uppercase tracking-wide">
                 <span>Apólice</span>
                 <span className="hidden sm:block">Vigente desde</span>
