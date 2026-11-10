@@ -85,6 +85,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try { await supabase.auth.signOut(); } catch { /* ignora */ }
+    try { sessionStorage.removeItem('isViewingAsClient'); } catch { /* ignora */ }
     setUser(null);
   };
 
