@@ -118,9 +118,7 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride })
   };
 
   const handleAcessarGestao = () => {
-    navigate(`/cliente/${apolice.empresa_id}`, {
-      state: { from: 'apolice', apoliceId: apolice.id, segmento: apolice.segmento, segLabel, apoliceNum: apolice.numero_apolice },
-    });
+    navigate(`/gestao-apolice/${apolice.id}/teste`);
   };
 
   return (

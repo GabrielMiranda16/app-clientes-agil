@@ -219,9 +219,7 @@ const SelectApoliceTestePage = () => {
   const handleAcessarAtalho = (slot) => {
     const linha = linhasPorKey[atalhos[slot]];
     if (!linha) return;
-    navigate(`/cliente/${empresaId}`, {
-      state: { from: 'apolice', apoliceId: linha.apolice.id, segmento: linha.apolice.segmento, segLabel: linha.displayOverride?.tipoLabel || 'Saúde, Vida e Odonto', apoliceNum: linha.displayOverride?.numero || linha.apolice.numero_apolice },
-    });
+    navigate(`/gestao-apolice/${linha.apolice.id}/teste`);
   };
 
   const linhasFiltradas = useMemo(() => {
