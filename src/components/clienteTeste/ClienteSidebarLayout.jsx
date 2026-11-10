@@ -330,7 +330,7 @@ const ClienteSidebarLayout = ({ children }) => {
 
       {/* Modal Alterar Senha */}
       <Dialog open={isPasswordModalOpen} onOpenChange={setIsPasswordModalOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           <DialogHeader>
             <DialogTitle>Alterar Senha</DialogTitle>
           </DialogHeader>
@@ -395,7 +395,7 @@ const ClienteSidebarLayout = ({ children }) => {
 
       {/* Modal Meus Dados / Dados da Empresa */}
       <Dialog open={isDadosModalOpen} onOpenChange={setIsDadosModalOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           <DialogHeader>
             <DialogTitle>Dados</DialogTitle>
           </DialogHeader>
