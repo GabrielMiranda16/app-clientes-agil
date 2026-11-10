@@ -243,7 +243,7 @@ const ClienteSidebarLayout = ({ children }) => {
   );
 
   return (
-    <div className="min-h-screen flex bg-white" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen flex bg-[#F7F8FA]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
       {/* Sidebar — desktop: rail estreito que expande no hover, mostrando os nomes */}
       <aside className="group hidden sm:flex fixed inset-y-0 left-0 z-40 w-24 hover:w-64 flex-col items-start bg-white border-r border-gray-100 py-6 overflow-hidden transition-[width] duration-200 ease-out shadow-none hover:shadow-xl">
         <div className="relative mb-8 flex-shrink-0 w-full h-11">
