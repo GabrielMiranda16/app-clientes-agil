@@ -25,7 +25,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import { PieChart, Pie, Cell } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip } from 'recharts';
+
+const tooltipPercent = (total) => (value, name) => [`${total > 0 ? Math.round((value / total) * 100) : 0}%`, name];
 
 const calcularIdade = (dataNascimento) => {
   if (!dataNascimento) return null;
@@ -431,6 +433,7 @@ const SelectApoliceTestePage = () => {
                       <Cell fill="#3B82F6" />
                       <Cell fill="#EC4899" />
                     </Pie>
+                    <Tooltip formatter={tooltipPercent(resumoVidas.homens + resumoVidas.mulheres)} />
                   </PieChart>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
@@ -459,6 +462,7 @@ const SelectApoliceTestePage = () => {
                     >
                       {resumoVidas.segmentos.map((s) => <Cell key={s.key} fill={s.cor} />)}
                     </Pie>
+                    <Tooltip formatter={tooltipPercent(resumoVidas.total)} />
                   </PieChart>
                   <div className="space-y-2">
                     {resumoVidas.segmentos.map((s) => (
