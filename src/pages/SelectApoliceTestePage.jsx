@@ -7,7 +7,7 @@ import { apolicesService, SEGMENTOS } from '@/services/apolicesService';
 import { beneficiariosService } from '@/services/beneficiariosService';
 import { supabaseClient } from '@/lib/supabase';
 import { SEGURADORAS } from '@/data/seguradoras';
-import { applyCpfMask, applyPhoneMask } from '@/lib/masks';
+import { applyCpfMask, applyPhoneMask, applyCepMask } from '@/lib/masks';
 import {
   ArrowLeft, Loader2, FileText, Plus, Pencil, Check, X, ArrowRight, Building2, Users, UserPlus,
   Search, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight,
@@ -39,7 +39,12 @@ const calcularIdade = (dataNascimento) => {
   return idade;
 };
 
-const EMPTY_BEN_FORM = { nome_completo: '', cpf: '', parentesco: 'TITULAR', data_nascimento: '', celular: '', email_beneficiario: '' };
+const EMPTY_BEN_FORM = {
+  nome_completo: '', cpf: '', parentesco: 'TITULAR', data_nascimento: '', nome_mae: '', nome_titular: '',
+  matricula_empresa: '', data_admissao: '',
+  celular: '', email_beneficiario: '',
+  cep: '', rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '',
+};
 
 const QTD_SLOTS = 6;
 const ITENS_POR_PAGINA_OPCOES = [5, 10, 15, 25];
@@ -75,6 +80,7 @@ const SelectApoliceTestePage = () => {
   const [isAddBenOpen, setIsAddBenOpen] = useState(false);
   const [addBenForm, setAddBenForm] = useState(EMPTY_BEN_FORM);
   const [isSavingBen, setIsSavingBen] = useState(false);
+  const [isCepLoading, setIsCepLoading] = useState(false);
 
   const segConfig = SEGMENTOS[segmento] || SEGMENTOS[segmento?.toUpperCase()] || Object.values(SEGMENTOS).find(s => s.slug === segmento);
   const isSVD = segmento?.toLowerCase().replace(/_/g, '-') === 'saude-vida-odonto';
@@ -165,6 +171,23 @@ const SelectApoliceTestePage = () => {
     salvarAtalhos(next);
   };
 
+  const buscarCep = async (cep) => {
+    const nums = cep.replace(/\D/g, '');
+    if (nums.length !== 8) return;
+    setIsCepLoading(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${nums}/json/`);
+      const data = await res.json();
+      if (!data.erro) {
+        setAddBenForm((f) => ({ ...f, rua: data.logradouro || '', bairro: data.bairro || '', cidade: data.localidade || '', estado: data.uf || '' }));
+      } else {
+        toast({ variant: 'destructive', title: 'CEP não encontrado' });
+      }
+    } catch { /* ignora falha de rede na busca de CEP */ } finally {
+      setIsCepLoading(false);
+    }
+  };
+
   const handleCriarBeneficiario = async () => {
     if (!addBenForm.nome_completo || !addBenForm.cpf) {
       toast({ variant: 'destructive', title: 'Preencha nome e CPF.' });
@@ -222,6 +245,8 @@ const SelectApoliceTestePage = () => {
     paginaAtualBen * itensPorPaginaBen
   );
 
+  const titulares = useMemo(() => beneficiarios.filter((b) => b.parentesco === 'TITULAR'), [beneficiarios]);
+
   const resumoVidas = useMemo(() => {
     const total = beneficiarios.length;
     const homens = beneficiarios.filter(b => b.sexo === 'M').length;
@@ -261,9 +286,19 @@ const SelectApoliceTestePage = () => {
             <ArrowLeft className="w-4 h-4" /> Meus Seguros
           </button>
 
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">{segLabel}</h1>
-            <p className="text-gray-400 text-sm">Todas suas apólices abaixo.</p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">{segLabel}</h1>
+              <p className="text-gray-400 text-sm">Todas suas apólices abaixo.</p>
+            </div>
+            {isSVD && (
+              <button
+                onClick={() => { setAddBenForm(EMPTY_BEN_FORM); setIsAddBenOpen(true); }}
+                className="flex items-center gap-2 px-5 py-3 rounded-full bg-[#003580] text-white text-sm font-semibold hover:bg-[#002060] transition-colors flex-shrink-0"
+              >
+                <UserPlus className="w-4 h-4" /> Adicionar beneficiário
+              </button>
+            )}
           </div>
 
           {isSVD && (
@@ -482,15 +517,7 @@ const SelectApoliceTestePage = () => {
 
           {isSVD && (
             <div className="pt-2">
-              <div className="flex items-center justify-between mb-1">
-                <h2 className="text-2xl font-bold tracking-tight text-gray-900">Vidas</h2>
-                <button
-                  onClick={() => { setAddBenForm(EMPTY_BEN_FORM); setIsAddBenOpen(true); }}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#003580] transition-colors"
-                >
-                  <UserPlus className="w-3.5 h-3.5" /> Adicionar beneficiário
-                </button>
-              </div>
+              <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Vidas</h2>
               <p className="text-gray-400 text-sm mb-5">Todas as pessoas vinculadas aos seus seguros abaixo.</p>
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
@@ -606,46 +633,103 @@ const SelectApoliceTestePage = () => {
       </Dialog>
 
       <Dialog open={isAddBenOpen} onOpenChange={setIsAddBenOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Adicionar beneficiário</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div>
-              <Label className="text-xs">Nome Completo *</Label>
-              <Input value={addBenForm.nome_completo} onChange={(e) => setAddBenForm((f) => ({ ...f, nome_completo: e.target.value }))} />
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#003580] mb-2">Dados Pessoais</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="sm:col-span-2">
+                  <Label className="text-xs">Nome Completo *</Label>
+                  <Input value={addBenForm.nome_completo} onChange={(e) => setAddBenForm((f) => ({ ...f, nome_completo: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">CPF *</Label>
+                  <Input value={addBenForm.cpf} onChange={(e) => setAddBenForm((f) => ({ ...f, cpf: applyCpfMask(e.target.value) }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Parentesco *</Label>
+                  <Select value={addBenForm.parentesco} onValueChange={(v) => setAddBenForm((f) => ({ ...f, parentesco: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="TITULAR">TITULAR</SelectItem>
+                      <SelectItem value="CONJUGE">CÔNJUGE</SelectItem>
+                      <SelectItem value="FILHO">FILHO(A)</SelectItem>
+                      <SelectItem value="OUTRO">OUTRO</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Data de Nascimento</Label>
+                  <Input type="date" value={addBenForm.data_nascimento} onChange={(e) => setAddBenForm((f) => ({ ...f, data_nascimento: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Idade</Label>
+                  <Input value={calcularIdade(addBenForm.data_nascimento) ?? ''} disabled className="bg-gray-100" />
+                </div>
+                <div>
+                  <Label className="text-xs">Nome da Mãe</Label>
+                  <Input value={addBenForm.nome_mae} onChange={(e) => setAddBenForm((f) => ({ ...f, nome_mae: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Nome do Titular</Label>
+                  {addBenForm.parentesco === 'TITULAR' ? (
+                    <Input value="" disabled placeholder="Não aplicável para titulares" />
+                  ) : (
+                    <Select value={addBenForm.nome_titular} onValueChange={(v) => setAddBenForm((f) => ({ ...f, nome_titular: v }))} disabled={titulares.length === 0}>
+                      <SelectTrigger><SelectValue placeholder={titulares.length > 0 ? 'Selecione o titular...' : 'Nenhum titular cadastrado'} /></SelectTrigger>
+                      <SelectContent>
+                        {titulares.map((t) => <SelectItem key={t.id} value={t.nome_completo}>{t.nome_completo}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">CPF *</Label>
-                <Input value={addBenForm.cpf} onChange={(e) => setAddBenForm((f) => ({ ...f, cpf: applyCpfMask(e.target.value) }))} />
-              </div>
-              <div>
-                <Label className="text-xs">Parentesco</Label>
-                <Select value={addBenForm.parentesco} onValueChange={(v) => setAddBenForm((f) => ({ ...f, parentesco: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="TITULAR">Titular</SelectItem>
-                    <SelectItem value="CONJUGE">Cônjuge</SelectItem>
-                    <SelectItem value="FILHO">Filho(a)</SelectItem>
-                    <SelectItem value="OUTRO">Outro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">Data de Nascimento</Label>
-                <Input type="date" value={addBenForm.data_nascimento} onChange={(e) => setAddBenForm((f) => ({ ...f, data_nascimento: e.target.value }))} />
-              </div>
-              <div>
-                <Label className="text-xs">Celular</Label>
-                <Input value={addBenForm.celular} onChange={(e) => setAddBenForm((f) => ({ ...f, celular: applyPhoneMask(e.target.value) }))} />
-              </div>
-            </div>
+
             <div>
-              <Label className="text-xs">E-mail</Label>
-              <Input type="email" value={addBenForm.email_beneficiario} onChange={(e) => setAddBenForm((f) => ({ ...f, email_beneficiario: e.target.value }))} />
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#003580] mb-2">Dados Trabalhistas</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs">Matrícula e Dígito</Label>
+                  <Input value={addBenForm.matricula_empresa} onChange={(e) => setAddBenForm((f) => ({ ...f, matricula_empresa: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">Data de Admissão</Label>
+                  <Input type="date" value={addBenForm.data_admissao} onChange={(e) => setAddBenForm((f) => ({ ...f, data_admissao: e.target.value }))} />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#003580] mb-2">Contato e Endereço</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs">Celular</Label>
+                  <Input value={addBenForm.celular} onChange={(e) => setAddBenForm((f) => ({ ...f, celular: applyPhoneMask(e.target.value) }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">E-mail</Label>
+                  <Input type="email" value={addBenForm.email_beneficiario} onChange={(e) => setAddBenForm((f) => ({ ...f, email_beneficiario: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">CEP</Label>
+                  <div className="flex gap-2">
+                    <Input value={addBenForm.cep} placeholder="00000-000" maxLength={9} onChange={(e) => setAddBenForm((f) => ({ ...f, cep: applyCepMask(e.target.value) }))} onBlur={() => buscarCep(addBenForm.cep)} />
+                    <button type="button" onClick={() => buscarCep(addBenForm.cep)} disabled={isCepLoading} className="px-3 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 flex items-center">
+                      {isCepLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div><Label className="text-xs">Rua</Label><Input value={addBenForm.rua} onChange={(e) => setAddBenForm((f) => ({ ...f, rua: e.target.value }))} /></div>
+                <div><Label className="text-xs">Número</Label><Input value={addBenForm.numero} onChange={(e) => setAddBenForm((f) => ({ ...f, numero: e.target.value }))} /></div>
+                <div><Label className="text-xs">Complemento</Label><Input value={addBenForm.complemento} onChange={(e) => setAddBenForm((f) => ({ ...f, complemento: e.target.value }))} /></div>
+                <div><Label className="text-xs">Bairro</Label><Input value={addBenForm.bairro} onChange={(e) => setAddBenForm((f) => ({ ...f, bairro: e.target.value }))} /></div>
+                <div><Label className="text-xs">Cidade</Label><Input value={addBenForm.cidade} onChange={(e) => setAddBenForm((f) => ({ ...f, cidade: e.target.value }))} /></div>
+                <div><Label className="text-xs">Estado</Label><Input value={addBenForm.estado} onChange={(e) => setAddBenForm((f) => ({ ...f, estado: e.target.value }))} /></div>
+              </div>
             </div>
           </div>
           <DialogFooter>

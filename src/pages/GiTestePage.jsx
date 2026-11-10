@@ -14,7 +14,7 @@ const GiTestePage = () => {
           </div>
           <div className="flex-1 rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <iframe
-              src="https://agil-seguros.fly.dev/"
+              src="https://agil-seguros.fly.dev/?v=2"
               title="Gi — Assistente Virtual Ágil Seguros"
               className="w-full h-full"
               style={{ border: 'none' }}
