@@ -16,7 +16,7 @@ const SCHEMA = {
   required: [
     'eh_atestado', 'tipo', 'paciente_nome', 'data_emissao', 'data_inicio', 'data_fim',
     'dias_afastamento', 'cid', 'medico_nome', 'crm', 'crm_uf', 'local_atendimento',
-    'legibilidade', 'observacoes',
+    'legibilidade', 'observacoes', 'risco',
   ],
   properties: {
     eh_atestado: { type: 'boolean' },
@@ -33,6 +33,15 @@ const SCHEMA = {
     local_atendimento: texto,
     legibilidade: { type: 'string', enum: ['BOA', 'PARCIAL', 'RUIM'] },
     observacoes: texto,
+    risco: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['nivel', 'sinais'],
+      properties: {
+        nivel: { type: 'string', enum: ['BAIXO', 'MEDIO', 'ALTO'] },
+        sinais: { type: 'array', items: { type: 'string' } },
+      },
+    },
   },
 };
 
@@ -50,7 +59,14 @@ Regras de extração:
 - crm: apenas os dígitos do registro do médico. crm_uf: a sigla do estado do CRM (ex.: SP).
 - local_atendimento: nome da clínica, hospital ou consultório, se constar.
 - legibilidade: BOA se leu tudo com segurança, PARCIAL se algum campo ficou em dúvida, RUIM se a maior parte está ilegível.
-- observacoes: em uma frase curta, diga quais campos ficaram em dúvida e por quê, para o RH saber o que conferir. null se não houver dúvida.`;
+- observacoes: em uma frase curta, diga quais campos ficaram em dúvida e por quê, para o RH saber o que conferir. null se não houver dúvida.
+
+Sinais de atenção (campo risco):
+Você não tem como provar que um atestado é falso, e uma acusação errada prejudica um funcionário. O objetivo é só apontar o que o RH deveria verificar antes de aceitar o documento. Liste em sinais apenas o que é observável no próprio documento, cada um em uma frase curta e concreta. Exemplos do que conta: falta de assinatura ou de carimbo do médico; CRM ausente ou com formato estranho; nome do médico ausente; rasura ou sobrescrita em data ou quantidade de dias; quantidade de dias em número diferente da escrita por extenso; data de emissão futura ou muito distante do início do afastamento; trechos com fonte, alinhamento ou cor diferentes do resto, sugerindo edição; ausência de identificação do local de atendimento; afastamento longo demais para o CID informado.
+- nivel BAIXO: documento com os elementos esperados e sem inconsistência. sinais fica vazio.
+- nivel MEDIO: falta algum elemento esperado ou há uma inconsistência pequena.
+- nivel ALTO: há rasura, divergência entre campos ou indício de edição em dado essencial (paciente, datas, dias, médico).
+Foto torta, escura ou de baixa qualidade não é sinal de fraude: isso entra em legibilidade, não em risco. Ausência de CID também não é sinal.`;
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });

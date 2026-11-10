@@ -4,7 +4,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { apolicesService } from '@/services/apolicesService';
 import { beneficiariosService } from '@/services/beneficiariosService';
 import { atestadosService, custoEstimado, diasDoAtestado, SALARIO_MINIMO } from '@/services/atestadosService';
-import { ArrowLeft, Loader2, Stethoscope, Plus, Trash2, Sparkles, FileText, Upload } from 'lucide-react';
+import { analisarAtestados, marcasDoAtestado, acharDuplicado } from '@/services/atestadosAnalise';
+import { ArrowLeft, Loader2, Stethoscope, Plus, Trash2, Sparkles, FileText, Upload, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ClienteSidebarLayout from '@/components/clienteTeste/ClienteSidebarLayout';
@@ -23,6 +24,14 @@ const EMPTY_FORM = {
 };
 
 const TIPO_LABEL = { ATESTADO: 'Atestado', COMPARECIMENTO: 'Comparecimento' };
+
+const ALERTA_ESTILO = {
+  INSS: { rotulo: 'INSS', classe: 'bg-red-50 text-red-700' },
+  MEDICO: { rotulo: 'Mesmo médico', classe: 'bg-amber-50 text-amber-700' },
+  PADRAO: { rotulo: 'Padrão', classe: 'bg-amber-50 text-amber-700' },
+};
+
+const MARCA_CLASSE = (m) => (m === 'Risco alto' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700');
 
 const formatDate = (d) => {
   if (!d) return '—';
@@ -97,17 +106,9 @@ const AtestadosTestePage = () => {
     const ultimos12 = afastamentos.filter((a) => a.data_inicio >= inicioJanela);
     const diasPerdidos = ultimos12.reduce((s, a) => s + diasDoAtestado(a), 0);
 
-    const porPessoa = new Map();
-    ultimos12.forEach((a) => {
-      const atual = porPessoa.get(a.beneficiario_id) || { id: a.beneficiario_id, nome: a.beneficiarios?.nome_completo || '—', qtd: 0, dias: 0, cids: new Set() };
-      atual.qtd += 1;
-      atual.dias += diasDoAtestado(a);
-      if (a.cid) atual.cids.add(a.cid.toUpperCase());
-      porPessoa.set(a.beneficiario_id, atual);
-    });
-    const top10 = [...porPessoa.values()].sort((x, y) => y.qtd - x.qtd || y.dias - x.dias).slice(0, 10);
+    const { ranking: top10, alertas } = analisarAtestados(atestados);
 
-    return { afastadosAgora, retornosMes, diasPerdidos, top10 };
+    return { afastadosAgora, retornosMes, diasPerdidos, top10, alertas };
   }, [atestados]);
 
   const abrirNovo = () => {
@@ -159,6 +160,10 @@ const AtestadosTestePage = () => {
   const handleCriar = async () => {
     if (!form.beneficiario_id || !form.data_inicio) {
       toast({ variant: 'destructive', title: 'Selecione a pessoa e a data de início.' });
+      return;
+    }
+    if (acharDuplicado(atestados, { beneficiario_id: Number(form.beneficiario_id), data_inicio: form.data_inicio, tipo: form.tipo })) {
+      toast({ variant: 'destructive', title: 'Esse atestado já foi cadastrado.', description: 'Já existe um atestado dessa pessoa com início nessa data.' });
       return;
     }
     setIsSaving(true);
@@ -269,6 +274,27 @@ const AtestadosTestePage = () => {
             Custo estimado com base no salário mínimo ({formatBRL(SALARIO_MINIMO)}/mês), proporcional aos dias de afastamento.
           </p>
 
+          {resumo.alertas.length > 0 && (
+            <div className="bg-white border border-gray-100 rounded-2xl p-5">
+              <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-red-600" /> Alertas
+              </h2>
+              <div className="divide-y divide-gray-100">
+                {resumo.alertas.map((al) => (
+                  <div key={al.chave} className="flex items-start gap-3 py-2.5">
+                    <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${ALERTA_ESTILO[al.tipo].classe}`}>
+                      {ALERTA_ESTILO[al.tipo].rotulo}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold text-gray-900">{al.titulo}</span>
+                      <span className="block text-xs text-gray-500">{al.detalhe}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="bg-white border border-gray-100 rounded-2xl p-5">
               <h2 className="font-bold text-gray-900 mb-3">Afastados hoje</h2>
@@ -289,7 +315,8 @@ const AtestadosTestePage = () => {
             </div>
 
             <div className="bg-white border border-gray-100 rounded-2xl p-5">
-              <h2 className="font-bold text-gray-900 mb-3">Mais afastamentos nos últimos 12 meses</h2>
+              <h2 className="font-bold text-gray-900">Mais afastamentos nos últimos 12 meses</h2>
+              <p className="text-xs text-gray-400 mb-3">Ordenado pelo Índice de Bradford (atestados² × dias): faltas curtas e repetidas pesam mais.</p>
               {resumo.top10.length === 0 ? (
                 <p className="text-sm text-gray-400">Nenhum atestado no período.</p>
               ) : (
@@ -305,8 +332,9 @@ const AtestadosTestePage = () => {
                           </span>
                         )}
                       </span>
-                      <span className="text-gray-500 text-right">
-                        {p.qtd} {p.qtd === 1 ? 'atestado' : 'atestados'} · {p.dias} {p.dias === 1 ? 'dia' : 'dias'}
+                      <span className="text-right">
+                        <span className="block text-gray-500">{p.qtd} {p.qtd === 1 ? 'atestado' : 'atestados'} · {p.dias} {p.dias === 1 ? 'dia' : 'dias'}</span>
+                        <span className="block text-xs text-gray-400">Índice de Bradford {p.bradford}</span>
                       </span>
                     </div>
                   ))}
@@ -334,11 +362,19 @@ const AtestadosTestePage = () => {
             ) : (
               atestados.map((a) => {
                 const dias = a.tipo === 'COMPARECIMENTO' ? 0 : diasDoAtestado(a);
+                const marcas = marcasDoAtestado(a);
                 return (
                   <div key={a.id} className="grid grid-cols-[1fr_auto] sm:grid-cols-[1.6fr_0.9fr_0.6fr_0.7fr_1.3fr_0.9fr_64px] gap-4 items-center px-5 py-4 border-t border-gray-100 first:border-t-0">
                     <span className="min-w-0">
                       <span className="block font-bold text-gray-900 text-sm truncate">{a.beneficiarios?.nome_completo || '—'}</span>
                       <span className="block text-xs text-gray-400 truncate">{TIPO_LABEL[a.tipo] || a.tipo}{a.motivo ? ` · ${a.motivo}` : ''}</span>
+                      {marcas.length > 0 && (
+                        <span className="flex flex-wrap gap-1 mt-1">
+                          {marcas.map((m) => (
+                            <span key={m} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${MARCA_CLASSE(m)}`}>{m}</span>
+                          ))}
+                        </span>
+                      )}
                     </span>
                     <span className="hidden sm:block text-sm text-gray-900">{formatDate(a.data_inicio)}</span>
                     <span className="hidden sm:block text-sm text-gray-900">{dias || '—'}</span>
@@ -387,6 +423,16 @@ const AtestadosTestePage = () => {
             </button>
             {iaDados?.observacoes && (
               <p className="text-xs text-amber-700 bg-amber-50 rounded-xl px-3 py-2">Conferir: {iaDados.observacoes}</p>
+            )}
+            {iaDados?.risco?.sinais?.length > 0 && (
+              <div className={`text-xs rounded-xl px-3 py-2 ${iaDados.risco.nivel === 'ALTO' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>
+                <p className="font-semibold mb-1">
+                  {iaDados.risco.nivel === 'ALTO' ? 'Risco alto: verificar antes de aceitar' : 'Pontos de atenção'}
+                </p>
+                <ul className="list-disc pl-4 space-y-0.5">
+                  {iaDados.risco.sinais.map((sinal) => <li key={sinal}>{sinal}</li>)}
+                </ul>
+              </div>
             )}
 
             <div>
