@@ -423,10 +423,10 @@ const SelectApoliceTestePage = () => {
               <div className="bg-white rounded-2xl grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
                 {/* Homens x Mulheres */}
                 <div className="flex items-center gap-4 p-5">
-                  <PieChart width={100} height={100}>
+                  <PieChart width={140} height={140}>
                     <Pie
                       data={[{ name: 'Homens', value: resumoVidas.homens }, { name: 'Mulheres', value: resumoVidas.mulheres }]}
-                      dataKey="value" innerRadius={30} outerRadius={48} startAngle={90} endAngle={-270} stroke="none"
+                      dataKey="value" innerRadius={42} outerRadius={66} startAngle={90} endAngle={-270} stroke="none"
                     >
                       <Cell fill="#3B82F6" />
                       <Cell fill="#EC4899" />
@@ -447,15 +447,15 @@ const SelectApoliceTestePage = () => {
                 {/* Média de idade */}
                 <div className="flex flex-col items-center justify-center p-5 text-center">
                   <p className="text-[11px] text-gray-400 uppercase tracking-wide font-semibold mb-1">Média de idade</p>
-                  <p className="text-4xl font-bold text-gray-900">{resumoVidas.mediaIdade ?? '—'}{resumoVidas.mediaIdade !== null && <span className="text-base font-semibold text-gray-400"> anos</span>}</p>
+                  <p className="text-6xl font-bold text-gray-900">{resumoVidas.mediaIdade ?? '—'}{resumoVidas.mediaIdade !== null && <span className="text-xl font-semibold text-gray-400"> anos</span>}</p>
                 </div>
 
                 {/* Por segmento */}
                 <div className="flex items-center gap-4 p-5">
-                  <PieChart width={100} height={100}>
+                  <PieChart width={140} height={140}>
                     <Pie
                       data={resumoVidas.segmentos.map(s => ({ name: s.label, value: s.qtd }))}
-                      dataKey="value" innerRadius={30} outerRadius={48} startAngle={90} endAngle={-270} stroke="none"
+                      dataKey="value" innerRadius={42} outerRadius={66} startAngle={90} endAngle={-270} stroke="none"
                     >
                       {resumoVidas.segmentos.map((s) => <Cell key={s.key} fill={s.cor} />)}
                     </Pie>
