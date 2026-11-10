@@ -4,16 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useCompany } from '@/contexts/CompanyContext';
 import { apolicesService, SEGMENTOS } from '@/services/apolicesService';
-import { beneficiariosService } from '@/services/beneficiariosService';
 import { supabaseClient } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import {
-  Building2, Loader2, Users,
+  Building2, Loader2,
   MessageCircle, Search, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight, ArrowRight, Shield,
 } from 'lucide-react';
 import ClienteSidebarLayout from '@/components/clienteTeste/ClienteSidebarLayout';
 import ApoliceExpandableRow from '@/components/clienteTeste/ApoliceExpandableRow';
-import BeneficiarioExpandableRow from '@/components/clienteTeste/BeneficiarioExpandableRow';
 import { SEGMENTO_CONFIG, SEGMENTOS_IMPORTANTES } from '@/components/clienteTeste/segmentoConfig';
 
 const ITENS_POR_PAGINA_OPCOES = [5, 10, 15, 25];
@@ -27,15 +25,10 @@ const SelectSegmentoTestePage = () => {
   const [apolicesPorSegmento, setApolicesPorSegmento] = useState({});
   const [apolicesFlat, setApolicesFlat] = useState([]);
   const [empresa, setEmpresa] = useState(null);
-  const [beneficiarios, setBeneficiarios] = useState([]);
 
   const [busca, setBusca] = useState('');
   const [itensPorPagina, setItensPorPagina] = useState(5);
   const [pagina, setPagina] = useState(1);
-
-  const [buscaBen, setBuscaBen] = useState('');
-  const [itensPorPaginaBen, setItensPorPaginaBen] = useState(10);
-  const [paginaBen, setPaginaBen] = useState(1);
 
   useEffect(() => {
     if (!user) return;
@@ -45,10 +38,9 @@ const SelectSegmentoTestePage = () => {
           ? selectedCompanyId
           : (user.empresa_matriz_id || user.empresa_id);
         if (empresaId) {
-          const [empResult, apolices, filiaisResult] = await Promise.all([
+          const [empResult, apolices] = await Promise.all([
             supabaseClient.from('empresas').select('*').eq('id', empresaId).single(),
             apolicesService.getApolicesByMatriz(empresaId),
-            supabaseClient.from('empresas').select('id').eq('empresa_matriz_id', empresaId),
           ]);
           if (empResult.data) setEmpresa(empResult.data);
           setApolicesFlat(apolices || []);
@@ -59,11 +51,6 @@ const SelectSegmentoTestePage = () => {
             return acc;
           }, {});
           setApolicesPorSegmento(agrupadas);
-
-          // Vidas — beneficiários da matriz + todas as filiais do grupo.
-          const grupoIds = [empresaId, ...(filiaisResult.data || []).map(f => f.id)];
-          const listasBen = await Promise.all(grupoIds.map(id => beneficiariosService.getBeneficiariosByEmpresa(id).catch(() => [])));
-          setBeneficiarios(listasBen.flat().filter(b => !b.data_exclusao));
         }
       } catch (err) {
         console.error(err);
@@ -141,22 +128,6 @@ const SelectSegmentoTestePage = () => {
   const linhasPagina = linhasFiltradas.slice(
     (paginaAtual - 1) * itensPorPagina,
     paginaAtual * itensPorPagina
-  );
-
-  const beneficiariosFiltrados = useMemo(() => {
-    const termo = buscaBen.trim().toLowerCase();
-    if (!termo) return beneficiarios;
-    return beneficiarios.filter((b) =>
-      b.nome_completo?.toLowerCase().includes(termo) ||
-      b.cpf?.toLowerCase().includes(termo)
-    );
-  }, [beneficiarios, buscaBen]);
-
-  const totalPaginasBen = Math.max(1, Math.ceil(beneficiariosFiltrados.length / itensPorPaginaBen));
-  const paginaAtualBen = Math.min(paginaBen, totalPaginasBen);
-  const beneficiariosPagina = beneficiariosFiltrados.slice(
-    (paginaAtualBen - 1) * itensPorPaginaBen,
-    paginaAtualBen * itensPorPaginaBen
   );
 
   const primeiroNome = (empresa?.razao_social || '').trim().split(' ')[0] || '';
@@ -342,84 +313,6 @@ const SelectSegmentoTestePage = () => {
               ) : (
                 linhasPagina.map((linha) => (
                   <ApoliceExpandableRow key={linha.key} apolice={linha.apolice} displayOverride={linha.displayOverride} />
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Vidas — beneficiários da empresa (matriz + filiais) */}
-          <div className="pt-2">
-            <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Vidas</h2>
-            <p className="text-gray-400 text-sm mb-5">Todas as pessoas vinculadas aos seus seguros abaixo.</p>
-
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    value={buscaBen}
-                    onChange={(e) => { setBuscaBen(e.target.value); setPaginaBen(1); }}
-                    placeholder="Buscar por Nome/CPF"
-                    className="pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-[#003580]/20 focus:border-[#003580]"
-                  />
-                </div>
-                <button
-                  title="Em breve"
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 bg-white"
-                >
-                  <SlidersHorizontal className="w-3.5 h-3.5" /> Filtros <ChevronDown className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <div className="flex items-center gap-3 text-sm text-gray-500">
-                <span className="hidden sm:inline">Itens por página</span>
-                <div className="relative">
-                  <select
-                    value={itensPorPaginaBen}
-                    onChange={(e) => { setItensPorPaginaBen(Number(e.target.value)); setPaginaBen(1); }}
-                    className="appearance-none pl-3 pr-7 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-900 bg-white focus:outline-none"
-                  >
-                    {ITENS_POR_PAGINA_OPCOES.map((n) => (
-                      <option key={n} value={n}>{String(n).padStart(2, '0')}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-                </div>
-                <span>{paginaAtualBen} de {totalPaginasBen}</span>
-                <button
-                  onClick={() => setPaginaBen((p) => Math.max(1, p - 1))}
-                  disabled={paginaAtualBen <= 1}
-                  className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white disabled:opacity-40"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setPaginaBen((p) => Math.min(totalPaginasBen, p + 1))}
-                  disabled={paginaAtualBen >= totalPaginasBen}
-                  className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white disabled:opacity-40"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl overflow-hidden">
-              <div className="hidden sm:grid grid-cols-[1.6fr_1fr_1fr_1fr_40px] gap-4 px-5 py-3 bg-white text-xs font-bold text-gray-500 uppercase tracking-wide">
-                <span>Nome</span>
-                <span>CPF</span>
-                <span>Parentesco</span>
-                <span>Idade</span>
-                <span></span>
-              </div>
-
-              {beneficiariosPagina.length === 0 ? (
-                <div className="px-5 py-10 text-center text-sm text-gray-400 flex flex-col items-center gap-2">
-                  <Users className="w-8 h-8 text-gray-300" />
-                  Nenhuma vida encontrada.
-                </div>
-              ) : (
-                beneficiariosPagina.map((b) => (
-                  <BeneficiarioExpandableRow key={b.id} beneficiario={b} />
                 ))
               )}
             </div>
