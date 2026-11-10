@@ -151,7 +151,7 @@ const SelectSegmentoTestePage = () => {
                     key={seg}
                     variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
                     onClick={() => handleSelectSegmento(seg)}
-                    className="group flex items-center gap-3 bg-white border border-transparent hover:border-[#003580] rounded-2xl px-4 py-2.5 text-left transition-colors"
+                    className="group flex items-center gap-3 bg-white border border-gray-100 hover:border-[#003580] rounded-2xl px-4 py-2.5 text-left transition-colors"
                   >
                     <span className="w-11 h-11 flex items-center justify-center flex-shrink-0">
                       <Icon className="w-5 h-5 text-gray-700 group-hover:text-[#003580] transition-colors" />
@@ -168,7 +168,7 @@ const SelectSegmentoTestePage = () => {
                 <motion.button
                   variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
                   onClick={() => navigate('/select-segmento/teste/outros')}
-                  className="group flex items-center gap-3 bg-white border border-transparent hover:border-[#003580] rounded-2xl px-4 py-2.5 text-left transition-colors"
+                  className="group flex items-center gap-3 bg-white border border-gray-100 hover:border-[#003580] rounded-2xl px-4 py-2.5 text-left transition-colors"
                 >
                   <span className="w-11 h-11 flex items-center justify-center flex-shrink-0">
                     <Shield className="w-5 h-5 text-gray-700 group-hover:text-[#003580] transition-colors" />

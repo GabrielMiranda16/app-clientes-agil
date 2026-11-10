@@ -107,7 +107,7 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride })
   };
 
   return (
-    <div>
+    <div className="border-t border-gray-100 first:border-t-0">
       <button
         onClick={() => setExpanded((v) => !v)}
         className="w-full grid grid-cols-[1fr_auto_auto_auto] sm:grid-cols-[1.6fr_1fr_1fr_40px] gap-4 items-center px-5 py-4 bg-white transition-colors text-left"
