@@ -4,15 +4,23 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useCompany } from '@/contexts/CompanyContext';
 import { apolicesService, SEGMENTOS } from '@/services/apolicesService';
+import { beneficiariosService } from '@/services/beneficiariosService';
 import { supabaseClient } from '@/lib/supabase';
+import { formatCpfCnpj } from '@/lib/masks';
 import { motion } from 'framer-motion';
 import {
-  Building2, Loader2,
+  Building2, Loader2, Users,
   MessageCircle, Search, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight, ArrowRight, Shield,
 } from 'lucide-react';
 import ClienteSidebarLayout from '@/components/clienteTeste/ClienteSidebarLayout';
 import ApoliceExpandableRow from '@/components/clienteTeste/ApoliceExpandableRow';
 import { SEGMENTO_CONFIG, SEGMENTOS_IMPORTANTES } from '@/components/clienteTeste/segmentoConfig';
+
+const PLANO_CHIPS = [
+  { key: 'saude_ativo',  label: 'Saúde'  },
+  { key: 'odonto_ativo', label: 'Odonto' },
+  { key: 'vida_ativo',   label: 'Vida'   },
+];
 
 const ITENS_POR_PAGINA_OPCOES = [5, 10, 15, 25];
 
@@ -25,6 +33,7 @@ const SelectSegmentoTestePage = () => {
   const [apolicesPorSegmento, setApolicesPorSegmento] = useState({});
   const [apolicesFlat, setApolicesFlat] = useState([]);
   const [empresa, setEmpresa] = useState(null);
+  const [beneficiarios, setBeneficiarios] = useState([]);
 
   const [busca, setBusca] = useState('');
   const [itensPorPagina, setItensPorPagina] = useState(5);
@@ -38,9 +47,10 @@ const SelectSegmentoTestePage = () => {
           ? selectedCompanyId
           : (user.empresa_matriz_id || user.empresa_id);
         if (empresaId) {
-          const [empResult, apolices] = await Promise.all([
+          const [empResult, apolices, filiaisResult] = await Promise.all([
             supabaseClient.from('empresas').select('*').eq('id', empresaId).single(),
             apolicesService.getApolicesByMatriz(empresaId),
+            supabaseClient.from('empresas').select('id').eq('empresa_matriz_id', empresaId),
           ]);
           if (empResult.data) setEmpresa(empResult.data);
           setApolicesFlat(apolices || []);
@@ -51,6 +61,11 @@ const SelectSegmentoTestePage = () => {
             return acc;
           }, {});
           setApolicesPorSegmento(agrupadas);
+
+          // Vidas — beneficiários da matriz + todas as filiais do grupo.
+          const grupoIds = [empresaId, ...(filiaisResult.data || []).map(f => f.id)];
+          const listasBen = await Promise.all(grupoIds.map(id => beneficiariosService.getBeneficiariosByEmpresa(id).catch(() => [])));
+          setBeneficiarios(listasBen.flat().filter(b => !b.data_exclusao));
         }
       } catch (err) {
         console.error(err);
@@ -313,6 +328,40 @@ const SelectSegmentoTestePage = () => {
               ) : (
                 linhasPagina.map((linha) => (
                   <ApoliceExpandableRow key={linha.key} apolice={linha.apolice} displayOverride={linha.displayOverride} />
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Vidas — beneficiários da empresa (matriz + filiais) */}
+          <div className="pt-2">
+            <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Vidas</h2>
+            <p className="text-gray-400 text-sm mb-5">{beneficiarios.length} {beneficiarios.length === 1 ? 'pessoa vinculada' : 'pessoas vinculadas'} aos seus seguros.</p>
+
+            <div className="bg-white rounded-2xl overflow-hidden">
+              <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[1.6fr_1fr_1fr] gap-4 px-5 py-3 bg-white text-xs font-bold text-gray-500 uppercase tracking-wide">
+                <span>Nome</span>
+                <span className="hidden sm:block">CPF</span>
+                <span>Planos</span>
+              </div>
+
+              {beneficiarios.length === 0 ? (
+                <div className="px-5 py-10 text-center text-sm text-gray-400 flex flex-col items-center gap-2">
+                  <Users className="w-8 h-8 text-gray-300" />
+                  Nenhuma vida vinculada.
+                </div>
+              ) : (
+                beneficiarios.map((b) => (
+                  <div key={b.id} className="grid grid-cols-[1fr_auto] sm:grid-cols-[1.6fr_1fr_1fr] gap-4 items-center px-5 py-4 border-t border-gray-100">
+                    <span className="font-bold text-gray-900 text-sm truncate">{b.nome_completo}</span>
+                    <span className="hidden sm:block text-sm text-gray-900">{b.cpf ? formatCpfCnpj(b.cpf) : '—'}</span>
+                    <span className="flex flex-wrap gap-1.5">
+                      {PLANO_CHIPS.filter(p => b[p.key]).map(p => (
+                        <span key={p.key} className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700">{p.label}</span>
+                      ))}
+                      {PLANO_CHIPS.every(p => !b[p.key]) && <span className="text-xs text-gray-400">—</span>}
+                    </span>
+                  </div>
                 ))
               )}
             </div>
