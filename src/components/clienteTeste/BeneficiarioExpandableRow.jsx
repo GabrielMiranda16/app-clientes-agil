@@ -39,8 +39,10 @@ const BeneficiarioExpandableRow = ({ beneficiario: b }) => {
   const [expanded, setExpanded] = useState(false);
   const idade = calcularIdade(b.data_nascimento);
   // Beneficiário pode ser da matriz ou de uma filial do grupo — deixa isso visível.
+  // Matriz é única, então o rótulo é só "Matriz" (negrito); filial mostra o próprio nome.
+  const empresaIsMatriz = b.empresa?.tipo === 'MATRIZ';
   const empresaLabel = b.empresa
-    ? `${b.empresa.tipo === 'MATRIZ' ? '⭐ ' : ''}${b.empresa.nome_fantasia || b.empresa.razao_social}`
+    ? (empresaIsMatriz ? 'Matriz' : (b.empresa.nome_fantasia || b.empresa.razao_social))
     : null;
 
   return (
@@ -51,7 +53,7 @@ const BeneficiarioExpandableRow = ({ beneficiario: b }) => {
       >
         <span className="min-w-0">
           <span className="block font-bold text-gray-900 text-sm truncate">{b.nome_completo}</span>
-          {empresaLabel && <span className="block text-[11px] text-gray-400 truncate">{empresaLabel}</span>}
+          {empresaLabel && <span className={`block text-[11px] text-gray-400 truncate ${empresaIsMatriz ? 'font-bold' : ''}`}>{empresaLabel}</span>}
         </span>
         <span className="hidden sm:block text-sm text-gray-900">{b.cpf ? formatCpfCnpj(b.cpf) : '—'}</span>
         <span className="hidden sm:block text-sm text-gray-900 capitalize">{(b.parentesco || '—').toLowerCase()}</span>
@@ -70,7 +72,12 @@ const BeneficiarioExpandableRow = ({ beneficiario: b }) => {
           >
             <div className="px-5 py-5 space-y-5">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <Campo label="Empresa" value={empresaLabel} />
+                {empresaLabel && (
+                  <div>
+                    <p className="text-[11px] text-gray-400 uppercase tracking-wide font-semibold">Empresa</p>
+                    <p className={`text-sm text-gray-800 ${empresaIsMatriz ? 'font-bold' : 'font-semibold'}`}>{empresaLabel}</p>
+                  </div>
+                )}
                 <Campo label="Nome da Mãe" value={b.nome_mae} />
                 <Campo label="Celular" value={b.celular} />
                 <Campo label="E-mail" value={b.email_beneficiario} />

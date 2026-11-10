@@ -72,12 +72,14 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride })
   // combinado inteiro (ex: lista "Apólices" da home, sem flatten).
   const subsParaDetalhar = !displayOverride && isSVD ? subs : null;
   const formatMoney = (v) => v ? `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : null;
-  // Apólice pode ser da matriz ou de uma filial do grupo — deixa isso visível em toda linha.
+  // Apólice pode ser da matriz ou de uma filial do grupo — deixa isso visível em toda
+  // linha. Matriz é única, então o rótulo é só "Matriz" (em negrito); filial mostra o
+  // próprio nome (sem negrito) pra diferenciar qual delas é.
+  const empresaIsMatriz = apolice.empresa?.tipo === 'MATRIZ';
   const empresaLabel = apolice.empresa
-    ? `${apolice.empresa.tipo === 'MATRIZ' ? '⭐ ' : ''}${apolice.empresa.nome_fantasia || apolice.empresa.razao_social}`
+    ? (empresaIsMatriz ? 'Matriz' : (apolice.empresa.nome_fantasia || apolice.empresa.razao_social))
     : null;
   const segOuTipoLabel = (showSegmento || displayOverride?.tipoLabel) ? segLabel : null;
-  const subtitulo = [segOuTipoLabel, empresaLabel].filter(Boolean).join(' · ');
 
   // Boletos só existem pra Saúde/Vida/Odonto — busca só quando expande, e só
   // uma vez (boletos continua null até o primeiro fetch terminar).
@@ -133,7 +135,13 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride })
           </span>
           <span className="min-w-0">
             <span className="block font-bold text-gray-900 text-sm truncate">{displaySeguradora}</span>
-            {subtitulo && <span className="block text-xs text-gray-400 truncate">{subtitulo}</span>}
+            {(segOuTipoLabel || empresaLabel) && (
+              <span className="block text-xs text-gray-400 truncate">
+                {segOuTipoLabel}
+                {segOuTipoLabel && empresaLabel && ' · '}
+                {empresaLabel && <span className={empresaIsMatriz ? 'font-bold text-gray-500' : ''}>{empresaLabel}</span>}
+              </span>
+            )}
           </span>
         </span>
         <span className="hidden sm:block text-sm text-gray-600">{formatDate(apolice.vigencia_inicio)}</span>
@@ -160,7 +168,12 @@ const ApoliceExpandableRow = ({ apolice, showSegmento = true, displayOverride })
                   </span>
                 </div>
                 <Campo label="Segmento" value={segLabel} />
-                <Campo label="Empresa" value={empresaLabel} />
+                {empresaLabel && (
+                  <div>
+                    <p className="text-[11px] text-gray-400 uppercase tracking-wide font-semibold">Empresa</p>
+                    <p className={`text-sm text-gray-800 ${empresaIsMatriz ? 'font-bold' : 'font-semibold'}`}>{empresaLabel}</p>
+                  </div>
+                )}
                 {(!isSVD || displayOverride) && (
                   <>
                     <Campo label="Número da Apólice" value={displayNumero} />

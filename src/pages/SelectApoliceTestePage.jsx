@@ -58,9 +58,11 @@ const descricaoApolice = (apolice) => {
 };
 
 // Apólice pode ser da matriz ou de uma filial do grupo — deixa isso visível.
+// Matriz é única, então o rótulo é só "Matriz"; filial mostra o próprio nome.
 const empresaLabelDe = (apolice) => apolice.empresa
-  ? `${apolice.empresa.tipo === 'MATRIZ' ? '⭐ ' : ''}${apolice.empresa.nome_fantasia || apolice.empresa.razao_social}`
+  ? (apolice.empresa.tipo === 'MATRIZ' ? 'Matriz' : (apolice.empresa.nome_fantasia || apolice.empresa.razao_social))
   : null;
+const empresaIsMatrizDe = (apolice) => apolice.empresa?.tipo === 'MATRIZ';
 
 const SelectApoliceTestePage = () => {
   const { segmento } = useParams();
@@ -328,7 +330,9 @@ const SelectApoliceTestePage = () => {
                   if (linha) {
                     const apolice = linha.apolice;
                     const seguradora = linha.displayOverride?.seguradora || apolice.seguradora;
-                    const descricao = [linha.displayOverride?.tipoLabel || descricaoApolice(apolice), empresaLabelDe(apolice)].filter(Boolean).join(' · ');
+                    const descricaoTipo = linha.displayOverride?.tipoLabel || descricaoApolice(apolice);
+                    const empresaLabel = empresaLabelDe(apolice);
+                    const empresaBold = empresaIsMatrizDe(apolice);
                     const logo = logoDaSeguradora(seguradora);
                     return (
                       <div key={slot} className="relative">
@@ -349,7 +353,11 @@ const SelectApoliceTestePage = () => {
                           </span>
                           <span className="min-w-0 flex-1">
                             <span className="block font-bold text-gray-900 text-sm truncate">{seguradora}</span>
-                            <span className="block text-xs text-gray-400 truncate">{descricao}</span>
+                            <span className="block text-xs text-gray-400 truncate">
+                              {descricaoTipo}
+                              {descricaoTipo && empresaLabel && ' · '}
+                              {empresaLabel && <span className={empresaBold ? 'font-bold text-gray-500' : ''}>{empresaLabel}</span>}
+                            </span>
                           </span>
                           {!modoEdicao && (
                             <span className="w-8 h-8 rounded-full group-hover:bg-[#003580] flex items-center justify-center flex-shrink-0 transition-colors">
