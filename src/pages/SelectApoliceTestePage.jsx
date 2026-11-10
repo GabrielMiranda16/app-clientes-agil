@@ -25,6 +25,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
+import { PieChart, Pie, Cell } from 'recharts';
+
+const calcularIdade = (dataNascimento) => {
+  if (!dataNascimento) return null;
+  const nasc = new Date(`${dataNascimento}T00:00:00`);
+  const hoje = new Date();
+  let idade = hoje.getFullYear() - nasc.getFullYear();
+  const aindaNaoFezAniversario = hoje.getMonth() < nasc.getMonth() || (hoje.getMonth() === nasc.getMonth() && hoje.getDate() < nasc.getDate());
+  if (aindaNaoFezAniversario) idade -= 1;
+  return idade;
+};
 
 const EMPTY_BEN_FORM = { nome_completo: '', cpf: '', parentesco: 'TITULAR', data_nascimento: '', celular: '', email_beneficiario: '' };
 
@@ -209,6 +220,20 @@ const SelectApoliceTestePage = () => {
     paginaAtualBen * itensPorPaginaBen
   );
 
+  const resumoVidas = useMemo(() => {
+    const total = beneficiarios.length;
+    const homens = beneficiarios.filter(b => b.sexo === 'M').length;
+    const mulheres = beneficiarios.filter(b => b.sexo === 'F').length;
+    const idades = beneficiarios.map(b => calcularIdade(b.data_nascimento)).filter(i => i !== null);
+    const mediaIdade = idades.length > 0 ? Math.round(idades.reduce((a, b) => a + b, 0) / idades.length) : null;
+    const segmentos = [
+      { key: 'saude',  label: 'Saúde',  cor: '#003580', qtd: beneficiarios.filter(b => b.saude_ativo).length },
+      { key: 'vida',   label: 'Vida',   cor: '#7B3FE4', qtd: beneficiarios.filter(b => b.vida_ativo).length },
+      { key: 'odonto', label: 'Odonto', cor: '#00B2FF', qtd: beneficiarios.filter(b => b.odonto_ativo).length },
+    ];
+    return { total, homens, mulheres, mediaIdade, segmentos };
+  }, [beneficiarios]);
+
   const segLabel = segConfig?.label || segmento?.toLowerCase().replace(/_/g, ' ');
   const apolicesSubtitle = isSVD
     ? 'Todas suas apólices de saúde, odonto e vida abaixo.'
@@ -388,6 +413,67 @@ const SelectApoliceTestePage = () => {
                 ))}
               </div>
             </>
+          )}
+
+          {isSVD && resumoVidas.total > 0 && (
+            <div className="pt-2">
+              <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Resumo das Vidas</h2>
+              <p className="text-gray-400 text-sm mb-5">{resumoVidas.total} {resumoVidas.total === 1 ? 'vida vinculada' : 'vidas vinculadas'} aos seus seguros.</p>
+
+              <div className="bg-white rounded-2xl grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
+                {/* Homens x Mulheres */}
+                <div className="flex items-center gap-4 p-5">
+                  <PieChart width={100} height={100}>
+                    <Pie
+                      data={[{ name: 'Homens', value: resumoVidas.homens }, { name: 'Mulheres', value: resumoVidas.mulheres }]}
+                      dataKey="value" innerRadius={30} outerRadius={48} startAngle={90} endAngle={-270} stroke="none"
+                    >
+                      <Cell fill="#3B82F6" />
+                      <Cell fill="#EC4899" />
+                    </Pie>
+                  </PieChart>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6] flex-shrink-0" />
+                      <span className="text-sm text-gray-700"><span className="font-bold text-gray-900">{resumoVidas.homens}</span> homens</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#EC4899] flex-shrink-0" />
+                      <span className="text-sm text-gray-700"><span className="font-bold text-gray-900">{resumoVidas.mulheres}</span> mulheres</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Média de idade */}
+                <div className="flex flex-col items-center justify-center p-5 text-center">
+                  <p className="text-[11px] text-gray-400 uppercase tracking-wide font-semibold mb-1">Média de idade</p>
+                  <p className="text-4xl font-bold text-gray-900">{resumoVidas.mediaIdade ?? '—'}{resumoVidas.mediaIdade !== null && <span className="text-base font-semibold text-gray-400"> anos</span>}</p>
+                </div>
+
+                {/* Por segmento */}
+                <div className="flex items-center gap-4 p-5">
+                  <PieChart width={100} height={100}>
+                    <Pie
+                      data={resumoVidas.segmentos.map(s => ({ name: s.label, value: s.qtd }))}
+                      dataKey="value" innerRadius={30} outerRadius={48} startAngle={90} endAngle={-270} stroke="none"
+                    >
+                      {resumoVidas.segmentos.map((s) => <Cell key={s.key} fill={s.cor} />)}
+                    </Pie>
+                  </PieChart>
+                  <div className="space-y-2">
+                    {resumoVidas.segmentos.map((s) => (
+                      <div key={s.key} className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.cor }} />
+                        <span className="text-sm text-gray-700">
+                          <span className="font-bold text-gray-900">{s.qtd}</span> {s.label}
+                          <span className="text-gray-400"> · {resumoVidas.total > 0 ? Math.round((s.qtd / resumoVidas.total) * 100) : 0}%</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
 
           {isSVD && (
