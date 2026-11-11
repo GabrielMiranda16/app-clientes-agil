@@ -46,6 +46,7 @@ const formatDate = (d) => {
 };
 
 const ITENS_POR_PAGINA = 10;
+const CELULA_CUSTO = { VERMELHO: 'bg-red-200 font-semibold', AMARELO: 'bg-amber-200 font-semibold', NORMAL: '' };
 
 const mascaraBRL = (texto) => (Number(String(texto).replace(/\D/g, '') || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -95,7 +96,6 @@ const AtestadosTestePage = () => {
   const [recusa, setRecusa] = useState(null);
   const [ordenacao, setOrdenacao] = useState({ campo: 'data', dir: 'desc' });
   const [paginaAtestados, setPaginaAtestados] = useState(1);
-  const [rankingModo, setRankingModo] = useState('atestados');
 
   useEffect(() => {
     apolicesService.getApolice(apoliceId)
@@ -205,15 +205,25 @@ const AtestadosTestePage = () => {
     setPaginaAtestados(1);
   };
 
+  const nivelCusto = (valor) => (valor >= Number(config.custo_alerta_vermelho) ? 'VERMELHO' : valor >= Number(config.custo_alerta_amarelo) ? 'AMARELO' : 'NORMAL');
+
   const corCusto = (valor, fator = 1) => {
     if (valor >= Number(config.custo_alerta_vermelho) * fator) return 'bg-red-50 text-red-700';
     if (valor >= Number(config.custo_alerta_amarelo) * fator) return 'bg-amber-50 text-amber-700';
     return '';
   };
 
-  const rankingTop = [...resumo.ranking]
-    .sort((x, y) => (rankingModo === 'dias' ? y.dias - x.dias || y.qtd - x.qtd : y.qtd - x.qtd || y.dias - x.dias) || x.nome.localeCompare(y.nome))
-    .slice(0, 10);
+  const RANKINGS = [
+    {
+      chave: 'atestados', titulo: 'Ranking: mais atestados', descricao: 'As 10 pessoas que mais entregaram atestado nos últimos 12 meses.',
+      lista: [...resumo.ranking].sort((x, y) => y.qtd - x.qtd || y.dias - x.dias || x.nome.localeCompare(y.nome)).slice(0, 10),
+    },
+    {
+      chave: 'dias', titulo: 'Ranking: mais dias', descricao: 'As 10 pessoas com mais dias de afastamento nos últimos 12 meses.',
+      lista: [...resumo.ranking].sort((x, y) => y.dias - x.dias || y.qtd - x.qtd || x.nome.localeCompare(y.nome)).slice(0, 10),
+    },
+  ];
+  const linhasPendentes = resumo.linhas.filter((l) => (l.atestado.status || 'PENDENTE') === 'PENDENTE');
   const custoPorMes = [...resumo.ranking].sort((x, y) => y.custo - x.custo || x.nome.localeCompare(y.nome));
 
   const abrirNovo = () => {
@@ -565,6 +575,7 @@ const AtestadosTestePage = () => {
                 <div className="hidden sm:grid grid-cols-[1.7fr_0.8fr_0.7fr_0.5fr_0.9fr_0.7fr_1.5fr] gap-4 px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wide border-b border-gray-100">
                   <span>Pessoa</span>
                   {[['data', 'Data'], ['ordem', 'Atestado'], ['dias', 'Dias'], ['custo', 'Custo est.']].map(([campo, rotulo]) => {
+                    if (campo === 'ordem') return <span key={campo}>{rotulo}</span>;
                     const ativo = ordenacao.campo === campo;
                     const Seta = !ativo ? ArrowUpDown : ordenacao.dir === 'desc' ? ArrowDown : ArrowUp;
                     return (
@@ -662,108 +673,132 @@ const AtestadosTestePage = () => {
           </div>
 
           <div>
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-4">
-              <div>
-                <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Ranking de pessoas</h2>
-                <p className="text-gray-400 text-sm">As 10 pessoas com {rankingModo === 'dias' ? 'mais dias de afastamento' : 'mais atestados'} nos últimos 12 meses.</p>
-              </div>
-              <div className="flex gap-2">
-                {[['atestados', 'Mais atestados'], ['dias', 'Mais dias']].map(([modo, rotulo]) => (
-                  <button
-                    key={modo}
-                    type="button"
-                    onClick={() => setRankingModo(modo)}
-                    className={`px-4 py-2 rounded-xl border text-sm font-semibold transition-colors ${rankingModo === modo ? 'border-[#003580] text-[#003580]' : 'border-gray-200 text-gray-500 hover:text-gray-900'}`}
-                  >
-                    {rotulo}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Atestados em aberto</h2>
+            <p className="text-gray-400 text-sm mb-4">Os que ainda não foram aprovados nem recusados.</p>
 
             <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
-              <div>
-                <div className="grid grid-cols-[40px_1.8fr_0.8fr_0.8fr_1fr] gap-4 px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wide border-b border-gray-100">
-                  <span>#</span>
-                  <span>Pessoa</span>
-                  <span>Atestados</span>
-                  <span>Dias totais</span>
-                  <span>Custo total</span>
-                </div>
-                {resumo.ranking.length === 0 ? (
-                  <p className="px-5 py-8 text-center text-sm text-gray-400">Nenhum atestado no período.</p>
+              <div className="max-h-[420px] overflow-y-auto">
+                {linhasPendentes.length === 0 ? (
+                  <p className="px-5 py-8 text-center text-sm text-gray-400">Nenhum atestado em aberto.</p>
                 ) : (
-                  rankingTop.map((p, i) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => setPessoaAbertaId(p.id)}
-                      className="w-full grid grid-cols-[40px_1.8fr_0.8fr_0.8fr_1fr] gap-4 items-center px-5 py-3.5 border-b border-gray-100 last:border-b-0 text-left hover:bg-gray-50 transition-colors"
+                  linhasPendentes.map(({ atestado: a, dias, custo }) => (
+                    <div
+                      key={a.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setPessoaAbertaId(a.beneficiario_id)}
+                      onKeyDown={(e) => e.key === 'Enter' && setPessoaAbertaId(a.beneficiario_id)}
+                      className="cursor-pointer grid grid-cols-[1fr_auto] sm:grid-cols-[1.7fr_0.8fr_0.5fr_0.9fr_0.7fr_1.5fr] gap-4 items-center px-5 py-3.5 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors"
                     >
-                      <span className="text-sm text-gray-400">{i + 1}</span>
                       <span className="min-w-0">
-                        <span className="block font-bold text-gray-900 text-sm truncate">{p.nome}</span>
-                        {p.alertas.length > 0 && (
-                          <span className="flex flex-wrap gap-1 mt-1">
-                            {p.alertas.map((al) => (
-                              <span key={al.chave} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${ALERTA_ESTILO[al.tipo].classe}`}>{ALERTA_ESTILO[al.tipo].rotulo}</span>
-                            ))}
-                          </span>
-                        )}
+                        <span className="block font-bold text-gray-900 text-sm truncate">{a.beneficiarios?.nome_completo || '—'}</span>
+                        {a.ia_dados?.risco?.nivel === 'ALTO' && <span className="block text-xs text-red-700">Risco alto: verificar antes de aceitar</span>}
                       </span>
-                      <span className="text-sm text-gray-900">{p.qtd}</span>
-                      <span className="text-sm text-gray-900">{p.dias}</span>
-                      <span className="text-sm font-semibold text-gray-900">
-                        <span className={`rounded-full ${corCusto(p.custo, 3) ? `px-2.5 py-1 ${corCusto(p.custo, 3)}` : ''}`}>{formatBRL(p.custo)}</span>
+                      <span className="hidden sm:block text-sm text-gray-900">{formatDate(a.data_inicio)}</span>
+                      <span className="hidden sm:block text-sm text-gray-900">{dias ? `${dias} ${dias === 1 ? 'dia' : 'dias'}` : '—'}</span>
+                      <span className="hidden sm:block text-sm text-gray-900">{custo ? formatBRL(custo) : '—'}</span>
+                      <span className="hidden sm:block text-sm text-gray-900 truncate">{a.cid || '—'}</span>
+                      <span className="flex items-center gap-1.5">
+                        <Button
+                          size="sm"
+                          className="h-7 px-3 text-xs bg-[#003580] hover:bg-[#002060] text-white"
+                          onClick={(e) => { e.stopPropagation(); handleDecidir(a, { status: 'APROVADO', motivo_recusa: null, recusa_detalhe: null }); }}
+                        >
+                          Aprovar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-3 text-xs text-red-600 hover:text-red-700"
+                          onClick={(e) => { e.stopPropagation(); setRecusa({ atestado: a, nome: a.beneficiarios?.nome_completo || '', motivo: '', detalhe: '' }); }}
+                        >
+                          Recusar
+                        </Button>
                       </span>
-                    </button>
+                    </div>
                   ))
                 )}
               </div>
             </div>
           </div>
 
+          {RANKINGS.map((r) => (
+            <div key={r.chave}>
+              <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">{r.titulo}</h2>
+              <p className="text-gray-400 text-sm mb-4">{r.descricao}</p>
+
+              <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+                <div className="grid grid-cols-[40px_1.8fr_0.8fr_0.8fr_1fr] gap-4 px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wide border-b border-gray-100">
+                  <span>#</span>
+                  <span>Pessoa</span>
+                  <span className={r.chave === 'atestados' ? 'text-[#003580]' : ''}>Atestados</span>
+                  <span className={r.chave === 'dias' ? 'text-[#003580]' : ''}>Dias totais</span>
+                  <span>Custo total</span>
+                </div>
+                {r.lista.length === 0 ? (
+                  <p className="px-5 py-8 text-center text-sm text-gray-400">Nenhum atestado no período.</p>
+                ) : (
+                  r.lista.map((p, i) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setPessoaAbertaId(p.id)}
+                      className="w-full grid grid-cols-[40px_1.8fr_0.8fr_0.8fr_1fr] gap-4 items-center px-5 py-3 border-b border-gray-100 last:border-b-0 text-left hover:bg-gray-50 transition-colors"
+                    >
+                      <span className="text-sm text-gray-400">{i + 1}</span>
+                      <span className="font-bold text-gray-900 text-sm truncate">{p.nome}</span>
+                      <span className={`text-sm text-gray-900 ${r.chave === 'atestados' ? 'font-bold' : ''}`}>{p.qtd}</span>
+                      <span className={`text-sm text-gray-900 ${r.chave === 'dias' ? 'font-bold' : ''}`}>{p.dias}</span>
+                      <span className="text-sm text-gray-900">{formatBRL(p.custo)}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          ))}
+
           <div>
             <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Custo por mês</h2>
             <p className="text-gray-400 text-sm mb-4">
-              Quanto cada pessoa custou em cada mês, pelo mês de início do atestado. Em amarelo a partir de {formatBRL(Number(config.custo_alerta_amarelo))} e em vermelho a partir de {formatBRL(Number(config.custo_alerta_vermelho))} no mês.
+              Quanto cada pessoa custou em cada mês, pelo mês de início do atestado. Amarelo a partir de {formatBRL(Number(config.custo_alerta_amarelo))} e vermelho a partir de {formatBRL(Number(config.custo_alerta_vermelho))} no mês.
             </p>
 
-            <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
-              <div className="max-h-[520px] overflow-auto">
-                <table className="w-full text-sm border-collapse">
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <div className="max-h-[451px] overflow-auto">
+                <table className="w-full text-sm border-separate border-spacing-0">
                   <thead>
-                    <tr className="text-xs font-bold text-gray-500 uppercase tracking-wide">
-                      <th className="sticky top-0 left-0 z-20 bg-white text-left px-5 py-3 border-b border-gray-100 min-w-[200px]">Pessoa</th>
+                    <tr className="text-xs font-bold text-gray-600 uppercase tracking-wide">
+                      <th className="sticky top-0 left-0 z-30 bg-gray-100 text-left px-3 h-10 border-b border-r border-gray-200 min-w-[220px]">Pessoa</th>
                       {resumo.meses.map((m) => (
-                        <th key={m.chave} className="sticky top-0 z-10 bg-white text-right px-4 py-3 border-b border-gray-100 whitespace-nowrap">{m.rotulo}</th>
+                        <th key={m.chave} className="sticky top-0 z-20 bg-gray-100 text-right px-3 h-10 border-b border-r border-gray-200 whitespace-nowrap min-w-[110px]">{m.rotulo}</th>
                       ))}
-                      <th className="sticky top-0 z-10 bg-white text-right px-5 py-3 border-b border-gray-100">Total</th>
+                      <th className="sticky top-0 z-20 bg-gray-100 text-right px-3 h-10 border-b border-gray-200 min-w-[120px]">Total</th>
                     </tr>
                   </thead>
                   <tbody>
                     {custoPorMes.map((p) => (
-                      <tr key={p.id} className="border-b border-gray-100 last:border-b-0">
-                        <td className="sticky left-0 bg-white px-5 py-3 font-bold text-gray-900 truncate max-w-[220px]">{p.nome}</td>
-                        {resumo.meses.map((m) => (
-                          <td key={m.chave} className={`px-4 py-3 text-right whitespace-nowrap ${p.custoMes[m.chave] ? 'text-gray-900' : 'text-gray-300'}`}>
-                            {p.custoMes[m.chave]
-                              ? <span className={`rounded-full ${corCusto(p.custoMes[m.chave]) ? `px-2.5 py-1 font-semibold ${corCusto(p.custoMes[m.chave])}` : ''}`}>{formatBRL(p.custoMes[m.chave])}</span>
-                              : '—'}
-                          </td>
-                        ))}
-                        <td className="px-5 py-3 text-right font-semibold text-gray-900 whitespace-nowrap">{formatBRL(p.custo)}</td>
+                      <tr key={p.id}>
+                        <td className="sticky left-0 z-10 bg-white px-3 h-10 border-b border-r border-gray-200 font-semibold text-gray-900 truncate max-w-[220px]">{p.nome}</td>
+                        {resumo.meses.map((m) => {
+                          const v = p.custoMes[m.chave];
+                          return (
+                            <td key={m.chave} className={`px-3 h-10 border-b border-r border-gray-200 text-right whitespace-nowrap ${v ? `text-gray-900 ${CELULA_CUSTO[nivelCusto(v)]}` : 'text-gray-300'}`}>
+                              {v ? formatBRL(v) : '—'}
+                            </td>
+                          );
+                        })}
+                        <td className="px-3 h-10 border-b border-gray-200 text-right font-semibold text-gray-900 whitespace-nowrap">{formatBRL(p.custo)}</td>
                       </tr>
                     ))}
-                    {resumo.ranking.length > 0 && (
-                      <tr>
-                        <td className="sticky bottom-0 left-0 z-20 bg-white px-5 py-3 font-bold text-gray-900 border-t border-gray-200">Total do mês</td>
+                    {custoPorMes.length > 0 && (
+                      <tr className="font-bold text-gray-900">
+                        <td className="sticky bottom-0 left-0 z-30 bg-gray-100 px-3 h-10 border-t border-r border-gray-200">Total do mês</td>
                         {resumo.meses.map((m) => (
-                          <td key={m.chave} className="sticky bottom-0 bg-white px-4 py-3 text-right font-semibold text-gray-900 whitespace-nowrap border-t border-gray-200">
+                          <td key={m.chave} className="sticky bottom-0 z-20 bg-gray-100 px-3 h-10 border-t border-r border-gray-200 text-right whitespace-nowrap">
                             {resumo.totalMes[m.chave] ? formatBRL(resumo.totalMes[m.chave]) : '—'}
                           </td>
                         ))}
-                        <td className="sticky bottom-0 bg-white px-5 py-3 text-right font-bold text-gray-900 whitespace-nowrap border-t border-gray-200">{formatBRL(resumo.custoTotal)}</td>
+                        <td className="sticky bottom-0 z-20 bg-gray-100 px-3 h-10 border-t border-gray-200 text-right whitespace-nowrap">{formatBRL(resumo.custoTotal)}</td>
                       </tr>
                     )}
                   </tbody>
