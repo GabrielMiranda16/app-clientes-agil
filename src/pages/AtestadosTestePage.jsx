@@ -7,7 +7,7 @@ import { atestadosService, custoEstimado, diasDoAtestado, CONFIG_PADRAO, ETAPAS_
 import { analisarAtestados, acharDuplicado, avisosDoAcompanhamento, emAcompanhamento, geraCusto, retornoPrevisto } from '@/services/atestadosAnalise';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import AtestadoCard from '@/components/clienteTeste/AtestadoCard';
-import { ArrowLeft, Loader2, Stethoscope, Plus, Trash2, Sparkles, FileText, Upload, AlertTriangle, ChevronLeft, ChevronRight, Pencil, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { ArrowLeft, Loader2, Stethoscope, Plus, Trash2, Sparkles, FileText, Upload, AlertTriangle, ChevronLeft, ChevronRight, Pencil, ArrowUp, ArrowDown, ArrowUpDown, Bell } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -94,6 +94,7 @@ const AtestadosTestePage = () => {
   const [salarioEdit, setSalarioEdit] = useState(null);
   const [acompanharId, setAcompanharId] = useState(null);
   const [recusa, setRecusa] = useState(null);
+  const [alertasAbertos, setAlertasAbertos] = useState(false);
   const [ordenacao, setOrdenacao] = useState({ campo: 'data', dir: 'desc' });
   const [paginaAtestados, setPaginaAtestados] = useState(1);
 
@@ -434,6 +435,9 @@ const AtestadosTestePage = () => {
 
   const detalheRecusa = recusa ? MOTIVOS_RECUSA.find((m) => m.value === recusa.motivo)?.detalhe : null;
 
+  const outrosAlertas = resumo.alertas.filter((al) => al.tipo !== 'INSS');
+  const totalAlertas = resumo.inssPendentes.length + outrosAlertas.length;
+
   const INDICADORES = [
     { label: 'Atestados (12 meses)', valor: resumo.totalAtestados },
     { label: 'Pendentes de decisão', valor: resumo.pendentes.length },
@@ -458,12 +462,27 @@ const AtestadosTestePage = () => {
               <h1 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Atestados</h1>
               <p className="text-gray-400 text-sm">Atestados vinculados a essa apólice.</p>
             </div>
-            <button
-              onClick={abrirNovo}
-              className="flex items-center gap-2 px-5 py-3 rounded-full bg-[#003580] text-white text-sm font-semibold hover:bg-[#002060] transition-colors flex-shrink-0"
-            >
-              <Plus className="w-4 h-4" /> Adicionar atestado
-            </button>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setAlertasAbertos(true)}
+                title="Alertas"
+                className="relative w-11 h-11 flex items-center justify-center rounded-full border border-gray-200 text-gray-700 hover:border-[#003580] hover:text-[#003580] transition-colors"
+              >
+                <Bell className="w-5 h-5" />
+                {totalAlertas > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-red-600 text-white text-[11px] font-bold flex items-center justify-center">
+                    {totalAlertas}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={abrirNovo}
+                className="flex items-center gap-2 px-5 py-3 rounded-full bg-[#003580] text-white text-sm font-semibold hover:bg-[#002060] transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Adicionar atestado
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -512,59 +531,6 @@ const AtestadosTestePage = () => {
               )}
             </div>
           </div>
-
-          {resumo.inssPendentes.length > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-2xl p-5">
-              <h2 className="font-bold text-red-700 mb-1 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4" /> Afastar pelo INSS
-              </h2>
-              <p className="text-xs text-red-700 mb-3">A empresa paga só os primeiros 15 dias. Passando disso, a pessoa deve ser encaminhada à perícia do INSS.</p>
-              <div className="space-y-2">
-                {resumo.inssPendentes.map((al) => (
-                  <div key={al.chave} className="bg-white rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <button type="button" onClick={() => abrirAcompanhamentoDe(al.atestado)} className="min-w-0 text-left">
-                      <span className="block text-sm font-semibold text-gray-900">{al.titulo}</span>
-                      <span className="block text-xs text-gray-500">{al.detalhe}</span>
-                    </button>
-                    <Button
-                      size="sm"
-                      className="bg-red-600 hover:bg-red-700 text-white flex-shrink-0"
-                      onClick={() => handleAtualizar(al.atestado, { etapa: 'ENCAMINHADO_INSS', inss_encaminhado_em: isoLocal(new Date()) }).catch(() => {})}
-                    >
-                      Marcar como encaminhado
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {resumo.alertas.some((al) => al.tipo !== 'INSS') && (
-            <div className="bg-white border border-gray-100 rounded-2xl p-5">
-              <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-red-600" /> Alertas
-              </h2>
-              <div className="divide-y divide-gray-100">
-                {resumo.alertas.filter((al) => al.tipo !== 'INSS').map((al) => (
-                  <button
-                    key={al.chave}
-                    type="button"
-                    disabled={!al.pessoaId}
-                    onClick={() => setPessoaAbertaId(al.pessoaId)}
-                    className="w-full flex items-start gap-3 py-2.5 text-left"
-                  >
-                    <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${ALERTA_ESTILO[al.tipo].classe}`}>
-                      {ALERTA_ESTILO[al.tipo].rotulo}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold text-gray-900">{al.titulo}</span>
-                      <span className="block text-xs text-gray-500">{al.detalhe}</span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           <div>
             <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Atestados</h2>
@@ -760,25 +726,27 @@ const AtestadosTestePage = () => {
           <div>
             <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Custo por mês</h2>
             <p className="text-gray-400 text-sm mb-4">
-              Quanto cada pessoa custou em cada mês, pelo mês de início do atestado. Amarelo a partir de {formatBRL(Number(config.custo_alerta_amarelo))} e vermelho a partir de {formatBRL(Number(config.custo_alerta_vermelho))} no mês.
+              Quanto cada pessoa custou em cada mês, da que mais custou para a que menos custou. Arraste para o lado para ver os meses. Amarelo a partir de {formatBRL(Number(config.custo_alerta_amarelo))} e vermelho a partir de {formatBRL(Number(config.custo_alerta_vermelho))} no mês.
             </p>
 
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="max-h-[451px] overflow-auto">
-                <table className="w-full text-sm border-separate border-spacing-0">
+              <div className="w-0 min-w-full max-h-[451px] overflow-auto">
+                <table className="text-sm border-separate border-spacing-0">
                   <thead>
                     <tr className="text-xs font-bold text-gray-600 uppercase tracking-wide">
-                      <th className="sticky top-0 left-0 z-30 bg-gray-100 text-left px-3 h-10 border-b border-r border-gray-200 min-w-[220px]">Pessoa</th>
+                      <th className="sticky top-0 left-0 z-30 bg-gray-100 text-center h-10 border-b border-r border-gray-200 w-[48px] min-w-[48px]">#</th>
+                      <th className="sticky top-0 left-[48px] z-30 bg-gray-100 text-left px-3 h-10 border-b border-r border-gray-300 w-[220px] min-w-[220px]">Pessoa</th>
                       {resumo.meses.map((m) => (
-                        <th key={m.chave} className="sticky top-0 z-20 bg-gray-100 text-right px-3 h-10 border-b border-r border-gray-200 whitespace-nowrap min-w-[110px]">{m.rotulo}</th>
+                        <th key={m.chave} className="sticky top-0 z-20 bg-gray-100 text-right px-3 h-10 border-b border-r border-gray-200 whitespace-nowrap min-w-[120px]">{m.rotulo}</th>
                       ))}
-                      <th className="sticky top-0 z-20 bg-gray-100 text-right px-3 h-10 border-b border-gray-200 min-w-[120px]">Total</th>
+                      <th className="sticky top-0 z-20 bg-gray-100 text-right px-3 h-10 border-b border-gray-200 min-w-[130px]">Total</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {custoPorMes.map((p) => (
+                    {custoPorMes.map((p, i) => (
                       <tr key={p.id}>
-                        <td className="sticky left-0 z-10 bg-white px-3 h-10 border-b border-r border-gray-200 font-semibold text-gray-900 truncate max-w-[220px]">{p.nome}</td>
+                        <td className="sticky left-0 z-10 bg-white text-center h-10 border-b border-r border-gray-200 text-gray-400 w-[48px] min-w-[48px]">{i + 1}</td>
+                        <td className="sticky left-[48px] z-10 bg-white px-3 h-10 border-b border-r border-gray-300 font-semibold text-gray-900 truncate w-[220px] min-w-[220px] max-w-[220px]">{p.nome}</td>
                         {resumo.meses.map((m) => {
                           const v = p.custoMes[m.chave];
                           return (
@@ -792,13 +760,14 @@ const AtestadosTestePage = () => {
                     ))}
                     {custoPorMes.length > 0 && (
                       <tr className="font-bold text-gray-900">
-                        <td className="sticky bottom-0 left-0 z-30 bg-gray-100 px-3 h-10 border-t border-r border-gray-200">Total do mês</td>
+                        <td className="sticky left-0 z-10 bg-gray-100 h-10 border-r border-gray-200 w-[48px] min-w-[48px]" />
+                        <td className="sticky left-[48px] z-10 bg-gray-100 px-3 h-10 border-r border-gray-300 w-[220px] min-w-[220px]">Total do mês</td>
                         {resumo.meses.map((m) => (
-                          <td key={m.chave} className="sticky bottom-0 z-20 bg-gray-100 px-3 h-10 border-t border-r border-gray-200 text-right whitespace-nowrap">
+                          <td key={m.chave} className="bg-gray-100 px-3 h-10 border-r border-gray-200 text-right whitespace-nowrap">
                             {resumo.totalMes[m.chave] ? formatBRL(resumo.totalMes[m.chave]) : '—'}
                           </td>
                         ))}
-                        <td className="sticky bottom-0 z-20 bg-gray-100 px-3 h-10 border-t border-gray-200 text-right whitespace-nowrap">{formatBRL(resumo.custoTotal)}</td>
+                        <td className="bg-gray-100 px-3 h-10 text-right whitespace-nowrap">{formatBRL(resumo.custoTotal)}</td>
                       </tr>
                     )}
                   </tbody>
@@ -923,6 +892,61 @@ const AtestadosTestePage = () => {
             </div>
           </PainelCorpo>
         )}
+      </PainelLateral>
+
+      <PainelLateral open={alertasAbertos} onOpenChange={setAlertasAbertos} title="Alertas">
+        <PainelCorpo className="space-y-5">
+          {totalAlertas === 0 && <p className="text-sm text-gray-400">Nenhum alerta no momento.</p>}
+
+          {resumo.inssPendentes.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-red-700 mb-1">Afastar pelo INSS</p>
+              <p className="text-xs text-gray-500 mb-3">A empresa paga só os primeiros 15 dias. Passando disso, a pessoa deve ser encaminhada à perícia do INSS.</p>
+              <div className="space-y-2">
+                {resumo.inssPendentes.map((al) => (
+                  <div key={al.chave} className="bg-red-50 rounded-2xl px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => { setAlertasAbertos(false); abrirAcompanhamentoDe(al.atestado); }}
+                      className="block text-left"
+                    >
+                      <span className="block text-sm font-semibold text-gray-900">{al.titulo}</span>
+                      <span className="block text-xs text-red-700 mt-0.5">{al.detalhe}</span>
+                    </button>
+                    <Button
+                      size="sm"
+                      className="mt-3 bg-red-600 hover:bg-red-700 text-white"
+                      onClick={() => handleAtualizar(al.atestado, { etapa: 'ENCAMINHADO_INSS', inss_encaminhado_em: isoLocal(new Date()) }).catch(() => {})}
+                    >
+                      Marcar como encaminhado
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {outrosAlertas.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#003580] mb-3">Para verificar</p>
+              <div className="space-y-2">
+                {outrosAlertas.map((al) => (
+                  <button
+                    key={al.chave}
+                    type="button"
+                    disabled={!al.pessoaId}
+                    onClick={() => { setAlertasAbertos(false); setPessoaAbertaId(al.pessoaId); }}
+                    className="w-full text-left bg-amber-50 rounded-2xl px-4 py-3"
+                  >
+                    <span className="block text-[11px] font-semibold uppercase tracking-wide text-amber-700">{ALERTA_ESTILO[al.tipo].rotulo}</span>
+                    <span className="block text-sm font-semibold text-gray-900 mt-0.5">{al.titulo}</span>
+                    <span className="block text-xs text-gray-600 mt-0.5">{al.detalhe}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </PainelCorpo>
       </PainelLateral>
 
       <Dialog open={!!recusa} onOpenChange={(open) => !open && setRecusa(null)}>
