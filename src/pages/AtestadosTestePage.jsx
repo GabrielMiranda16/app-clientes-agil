@@ -8,6 +8,7 @@ import { analisarAtestados, acharDuplicado, avisosDoAcompanhamento, emAcompanham
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useCid10 } from '@/services/cid10';
 import AtestadoCard from '@/components/clienteTeste/AtestadoCard';
+import AceiteLgpd from '@/components/clienteTeste/AceiteLgpd';
 import { ArrowLeft, Loader2, Stethoscope, Plus, Trash2, Sparkles, FileText, Upload, AlertTriangle, ChevronLeft, ChevronRight, Pencil, ArrowUp, ArrowDown, ArrowUpDown, Bell, FolderOpen, Search, Download, FileSpreadsheet } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { exportarResumoPDF, exportarExcel, AVISO_LGPD } from '@/services/atestadosExport';
@@ -75,7 +76,7 @@ const acharBeneficiario = (beneficiarios, nome) => {
   return candidatos.length === 1 ? candidatos[0] : null;
 };
 
-const AtestadosTestePage = ({ modo = 'principal' }) => {
+const AtestadosTesteConteudo = ({ modo = 'principal' }) => {
   const { apoliceId } = useParams();
   const [searchParams] = useSearchParams();
   const todos = modo === 'todos';
@@ -1331,6 +1332,17 @@ const AtestadosTestePage = ({ modo = 'principal' }) => {
           </PainelRodape>
       </PainelLateral>
     </>
+  );
+};
+
+const AtestadosTestePage = (props) => {
+  const { apoliceId } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  return (
+    <AceiteLgpd modulo="ATESTADOS" email={user?.email || null} onRecusar={() => navigate(`/gestao-apolice/${apoliceId}/teste`)}>
+      <AtestadosTesteConteudo {...props} />
+    </AceiteLgpd>
   );
 };
 
