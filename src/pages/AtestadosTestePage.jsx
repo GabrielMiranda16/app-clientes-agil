@@ -7,7 +7,7 @@ import { atestadosService, custoEstimado, diasDoAtestado, CONFIG_PADRAO, ETAPAS_
 import { analisarAtestados, acharDuplicado, avisosDoAcompanhamento, emAcompanhamento, geraCusto, retornoPrevisto } from '@/services/atestadosAnalise';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import AtestadoCard from '@/components/clienteTeste/AtestadoCard';
-import { ArrowLeft, Loader2, Stethoscope, Plus, Trash2, Sparkles, FileText, Upload, AlertTriangle, ChevronRight, Pencil } from 'lucide-react';
+import { ArrowLeft, Loader2, Stethoscope, Plus, Trash2, Sparkles, FileText, Upload, AlertTriangle, ChevronLeft, ChevronRight, Pencil, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -44,6 +44,8 @@ const formatDate = (d) => {
   if (!d) return '—';
   try { return format(new Date(`${d}T00:00:00`), 'dd/MM/yyyy', { locale: ptBR }); } catch { return d; }
 };
+
+const ITENS_POR_PAGINA = 10;
 
 const mascaraBRL = (texto) => (Number(String(texto).replace(/\D/g, '') || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -91,6 +93,9 @@ const AtestadosTestePage = () => {
   const [salarioEdit, setSalarioEdit] = useState(null);
   const [acompanharId, setAcompanharId] = useState(null);
   const [recusa, setRecusa] = useState(null);
+  const [ordenacao, setOrdenacao] = useState({ campo: 'data', dir: 'desc' });
+  const [paginaAtestados, setPaginaAtestados] = useState(1);
+  const [rankingModo, setRankingModo] = useState('atestados');
 
   useEffect(() => {
     apolicesService.getApolice(apoliceId)
@@ -175,6 +180,41 @@ const AtestadosTestePage = () => {
   }, [atestados, config]);
 
   const pessoaAberta = resumo.pessoas.find((p) => p.id === pessoaAbertaId) || null;
+
+  const linhasOrdenadas = useMemo(() => {
+    const valor = {
+      data: (l) => l.atestado.data_inicio,
+      ordem: (l) => l.ordem,
+      dias: (l) => l.dias,
+      custo: (l) => l.custo,
+    }[ordenacao.campo];
+    const sinal = ordenacao.dir === 'asc' ? 1 : -1;
+    return [...resumo.linhas].sort((x, y) => {
+      const a = valor(x), b = valor(y);
+      if (a === b) return y.atestado.id - x.atestado.id;
+      return (a > b ? 1 : -1) * sinal;
+    });
+  }, [resumo.linhas, ordenacao]);
+
+  const totalPaginasAtestados = Math.max(1, Math.ceil(linhasOrdenadas.length / ITENS_POR_PAGINA));
+  const paginaAtual = Math.min(paginaAtestados, totalPaginasAtestados);
+  const linhasPagina = linhasOrdenadas.slice((paginaAtual - 1) * ITENS_POR_PAGINA, paginaAtual * ITENS_POR_PAGINA);
+
+  const ordenarPor = (campo) => {
+    setOrdenacao((o) => (o.campo === campo ? { campo, dir: o.dir === 'desc' ? 'asc' : 'desc' } : { campo, dir: 'desc' }));
+    setPaginaAtestados(1);
+  };
+
+  const corCusto = (valor, fator = 1) => {
+    if (valor >= Number(config.custo_alerta_vermelho) * fator) return 'bg-red-50 text-red-700';
+    if (valor >= Number(config.custo_alerta_amarelo) * fator) return 'bg-amber-50 text-amber-700';
+    return '';
+  };
+
+  const rankingTop = [...resumo.ranking]
+    .sort((x, y) => (rankingModo === 'dias' ? y.dias - x.dias || y.qtd - x.qtd : y.qtd - x.qtd || y.dias - x.dias) || x.nome.localeCompare(y.nome))
+    .slice(0, 10);
+  const custoPorMes = [...resumo.ranking].sort((x, y) => y.custo - x.custo || x.nome.localeCompare(y.nome));
 
   const abrirNovo = () => {
     setEditando(null);
@@ -521,13 +561,24 @@ const AtestadosTestePage = () => {
             <p className="text-gray-400 text-sm mb-4">Um por linha, com os dias e o custo de cada um. Clique para ver os detalhes da pessoa.</p>
 
             <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
-              <div className="max-h-[440px] overflow-y-auto">
-                <div className="hidden sm:grid grid-cols-[1.7fr_0.8fr_0.7fr_0.5fr_0.9fr_0.7fr_1.5fr] gap-4 px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wide sticky top-0 bg-white z-10 border-b border-gray-100">
+              <div>
+                <div className="hidden sm:grid grid-cols-[1.7fr_0.8fr_0.7fr_0.5fr_0.9fr_0.7fr_1.5fr] gap-4 px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wide border-b border-gray-100">
                   <span>Pessoa</span>
-                  <span>Data</span>
-                  <span>Atestado</span>
-                  <span>Dias</span>
-                  <span>Custo est.</span>
+                  {[['data', 'Data'], ['ordem', 'Atestado'], ['dias', 'Dias'], ['custo', 'Custo est.']].map(([campo, rotulo]) => {
+                    const ativo = ordenacao.campo === campo;
+                    const Seta = !ativo ? ArrowUpDown : ordenacao.dir === 'desc' ? ArrowDown : ArrowUp;
+                    return (
+                      <button
+                        key={campo}
+                        type="button"
+                        onClick={() => ordenarPor(campo)}
+                        title={ativo ? (ordenacao.dir === 'desc' ? 'Do maior para o menor' : 'Do menor para o maior') : 'Ordenar'}
+                        className={`flex items-center gap-1 uppercase tracking-wide font-bold text-left hover:text-[#003580] transition-colors ${ativo ? 'text-[#003580]' : ''}`}
+                      >
+                        {rotulo} <Seta className="w-3 h-3" />
+                      </button>
+                    );
+                  })}
                   <span>CID</span>
                   <span>Situação</span>
                 </div>
@@ -538,7 +589,7 @@ const AtestadosTestePage = () => {
                     Nenhum atestado cadastrado.
                   </div>
                 ) : (
-                  resumo.linhas.map(({ atestado: a, ordem, dias, custo }) => {
+                  linhasPagina.map(({ atestado: a, ordem, dias, custo }) => {
                     const st = a.status || 'PENDENTE';
                     return (
                       <div
@@ -556,7 +607,9 @@ const AtestadosTestePage = () => {
                         <span className="hidden sm:block text-sm text-gray-900">{formatDate(a.data_inicio)}</span>
                         <span className="hidden sm:block text-sm text-gray-900">{ordem}º</span>
                         <span className="hidden sm:block text-sm text-gray-900">{dias || '—'}</span>
-                        <span className="hidden sm:block text-sm text-gray-900">{custo ? formatBRL(custo) : '—'}</span>
+                        <span className="hidden sm:block text-sm text-gray-900">
+                          {custo ? <span className={`rounded-full ${corCusto(custo) ? `px-2.5 py-1 font-semibold ${corCusto(custo)}` : ''}`}>{formatBRL(custo)}</span> : '—'}
+                        </span>
                         <span className="hidden sm:block text-sm text-gray-900 truncate">{a.cid || '—'}</span>
                         <span className="flex items-center gap-1.5">
                           {st === 'PENDENTE' ? (
@@ -586,16 +639,51 @@ const AtestadosTestePage = () => {
                   })
                 )}
               </div>
+              {linhasOrdenadas.length > ITENS_POR_PAGINA && (
+                <div className="flex items-center justify-end gap-3 px-5 py-3 border-t border-gray-100 text-sm text-gray-500">
+                  <span>{paginaAtual} de {totalPaginasAtestados}</span>
+                  <button
+                    onClick={() => setPaginaAtestados(Math.max(1, paginaAtual - 1))}
+                    disabled={paginaAtual <= 1}
+                    className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white disabled:opacity-40"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setPaginaAtestados(Math.min(totalPaginasAtestados, paginaAtual + 1))}
+                    disabled={paginaAtual >= totalPaginasAtestados}
+                    className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white disabled:opacity-40"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Ranking de pessoas</h2>
-            <p className="text-gray-400 text-sm mb-4">Totais dos últimos 12 meses, de quem mais entregou atestado para quem menos entregou.</p>
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Ranking de pessoas</h2>
+                <p className="text-gray-400 text-sm">As 10 pessoas com {rankingModo === 'dias' ? 'mais dias de afastamento' : 'mais atestados'} nos últimos 12 meses.</p>
+              </div>
+              <div className="flex gap-2">
+                {[['atestados', 'Mais atestados'], ['dias', 'Mais dias']].map(([modo, rotulo]) => (
+                  <button
+                    key={modo}
+                    type="button"
+                    onClick={() => setRankingModo(modo)}
+                    className={`px-4 py-2 rounded-xl border text-sm font-semibold transition-colors ${rankingModo === modo ? 'border-[#003580] text-[#003580]' : 'border-gray-200 text-gray-500 hover:text-gray-900'}`}
+                  >
+                    {rotulo}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
-              <div className="max-h-[360px] overflow-y-auto">
-                <div className="grid grid-cols-[40px_1.8fr_0.8fr_0.8fr_1fr] gap-4 px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wide sticky top-0 bg-white z-10 border-b border-gray-100">
+              <div>
+                <div className="grid grid-cols-[40px_1.8fr_0.8fr_0.8fr_1fr] gap-4 px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wide border-b border-gray-100">
                   <span>#</span>
                   <span>Pessoa</span>
                   <span>Atestados</span>
@@ -605,7 +693,7 @@ const AtestadosTestePage = () => {
                 {resumo.ranking.length === 0 ? (
                   <p className="px-5 py-8 text-center text-sm text-gray-400">Nenhum atestado no período.</p>
                 ) : (
-                  resumo.ranking.map((p, i) => (
+                  rankingTop.map((p, i) => (
                     <button
                       key={p.id}
                       type="button"
@@ -625,7 +713,9 @@ const AtestadosTestePage = () => {
                       </span>
                       <span className="text-sm text-gray-900">{p.qtd}</span>
                       <span className="text-sm text-gray-900">{p.dias}</span>
-                      <span className="text-sm font-semibold text-gray-900">{formatBRL(p.custo)}</span>
+                      <span className="text-sm font-semibold text-gray-900">
+                        <span className={`rounded-full ${corCusto(p.custo, 3) ? `px-2.5 py-1 ${corCusto(p.custo, 3)}` : ''}`}>{formatBRL(p.custo)}</span>
+                      </span>
                     </button>
                   ))
                 )}
@@ -635,10 +725,12 @@ const AtestadosTestePage = () => {
 
           <div>
             <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Custo por mês</h2>
-            <p className="text-gray-400 text-sm mb-4">Quanto cada pessoa custou em cada mês, pelo mês de início do atestado.</p>
+            <p className="text-gray-400 text-sm mb-4">
+              Quanto cada pessoa custou em cada mês, pelo mês de início do atestado. Em amarelo a partir de {formatBRL(Number(config.custo_alerta_amarelo))} e em vermelho a partir de {formatBRL(Number(config.custo_alerta_vermelho))} no mês.
+            </p>
 
             <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
-              <div className="max-h-[360px] overflow-auto">
+              <div className="max-h-[520px] overflow-auto">
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr className="text-xs font-bold text-gray-500 uppercase tracking-wide">
@@ -650,12 +742,14 @@ const AtestadosTestePage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {resumo.ranking.map((p) => (
+                    {custoPorMes.map((p) => (
                       <tr key={p.id} className="border-b border-gray-100 last:border-b-0">
                         <td className="sticky left-0 bg-white px-5 py-3 font-bold text-gray-900 truncate max-w-[220px]">{p.nome}</td>
                         {resumo.meses.map((m) => (
                           <td key={m.chave} className={`px-4 py-3 text-right whitespace-nowrap ${p.custoMes[m.chave] ? 'text-gray-900' : 'text-gray-300'}`}>
-                            {p.custoMes[m.chave] ? formatBRL(p.custoMes[m.chave]) : '—'}
+                            {p.custoMes[m.chave]
+                              ? <span className={`rounded-full ${corCusto(p.custoMes[m.chave]) ? `px-2.5 py-1 font-semibold ${corCusto(p.custoMes[m.chave])}` : ''}`}>{formatBRL(p.custoMes[m.chave])}</span>
+                              : '—'}
                           </td>
                         ))}
                         <td className="px-5 py-3 text-right font-semibold text-gray-900 whitespace-nowrap">{formatBRL(p.custo)}</td>

@@ -30,6 +30,8 @@ export const CONFIG_PADRAO = {
   encargos_percentual: 0,
   limitar_custo_15_dias: true,
   meta_absenteismo: 4,
+  custo_alerta_amarelo: 500,
+  custo_alerta_vermelho: 1000,
 };
 
 export const TIPOS_ATESTADO = [
