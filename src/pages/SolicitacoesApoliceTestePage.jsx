@@ -51,7 +51,7 @@ const SolicitacoesApoliceTestePage = () => {
       <ClienteSidebarLayout>
         <div className="space-y-6">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate(`/gestao-apolice/${apoliceId}/teste`)}
             className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-[#003580] transition-colors"
           >
             <ArrowLeft className="w-4 h-4" /> Voltar

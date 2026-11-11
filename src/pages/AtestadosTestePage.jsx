@@ -8,7 +8,9 @@ import { analisarAtestados, acharDuplicado, avisosDoAcompanhamento, emAcompanham
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useCid10 } from '@/services/cid10';
 import AtestadoCard from '@/components/clienteTeste/AtestadoCard';
-import { ArrowLeft, Loader2, Stethoscope, Plus, Trash2, Sparkles, FileText, Upload, AlertTriangle, ChevronLeft, ChevronRight, Pencil, ArrowUp, ArrowDown, ArrowUpDown, Bell, FolderOpen, Search } from 'lucide-react';
+import { ArrowLeft, Loader2, Stethoscope, Plus, Trash2, Sparkles, FileText, Upload, AlertTriangle, ChevronLeft, ChevronRight, Pencil, ArrowUp, ArrowDown, ArrowUpDown, Bell, FolderOpen, Search, Download, FileSpreadsheet } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { exportarResumoPDF, exportarExcel, AVISO_LGPD } from '@/services/atestadosExport';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -101,6 +103,7 @@ const AtestadosTestePage = ({ modo = 'principal' }) => {
   const [recusa, setRecusa] = useState(null);
   const [alertasAbertos, setAlertasAbertos] = useState(false);
   const [focoId, setFocoId] = useState(null);
+  const [exportando, setExportando] = useState(false);
   const [buscaTodos, setBuscaTodos] = useState('');
   const [paginaTodos, setPaginaTodos] = useState(1);
   const [ordenacao, setOrdenacao] = useState({ campo: 'data', dir: 'desc' });
@@ -559,6 +562,20 @@ const AtestadosTestePage = ({ modo = 'principal' }) => {
     </div>
   );
 
+  const baixar = async (formato) => {
+    setExportando(true);
+    try {
+      const empresa = apolice?.empresas?.nome_fantasia || apolice?.empresas?.razao_social || '';
+      if (formato === 'pdf') await exportarResumoPDF({ empresa, seguradora: apolice?.seguradora, resumo, rankings: RANKINGS, descricaoCid });
+      else await exportarExcel({ empresa, resumo, descricaoCid });
+    } catch (err) {
+      console.error(err);
+      toast({ variant: 'destructive', title: 'Não foi possível gerar o arquivo.' });
+    } finally {
+      setExportando(false);
+    }
+  };
+
   const outrosAlertas = resumo.alertas.filter((al) => al.tipo !== 'INSS');
   const totalAlertas = resumo.inssPendentes.length + outrosAlertas.length;
 
@@ -576,7 +593,7 @@ const AtestadosTestePage = ({ modo = 'principal' }) => {
         {todos ? conteudoTodos : (
         <div className="space-y-6">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate(`/gestao-apolice/${apoliceId}/teste`)}
             className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-[#003580] transition-colors"
           >
             <ArrowLeft className="w-4 h-4" /> Voltar
@@ -595,6 +612,26 @@ const AtestadosTestePage = ({ modo = 'principal' }) => {
               >
                 <FolderOpen className="w-4 h-4" /> Todos os atestados
               </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    title="Baixar"
+                    disabled={exportando}
+                    className="w-11 h-11 flex items-center justify-center rounded-full border border-gray-200 text-gray-700 hover:border-[#003580] hover:text-[#003580] transition-colors disabled:opacity-50"
+                  >
+                    {exportando ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-white" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                  <DropdownMenuItem onClick={() => baixar('pdf')} className="gap-2 cursor-pointer">
+                    <FileText className="w-4 h-4" /> Resumo em PDF
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => baixar('excel')} className="gap-2 cursor-pointer">
+                    <FileSpreadsheet className="w-4 h-4" /> Planilha em Excel
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <button
                 type="button"
                 onClick={() => setAlertasAbertos(true)}
@@ -923,6 +960,7 @@ const AtestadosTestePage = ({ modo = 'principal' }) => {
           </div>
         </div>
         )}
+        <p className="text-[11px] text-gray-400 mt-8 pt-4 border-t border-gray-100">{AVISO_LGPD}</p>
       </ClienteSidebarLayout>
 
       <PainelLateral open={!!pessoaAberta} onOpenChange={(open) => { if (!open) { setPessoaAbertaId(null); setAcompanharId(null); setFocoId(null); } }} title={pessoaAberta?.nome || ''}>
