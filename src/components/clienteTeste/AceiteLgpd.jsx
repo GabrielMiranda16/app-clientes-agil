@@ -4,7 +4,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { PainelLateral, PainelCorpo, PainelRodape } from '@/components/clienteTeste/PainelLateral';
 import { Button } from '@/components/ui/button';
 
-const VERSAO = '2026-11-11';
+const VERSAO = '2026-11-11-b';
 
 const AceiteLgpd = ({ modulo, email, onRecusar, children }) => {
   const [estado, setEstado] = useState('verificando');
