@@ -3,6 +3,7 @@ import { FileText, Pencil, Trash2, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import AtestadoAcompanhamento from '@/components/clienteTeste/AtestadoAcompanhamento';
 import { custoEstimado, diasDoAtestado, ETAPAS_AFASTAMENTO, MOTIVOS_RECUSA, STATUS_ATESTADO, TIPOS_ATESTADO } from '@/services/atestadosService';
+import { useCid10 } from '@/services/cid10';
 import { avisosDoAcompanhamento, ehAfastamento, geraCusto, marcasDoAtestado } from '@/services/atestadosAnalise';
 
 const formatDate = (d) => {
@@ -15,6 +16,7 @@ const AVISO_CLASSE = { URGENTE: 'bg-red-50 text-red-700', ATENCAO: 'bg-amber-50 
 
 const AtestadoCard = ({ atestado: a, config, salarioMensal, autor, abrirAcompanhamento, onAtualizar, onDecidir, onEditar, onExcluir, onVerArquivo }) => {
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
+  const descricaoCid = useCid10();
   const [acompanhando, setAcompanhando] = useState(!!abrirAcompanhamento);
 
   const status = a.status || 'PENDENTE';
@@ -38,8 +40,12 @@ const AtestadoCard = ({ atestado: a, config, salarioMensal, autor, abrirAcompanh
             {dias ? ` · ${dias} ${dias === 1 ? 'dia' : 'dias'}` : ''}
             {a.horas ? ` · ${Number(a.horas)} h` : ''}
             {dias && geraCusto(a) ? ` · ${formatBRL(custoEstimado(dias, salarioMensal))}` : ''}
-            {a.cid ? ` · CID ${a.cid}` : ''}
           </p>
+          {a.cid && (
+            <p className="text-xs text-gray-500">
+              <span className="font-semibold text-gray-900">CID {a.cid}</span>{descricaoCid(a.cid) ? ` — ${descricaoCid(a.cid)}` : ''}
+            </p>
+          )}
           <p className="text-xs text-gray-500 truncate">
             {a.medico_nome || 'Profissional não informado'}{a.crm ? ` · ${a.tipo === 'ODONTOLOGICO' ? 'CRO' : 'CRM'} ${a.crm}${a.crm_uf ? `/${a.crm_uf}` : ''}` : ''}
           </p>

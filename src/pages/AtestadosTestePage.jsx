@@ -6,6 +6,7 @@ import { beneficiariosService } from '@/services/beneficiariosService';
 import { atestadosService, custoEstimado, diasDoAtestado, CONFIG_PADRAO, ETAPAS_AFASTAMENTO, MOTIVOS_RECUSA, STATUS_ATESTADO, TIPOS_ATESTADO } from '@/services/atestadosService';
 import { analisarAtestados, acharDuplicado, avisosDoAcompanhamento, emAcompanhamento, geraCusto, retornoPrevisto } from '@/services/atestadosAnalise';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useCid10 } from '@/services/cid10';
 import AtestadoCard from '@/components/clienteTeste/AtestadoCard';
 import { ArrowLeft, Loader2, Stethoscope, Plus, Trash2, Sparkles, FileText, Upload, AlertTriangle, ChevronLeft, ChevronRight, Pencil, ArrowUp, ArrowDown, ArrowUpDown, Bell } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
@@ -77,6 +78,7 @@ const AtestadosTestePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const descricaoCid = useCid10();
   const fileRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [apolice, setApolice] = useState(null);
@@ -618,7 +620,7 @@ const AtestadosTestePage = () => {
                         <span className="hidden sm:block text-sm text-gray-900">
                           {custo ? <span className={`rounded-full ${corCusto(custo) ? `px-2.5 py-1 font-semibold ${corCusto(custo)}` : ''}`}>{formatBRL(custo)}</span> : '—'}
                         </span>
-                        <span className="hidden sm:block text-sm text-gray-900 truncate">{a.cid || '—'}</span>
+                        <span className="hidden sm:block text-sm text-gray-900 truncate" title={descricaoCid(a.cid) || undefined}>{a.cid || '—'}</span>
                         <span className="flex items-center gap-1.5">
                           {st === 'PENDENTE' ? (
                             <>
@@ -646,6 +648,11 @@ const AtestadosTestePage = () => {
                     );
                   })
                 )}
+                {Array.from({ length: Math.max(0, ITENS_POR_PAGINA - Math.max(1, linhasPagina.length)) }).map((_, i) => (
+                  <div key={`vazio-${i}`} className="hidden sm:grid grid-cols-[1.7fr_0.8fr_0.7fr_0.5fr_0.9fr_0.7fr_1.5fr] gap-4 items-center px-5 h-[61px] border-b border-gray-100 last:border-b-0 text-sm text-gray-300">
+                    <span>—</span><span>—</span><span>—</span><span>—</span><span>—</span><span>—</span><span>—</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -680,7 +687,7 @@ const AtestadosTestePage = () => {
                       <span className="hidden sm:block text-sm text-gray-900">{formatDate(a.data_inicio)}</span>
                       <span className="hidden sm:block text-sm text-gray-900">{dias ? `${dias} ${dias === 1 ? 'dia' : 'dias'}` : '—'}</span>
                       <span className="hidden sm:block text-sm text-gray-900">{custo ? formatBRL(custo) : '—'}</span>
-                      <span className="hidden sm:block text-sm text-gray-900 truncate">{a.cid || '—'}</span>
+                      <span className="hidden sm:block text-sm text-gray-900 truncate" title={descricaoCid(a.cid) || undefined}>{a.cid || '—'}</span>
                       <span className="flex items-center gap-1.5">
                         <Button
                           size="sm"
@@ -701,6 +708,11 @@ const AtestadosTestePage = () => {
                     </div>
                   ))
                 )}
+                {Array.from({ length: Math.max(0, ITENS_POR_PAGINA - Math.max(1, pendentesPagina.length)) }).map((_, i) => (
+                  <div key={`vazio-${i}`} className="hidden sm:grid grid-cols-[1.7fr_0.8fr_0.5fr_0.9fr_0.7fr_1.5fr] gap-4 items-center px-5 h-[57px] border-b border-gray-100 last:border-b-0 text-sm text-gray-300">
+                    <span>—</span><span>—</span><span>—</span><span>—</span><span>—</span><span>—</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -877,9 +889,12 @@ const AtestadosTestePage = () => {
                   </p>
                   <div className="divide-y divide-gray-100">
                     {pessoaAberta.cids.map((c) => (
-                      <div key={c.cid} className="flex items-center justify-between py-2 text-sm">
-                        <span className="font-semibold text-gray-900">{c.cid}</span>
-                        <span className="text-gray-500">{c.qtd} {c.qtd === 1 ? 'atestado' : 'atestados'} · {c.dias} {c.dias === 1 ? 'dia' : 'dias'}</span>
+                      <div key={c.cid} className="flex items-start justify-between gap-3 py-2 text-sm">
+                        <span className="min-w-0">
+                          <span className="font-semibold text-gray-900">{c.cid}</span>
+                          {descricaoCid(c.cid) && <span className="text-gray-500"> — {descricaoCid(c.cid)}</span>}
+                        </span>
+                        <span className="text-gray-500 flex-shrink-0">{c.qtd} {c.qtd === 1 ? 'atestado' : 'atestados'} · {c.dias} {c.dias === 1 ? 'dia' : 'dias'}</span>
                       </div>
                     ))}
                   </div>
@@ -1094,6 +1109,7 @@ const AtestadosTestePage = () => {
               <div>
                 <Label className="text-xs">CID</Label>
                 <Input {...campo('cid')} placeholder="Ex: J11" />
+                {form.cid.trim() && <p className="text-[11px] text-gray-500 mt-1">{descricaoCid(form.cid) || 'CID não encontrado na tabela'}</p>}
               </div>
               <div>
                 <Label className="text-xs">CRM</Label>
