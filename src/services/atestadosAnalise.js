@@ -103,9 +103,9 @@ const gruposDeMotivo = (itens, somaInss) => {
   });
 };
 
-export const analisarAtestados = (atestados, { prazoEntregaDias = 2, somaInss = 'MESMO_MOTIVO' } = {}) => {
+export const analisarAtestados = (atestados, { prazoEntregaDias = 2, somaInss = 'MESMO_MOTIVO', desde = null } = {}) => {
   const hoje = new Date();
-  const inicioJanela = paraIso(new Date(hoje.getFullYear() - 1, hoje.getMonth(), hoje.getDate()));
+  const inicioJanela = desde || paraIso(new Date(hoje.getFullYear() - 1, hoje.getMonth(), hoje.getDate()));
   const recentes = atestados.filter((a) => a.data_inicio >= inicioJanela);
   const validos = recentes.filter((a) => ehAfastamento(a) && a.status !== 'RECUSADO');
 

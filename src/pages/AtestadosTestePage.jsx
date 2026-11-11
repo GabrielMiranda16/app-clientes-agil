@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Helmet } from 'react-helmet';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { apolicesService } from '@/services/apolicesService';
 import { beneficiariosService } from '@/services/beneficiariosService';
 import { atestadosService, custoEstimado, diasDoAtestado, CONFIG_PADRAO, ETAPAS_AFASTAMENTO, MOTIVOS_RECUSA, STATUS_ATESTADO, TIPOS_ATESTADO } from '@/services/atestadosService';
@@ -8,7 +8,7 @@ import { analisarAtestados, acharDuplicado, avisosDoAcompanhamento, emAcompanham
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useCid10 } from '@/services/cid10';
 import AtestadoCard from '@/components/clienteTeste/AtestadoCard';
-import { ArrowLeft, Loader2, Stethoscope, Plus, Trash2, Sparkles, FileText, Upload, AlertTriangle, ChevronLeft, ChevronRight, Pencil, ArrowUp, ArrowDown, ArrowUpDown, Bell } from 'lucide-react';
+import { ArrowLeft, Loader2, Stethoscope, Plus, Trash2, Sparkles, FileText, Upload, AlertTriangle, ChevronLeft, ChevronRight, Pencil, ArrowUp, ArrowDown, ArrowUpDown, Bell, FolderOpen, Search } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -73,8 +73,11 @@ const acharBeneficiario = (beneficiarios, nome) => {
   return candidatos.length === 1 ? candidatos[0] : null;
 };
 
-const AtestadosTestePage = () => {
+const AtestadosTestePage = ({ modo = 'principal' }) => {
   const { apoliceId } = useParams();
+  const [searchParams] = useSearchParams();
+  const todos = modo === 'todos';
+  const rotaTodos = `/gestao-apolice/${apoliceId}/atestados/todos/teste`;
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -97,6 +100,9 @@ const AtestadosTestePage = () => {
   const [acompanharId, setAcompanharId] = useState(null);
   const [recusa, setRecusa] = useState(null);
   const [alertasAbertos, setAlertasAbertos] = useState(false);
+  const [focoId, setFocoId] = useState(null);
+  const [buscaTodos, setBuscaTodos] = useState('');
+  const [paginaTodos, setPaginaTodos] = useState(1);
   const [ordenacao, setOrdenacao] = useState({ campo: 'data', dir: 'desc' });
   const [paginaAtestados, setPaginaAtestados] = useState(1);
   const [paginaAbertos, setPaginaAbertos] = useState(1);
@@ -129,7 +135,8 @@ const AtestadosTestePage = () => {
       return retorno.slice(0, 7) === mesAtual && retorno <= hoje;
     });
 
-    const analise = analisarAtestados(atestados, { prazoEntregaDias: config.prazo_entrega_dias, somaInss: config.soma_inss });
+    const analise = analisarAtestados(atestados, { prazoEntregaDias: config.prazo_entrega_dias, somaInss: config.soma_inss, desde: todos ? '0000-00-00' : null });
+    const inicio12 = isoLocal(new Date(new Date().setFullYear(new Date().getFullYear() - 1)));
     const salarioBase = Number(config.salario_base);
     const MESES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
     const agora = new Date();
@@ -161,7 +168,7 @@ const AtestadosTestePage = () => {
       contador.set(a.beneficiario_id, n);
       ordemDe.set(a.id, n);
     });
-    const linhas = [...atestados].sort((x, y) => y.data_inicio.localeCompare(x.data_inicio) || y.id - x.id).map((a) => ({
+    const linhas = atestados.filter((a) => todos || a.data_inicio >= inicio12).sort((x, y) => y.data_inicio.localeCompare(x.data_inicio) || y.id - x.id).map((a) => ({
       atestado: a,
       ordem: ordemDe.get(a.id),
       dias: a.tipo === 'COMPARECIMENTO' ? 0 : diasDoAtestado(a),
@@ -181,9 +188,22 @@ const AtestadosTestePage = () => {
     const retornosPrevistos = acompanhados.filter((x) => x.retorno && x.retorno >= hoje && x.retorno <= limite).length;
 
     return { afastadosAgora, retornosMes, ...analise, pessoas, custoTotal, algumEstimado, inssPendentes, acompanhados, retornosPrevistos, ranking, linhas, meses, totalMes };
-  }, [atestados, config]);
+  }, [atestados, config, todos]);
 
   const pessoaAberta = resumo.pessoas.find((p) => p.id === pessoaAbertaId) || null;
+  const foco = !todos && focoId ? pessoaAberta?.itens.find((a) => a.id === focoId) || null : null;
+  const ordemFoco = foco ? resumo.linhas.find((l) => l.atestado.id === foco.id)?.ordem : null;
+
+  useEffect(() => {
+    const pessoaParam = Number(searchParams.get('pessoa'));
+    if (todos && !loading && pessoaParam) setPessoaAbertaId(pessoaParam);
+  }, [todos, loading, searchParams]);
+
+  const abrirAtestado = (a) => {
+    setFocoId(a.id);
+    setPessoaAbertaId(a.beneficiario_id);
+  };
+  const irParaPessoa = (id) => navigate(`${rotaTodos}?pessoa=${id}`);
 
   const linhasOrdenadas = useMemo(() => {
     const valor = {
@@ -313,6 +333,7 @@ const AtestadosTestePage = () => {
 
   const abrirAcompanhamentoDe = (a) => {
     setAcompanharId(a.id);
+    setFocoId(a.id);
     setPessoaAbertaId(a.beneficiario_id);
   };
 
@@ -405,6 +426,7 @@ const AtestadosTestePage = () => {
         const atualizado = await atestadosService.updateAtestado(editando.id, arquivoPath ? { ...dados, arquivo_path: arquivoPath } : dados);
         if (arquivoPath && antigo) atestadosService.removerArquivo(antigo).catch(() => {});
         setAtestados((prev) => prev.map((x) => (x.id === editando.id ? atualizado : x)));
+        setFocoId(editando.id);
         toast({ title: 'Atestado atualizado.' });
       } else {
         const created = await atestadosService.createAtestado({
@@ -414,6 +436,7 @@ const AtestadosTestePage = () => {
           arquivo_path: arquivoPath,
         });
         setAtestados((prev) => [created, ...prev]);
+        setFocoId(created.id);
         toast({ title: 'Atestado cadastrado. Ele entra como pendente de decisão.' });
       }
       setIsAddOpen(false);
@@ -463,6 +486,79 @@ const AtestadosTestePage = () => {
 
   const detalheRecusa = recusa ? MOTIVOS_RECUSA.find((m) => m.value === recusa.motivo)?.detalhe : null;
 
+  const termoTodos = normalizar(buscaTodos);
+  const pessoasTodos = [...resumo.pessoas]
+    .filter((p) => !termoTodos || normalizar(p.nome).includes(termoTodos) || normalizar(p.matricula).includes(termoTodos) || p.cids.some((c) => normalizar(c.cid).includes(termoTodos)))
+    .sort((x, y) => x.nome.localeCompare(y.nome));
+  const totalPaginasTodos = Math.max(1, Math.ceil(pessoasTodos.length / ITENS_POR_PAGINA));
+  const paginaTodosAtual = Math.min(paginaTodos, totalPaginasTodos);
+  const pessoasTodosPagina = pessoasTodos.slice((paginaTodosAtual - 1) * ITENS_POR_PAGINA, paginaTodosAtual * ITENS_POR_PAGINA);
+
+  const conteudoTodos = (
+    <div className="space-y-6">
+      <button
+        onClick={() => navigate(`/gestao-apolice/${apoliceId}/atestados/teste`)}
+        className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-[#003580] transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" /> Atestados
+      </button>
+
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Todos os atestados</h1>
+        <p className="text-gray-400 text-sm">Todas as pessoas que já entregaram atestado, de qualquer período. Clique em uma pessoa para ver todos os atestados dela.</p>
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            value={buscaTodos}
+            onChange={(e) => { setBuscaTodos(e.target.value); setPaginaTodos(1); }}
+            placeholder="Buscar por nome, matrícula ou CID"
+            className="pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm w-full sm:w-80 focus:outline-none focus:ring-2 focus:ring-[#003580]/20 focus:border-[#003580]"
+          />
+        </div>
+        <Paginacao atual={paginaTodosAtual} total={totalPaginasTodos} onMudar={setPaginaTodos} />
+      </div>
+
+      <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+        <div className="hidden sm:grid grid-cols-[1.8fr_0.7fr_0.6fr_1fr_1fr_1fr_40px] gap-4 px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wide border-b border-gray-100">
+          <span>Pessoa</span>
+          <span>Atestados</span>
+          <span>Dias</span>
+          <span>Custo total</span>
+          <span>Último atestado</span>
+          <span>CID</span>
+          <span></span>
+        </div>
+        {pessoasTodosPagina.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            onClick={() => setPessoaAbertaId(p.id)}
+            className="w-full grid grid-cols-[1fr_auto] sm:grid-cols-[1.8fr_0.7fr_0.6fr_1fr_1fr_1fr_40px] gap-4 items-center px-5 h-[61px] border-b border-gray-100 last:border-b-0 text-left hover:bg-gray-50 transition-colors"
+          >
+            <span className="min-w-0">
+              <span className="block font-bold text-gray-900 text-sm truncate">{p.nome}</span>
+              {p.matricula && <span className="block text-xs text-gray-400">Matrícula {p.matricula}</span>}
+            </span>
+            <span className="hidden sm:block text-sm text-gray-900">{p.qtd}</span>
+            <span className="hidden sm:block text-sm text-gray-900">{p.dias}</span>
+            <span className="hidden sm:block text-sm text-gray-900">{formatBRL(p.custo)}</span>
+            <span className="hidden sm:block text-sm text-gray-900">{formatDate(p.itens[0]?.data_inicio)}</span>
+            <span className="hidden sm:block text-sm text-gray-900 truncate">{resumoCids(p)}</span>
+            <ChevronRight className="w-4 h-4 text-gray-900 justify-self-end" />
+          </button>
+        ))}
+        {Array.from({ length: Math.max(0, ITENS_POR_PAGINA - pessoasTodosPagina.length) }).map((_, i) => (
+          <div key={`vazio-${i}`} className="hidden sm:grid grid-cols-[1.8fr_0.7fr_0.6fr_1fr_1fr_1fr_40px] gap-4 items-center px-5 h-[61px] border-b border-gray-100 last:border-b-0 text-sm text-gray-300">
+            <span>—</span><span>—</span><span>—</span><span>—</span><span>—</span><span>—</span><span></span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   const outrosAlertas = resumo.alertas.filter((al) => al.tipo !== 'INSS');
   const totalAlertas = resumo.inssPendentes.length + outrosAlertas.length;
 
@@ -477,6 +573,7 @@ const AtestadosTestePage = () => {
     <>
       <Helmet><title>Atestados - Ágil Seguros</title></Helmet>
       <ClienteSidebarLayout>
+        {todos ? conteudoTodos : (
         <div className="space-y-6">
           <button
             onClick={() => navigate(-1)}
@@ -491,6 +588,13 @@ const AtestadosTestePage = () => {
               <p className="text-gray-400 text-sm">Atestados vinculados a essa apólice.</p>
             </div>
             <div className="flex items-center gap-3 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => navigate(rotaTodos)}
+                className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-full border border-gray-200 text-sm font-semibold text-gray-700 hover:border-[#003580] hover:text-[#003580] transition-colors"
+              >
+                <FolderOpen className="w-4 h-4" /> Todos os atestados
+              </button>
               <button
                 type="button"
                 onClick={() => setAlertasAbertos(true)}
@@ -606,8 +710,8 @@ const AtestadosTestePage = () => {
                         key={a.id}
                         role="button"
                         tabIndex={0}
-                        onClick={() => setPessoaAbertaId(a.beneficiario_id)}
-                        onKeyDown={(e) => e.key === 'Enter' && setPessoaAbertaId(a.beneficiario_id)}
+                        onClick={() => abrirAtestado(a)}
+                        onKeyDown={(e) => e.key === 'Enter' && abrirAtestado(a)}
                         className="w-full cursor-pointer grid grid-cols-[1fr_auto] sm:grid-cols-[1.7fr_0.8fr_0.7fr_0.5fr_0.9fr_0.7fr_1.5fr] gap-4 items-center px-5 py-3.5 border-b border-gray-100 last:border-b-0 text-left hover:bg-gray-50 transition-colors"
                       >
                         <span className="min-w-0">
@@ -676,8 +780,8 @@ const AtestadosTestePage = () => {
                       key={a.id}
                       role="button"
                       tabIndex={0}
-                      onClick={() => setPessoaAbertaId(a.beneficiario_id)}
-                      onKeyDown={(e) => e.key === 'Enter' && setPessoaAbertaId(a.beneficiario_id)}
+                      onClick={() => abrirAtestado(a)}
+                      onKeyDown={(e) => e.key === 'Enter' && abrirAtestado(a)}
                       className="cursor-pointer grid grid-cols-[1fr_auto] sm:grid-cols-[1.7fr_0.8fr_0.5fr_0.9fr_0.7fr_1.5fr] gap-4 items-center px-5 py-3.5 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors"
                     >
                       <span className="min-w-0">
@@ -737,7 +841,7 @@ const AtestadosTestePage = () => {
                     <button
                       key={p.id}
                       type="button"
-                      onClick={() => setPessoaAbertaId(p.id)}
+                      onClick={() => irParaPessoa(p.id)}
                       className="w-full grid grid-cols-[40px_1.8fr_0.8fr_0.8fr_1fr] gap-4 items-center px-5 py-3 border-b border-gray-100 last:border-b-0 text-left hover:bg-gray-50 transition-colors"
                     >
                       <span className="text-sm text-gray-400">{i + 1}</span>
@@ -748,6 +852,11 @@ const AtestadosTestePage = () => {
                     </button>
                   ))
                 )}
+                {Array.from({ length: Math.max(0, 10 - Math.max(1, r.lista.length)) }).map((_, i) => (
+                  <div key={`vazio-${i}`} className="grid grid-cols-[40px_1.8fr_0.8fr_0.8fr_1fr] gap-4 items-center px-5 h-[45px] border-b border-gray-100 last:border-b-0 text-sm text-gray-300">
+                    <span>—</span><span>—</span><span>—</span><span>—</span><span>—</span>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
@@ -787,7 +896,15 @@ const AtestadosTestePage = () => {
                         <td className="sticky right-0 z-10 bg-white px-3 h-10 border-b border-l border-gray-300 text-right font-semibold text-gray-900 whitespace-nowrap w-[130px] min-w-[130px]">{formatBRL(p.custo)}</td>
                       </tr>
                     ))}
-                    {custoPorMes.length > 0 && (
+                    {Array.from({ length: Math.max(0, 9 - custoPorMes.length) }).map((_, i) => (
+                      <tr key={`vazio-${i}`} className="text-gray-300">
+                        <td className="sticky left-0 z-10 bg-white text-center h-10 border-b border-r border-gray-200 w-[48px] min-w-[48px]">—</td>
+                        <td className="sticky left-[48px] z-10 bg-white px-3 h-10 border-b border-r border-gray-300 w-[220px] min-w-[220px]">—</td>
+                        {resumo.meses.map((m) => <td key={m.chave} className="px-3 h-10 border-b border-r border-gray-200 text-right">—</td>)}
+                        <td className="sticky right-0 z-10 bg-white px-3 h-10 border-b border-l border-gray-300 text-right w-[130px] min-w-[130px]">—</td>
+                      </tr>
+                    ))}
+                    {(
                       <tr className="font-bold text-gray-900">
                         <td className="sticky bottom-0 left-0 z-30 bg-gray-100 h-10 border-t border-r border-gray-300 w-[48px] min-w-[48px]" />
                         <td className="sticky bottom-0 left-[48px] z-30 bg-gray-100 px-3 h-10 border-t border-r border-gray-300 w-[220px] min-w-[220px]">Total do mês</td>
@@ -805,27 +922,33 @@ const AtestadosTestePage = () => {
             </div>
           </div>
         </div>
+        )}
       </ClienteSidebarLayout>
 
-      <PainelLateral open={!!pessoaAberta} onOpenChange={(open) => { if (!open) { setPessoaAbertaId(null); setAcompanharId(null); } }} title={pessoaAberta?.nome || ''}>
+      <PainelLateral open={!!pessoaAberta} onOpenChange={(open) => { if (!open) { setPessoaAbertaId(null); setAcompanharId(null); setFocoId(null); } }} title={pessoaAberta?.nome || ''}>
         {pessoaAberta && (
           <PainelCorpo className="space-y-5">
             <div className="grid grid-cols-2 gap-3">
-              {[
-                { label: 'Atestados (12 meses)', valor: pessoaAberta.qtd },
+              {(foco ? [
+                { label: 'Atestados da pessoa (12 meses)', valor: pessoaAberta.qtd },
+                { label: 'Este atestado é o', valor: `${ordemFoco || 1}º` },
+              ] : [
+                { label: todos ? 'Atestados' : 'Atestados (12 meses)', valor: pessoaAberta.qtd },
                 { label: 'Dias afastado', valor: pessoaAberta.dias },
                 { label: pessoaAberta.salario ? 'Custo' : 'Custo estimado', valor: formatBRL(pessoaAberta.custo) },
                 { label: 'Índice de Bradford', valor: pessoaAberta.bradford },
-              ].map((i) => (
+              ]).map((i) => (
                 <div key={i.label} className="border border-gray-100 rounded-2xl px-4 py-3">
                   <p className="text-xs text-gray-400 mb-0.5">{i.label}</p>
                   <p className="text-xl font-bold tracking-tight text-gray-900">{i.valor}</p>
                 </div>
               ))}
             </div>
-            <p className="text-xs text-gray-400 -mt-2">
-              Índice de Bradford = atestados² × dias. Faltas curtas e repetidas pesam mais que um afastamento longo.
-            </p>
+            {!foco && (
+              <p className="text-xs text-gray-400 -mt-2">
+                Índice de Bradford = atestados² × dias. Faltas curtas e repetidas pesam mais que um afastamento longo.
+              </p>
+            )}
 
             <div className="border border-gray-100 rounded-2xl px-4 py-3">
               {salarioEdit?.id === pessoaAberta.id ? (
@@ -876,6 +999,7 @@ const AtestadosTestePage = () => {
               </div>
             )}
 
+            {!foco && (
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-[#003580] mb-2">CIDs</p>
               {pessoaAberta.cids.length === 0 ? (
@@ -901,11 +1025,12 @@ const AtestadosTestePage = () => {
                 </>
               )}
             </div>
+            )}
 
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#003580] mb-2">Atestados</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#003580] mb-2">{foco ? 'Atestado' : 'Atestados'}</p>
               <div className="space-y-2">
-                {pessoaAberta.itens.map((a) => (
+                {(foco ? [foco] : pessoaAberta.itens).map((a) => (
                   <AtestadoCard
                     key={a.id}
                     atestado={a}
@@ -922,6 +1047,16 @@ const AtestadosTestePage = () => {
                 ))}
               </div>
             </div>
+
+            {foco && (
+              <button
+                type="button"
+                onClick={() => irParaPessoa(pessoaAberta.id)}
+                className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#003580] transition-colors"
+              >
+                <FolderOpen className="w-4 h-4" /> Ver todos os atestados de {pessoaAberta.nome.split(' ')[0]}
+              </button>
+            )}
           </PainelCorpo>
         )}
       </PainelLateral>
@@ -968,7 +1103,7 @@ const AtestadosTestePage = () => {
                     key={al.chave}
                     type="button"
                     disabled={!al.pessoaId}
-                    onClick={() => { setAlertasAbertos(false); setPessoaAbertaId(al.pessoaId); }}
+                    onClick={() => { setAlertasAbertos(false); irParaPessoa(al.pessoaId); }}
                     className="w-full text-left bg-amber-50 rounded-2xl px-4 py-3"
                   >
                     <span className="block text-[11px] font-semibold uppercase tracking-wide text-amber-700">{ALERTA_ESTILO[al.tipo].rotulo}</span>

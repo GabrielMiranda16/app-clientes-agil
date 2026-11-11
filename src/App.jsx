@@ -94,6 +94,7 @@ const AppRoutes = () => {
         <Route path="/select-apolice/:segmento/teste" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><SelectApoliceTestePage /></ProtectedRoute>} />
         <Route path="/gestao-apolice/:apoliceId/teste" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><GestaoApoliceTestePage /></ProtectedRoute>} />
         <Route path="/gestao-apolice/:apoliceId/atestados/teste" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><AtestadosTestePage /></ProtectedRoute>} />
+        <Route path="/gestao-apolice/:apoliceId/atestados/todos/teste" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><AtestadosTestePage modo="todos" /></ProtectedRoute>} />
         <Route path="/gestao-apolice/:apoliceId/solicitacoes/teste" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><SolicitacoesApoliceTestePage /></ProtectedRoute>} />
         <Route path="/fale-com-a-gi/teste" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><GiTestePage /></ProtectedRoute>} />
         <Route path="/ajuda/teste" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><AjudaTestePage /></ProtectedRoute>} />
