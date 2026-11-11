@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apolicesService } from '@/services/apolicesService';
 import { beneficiariosService } from '@/services/beneficiariosService';
-import { atestadosService, custoEstimado, diasDoAtestado, CONFIG_PADRAO, ETAPAS_AFASTAMENTO, STATUS_ATESTADO, TIPOS_ATESTADO } from '@/services/atestadosService';
+import { atestadosService, custoEstimado, diasDoAtestado, CONFIG_PADRAO, ETAPAS_AFASTAMENTO, MOTIVOS_RECUSA, STATUS_ATESTADO, TIPOS_ATESTADO } from '@/services/atestadosService';
 import { analisarAtestados, acharDuplicado, avisosDoAcompanhamento, emAcompanhamento, retornoPrevisto } from '@/services/atestadosAnalise';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import AtestadoCard from '@/components/clienteTeste/AtestadoCard';
@@ -17,6 +17,7 @@ import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
@@ -89,6 +90,7 @@ const AtestadosTestePage = () => {
   const [editando, setEditando] = useState(null);
   const [salarioEdit, setSalarioEdit] = useState(null);
   const [acompanharId, setAcompanharId] = useState(null);
+  const [recusa, setRecusa] = useState(null);
 
   useEffect(() => {
     apolicesService.getApolice(apoliceId)
@@ -345,6 +347,8 @@ const AtestadosTestePage = () => {
     ? atestados.filter((a) => String(a.beneficiario_id) === form.beneficiario_id && a.id !== editando?.id && a.tipo !== 'COMPARECIMENTO')
     : [];
 
+  const detalheRecusa = recusa ? MOTIVOS_RECUSA.find((m) => m.value === recusa.motivo)?.detalhe : null;
+
   const INDICADORES = [
     { label: 'Afastados hoje', valor: resumo.afastadosAgora.length },
     { label: 'Retornos no mês', valor: resumo.retornosMes.length },
@@ -568,38 +572,26 @@ const AtestadosTestePage = () => {
                     <span className="hidden sm:block text-sm text-gray-900">{formatBRL(p.custo)}</span>
                     <span className="hidden sm:block text-sm text-gray-900 truncate">{resumoCids(p)}</span>
                     <span className="hidden sm:flex flex-wrap items-center gap-1.5">
-                      {(() => {
-                        const pend = p.itens.filter((a) => (a.status || 'PENDENTE') === 'PENDENTE');
-                        if (pend.length === 1) {
-                          return (
-                            <>
-                              <Button
-                                size="sm"
-                                className="h-7 px-3 text-xs bg-[#003580] hover:bg-[#002060] text-white"
-                                onClick={(e) => { e.stopPropagation(); handleDecidir(pend[0], { status: 'APROVADO', motivo_recusa: null, recusa_detalhe: null }); }}
-                              >
-                                Aprovar
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 px-3 text-xs text-red-600 hover:text-red-700"
-                                onClick={(e) => { e.stopPropagation(); setPessoaAbertaId(p.id); }}
-                              >
-                                Recusar
-                              </Button>
-                            </>
-                          );
-                        }
-                        if (pend.length > 1) {
-                          return (
-                            <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${STATUS_ATESTADO.PENDENTE.classe}`}>
-                              {pend.length} pendentes · abrir para decidir
-                            </span>
-                          );
-                        }
-                        return null;
-                      })()}
+                      {p.itens.filter((a) => (a.status || 'PENDENTE') === 'PENDENTE').map((a) => (
+                        <span key={a.id} className="flex items-center gap-1.5 w-full">
+                          {p.itens.length > 1 && <span className="text-xs text-gray-500 w-12 flex-shrink-0">{formatDate(a.data_inicio).slice(0, 5)}</span>}
+                          <Button
+                            size="sm"
+                            className="h-7 px-3 text-xs bg-[#003580] hover:bg-[#002060] text-white"
+                            onClick={(e) => { e.stopPropagation(); handleDecidir(a, { status: 'APROVADO', motivo_recusa: null, recusa_detalhe: null }); }}
+                          >
+                            Aprovar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-3 text-xs text-red-600 hover:text-red-700"
+                            onClick={(e) => { e.stopPropagation(); setRecusa({ atestado: a, nome: p.nome, motivo: '', detalhe: '' }); }}
+                          >
+                            Recusar
+                          </Button>
+                        </span>
+                      ))}
                       {['APROVADO', 'RECUSADO', 'SEM_ABONO'].map((st) => {
                         const n = p.itens.filter((a) => a.status === st).length;
                         if (!n) return null;
@@ -734,6 +726,51 @@ const AtestadosTestePage = () => {
           </PainelCorpo>
         )}
       </PainelLateral>
+
+      <Dialog open={!!recusa} onOpenChange={(open) => !open && setRecusa(null)}>
+        <DialogContent className="bg-white" style={{ fontFamily: "'DM Sans', sans-serif", '--background': '0 0% 100%' }}>
+          <DialogHeader>
+            <DialogTitle>Recusar atestado</DialogTitle>
+          </DialogHeader>
+          {recusa && (
+            <div className="space-y-3">
+              <p className="text-sm text-gray-500">
+                {recusa.nome} · {formatDate(recusa.atestado.data_inicio)}
+                {recusa.atestado.tipo !== 'COMPARECIMENTO' ? ` · ${diasDoAtestado(recusa.atestado)} ${diasDoAtestado(recusa.atestado) === 1 ? 'dia' : 'dias'}` : ''}
+              </p>
+              <div>
+                <Label className="text-xs">Motivo da recusa *</Label>
+                <Select value={recusa.motivo} onValueChange={(v) => setRecusa((r) => ({ ...r, motivo: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                  <SelectContent>
+                    {MOTIVOS_RECUSA.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              {recusa.motivo && (
+                <div>
+                  <Label className="text-xs">{detalheRecusa ? `${detalheRecusa} *` : 'Observação (opcional)'}</Label>
+                  <Input value={recusa.detalhe} onChange={(e) => setRecusa((r) => ({ ...r, detalhe: e.target.value }))} />
+                </div>
+              )}
+              <p className="text-[11px] text-gray-400">Recusado, o atestado não abona a falta e sai da conta de dias e de custo. Dá para desfazer depois.</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRecusa(null)}>Cancelar</Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={!recusa?.motivo || (detalheRecusa && !recusa.detalhe.trim())}
+              onClick={async () => {
+                await handleDecidir(recusa.atestado, { status: 'RECUSADO', motivo_recusa: recusa.motivo, recusa_detalhe: recusa.detalhe.trim() || null });
+                setRecusa(null);
+              }}
+            >
+              Confirmar recusa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <PainelLateral open={isAddOpen} onOpenChange={setIsAddOpen} title={editando ? 'Editar atestado' : 'Adicionar atestado'}>
           <PainelCorpo className="space-y-3">
