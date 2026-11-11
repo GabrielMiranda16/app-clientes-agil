@@ -97,6 +97,7 @@ const AtestadosTestePage = () => {
   const [alertasAbertos, setAlertasAbertos] = useState(false);
   const [ordenacao, setOrdenacao] = useState({ campo: 'data', dir: 'desc' });
   const [paginaAtestados, setPaginaAtestados] = useState(1);
+  const [paginaAbertos, setPaginaAbertos] = useState(1);
 
   useEffect(() => {
     apolicesService.getApolice(apoliceId)
@@ -224,7 +225,32 @@ const AtestadosTestePage = () => {
       lista: [...resumo.ranking].sort((x, y) => y.dias - x.dias || y.qtd - x.qtd || x.nome.localeCompare(y.nome)).slice(0, 10),
     },
   ];
-  const linhasPendentes = resumo.linhas.filter((l) => (l.atestado.status || 'PENDENTE') === 'PENDENTE');
+  const linhasPendentes = resumo.linhas
+    .filter((l) => (l.atestado.status || 'PENDENTE') === 'PENDENTE')
+    .sort((x, y) => x.atestado.data_inicio.localeCompare(y.atestado.data_inicio) || x.atestado.id - y.atestado.id);
+  const totalPaginasAbertos = Math.max(1, Math.ceil(linhasPendentes.length / ITENS_POR_PAGINA));
+  const paginaAbertosAtual = Math.min(paginaAbertos, totalPaginasAbertos);
+  const pendentesPagina = linhasPendentes.slice((paginaAbertosAtual - 1) * ITENS_POR_PAGINA, paginaAbertosAtual * ITENS_POR_PAGINA);
+
+  const Paginacao = ({ atual, total, onMudar }) => (
+    <div className="flex items-center gap-3 text-sm text-gray-500 flex-shrink-0">
+      <span>{atual} de {total}</span>
+      <button
+        onClick={() => onMudar(Math.max(1, atual - 1))}
+        disabled={atual <= 1}
+        className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white disabled:opacity-40"
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </button>
+      <button
+        onClick={() => onMudar(Math.min(total, atual + 1))}
+        disabled={atual >= total}
+        className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white disabled:opacity-40"
+      >
+        <ChevronRight className="w-4 h-4" />
+      </button>
+    </div>
+  );
   const custoPorMes = [...resumo.ranking].sort((x, y) => y.custo - x.custo || x.nome.localeCompare(y.nome));
 
   const abrirNovo = () => {
@@ -533,8 +559,13 @@ const AtestadosTestePage = () => {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Atestados</h2>
-            <p className="text-gray-400 text-sm mb-4">Um por linha, com os dias e o custo de cada um. Clique para ver os detalhes da pessoa.</p>
+            <div className="flex items-end justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Atestados</h2>
+                <p className="text-gray-400 text-sm">Um por linha, com os dias e o custo de cada um. Clique para ver os detalhes da pessoa.</p>
+              </div>
+              <Paginacao atual={paginaAtual} total={totalPaginasAtestados} onMudar={setPaginaAtestados} />
+            </div>
 
             <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
               <div>
@@ -616,38 +647,24 @@ const AtestadosTestePage = () => {
                   })
                 )}
               </div>
-              {linhasOrdenadas.length > ITENS_POR_PAGINA && (
-                <div className="flex items-center justify-end gap-3 px-5 py-3 border-t border-gray-100 text-sm text-gray-500">
-                  <span>{paginaAtual} de {totalPaginasAtestados}</span>
-                  <button
-                    onClick={() => setPaginaAtestados(Math.max(1, paginaAtual - 1))}
-                    disabled={paginaAtual <= 1}
-                    className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white disabled:opacity-40"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setPaginaAtestados(Math.min(totalPaginasAtestados, paginaAtual + 1))}
-                    disabled={paginaAtual >= totalPaginasAtestados}
-                    className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white disabled:opacity-40"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
             </div>
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Atestados em aberto</h2>
-            <p className="text-gray-400 text-sm mb-4">Os que ainda não foram aprovados nem recusados.</p>
+            <div className="flex items-end justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Atestados em aberto</h2>
+                <p className="text-gray-400 text-sm">Os que ainda não foram aprovados nem recusados, do mais antigo para o mais novo.</p>
+              </div>
+              <Paginacao atual={paginaAbertosAtual} total={totalPaginasAbertos} onMudar={setPaginaAbertos} />
+            </div>
 
             <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
-              <div className="max-h-[420px] overflow-y-auto">
+              <div>
                 {linhasPendentes.length === 0 ? (
                   <p className="px-5 py-8 text-center text-sm text-gray-400">Nenhum atestado em aberto.</p>
                 ) : (
-                  linhasPendentes.map(({ atestado: a, dias, custo }) => (
+                  pendentesPagina.map(({ atestado: a, dias, custo }) => (
                     <div
                       key={a.id}
                       role="button"
@@ -739,7 +756,7 @@ const AtestadosTestePage = () => {
                       {resumo.meses.map((m) => (
                         <th key={m.chave} className="sticky top-0 z-20 bg-gray-100 text-right px-3 h-10 border-b border-r border-gray-200 whitespace-nowrap min-w-[120px]">{m.rotulo}</th>
                       ))}
-                      <th className="sticky top-0 z-20 bg-gray-100 text-right px-3 h-10 border-b border-gray-200 min-w-[130px]">Total</th>
+                      <th className="sticky top-0 right-0 z-30 bg-gray-100 text-right px-3 h-10 border-b border-l border-gray-300 w-[130px] min-w-[130px]">Total</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -755,19 +772,19 @@ const AtestadosTestePage = () => {
                             </td>
                           );
                         })}
-                        <td className="px-3 h-10 border-b border-gray-200 text-right font-semibold text-gray-900 whitespace-nowrap">{formatBRL(p.custo)}</td>
+                        <td className="sticky right-0 z-10 bg-white px-3 h-10 border-b border-l border-gray-300 text-right font-semibold text-gray-900 whitespace-nowrap w-[130px] min-w-[130px]">{formatBRL(p.custo)}</td>
                       </tr>
                     ))}
                     {custoPorMes.length > 0 && (
                       <tr className="font-bold text-gray-900">
-                        <td className="sticky left-0 z-10 bg-gray-100 h-10 border-r border-gray-200 w-[48px] min-w-[48px]" />
-                        <td className="sticky left-[48px] z-10 bg-gray-100 px-3 h-10 border-r border-gray-300 w-[220px] min-w-[220px]">Total do mês</td>
+                        <td className="sticky bottom-0 left-0 z-30 bg-gray-100 h-10 border-t border-r border-gray-300 w-[48px] min-w-[48px]" />
+                        <td className="sticky bottom-0 left-[48px] z-30 bg-gray-100 px-3 h-10 border-t border-r border-gray-300 w-[220px] min-w-[220px]">Total do mês</td>
                         {resumo.meses.map((m) => (
-                          <td key={m.chave} className="bg-gray-100 px-3 h-10 border-r border-gray-200 text-right whitespace-nowrap">
+                          <td key={m.chave} className="sticky bottom-0 z-20 bg-gray-100 px-3 h-10 border-t border-r border-gray-300 text-right whitespace-nowrap">
                             {resumo.totalMes[m.chave] ? formatBRL(resumo.totalMes[m.chave]) : '—'}
                           </td>
                         ))}
-                        <td className="bg-gray-100 px-3 h-10 text-right whitespace-nowrap">{formatBRL(resumo.custoTotal)}</td>
+                        <td className="sticky bottom-0 right-0 z-30 bg-gray-100 px-3 h-10 border-t border-l border-gray-300 text-right whitespace-nowrap">{formatBRL(resumo.custoTotal)}</td>
                       </tr>
                     )}
                   </tbody>
@@ -928,7 +945,8 @@ const AtestadosTestePage = () => {
 
           {outrosAlertas.length > 0 && (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#003580] mb-3">Para verificar</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#003580] mb-1">Para verificar</p>
+              <p className="text-xs text-gray-500 mb-3">Somem sozinhos 90 dias depois do último atestado envolvido.</p>
               <div className="space-y-2">
                 {outrosAlertas.map((al) => (
                   <button

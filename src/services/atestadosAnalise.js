@@ -3,6 +3,7 @@ import { diasDoAtestado } from '@/services/atestadosService';
 const DIA_MS = 86400000;
 const LIMITE_INSS = 15;
 const JANELA_INSS = 60;
+export const VALIDADE_ALERTA_DIAS = 90;
 const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
 const paraData = (iso) => new Date(`${iso}T00:00:00`);
@@ -169,7 +170,8 @@ export const analisarAtestados = (atestados, { prazoEntregaDias = 2, somaInss = 
 
     const curtos = afast.filter((a) => diasDoAtestado(a) <= 2);
     const suspeitos = curtos.filter((a) => coladoEmFeriado(a) || emendaFimDeSemana(a));
-    if (curtos.length >= 3 && suspeitos.length / curtos.length >= 0.6) {
+    const recente = (lista) => lista.some((a) => diferencaDias(a.data_inicio, paraIso(hoje)) <= VALIDADE_ALERTA_DIAS);
+    if (curtos.length >= 3 && suspeitos.length / curtos.length >= 0.6 && recente(suspeitos)) {
       meus.push({ tipo: 'PADRAO', chave: `padrao-${p.id}`, titulo: `${suspeitos.length} de ${curtos.length} atestados curtos emendam folga`, detalhe: 'Atestados de 1 ou 2 dias colados em fim de semana ou feriado.' });
     }
 
@@ -187,13 +189,14 @@ export const analisarAtestados = (atestados, { prazoEntregaDias = 2, somaInss = 
   const medicos = new Map();
   validos.filter((a) => a.crm).forEach((a) => {
     const chave = `${a.crm}/${(a.crm_uf || '').toUpperCase()}`;
-    const m = medicos.get(chave) || { chave, nome: a.medico_nome, pessoas: new Set(), qtd: 0 };
+    const m = medicos.get(chave) || { chave, nome: a.medico_nome, pessoas: new Set(), qtd: 0, ultima: a.data_inicio };
     m.pessoas.add(a.beneficiario_id);
     m.qtd += 1;
+    if (a.data_inicio > m.ultima) m.ultima = a.data_inicio;
     medicos.set(chave, m);
   });
   medicos.forEach((m) => {
-    if (m.pessoas.size >= 3) {
+    if (m.pessoas.size >= 3 && diferencaDias(m.ultima, paraIso(hoje)) <= VALIDADE_ALERTA_DIAS) {
       alertas.push({ tipo: 'MEDICO', chave: `medico-${m.chave}`, titulo: `CRM ${m.chave}${m.nome ? ` (${m.nome})` : ''}: ${m.qtd} atestados para ${m.pessoas.size} pessoas`, detalhe: 'Mesmo médico emitindo atestados para várias pessoas da empresa.' });
     }
   });

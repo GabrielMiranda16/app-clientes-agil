@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { PainelLateral, PainelCorpo } from '@/components/clienteTeste/PainelLateral';
 import { ChevronRight } from 'lucide-react';
 import { formatCpfCnpj } from '@/lib/masks';
 import { format } from 'date-fns';
@@ -48,8 +48,8 @@ const BeneficiarioExpandableRow = ({ beneficiario: b }) => {
   return (
     <div className="border-t border-gray-100 first:border-t-0">
       <button
-        onClick={() => setExpanded((v) => !v)}
-        className="w-full grid grid-cols-[1fr_auto_auto] sm:grid-cols-[1.6fr_1fr_1fr_1fr_40px] gap-4 items-center px-5 py-4 bg-white transition-colors text-left"
+        onClick={() => setExpanded(true)}
+        className="w-full grid grid-cols-[1fr_auto_auto] sm:grid-cols-[1.6fr_1fr_1fr_1fr_40px] gap-4 items-center px-5 py-4 bg-white hover:bg-gray-50 transition-colors text-left"
       >
         <span className="min-w-0">
           <span className="block font-bold text-gray-900 text-sm truncate">{b.nome_completo}</span>
@@ -58,20 +58,17 @@ const BeneficiarioExpandableRow = ({ beneficiario: b }) => {
         <span className="hidden sm:block text-sm text-gray-900">{b.cpf ? formatCpfCnpj(b.cpf) : '—'}</span>
         <span className="hidden sm:block text-sm text-gray-900 capitalize">{(b.parentesco || '—').toLowerCase()}</span>
         <span className="text-sm text-gray-900">{idade !== null ? `${idade} anos` : '—'}</span>
-        <ChevronRight className={`w-4 h-4 text-gray-900 justify-self-end transition-transform ${expanded ? 'rotate-90' : ''}`} />
+        <ChevronRight className="w-4 h-4 text-gray-900 justify-self-end" />
       </button>
 
-      <AnimatePresence>
+      <PainelLateral open={expanded} onOpenChange={setExpanded} title={b.nome_completo}>
         {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
-            className="overflow-hidden bg-white"
-          >
-            <div className="px-5 py-5 space-y-5">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <PainelCorpo>
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <Campo label="CPF" value={b.cpf ? formatCpfCnpj(b.cpf) : null} />
+                <Campo label="Parentesco" value={b.parentesco ? b.parentesco.charAt(0) + b.parentesco.slice(1).toLowerCase() : null} />
+                <Campo label="Idade" value={idade !== null ? `${idade} anos` : null} />
                 {empresaLabel && (
                   <div>
                     <p className="text-[11px] text-gray-400 uppercase tracking-wide font-semibold">Empresa</p>
@@ -104,7 +101,7 @@ const BeneficiarioExpandableRow = ({ beneficiario: b }) => {
                         </span>
                       </div>
                       {ativo && (
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-3">
+                        <div className="grid grid-cols-2 gap-4 mt-3">
                           <Campo label="Nome do Plano" value={b[`${key}_plano_nome`]} />
                           <Campo label="Número Carteirinha" value={b[`${key}_numero_carteirinha`]} />
                           <div>
@@ -126,9 +123,9 @@ const BeneficiarioExpandableRow = ({ beneficiario: b }) => {
                 })}
               </div>
             </div>
-          </motion.div>
+          </PainelCorpo>
         )}
-      </AnimatePresence>
+      </PainelLateral>
     </div>
   );
 };
