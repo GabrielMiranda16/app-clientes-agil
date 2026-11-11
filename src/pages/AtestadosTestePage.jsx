@@ -478,41 +478,6 @@ const AtestadosTestePage = () => {
             </div>
           )}
 
-          {resumo.pendentes.length > 0 && (
-            <div className="bg-white border border-gray-100 rounded-2xl p-5">
-              <h2 className="font-bold text-gray-900 mb-3">
-                Aguardando decisão <span className="text-gray-400 font-normal">({resumo.pendentes.length})</span>
-              </h2>
-              <div className="divide-y divide-gray-100">
-                {resumo.pendentes.map((a) => (
-                  <div key={a.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-2.5">
-                    <button type="button" onClick={() => setPessoaAbertaId(a.beneficiario_id)} className="min-w-0 text-left">
-                      <span className="block text-sm font-semibold text-gray-900 truncate">{a.beneficiarios?.nome_completo || '—'}</span>
-                      <span className="block text-xs text-gray-500">
-                        {formatDate(a.data_inicio)}
-                        {a.tipo !== 'COMPARECIMENTO' ? ` · ${diasDoAtestado(a)} ${diasDoAtestado(a) === 1 ? 'dia' : 'dias'}` : ''}
-                        {a.cid ? ` · CID ${a.cid}` : ''}
-                        {a.ia_dados?.risco?.nivel === 'ALTO' ? ' · risco alto' : ''}
-                      </span>
-                    </button>
-                    <span className="flex gap-2 flex-shrink-0">
-                      <Button
-                        size="sm"
-                        className="bg-[#003580] hover:bg-[#002060] text-white"
-                        onClick={() => handleDecidir(a, { status: 'APROVADO', motivo_recusa: null, recusa_detalhe: null })}
-                      >
-                        Aprovar
-                      </Button>
-                      <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700" onClick={() => setPessoaAbertaId(a.beneficiario_id)}>
-                        Recusar
-                      </Button>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {resumo.alertas.some((al) => al.tipo !== 'INSS') && (
             <div className="bg-white border border-gray-100 rounded-2xl p-5">
               <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
@@ -561,7 +526,7 @@ const AtestadosTestePage = () => {
             <p className="text-gray-400 text-sm mb-4">Quem apresentou atestado nos últimos 12 meses. Clique para ver os detalhes de cada pessoa.</p>
 
             <div className="bg-white rounded-2xl overflow-hidden">
-              <div className="hidden sm:grid grid-cols-[1.8fr_0.7fr_0.6fr_1fr_0.9fr_1.3fr_40px] gap-4 px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wide">
+              <div className="hidden sm:grid grid-cols-[1.6fr_0.6fr_0.5fr_0.9fr_0.8fr_1.7fr_40px] gap-4 px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wide">
                 <span>Pessoa</span>
                 <span>Atestados</span>
                 <span>Dias</span>
@@ -578,11 +543,13 @@ const AtestadosTestePage = () => {
                 </div>
               ) : (
                 resumo.pessoas.map((p) => (
-                  <button
+                  <div
                     key={p.id}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setPessoaAbertaId(p.id)}
-                    className="group w-full grid grid-cols-[1fr_auto] sm:grid-cols-[1.8fr_0.7fr_0.6fr_1fr_0.9fr_1.3fr_40px] gap-4 items-center px-5 py-4 border-t border-gray-100 text-left hover:bg-gray-50 transition-colors"
+                    onKeyDown={(e) => e.key === 'Enter' && setPessoaAbertaId(p.id)}
+                    className="group w-full cursor-pointer grid grid-cols-[1fr_auto] sm:grid-cols-[1.6fr_0.6fr_0.5fr_0.9fr_0.8fr_1.7fr_40px] gap-4 items-center px-5 py-4 border-t border-gray-100 text-left hover:bg-gray-50 transition-colors"
                   >
                     <span className="min-w-0">
                       <span className="block font-bold text-gray-900 text-sm truncate">{p.nome}</span>
@@ -600,9 +567,41 @@ const AtestadosTestePage = () => {
                     <span className="hidden sm:block text-sm text-gray-900">{p.dias}</span>
                     <span className="hidden sm:block text-sm text-gray-900">{formatBRL(p.custo)}</span>
                     <span className="hidden sm:block text-sm text-gray-900 truncate">{resumoCids(p)}</span>
-                    <span className="hidden sm:flex flex-wrap gap-1">
-                      {Object.keys(STATUS_ATESTADO).map((st) => {
-                        const n = p.itens.filter((a) => (a.status || 'PENDENTE') === st).length;
+                    <span className="hidden sm:flex flex-wrap items-center gap-1.5">
+                      {(() => {
+                        const pend = p.itens.filter((a) => (a.status || 'PENDENTE') === 'PENDENTE');
+                        if (pend.length === 1) {
+                          return (
+                            <>
+                              <Button
+                                size="sm"
+                                className="h-7 px-3 text-xs bg-[#003580] hover:bg-[#002060] text-white"
+                                onClick={(e) => { e.stopPropagation(); handleDecidir(pend[0], { status: 'APROVADO', motivo_recusa: null, recusa_detalhe: null }); }}
+                              >
+                                Aprovar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-3 text-xs text-red-600 hover:text-red-700"
+                                onClick={(e) => { e.stopPropagation(); setPessoaAbertaId(p.id); }}
+                              >
+                                Recusar
+                              </Button>
+                            </>
+                          );
+                        }
+                        if (pend.length > 1) {
+                          return (
+                            <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${STATUS_ATESTADO.PENDENTE.classe}`}>
+                              {pend.length} pendentes · abrir para decidir
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
+                      {['APROVADO', 'RECUSADO', 'SEM_ABONO'].map((st) => {
+                        const n = p.itens.filter((a) => a.status === st).length;
                         if (!n) return null;
                         return (
                           <span key={st} className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${STATUS_ATESTADO[st].classe}`}>
@@ -612,7 +611,7 @@ const AtestadosTestePage = () => {
                       })}
                     </span>
                     <ChevronRight className="w-4 h-4 text-gray-900 justify-self-end" />
-                  </button>
+                  </div>
                 ))
               )}
             </div>
