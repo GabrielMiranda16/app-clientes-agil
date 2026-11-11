@@ -23,6 +23,39 @@ const reduzirImagem = async (file) => {
 
 export const SALARIO_MINIMO = 1621;
 
+export const CONFIG_PADRAO = {
+  prazo_entrega_dias: 2,
+  soma_inss: 'MESMO_MOTIVO',
+  salario_base: SALARIO_MINIMO,
+  encargos_percentual: 0,
+  limitar_custo_15_dias: true,
+  meta_absenteismo: 4,
+};
+
+export const TIPOS_ATESTADO = [
+  { value: 'ATESTADO', label: 'Atestado médico' },
+  { value: 'ODONTOLOGICO', label: 'Atestado odontológico' },
+  { value: 'COMPARECIMENTO', label: 'Declaração de comparecimento' },
+  { value: 'ACOMPANHANTE', label: 'Acompanhante' },
+];
+
+export const STATUS_ATESTADO = {
+  PENDENTE: { label: 'Pendente', classe: 'bg-amber-50 text-amber-700' },
+  APROVADO: { label: 'Aprovado', classe: 'bg-blue-50 text-[#003580]' },
+  RECUSADO: { label: 'Recusado', classe: 'bg-red-50 text-red-700' },
+  SEM_ABONO: { label: 'Justificado sem abono', classe: 'bg-gray-100 text-gray-600' },
+};
+
+export const MOTIVOS_RECUSA = [
+  { value: 'FORA_PRAZO', label: 'Entregue fora do prazo do regulamento' },
+  { value: 'RASURA', label: 'Rasura ou alteração no documento' },
+  { value: 'DADO_OBRIGATORIO', label: 'Falta dado obrigatório (médico, CRM, data, assinatura ou dias)' },
+  { value: 'PROFISSIONAL', label: 'Emitido por quem não é médico nem dentista' },
+  { value: 'DUPLICADO', label: 'Documento duplicado' },
+  { value: 'DIVERGENCIA_MEDICA', label: 'Divergência do médico do trabalho', detalhe: 'Nome do médico do trabalho que avaliou' },
+  { value: 'OUTRO', label: 'Outro motivo', detalhe: 'Descreva o motivo' },
+];
+
 export const custoEstimado = (dias, salarioMensal = SALARIO_MINIMO) =>
   dias > 0 ? (salarioMensal / 30) * dias : 0;
 
@@ -83,7 +116,7 @@ export const atestadosService = {
     try {
       const { data, error } = await supabase
         .from('atestados')
-        .select('*, beneficiarios(nome_completo, cpf)')
+        .select('*, beneficiarios(nome_completo, cpf, matricula_empresa, salario)')
         .eq('apolice_id', apolice_id)
         .order('data_inicio', { ascending: false });
 
@@ -100,7 +133,7 @@ export const atestadosService = {
       const { data, error } = await supabase
         .from('atestados')
         .insert([atestadoData])
-        .select('*, beneficiarios(nome_completo, cpf)')
+        .select('*, beneficiarios(nome_completo, cpf, matricula_empresa, salario)')
         .single();
 
       if (error) throw error;
@@ -109,6 +142,33 @@ export const atestadosService = {
       console.error('Erro ao criar atestado:', error);
       throw new Error('Não foi possível cadastrar o atestado.');
     }
+  },
+
+  async updateAtestado(id, patch) {
+    try {
+      const { data, error } = await supabase
+        .from('atestados')
+        .update({ ...patch, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select('*, beneficiarios(nome_completo, cpf, matricula_empresa, salario)')
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Erro ao atualizar atestado:', error);
+      throw new Error('Não foi possível salvar a alteração.');
+    }
+  },
+
+  async updateSalario(beneficiarioId, salario) {
+    const { error } = await supabase.from('beneficiarios').update({ salario }).eq('id', beneficiarioId);
+    if (error) throw new Error('Não foi possível salvar o salário.');
+  },
+
+  async getConfig(matrizId) {
+    const { data } = await supabase.from('atestados_config').select('*').eq('empresa_id', matrizId).maybeSingle();
+    return { ...CONFIG_PADRAO, ...(data || {}) };
   },
 
   async deleteAtestado(atestado) {

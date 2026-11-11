@@ -20,7 +20,7 @@ const SCHEMA = {
   ],
   properties: {
     eh_atestado: { type: 'boolean' },
-    tipo: { type: 'string', enum: ['ATESTADO', 'COMPARECIMENTO', 'OUTRO'] },
+    tipo: { type: 'string', enum: ['ATESTADO', 'ODONTOLOGICO', 'COMPARECIMENTO', 'ACOMPANHANTE', 'OUTRO'] },
     paciente_nome: texto,
     data_emissao: texto,
     data_inicio: texto,
@@ -50,23 +50,23 @@ const SYSTEM = `Você lê atestados médicos brasileiros (foto de celular ou PDF
 Regras de extração:
 - Extraia somente o que está escrito no documento. Campo ausente ou ilegível fica null. Nunca complete por dedução um nome, CRM ou CID que você não conseguiu ler.
 - Datas no formato YYYY-MM-DD. A data de hoje é ${new Date().toISOString().slice(0, 10)}; use-a só para resolver anos abreviados.
-- tipo: ATESTADO quando afasta a pessoa por um ou mais dias; COMPARECIMENTO quando só declara presença em consulta ou exame por horas; OUTRO quando o documento não é nenhum dos dois (receita, pedido de exame, etc.).
+- tipo: ATESTADO quando um médico afasta a pessoa por um ou mais dias; ODONTOLOGICO quando quem afasta é um dentista (registro CRO); COMPARECIMENTO quando só declara presença em consulta ou exame por horas; ACOMPANHANTE quando declara que a pessoa acompanhou outra (filho, cônjuge) em consulta, exame ou internação; OUTRO quando o documento não é nenhum desses (receita, pedido de exame, etc.).
 - eh_atestado: false quando o tipo for OUTRO.
 - data_inicio: primeiro dia de afastamento. Se o documento não disser, é a data de emissão.
 - dias_afastamento: número de dias corridos de afastamento escrito no documento. Em COMPARECIMENTO é 0.
 - data_fim: último dia de afastamento. Se o documento só informar a quantidade de dias, calcule data_inicio + dias_afastamento - 1.
 - cid: código no padrão CID-10 (ex.: J11, M54.5), só se estiver escrito. O CID é opcional no atestado; a ausência é normal.
-- crm: apenas os dígitos do registro do médico. crm_uf: a sigla do estado do CRM (ex.: SP).
+- crm: apenas os dígitos do registro do médico (ou do CRO, se for dentista). crm_uf: a sigla do estado do registro (ex.: SP).
 - local_atendimento: nome da clínica, hospital ou consultório, se constar.
 - legibilidade: BOA se leu tudo com segurança, PARCIAL se algum campo ficou em dúvida, RUIM se a maior parte está ilegível.
 - observacoes: em uma frase curta, diga quais campos ficaram em dúvida e por quê, para o RH saber o que conferir. null se não houver dúvida.
 
 Sinais de atenção (campo risco):
-Você não tem como provar que um atestado é falso, e uma acusação errada prejudica um funcionário. O objetivo é só apontar o que o RH deveria verificar antes de aceitar o documento. Liste em sinais apenas o que é observável no próprio documento, cada um em uma frase curta e concreta. Exemplos do que conta: falta de assinatura ou de carimbo do médico; CRM ausente ou com formato estranho; nome do médico ausente; rasura ou sobrescrita em data ou quantidade de dias; quantidade de dias em número diferente da escrita por extenso; data de emissão futura ou muito distante do início do afastamento; trechos com fonte, alinhamento ou cor diferentes do resto, sugerindo edição; ausência de identificação do local de atendimento; afastamento longo demais para o CID informado.
+Você não tem como provar que um atestado é falso, e uma acusação errada prejudica um funcionário. O objetivo é só apontar o que o RH deveria verificar antes de aceitar o documento. Liste em sinais apenas o que é observável no próprio documento, cada um em uma frase curta e concreta. Exemplos do que conta: falta de assinatura do médico; em atestado manuscrito, falta de carimbo ou do número do CRM; CRM ausente, sem UF ou com formato estranho; nome do médico ausente ou incompleto; falta do nome do paciente; falta da data de emissão; falta da quantidade de dias de dispensa; emitido por profissional que não é médico nem dentista; rasura ou sobrescrita em data ou quantidade de dias; quantidade de dias em número diferente da escrita por extenso; data de emissão futura ou muito distante do início do afastamento; trechos com fonte, alinhamento ou cor diferentes do resto, sugerindo edição; ausência de identificação do local de atendimento; afastamento longo demais para o CID informado.
 - nivel BAIXO: documento com os elementos esperados e sem inconsistência. sinais fica vazio.
 - nivel MEDIO: falta algum elemento esperado ou há uma inconsistência pequena.
 - nivel ALTO: há rasura, divergência entre campos ou indício de edição em dado essencial (paciente, datas, dias, médico).
-Foto torta, escura ou de baixa qualidade não é sinal de fraude: isso entra em legibilidade, não em risco. Ausência de CID também não é sinal.`;
+Foto torta, escura ou de baixa qualidade não é sinal de fraude: isso entra em legibilidade, não em risco. Ausência de CID também não é sinal: o CID só consta se o paciente pedir. Falta de CPF do paciente ou de telefone e endereço do médico é, no máximo, nível MEDIO.`;
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });

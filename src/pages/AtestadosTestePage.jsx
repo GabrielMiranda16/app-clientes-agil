@@ -3,9 +3,11 @@ import { Helmet } from 'react-helmet';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apolicesService } from '@/services/apolicesService';
 import { beneficiariosService } from '@/services/beneficiariosService';
-import { atestadosService, custoEstimado, diasDoAtestado, SALARIO_MINIMO } from '@/services/atestadosService';
-import { analisarAtestados, marcasDoAtestado, acharDuplicado } from '@/services/atestadosAnalise';
-import { ArrowLeft, Loader2, Stethoscope, Plus, Trash2, Sparkles, FileText, Upload, AlertTriangle, ChevronRight } from 'lucide-react';
+import { atestadosService, custoEstimado, diasDoAtestado, CONFIG_PADRAO, TIPOS_ATESTADO } from '@/services/atestadosService';
+import { analisarAtestados, acharDuplicado } from '@/services/atestadosAnalise';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import AtestadoCard from '@/components/clienteTeste/AtestadoCard';
+import { ArrowLeft, Loader2, Stethoscope, Plus, Trash2, Sparkles, FileText, Upload, AlertTriangle, ChevronRight, Pencil } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -21,10 +23,9 @@ import { useToast } from '@/components/ui/use-toast';
 
 const EMPTY_FORM = {
   beneficiario_id: '', tipo: 'ATESTADO', data_emissao: '', data_inicio: '', data_fim: '',
-  dias_afastamento: '', cid: '', medico_nome: '', crm: '', crm_uf: '', motivo: '', observacoes: '',
+  dias_afastamento: '', horas: '', cid: '', medico_nome: '', crm: '', crm_uf: '', motivo: '', observacoes: '',
+  mesmo_motivo_de: 'NENHUM',
 };
-
-const TIPO_LABEL = { ATESTADO: 'Atestado', COMPARECIMENTO: 'Comparecimento' };
 
 const ALERTA_ESTILO = {
   INSS: { rotulo: 'INSS', classe: 'bg-red-50 text-red-700' },
@@ -37,8 +38,6 @@ const resumoCids = (p) => {
   if (p.cids.length === 1) return p.cids[0].cid;
   return `${p.cids.length} diferentes`;
 };
-
-const MARCA_CLASSE = (m) => (m === 'Risco alto' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700');
 
 const formatDate = (d) => {
   if (!d) return '—';
@@ -71,6 +70,7 @@ const AtestadosTestePage = () => {
   const { apoliceId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const fileRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [apolice, setApolice] = useState(null);
@@ -83,15 +83,20 @@ const AtestadosTestePage = () => {
   const [isLendo, setIsLendo] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [pessoaAbertaId, setPessoaAbertaId] = useState(null);
+  const [config, setConfig] = useState(CONFIG_PADRAO);
+  const [editando, setEditando] = useState(null);
+  const [salarioEdit, setSalarioEdit] = useState(null);
 
   useEffect(() => {
     apolicesService.getApolice(apoliceId)
       .then(async (ap) => {
         setApolice(ap);
-        const [ben, ats] = await Promise.all([
+        const [ben, ats, cfg] = await Promise.all([
           beneficiariosService.getBeneficiariosByEmpresa(ap.empresa_id).catch(() => []),
           atestadosService.getAtestadosByApolice(apoliceId).catch(() => []),
+          atestadosService.getConfig(ap.empresas?.empresa_matriz_id || ap.empresa_id).catch(() => CONFIG_PADRAO),
         ]);
+        setConfig(cfg);
         setBeneficiarios(ben.filter(b => !b.data_exclusao));
         setAtestados(ats);
       })
@@ -102,7 +107,7 @@ const AtestadosTestePage = () => {
   const resumo = useMemo(() => {
     const hoje = isoLocal(new Date());
     const mesAtual = hoje.slice(0, 7);
-    const afastamentos = atestados.filter((a) => a.tipo !== 'COMPARECIMENTO');
+    const afastamentos = atestados.filter((a) => a.tipo !== 'COMPARECIMENTO' && a.status !== 'RECUSADO');
 
     const afastadosAgora = afastamentos.filter((a) => a.data_inicio <= hoje && hoje <= (a.data_fim || a.data_inicio));
     const retornosMes = afastamentos.filter((a) => {
@@ -110,16 +115,77 @@ const AtestadosTestePage = () => {
       return retorno.slice(0, 7) === mesAtual && retorno <= hoje;
     });
 
-    return { afastadosAgora, retornosMes, ...analisarAtestados(atestados) };
-  }, [atestados]);
+    const analise = analisarAtestados(atestados, { prazoEntregaDias: config.prazo_entrega_dias, somaInss: config.soma_inss });
+    const salarioBase = Number(config.salario_base);
+    const pessoas = analise.pessoas.map((p) => ({ ...p, salarioMensal: p.salario || salarioBase, custo: custoEstimado(p.diasCusto, p.salario || salarioBase) }));
+    const custoTotal = pessoas.reduce((t, p) => t + p.custo, 0);
+    const algumEstimado = pessoas.some((p) => !p.salario && p.diasCusto > 0);
+
+    return { afastadosAgora, retornosMes, ...analise, pessoas, custoTotal, algumEstimado };
+  }, [atestados, config]);
 
   const pessoaAberta = resumo.pessoas.find((p) => p.id === pessoaAbertaId) || null;
 
   const abrirNovo = () => {
+    setEditando(null);
     setForm(EMPTY_FORM);
     setArquivo(null);
     setIaDados(null);
     setIsAddOpen(true);
+  };
+
+  const abrirEdicao = (a) => {
+    setEditando(a);
+    setForm({
+      beneficiario_id: String(a.beneficiario_id),
+      tipo: a.tipo || 'ATESTADO',
+      data_emissao: a.data_emissao || '',
+      data_inicio: a.data_inicio || '',
+      data_fim: a.data_fim || '',
+      dias_afastamento: a.dias_afastamento != null ? String(a.dias_afastamento) : '',
+      horas: a.horas != null ? String(Number(a.horas)) : '',
+      cid: a.cid || '',
+      medico_nome: a.medico_nome || '',
+      crm: a.crm || '',
+      crm_uf: a.crm_uf || '',
+      motivo: a.motivo || '',
+      observacoes: a.observacoes || '',
+      mesmo_motivo_de: a.mesmo_motivo_de ? String(a.mesmo_motivo_de) : 'NENHUM',
+    });
+    setArquivo(null);
+    setIaDados(a.ia_dados || null);
+    setPessoaAbertaId(null);
+    setIsAddOpen(true);
+  };
+
+  const handleDecidir = async (a, patch) => {
+    try {
+      const reabrindo = patch.status === 'PENDENTE';
+      const atualizado = await atestadosService.updateAtestado(a.id, {
+        ...patch,
+        decidido_por: reabrindo ? null : (user?.email || null),
+        decidido_em: reabrindo ? null : new Date().toISOString(),
+      });
+      setAtestados((prev) => prev.map((x) => (x.id === a.id ? atualizado : x)));
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro ao salvar a decisão', description: err.message });
+    }
+  };
+
+  const handleSalvarSalario = async () => {
+    const valor = salarioEdit.valor.trim() === '' ? null : Number(salarioEdit.valor.replace(/\./g, '').replace(',', '.'));
+    if (valor != null && (Number.isNaN(valor) || valor <= 0)) {
+      toast({ variant: 'destructive', title: 'Informe um salário válido.' });
+      return;
+    }
+    try {
+      await atestadosService.updateSalario(salarioEdit.id, valor);
+      setAtestados((prev) => prev.map((x) => (x.beneficiario_id === salarioEdit.id ? { ...x, beneficiarios: { ...x.beneficiarios, salario: valor } } : x)));
+      setSalarioEdit(null);
+      toast({ title: valor ? 'Salário salvo.' : 'Salário removido. Voltou para o salário base.' });
+    } catch (err) {
+      toast({ variant: 'destructive', title: err.message });
+    }
   };
 
   const handleArquivo = async (e) => {
@@ -140,7 +206,7 @@ const AtestadosTestePage = () => {
       setForm((f) => ({
         ...f,
         beneficiario_id: pessoa ? String(pessoa.id) : f.beneficiario_id,
-        tipo: d.tipo === 'COMPARECIMENTO' ? 'COMPARECIMENTO' : 'ATESTADO',
+        tipo: TIPOS_ATESTADO.some((t) => t.value === d.tipo) ? d.tipo : 'ATESTADO',
         data_emissao: d.data_emissao || '',
         data_inicio: d.data_inicio || d.data_emissao || '',
         data_fim: d.data_fim || '',
@@ -166,7 +232,8 @@ const AtestadosTestePage = () => {
       toast({ variant: 'destructive', title: 'Selecione a pessoa e a data de início.' });
       return;
     }
-    if (acharDuplicado(atestados, { beneficiario_id: Number(form.beneficiario_id), data_inicio: form.data_inicio, tipo: form.tipo })) {
+    const beneficiarioId = Number(form.beneficiario_id);
+    if (acharDuplicado(atestados, { beneficiario_id: beneficiarioId, data_inicio: form.data_inicio, tipo: form.tipo }, editando?.id)) {
       toast({ variant: 'destructive', title: 'Esse atestado já foi cadastrado.', description: 'Já existe um atestado dessa pessoa com início nessa data.' });
       return;
     }
@@ -174,30 +241,45 @@ const AtestadosTestePage = () => {
     let arquivoPath = null;
     try {
       if (arquivo) arquivoPath = await atestadosService.uploadArquivo(arquivo, apolice.empresa_id);
-      const created = await atestadosService.createAtestado({
-        beneficiario_id: Number(form.beneficiario_id),
-        empresa_id: apolice.empresa_id,
-        apolice_id: Number(apoliceId),
+      const ehComparecimento = form.tipo === 'COMPARECIMENTO';
+      const dados = {
+        beneficiario_id: beneficiarioId,
         tipo: form.tipo,
         data_emissao: form.data_emissao || null,
         data_inicio: form.data_inicio,
         data_fim: form.data_fim || null,
-        dias_afastamento: form.dias_afastamento === '' ? null : Number(form.dias_afastamento),
+        dias_afastamento: ehComparecimento ? 0 : (form.dias_afastamento === '' ? null : Number(form.dias_afastamento)),
+        horas: ehComparecimento && form.horas !== '' ? Number(String(form.horas).replace(',', '.')) : null,
         cid: form.cid.trim().toUpperCase() || null,
         medico_nome: form.medico_nome.trim() || null,
         crm: form.crm.trim() || null,
         crm_uf: form.crm_uf.trim().toUpperCase() || null,
         motivo: form.motivo.trim() || null,
         observacoes: form.observacoes.trim() || null,
-        arquivo_path: arquivoPath,
+        mesmo_motivo_de: form.mesmo_motivo_de === 'NENHUM' ? null : Number(form.mesmo_motivo_de),
         ia_dados: iaDados,
-      });
-      setAtestados((prev) => [created, ...prev]);
-      toast({ title: 'Atestado cadastrado.' });
+      };
+      if (editando) {
+        const antigo = editando.arquivo_path;
+        const atualizado = await atestadosService.updateAtestado(editando.id, arquivoPath ? { ...dados, arquivo_path: arquivoPath } : dados);
+        if (arquivoPath && antigo) atestadosService.removerArquivo(antigo).catch(() => {});
+        setAtestados((prev) => prev.map((x) => (x.id === editando.id ? atualizado : x)));
+        toast({ title: 'Atestado atualizado.' });
+      } else {
+        const created = await atestadosService.createAtestado({
+          ...dados,
+          empresa_id: apolice.empresa_id,
+          apolice_id: Number(apoliceId),
+          arquivo_path: arquivoPath,
+        });
+        setAtestados((prev) => [created, ...prev]);
+        toast({ title: 'Atestado cadastrado. Ele entra como pendente de decisão.' });
+      }
       setIsAddOpen(false);
+      setPessoaAbertaId(beneficiarioId);
     } catch (err) {
       if (arquivoPath) atestadosService.removerArquivo(arquivoPath).catch(() => {});
-      toast({ variant: 'destructive', title: 'Erro ao cadastrar', description: err.message });
+      toast({ variant: 'destructive', title: 'Erro ao salvar', description: err.message });
     } finally {
       setIsSaving(false);
     }
@@ -234,11 +316,15 @@ const AtestadosTestePage = () => {
     );
   }
 
+  const outrosDaPessoa = form.beneficiario_id && form.tipo !== 'COMPARECIMENTO'
+    ? atestados.filter((a) => String(a.beneficiario_id) === form.beneficiario_id && a.id !== editando?.id && a.tipo !== 'COMPARECIMENTO')
+    : [];
+
   const INDICADORES = [
     { label: 'Afastados hoje', valor: resumo.afastadosAgora.length },
     { label: 'Retornos no mês', valor: resumo.retornosMes.length },
     { label: 'Atestados (12 meses)', valor: resumo.totalAtestados },
-    { label: 'Custo estimado total (12 meses)', valor: formatBRL(custoEstimado(resumo.diasTotal)) },
+    { label: 'Custo estimado total (12 meses)', valor: formatBRL(resumo.custoTotal) },
   ];
 
   return (
@@ -275,7 +361,7 @@ const AtestadosTestePage = () => {
             ))}
           </div>
           <p className="text-xs text-gray-400 -mt-3">
-            Custo estimado com base no salário mínimo ({formatBRL(SALARIO_MINIMO)}/mês), proporcional aos dias de afastamento.
+            Custo proporcional aos dias de afastamento, pelo salário de cada pessoa. {resumo.algumEstimado ? `Quem não tem salário cadastrado entra com o salário base de ${formatBRL(Number(config.salario_base))}/mês.` : ''} Atestados recusados ou sem abono não entram no custo.
           </p>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -312,6 +398,29 @@ const AtestadosTestePage = () => {
               )}
             </div>
           </div>
+
+          {resumo.pendentes.length > 0 && (
+            <div className="bg-white border border-gray-100 rounded-2xl p-5">
+              <h2 className="font-bold text-gray-900 mb-3">
+                Aguardando decisão <span className="text-gray-400 font-normal">({resumo.pendentes.length})</span>
+              </h2>
+              <div className="divide-y divide-gray-100">
+                {resumo.pendentes.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => setPessoaAbertaId(a.beneficiario_id)}
+                    className="w-full flex items-center justify-between gap-3 py-2.5 text-left text-sm hover:text-[#003580]"
+                  >
+                    <span className="font-semibold text-gray-900 truncate">{a.beneficiarios?.nome_completo || '—'}</span>
+                    <span className="text-gray-500 flex-shrink-0">
+                      {formatDate(a.data_inicio)}{a.tipo !== 'COMPARECIMENTO' ? ` · ${diasDoAtestado(a)} ${diasDoAtestado(a) === 1 ? 'dia' : 'dias'}` : ''}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {resumo.alertas.length > 0 && (
             <div className="bg-white border border-gray-100 rounded-2xl p-5">
@@ -385,8 +494,14 @@ const AtestadosTestePage = () => {
                   >
                     <span className="min-w-0">
                       <span className="block font-bold text-gray-900 text-sm truncate">{p.nome}</span>
-                      {p.alertas.length > 0 && (
+                      {p.matricula && <span className="block text-xs text-gray-400">Matrícula {p.matricula}</span>}
+                      {(p.alertas.length > 0 || p.pendentes > 0) && (
                         <span className="flex flex-wrap gap-1 mt-1">
+                          {p.pendentes > 0 && (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+                              {p.pendentes} {p.pendentes === 1 ? 'pendente' : 'pendentes'}
+                            </span>
+                          )}
                           {p.alertas.map((al) => (
                             <span key={al.chave} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${ALERTA_ESTILO[al.tipo].classe}`}>{ALERTA_ESTILO[al.tipo].rotulo}</span>
                           ))}
@@ -395,7 +510,7 @@ const AtestadosTestePage = () => {
                     </span>
                     <span className="hidden sm:block text-sm text-gray-900">{p.qtd}</span>
                     <span className="hidden sm:block text-sm text-gray-900">{p.dias}</span>
-                    <span className="hidden sm:block text-sm text-gray-900">{formatBRL(custoEstimado(p.dias))}</span>
+                    <span className="hidden sm:block text-sm text-gray-900">{formatBRL(p.custo)}</span>
                     <span className="hidden sm:block text-sm text-gray-900 truncate">{resumoCids(p)}</span>
                     <ChevronRight className="w-4 h-4 text-gray-900 justify-self-end" />
                   </button>
@@ -413,7 +528,7 @@ const AtestadosTestePage = () => {
               {[
                 { label: 'Atestados (12 meses)', valor: pessoaAberta.qtd },
                 { label: 'Dias afastado', valor: pessoaAberta.dias },
-                { label: 'Custo estimado', valor: formatBRL(custoEstimado(pessoaAberta.dias)) },
+                { label: pessoaAberta.salario ? 'Custo' : 'Custo estimado', valor: formatBRL(pessoaAberta.custo) },
                 { label: 'Índice de Bradford', valor: pessoaAberta.bradford },
               ].map((i) => (
                 <div key={i.label} className="border border-gray-100 rounded-2xl px-4 py-3">
@@ -425,6 +540,44 @@ const AtestadosTestePage = () => {
             <p className="text-xs text-gray-400 -mt-2">
               Índice de Bradford = atestados² × dias. Faltas curtas e repetidas pesam mais que um afastamento longo.
             </p>
+
+            <div className="border border-gray-100 rounded-2xl px-4 py-3">
+              {salarioEdit?.id === pessoaAberta.id ? (
+                <div className="space-y-2">
+                  <Label className="text-xs">Salário mensal (R$)</Label>
+                  <Input
+                    autoFocus
+                    inputMode="decimal"
+                    value={salarioEdit.valor}
+                    onChange={(e) => setSalarioEdit((v) => ({ ...v, valor: e.target.value }))}
+                    placeholder="Ex: 3.500,00"
+                  />
+                  <p className="text-[11px] text-gray-400">Deixe em branco para voltar ao salário base.</p>
+                  <div className="flex justify-end gap-2">
+                    <Button size="sm" variant="outline" onClick={() => setSalarioEdit(null)}>Cancelar</Button>
+                    <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white" onClick={handleSalvarSalario}>Salvar</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs text-gray-400 mb-0.5">Salário mensal</p>
+                    <p className="text-sm font-bold text-gray-900">
+                      {formatBRL(pessoaAberta.salarioMensal)}
+                      {!pessoaAberta.salario && <span className="font-normal text-gray-400"> · estimado pelo salário base</span>}
+                    </p>
+                    {pessoaAberta.matricula && <p className="text-xs text-gray-400 mt-0.5">Matrícula {pessoaAberta.matricula}</p>}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSalarioEdit({ id: pessoaAberta.id, valor: pessoaAberta.salario ? String(pessoaAberta.salario).replace('.', ',') : '' })}
+                    className="flex items-center gap-1.5 text-sm font-semibold text-[#003580] hover:underline flex-shrink-0"
+                  >
+                    <Pencil className="w-3.5 h-3.5" /> Ajustar
+                  </button>
+                </div>
+              )}
+            </div>
 
             {pessoaAberta.alertas.length > 0 && (
               <div className="space-y-2">
@@ -463,59 +616,25 @@ const AtestadosTestePage = () => {
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-[#003580] mb-2">Atestados</p>
               <div className="space-y-2">
-                {pessoaAberta.itens.map((a) => {
-                  const dias = a.tipo === 'COMPARECIMENTO' ? 0 : diasDoAtestado(a);
-                  const marcas = marcasDoAtestado(a);
-                  return (
-                    <div key={a.id} className="border border-gray-100 rounded-2xl px-4 py-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold text-gray-900">
-                            {formatDate(a.data_inicio)}{a.data_fim && a.data_fim !== a.data_inicio ? ` a ${formatDate(a.data_fim)}` : ''}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {TIPO_LABEL[a.tipo] || a.tipo}
-                            {dias ? ` · ${dias} ${dias === 1 ? 'dia' : 'dias'} · ${formatBRL(custoEstimado(dias))}` : ''}
-                            {a.cid ? ` · CID ${a.cid}` : ''}
-                          </p>
-                          <p className="text-xs text-gray-500 truncate">
-                            {a.medico_nome || 'Médico não informado'}{a.crm ? ` · CRM ${a.crm}${a.crm_uf ? `/${a.crm_uf}` : ''}` : ''}
-                          </p>
-                          {a.motivo && <p className="text-xs text-gray-500 truncate">{a.motivo}</p>}
-                        </div>
-                        <span className="flex items-center gap-3 flex-shrink-0">
-                          {a.arquivo_path && (
-                            <button onClick={() => handleVerArquivo(a)} title="Ver arquivo" className="text-gray-400 hover:text-[#003580] transition-colors">
-                              <FileText className="w-4 h-4" />
-                            </button>
-                          )}
-                          <button onClick={() => handleExcluir(a)} title="Excluir" className="text-gray-400 hover:text-red-600 transition-colors">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </span>
-                      </div>
-                      {marcas.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {marcas.map((m) => (
-                            <span key={m} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${MARCA_CLASSE(m)}`}>{m}</span>
-                          ))}
-                        </div>
-                      )}
-                      {a.ia_dados?.risco?.sinais?.length > 0 && (
-                        <ul className="list-disc pl-4 mt-2 text-xs text-gray-500 space-y-0.5">
-                          {a.ia_dados.risco.sinais.map((sinal) => <li key={sinal}>{sinal}</li>)}
-                        </ul>
-                      )}
-                    </div>
-                  );
-                })}
+                {pessoaAberta.itens.map((a) => (
+                  <AtestadoCard
+                    key={a.id}
+                    atestado={a}
+                    config={config}
+                    salarioMensal={pessoaAberta.salarioMensal}
+                    onDecidir={handleDecidir}
+                    onEditar={abrirEdicao}
+                    onExcluir={handleExcluir}
+                    onVerArquivo={handleVerArquivo}
+                  />
+                ))}
               </div>
             </div>
           </PainelCorpo>
         )}
       </PainelLateral>
 
-      <PainelLateral open={isAddOpen} onOpenChange={setIsAddOpen} title="Adicionar atestado">
+      <PainelLateral open={isAddOpen} onOpenChange={setIsAddOpen} title={editando ? 'Editar atestado' : 'Adicionar atestado'}>
           <PainelCorpo className="space-y-3">
             <input ref={fileRef} type="file" accept=".pdf,image/jpeg,image/png,image/webp" className="hidden" onChange={handleArquivo} />
             <button
@@ -563,8 +682,7 @@ const AtestadosTestePage = () => {
                 <Select value={form.tipo} onValueChange={(v) => setForm((f) => ({ ...f, tipo: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ATESTADO">Atestado (dias)</SelectItem>
-                    <SelectItem value="COMPARECIMENTO">Comparecimento (horas)</SelectItem>
+                    {TIPOS_ATESTADO.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -582,10 +700,17 @@ const AtestadosTestePage = () => {
                 <Label className="text-xs">Término</Label>
                 <Input type="date" {...campo('data_fim')} />
               </div>
-              <div>
-                <Label className="text-xs">Dias</Label>
-                <Input type="number" min="0" {...campo('dias_afastamento')} />
-              </div>
+              {form.tipo === 'COMPARECIMENTO' ? (
+                <div>
+                  <Label className="text-xs">Horas</Label>
+                  <Input inputMode="decimal" {...campo('horas')} />
+                </div>
+              ) : (
+                <div>
+                  <Label className="text-xs">Dias</Label>
+                  <Input type="number" min="0" {...campo('dias_afastamento')} />
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-[1fr_1.2fr_0.6fr] gap-3">
               <div>
@@ -605,6 +730,23 @@ const AtestadosTestePage = () => {
               <Label className="text-xs">Médico</Label>
               <Input {...campo('medico_nome')} />
             </div>
+            {outrosDaPessoa.length > 0 && (
+              <div>
+                <Label className="text-xs">Mesmo motivo de outro afastamento?</Label>
+                <Select value={form.mesmo_motivo_de} onValueChange={(v) => setForm((f) => ({ ...f, mesmo_motivo_de: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NENHUM">Não, é outro motivo</SelectItem>
+                    {outrosDaPessoa.map((o) => (
+                      <SelectItem key={o.id} value={String(o.id)}>
+                        Sim, o de {formatDate(o.data_inicio)} · {diasDoAtestado(o)} {diasDoAtestado(o) === 1 ? 'dia' : 'dias'}{o.cid ? ` · CID ${o.cid}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-gray-400 mt-1">Afastamentos pelo mesmo motivo em até 60 dias são somados para o INSS.</p>
+              </div>
+            )}
             <div>
               <Label className="text-xs">Motivo</Label>
               <Input {...campo('motivo')} placeholder="Ex: Gripe, pós-cirúrgico" />
