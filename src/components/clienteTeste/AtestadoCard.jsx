@@ -1,12 +1,7 @@
 import React, { useState } from 'react';
 import { FileText, Pencil, Trash2, ChevronDown } from 'lucide-react';
-import AtestadoAcompanhamento from '@/components/clienteTeste/AtestadoAcompanhamento';
 import { format } from 'date-fns';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
-} from '@/components/ui/select';
+import AtestadoAcompanhamento from '@/components/clienteTeste/AtestadoAcompanhamento';
 import { custoEstimado, diasDoAtestado, ETAPAS_AFASTAMENTO, MOTIVOS_RECUSA, STATUS_ATESTADO, TIPOS_ATESTADO } from '@/services/atestadosService';
 import { avisosDoAcompanhamento, ehAfastamento, geraCusto, marcasDoAtestado } from '@/services/atestadosAnalise';
 
@@ -16,40 +11,20 @@ const formatDate = (d) => {
 };
 const formatBRL = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const marcaClasse = (m) => (m === 'Risco alto' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700');
-
 const AVISO_CLASSE = { URGENTE: 'bg-red-50 text-red-700', ATENCAO: 'bg-amber-50 text-amber-700', INFO: 'bg-blue-50 text-[#003580]' };
 
 const AtestadoCard = ({ atestado: a, config, salarioMensal, autor, abrirAcompanhamento, onAtualizar, onDecidir, onEditar, onExcluir, onVerArquivo }) => {
-  const [recusando, setRecusando] = useState(false);
-  const [motivo, setMotivo] = useState('');
-  const [detalhe, setDetalhe] = useState('');
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
-  const [salvando, setSalvando] = useState(false);
   const [acompanhando, setAcompanhando] = useState(!!abrirAcompanhamento);
-  const etapaLabel = ETAPAS_AFASTAMENTO.find((e) => e.value === a.etapa)?.label;
-  const avisos = avisosDoAcompanhamento(a);
 
   const status = a.status || 'PENDENTE';
   const estilo = STATUS_ATESTADO[status];
   const dias = a.tipo === 'COMPARECIMENTO' ? 0 : diasDoAtestado(a);
   const marcas = marcasDoAtestado(a, config.prazo_entrega_dias);
   const tipoLabel = TIPOS_ATESTADO.find((t) => t.value === a.tipo)?.label || a.tipo;
-  const motivoEscolhido = MOTIVOS_RECUSA.find((m) => m.value === motivo);
   const motivoSalvo = MOTIVOS_RECUSA.find((m) => m.value === a.motivo_recusa);
-
-  const decidir = async (patch) => {
-    setSalvando(true);
-    try {
-      await onDecidir(a, patch);
-      setRecusando(false);
-      setMotivo('');
-      setDetalhe('');
-    } finally {
-      setSalvando(false);
-    }
-  };
-
-  const podeRecusar = motivo && (!motivoEscolhido?.detalhe || detalhe.trim());
+  const etapaLabel = ETAPAS_AFASTAMENTO.find((e) => e.value === a.etapa)?.label;
+  const avisos = avisosDoAcompanhamento(a);
 
   return (
     <div className="border border-gray-100 rounded-2xl px-4 py-3">
@@ -108,78 +83,42 @@ const AtestadoCard = ({ atestado: a, config, salarioMensal, autor, abrirAcompanh
         </p>
       )}
 
-      {recusando ? (
-        <div className="mt-3 space-y-2">
-          <Select value={motivo} onValueChange={setMotivo}>
-            <SelectTrigger><SelectValue placeholder="Motivo da recusa" /></SelectTrigger>
-            <SelectContent>
-              {MOTIVOS_RECUSA.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          {motivo && (
-            <Input
-              value={detalhe}
-              onChange={(e) => setDetalhe(e.target.value)}
-              placeholder={motivoEscolhido?.detalhe ? `${motivoEscolhido.detalhe} (obrigatório)` : 'Observação (opcional)'}
-            />
-          )}
-          <div className="flex justify-end gap-2">
-            <Button size="sm" variant="outline" onClick={() => setRecusando(false)}>Cancelar</Button>
-            <Button
-              size="sm"
-              className="bg-red-600 hover:bg-red-700 text-white"
-              disabled={!podeRecusar || salvando}
-              onClick={() => decidir({ status: 'RECUSADO', motivo_recusa: motivo, recusa_detalhe: detalhe.trim() || null })}
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <div>
+          {status !== 'PENDENTE' && (
+            <button
+              type="button"
+              onClick={() => onDecidir(a, { status: 'PENDENTE', motivo_recusa: null, recusa_detalhe: null })}
+              className="text-xs font-semibold text-gray-400 hover:text-[#003580] transition-colors"
             >
-              Confirmar recusa
-            </Button>
-          </div>
+              Desfazer decisão
+            </button>
+          )}
         </div>
-      ) : (
-        <div className="mt-3 flex items-center justify-between gap-2">
-          <div className="flex flex-wrap gap-2">
-            {status === 'PENDENTE' ? (
-              <>
-                <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white" disabled={salvando} onClick={() => decidir({ status: 'APROVADO', motivo_recusa: null, recusa_detalhe: null })}>
-                  Aprovar
-                </Button>
-                <Button size="sm" variant="outline" disabled={salvando} onClick={() => decidir({ status: 'SEM_ABONO', motivo_recusa: null, recusa_detalhe: null })}>
-                  Sem abono
-                </Button>
-                <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700" disabled={salvando} onClick={() => setRecusando(true)}>
-                  Recusar
-                </Button>
-              </>
-            ) : (
-              <Button size="sm" variant="outline" disabled={salvando} onClick={() => decidir({ status: 'PENDENTE', motivo_recusa: null, recusa_detalhe: null })}>
-                Reabrir
-              </Button>
-            )}
-          </div>
-          <div className="flex items-center gap-3 flex-shrink-0">
-            {confirmandoExclusao ? (
-              <>
-                <button onClick={() => setConfirmandoExclusao(false)} className="text-xs text-gray-500 hover:text-gray-900">Cancelar</button>
-                <button onClick={() => onExcluir(a)} className="text-xs font-semibold text-red-600 hover:text-red-700">Excluir de vez</button>
-              </>
-            ) : (
-              <>
-                {a.arquivo_path && (
-                  <button onClick={() => onVerArquivo(a)} title="Ver arquivo" className="text-gray-400 hover:text-[#003580] transition-colors">
-                    <FileText className="w-4 h-4" />
-                  </button>
-                )}
-                <button onClick={() => onEditar(a)} title="Editar" className="text-gray-400 hover:text-[#003580] transition-colors">
-                  <Pencil className="w-4 h-4" />
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {confirmandoExclusao ? (
+            <>
+              <button onClick={() => setConfirmandoExclusao(false)} className="text-xs text-gray-500 hover:text-gray-900">Cancelar</button>
+              <button onClick={() => onExcluir(a)} className="text-xs font-semibold text-red-600 hover:text-red-700">Excluir de vez</button>
+            </>
+          ) : (
+            <>
+              {a.arquivo_path && (
+                <button onClick={() => onVerArquivo(a)} title="Ver arquivo" className="text-gray-400 hover:text-[#003580] transition-colors">
+                  <FileText className="w-4 h-4" />
                 </button>
-                <button onClick={() => setConfirmandoExclusao(true)} title="Excluir" className="text-gray-400 hover:text-red-600 transition-colors">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </>
-            )}
-          </div>
+              )}
+              <button onClick={() => onEditar(a)} title="Editar" className="text-gray-400 hover:text-[#003580] transition-colors">
+                <Pencil className="w-4 h-4" />
+              </button>
+              <button onClick={() => setConfirmandoExclusao(true)} title="Excluir" className="text-gray-400 hover:text-red-600 transition-colors">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </>
+          )}
         </div>
-      )}
+      </div>
+
       {ehAfastamento(a) && status !== 'RECUSADO' && (
         <>
           <button
