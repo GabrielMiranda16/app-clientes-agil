@@ -3,8 +3,8 @@ import { Helmet } from 'react-helmet';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apolicesService } from '@/services/apolicesService';
 import { beneficiariosService } from '@/services/beneficiariosService';
-import { atestadosService, custoEstimado, diasDoAtestado, CONFIG_PADRAO, TIPOS_ATESTADO } from '@/services/atestadosService';
-import { analisarAtestados, acharDuplicado } from '@/services/atestadosAnalise';
+import { atestadosService, custoEstimado, diasDoAtestado, CONFIG_PADRAO, ETAPAS_AFASTAMENTO, TIPOS_ATESTADO } from '@/services/atestadosService';
+import { analisarAtestados, acharDuplicado, avisosDoAcompanhamento, emAcompanhamento, retornoPrevisto } from '@/services/atestadosAnalise';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import AtestadoCard from '@/components/clienteTeste/AtestadoCard';
 import { ArrowLeft, Loader2, Stethoscope, Plus, Trash2, Sparkles, FileText, Upload, AlertTriangle, ChevronRight, Pencil } from 'lucide-react';
@@ -43,6 +43,8 @@ const formatDate = (d) => {
   if (!d) return '—';
   try { return format(new Date(`${d}T00:00:00`), 'dd/MM/yyyy', { locale: ptBR }); } catch { return d; }
 };
+
+const mascaraBRL = (texto) => (Number(String(texto).replace(/\D/g, '') || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const formatBRL = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -86,6 +88,7 @@ const AtestadosTestePage = () => {
   const [config, setConfig] = useState(CONFIG_PADRAO);
   const [editando, setEditando] = useState(null);
   const [salarioEdit, setSalarioEdit] = useState(null);
+  const [acompanharId, setAcompanharId] = useState(null);
 
   useEffect(() => {
     apolicesService.getApolice(apoliceId)
@@ -121,7 +124,17 @@ const AtestadosTestePage = () => {
     const custoTotal = pessoas.reduce((t, p) => t + p.custo, 0);
     const algumEstimado = pessoas.some((p) => !p.salario && p.diasCusto > 0);
 
-    return { afastadosAgora, retornosMes, ...analise, pessoas, custoTotal, algumEstimado };
+    const porId = new Map(atestados.map((a) => [a.id, a]));
+    const inssPendentes = analise.alertas
+      .filter((al) => al.tipo === 'INSS' && al.atestadoId && !porId.get(al.atestadoId)?.etapa)
+      .map((al) => ({ ...al, atestado: porId.get(al.atestadoId) }));
+    const acompanhados = atestados.filter(emAcompanhamento)
+      .map((a) => ({ atestado: a, avisos: avisosDoAcompanhamento(a), retorno: retornoPrevisto(a) }))
+      .sort((x, y) => (x.retorno || '9').localeCompare(y.retorno || '9'));
+    const limite = somarDias(hoje, 30);
+    const retornosPrevistos = acompanhados.filter((x) => x.retorno && x.retorno >= hoje && x.retorno <= limite).length;
+
+    return { afastadosAgora, retornosMes, ...analise, pessoas, custoTotal, algumEstimado, inssPendentes, acompanhados, retornosPrevistos };
   }, [atestados, config]);
 
   const pessoaAberta = resumo.pessoas.find((p) => p.id === pessoaAbertaId) || null;
@@ -172,17 +185,29 @@ const AtestadosTestePage = () => {
     }
   };
 
-  const handleSalvarSalario = async () => {
-    const valor = salarioEdit.valor.trim() === '' ? null : Number(salarioEdit.valor.replace(/\./g, '').replace(',', '.'));
-    if (valor != null && (Number.isNaN(valor) || valor <= 0)) {
-      toast({ variant: 'destructive', title: 'Informe um salário válido.' });
-      return;
+  const handleAtualizar = async (a, patch) => {
+    try {
+      const atualizado = await atestadosService.updateAtestado(a.id, patch);
+      setAtestados((prev) => prev.map((x) => (x.id === a.id ? atualizado : x)));
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro ao salvar', description: err.message });
+      throw err;
     }
+  };
+
+  const abrirAcompanhamentoDe = (a) => {
+    setAcompanharId(a.id);
+    setPessoaAbertaId(a.beneficiario_id);
+  };
+
+  const handleSalvarSalario = async () => {
+    const centavos = Number(salarioEdit.valor.replace(/\D/g, '') || 0);
+    const valor = centavos > 0 ? centavos / 100 : null;
     try {
       await atestadosService.updateSalario(salarioEdit.id, valor);
       setAtestados((prev) => prev.map((x) => (x.beneficiario_id === salarioEdit.id ? { ...x, beneficiarios: { ...x.beneficiarios, salario: valor } } : x)));
       setSalarioEdit(null);
-      toast({ title: valor ? 'Salário salvo.' : 'Salário removido. Voltou para o salário base.' });
+      toast({ title: valor ? 'Salário salvo.' : 'Sem salário cadastrado: o custo usa o salário base.' });
     } catch (err) {
       toast({ variant: 'destructive', title: err.message });
     }
@@ -323,7 +348,8 @@ const AtestadosTestePage = () => {
   const INDICADORES = [
     { label: 'Afastados hoje', valor: resumo.afastadosAgora.length },
     { label: 'Retornos no mês', valor: resumo.retornosMes.length },
-    { label: 'Atestados (12 meses)', valor: resumo.totalAtestados },
+    { label: 'Em acompanhamento', valor: resumo.acompanhados.length },
+    { label: 'Retornos previstos (30 dias)', valor: resumo.retornosPrevistos },
     { label: 'Custo estimado total (12 meses)', valor: formatBRL(resumo.custoTotal) },
   ];
 
@@ -352,7 +378,7 @@ const AtestadosTestePage = () => {
             </button>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             {INDICADORES.map((i) => (
               <div key={i.label} className="bg-white border border-gray-100 rounded-2xl px-5 py-4">
                 <p className="text-xs text-gray-400 mb-1">{i.label}</p>
@@ -399,6 +425,59 @@ const AtestadosTestePage = () => {
             </div>
           </div>
 
+          {resumo.inssPendentes.length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-5">
+              <h2 className="font-bold text-red-700 mb-1 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" /> Afastar pelo INSS
+              </h2>
+              <p className="text-xs text-red-700 mb-3">A empresa paga só os primeiros 15 dias. Passando disso, a pessoa deve ser encaminhada à perícia do INSS.</p>
+              <div className="space-y-2">
+                {resumo.inssPendentes.map((al) => (
+                  <div key={al.chave} className="bg-white rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <button type="button" onClick={() => abrirAcompanhamentoDe(al.atestado)} className="min-w-0 text-left">
+                      <span className="block text-sm font-semibold text-gray-900">{al.titulo}</span>
+                      <span className="block text-xs text-gray-500">{al.detalhe}</span>
+                    </button>
+                    <Button
+                      size="sm"
+                      className="bg-red-600 hover:bg-red-700 text-white flex-shrink-0"
+                      onClick={() => handleAtualizar(al.atestado, { etapa: 'ENCAMINHADO_INSS', inss_encaminhado_em: isoLocal(new Date()) }).catch(() => {})}
+                    >
+                      Marcar como encaminhado
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {resumo.acompanhados.length > 0 && (
+            <div className="bg-white border border-gray-100 rounded-2xl p-5">
+              <h2 className="font-bold text-gray-900 mb-3">
+                Em acompanhamento <span className="text-gray-400 font-normal">({resumo.acompanhados.length})</span>
+              </h2>
+              <div className="divide-y divide-gray-100">
+                {resumo.acompanhados.map(({ atestado: a, avisos, retorno }) => (
+                  <button key={a.id} type="button" onClick={() => abrirAcompanhamentoDe(a)} className="w-full py-2.5 text-left">
+                    <span className="flex items-center justify-between gap-3 text-sm">
+                      <span className="font-semibold text-gray-900 truncate">{a.beneficiarios?.nome_completo || '—'}</span>
+                      <span className="text-gray-500 flex-shrink-0">
+                        {ETAPAS_AFASTAMENTO.find((e) => e.value === a.etapa)?.label}{retorno ? ` · retorno previsto ${formatDate(retorno)}` : ''}
+                      </span>
+                    </span>
+                    {avisos.length > 0 && (
+                      <span className="flex flex-wrap gap-1 mt-1">
+                        {avisos.map((av) => (
+                          <span key={av.texto} className={`text-[11px] px-2 py-0.5 rounded-full ${av.nivel === 'URGENTE' ? 'bg-red-50 text-red-700' : av.nivel === 'INFO' ? 'bg-blue-50 text-[#003580]' : 'bg-amber-50 text-amber-700'}`}>{av.texto}</span>
+                        ))}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {resumo.pendentes.length > 0 && (
             <div className="bg-white border border-gray-100 rounded-2xl p-5">
               <h2 className="font-bold text-gray-900 mb-3">
@@ -422,13 +501,13 @@ const AtestadosTestePage = () => {
             </div>
           )}
 
-          {resumo.alertas.length > 0 && (
+          {resumo.alertas.some((al) => al.tipo !== 'INSS') && (
             <div className="bg-white border border-gray-100 rounded-2xl p-5">
               <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-red-600" /> Alertas
               </h2>
               <div className="divide-y divide-gray-100">
-                {resumo.alertas.map((al) => (
+                {resumo.alertas.filter((al) => al.tipo !== 'INSS').map((al) => (
                   <button
                     key={al.chave}
                     type="button"
@@ -521,7 +600,7 @@ const AtestadosTestePage = () => {
         </div>
       </ClienteSidebarLayout>
 
-      <PainelLateral open={!!pessoaAberta} onOpenChange={(open) => !open && setPessoaAbertaId(null)} title={pessoaAberta?.nome || ''}>
+      <PainelLateral open={!!pessoaAberta} onOpenChange={(open) => { if (!open) { setPessoaAbertaId(null); setAcompanharId(null); } }} title={pessoaAberta?.nome || ''}>
         {pessoaAberta && (
           <PainelCorpo className="space-y-5">
             <div className="grid grid-cols-2 gap-3">
@@ -549,10 +628,10 @@ const AtestadosTestePage = () => {
                     autoFocus
                     inputMode="decimal"
                     value={salarioEdit.valor}
-                    onChange={(e) => setSalarioEdit((v) => ({ ...v, valor: e.target.value }))}
-                    placeholder="Ex: 3.500,00"
+                    onChange={(e) => setSalarioEdit((v) => ({ ...v, valor: mascaraBRL(e.target.value) }))}
+                    placeholder="0,00"
                   />
-                  <p className="text-[11px] text-gray-400">Deixe em branco para voltar ao salário base.</p>
+                  <p className="text-[11px] text-gray-400">Com 0,00 o custo usa o salário base de {formatBRL(Number(config.salario_base))}.</p>
                   <div className="flex justify-end gap-2">
                     <Button size="sm" variant="outline" onClick={() => setSalarioEdit(null)}>Cancelar</Button>
                     <Button size="sm" className="bg-[#003580] hover:bg-[#002060] text-white" onClick={handleSalvarSalario}>Salvar</Button>
@@ -570,8 +649,8 @@ const AtestadosTestePage = () => {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setSalarioEdit({ id: pessoaAberta.id, valor: pessoaAberta.salario ? String(pessoaAberta.salario).replace('.', ',') : '' })}
-                    className="flex items-center gap-1.5 text-sm font-semibold text-[#003580] hover:underline flex-shrink-0"
+                    onClick={() => setSalarioEdit({ id: pessoaAberta.id, valor: mascaraBRL(String(Math.round((pessoaAberta.salario || 0) * 100))) })}
+                    className="flex items-center gap-1.5 text-sm font-semibold text-gray-400 hover:text-[#003580] transition-colors flex-shrink-0"
                   >
                     <Pencil className="w-3.5 h-3.5" /> Ajustar
                   </button>
@@ -622,6 +701,9 @@ const AtestadosTestePage = () => {
                     atestado={a}
                     config={config}
                     salarioMensal={pessoaAberta.salarioMensal}
+                    autor={user?.email || null}
+                    abrirAcompanhamento={acompanharId === a.id}
+                    onAtualizar={handleAtualizar}
                     onDecidir={handleDecidir}
                     onEditar={abrirEdicao}
                     onExcluir={handleExcluir}

@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { FileText, Pencil, Trash2 } from 'lucide-react';
+import { FileText, Pencil, Trash2, ChevronDown } from 'lucide-react';
+import AtestadoAcompanhamento from '@/components/clienteTeste/AtestadoAcompanhamento';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select';
-import { custoEstimado, diasDoAtestado, MOTIVOS_RECUSA, STATUS_ATESTADO, TIPOS_ATESTADO } from '@/services/atestadosService';
-import { geraCusto, marcasDoAtestado } from '@/services/atestadosAnalise';
+import { custoEstimado, diasDoAtestado, ETAPAS_AFASTAMENTO, MOTIVOS_RECUSA, STATUS_ATESTADO, TIPOS_ATESTADO } from '@/services/atestadosService';
+import { avisosDoAcompanhamento, ehAfastamento, geraCusto, marcasDoAtestado } from '@/services/atestadosAnalise';
 
 const formatDate = (d) => {
   if (!d) return '—';
@@ -16,12 +17,17 @@ const formatDate = (d) => {
 const formatBRL = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const marcaClasse = (m) => (m === 'Risco alto' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700');
 
-const AtestadoCard = ({ atestado: a, config, salarioMensal, onDecidir, onEditar, onExcluir, onVerArquivo }) => {
+const AVISO_CLASSE = { URGENTE: 'bg-red-50 text-red-700', ATENCAO: 'bg-amber-50 text-amber-700', INFO: 'bg-blue-50 text-[#003580]' };
+
+const AtestadoCard = ({ atestado: a, config, salarioMensal, autor, abrirAcompanhamento, onAtualizar, onDecidir, onEditar, onExcluir, onVerArquivo }) => {
   const [recusando, setRecusando] = useState(false);
   const [motivo, setMotivo] = useState('');
   const [detalhe, setDetalhe] = useState('');
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
   const [salvando, setSalvando] = useState(false);
+  const [acompanhando, setAcompanhando] = useState(!!abrirAcompanhamento);
+  const etapaLabel = ETAPAS_AFASTAMENTO.find((e) => e.value === a.etapa)?.label;
+  const avisos = avisosDoAcompanhamento(a);
 
   const status = a.status || 'PENDENTE';
   const estilo = STATUS_ATESTADO[status];
@@ -79,6 +85,15 @@ const AtestadoCard = ({ atestado: a, config, salarioMensal, onDecidir, onEditar,
         <ul className="list-disc pl-4 mt-2 text-xs text-gray-500 space-y-0.5">
           {a.ia_dados.risco.sinais.map((sinal) => <li key={sinal}>{sinal}</li>)}
         </ul>
+      )}
+
+      {(etapaLabel || avisos.length > 0) && (
+        <div className="mt-2 space-y-1">
+          {etapaLabel && <p className="text-xs font-semibold text-gray-900">Etapa: {etapaLabel}</p>}
+          {avisos.map((av) => (
+            <p key={av.texto} className={`text-xs rounded-xl px-3 py-1.5 ${AVISO_CLASSE[av.nivel]}`}>{av.texto}</p>
+          ))}
+        </div>
       )}
 
       {status === 'RECUSADO' && (
@@ -164,6 +179,19 @@ const AtestadoCard = ({ atestado: a, config, salarioMensal, onDecidir, onEditar,
             )}
           </div>
         </div>
+      )}
+      {ehAfastamento(a) && status !== 'RECUSADO' && (
+        <>
+          <button
+            type="button"
+            onClick={() => setAcompanhando((v) => !v)}
+            className="mt-3 flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-[#003580] transition-colors"
+          >
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${acompanhando ? 'rotate-180' : ''}`} />
+            {acompanhando ? 'Fechar acompanhamento' : 'Acompanhamento do afastamento'}
+          </button>
+          {acompanhando && <AtestadoAcompanhamento atestado={a} autor={autor} onSalvar={onAtualizar} />}
+        </>
       )}
     </div>
   );

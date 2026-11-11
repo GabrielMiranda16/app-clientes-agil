@@ -222,6 +222,51 @@ export const analisarAtestados = (atestados, { prazoEntregaDias = 2, somaInss = 
   return { pessoas, alertas, porMes, porCid, totalAtestados: validos.length, pendentes };
 };
 
+const EXAME_RETORNO_DIAS = 30;
+
+export const emAcompanhamento = (a) => !!a.etapa && a.etapa !== 'RETORNOU';
+
+export const retornoPrevisto = (a) => {
+  if (a.retorno_previsto) return a.retorno_previsto;
+  const base = a.beneficio_fim || a.data_fim || a.data_inicio;
+  return base ? paraIso(somar(paraData(base), 1)) : null;
+};
+
+export const precisaExameRetorno = (a) => {
+  if (!ehAfastamento(a)) return false;
+  const fim = a.beneficio_fim || a.data_fim || a.data_inicio;
+  return diferencaDias(a.data_inicio, fim) + 1 >= EXAME_RETORNO_DIAS;
+};
+
+export const avisosDoAcompanhamento = (a) => {
+  const hoje = paraIso(new Date());
+  const avisos = [];
+  const em = (data) => diferencaDias(hoje, data);
+  const quando = (n) => (n === 0 ? 'hoje' : n === 1 ? 'amanhã' : `em ${n} dias`);
+  if (a.pericia_data && em(a.pericia_data) >= 0 && em(a.pericia_data) <= 7) avisos.push({ nivel: 'ATENCAO', texto: `Perícia ${quando(em(a.pericia_data))}` });
+  if (a.beneficio_fim && em(a.beneficio_fim) >= 0 && em(a.beneficio_fim) <= 15) {
+    avisos.push({ nivel: 'ATENCAO', texto: `Benefício termina ${quando(em(a.beneficio_fim))}. Prorrogação só pode ser pedida nos últimos 15 dias.` });
+  }
+  const retorno = retornoPrevisto(a);
+  if (precisaExameRetorno(a) && !a.exame_retorno_resultado && a.etapa !== 'RETORNOU') {
+    if (!a.exame_retorno_data) {
+      const perto = retorno && em(retorno) <= 15;
+      avisos.push({ nivel: perto ? 'URGENTE' : 'ATENCAO', texto: 'Afastamento de 30 dias ou mais: marcar o exame de retorno antes da volta' });
+    } else {
+      const n = em(a.exame_retorno_data.slice(0, 10));
+      if (n >= 0) avisos.push({ nivel: 'INFO', texto: `Exame de retorno ${quando(n)}` });
+      else avisos.push({ nivel: 'ATENCAO', texto: 'Exame de retorno já passou: registrar o resultado' });
+    }
+  }
+  if (a.exame_retorno_resultado === 'INAPTO' && a.etapa !== 'RETORNOU') {
+    avisos.push({ nivel: 'URGENTE', texto: 'Inapto no exame de retorno: se o INSS já deu alta, é caso de limbo previdenciário' });
+  }
+  if (retorno && a.etapa !== 'RETORNOU' && em(retorno) < 0 && !a.retorno_efetivo) {
+    avisos.push({ nivel: 'ATENCAO', texto: 'Data de retorno já passou: confirmar se a pessoa voltou' });
+  }
+  return avisos;
+};
+
 export const acharDuplicado = (atestados, novo, ignorarId = null) => atestados.find((a) =>
   a.id !== ignorarId && a.beneficiario_id === novo.beneficiario_id && a.data_inicio === novo.data_inicio && a.tipo === novo.tipo
 );

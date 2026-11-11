@@ -46,6 +46,22 @@ export const STATUS_ATESTADO = {
   SEM_ABONO: { label: 'Justificado sem abono', classe: 'bg-gray-100 text-gray-600' },
 };
 
+export const ETAPAS_AFASTAMENTO = [
+  { value: 'ENCAMINHAR_INSS', label: 'Encaminhar ao INSS' },
+  { value: 'ENCAMINHADO_INSS', label: 'Encaminhado ao INSS' },
+  { value: 'AGUARDANDO_PERICIA', label: 'Aguardando perícia' },
+  { value: 'EM_BENEFICIO', label: 'Em benefício do INSS' },
+  { value: 'BENEFICIO_NEGADO', label: 'Benefício negado' },
+  { value: 'AGUARDANDO_EXAME_RETORNO', label: 'Aguardando exame de retorno' },
+  { value: 'RETORNOU', label: 'Retornou ao trabalho' },
+];
+
+export const RESULTADOS_EXAME = [
+  { value: 'APTO', label: 'Apto' },
+  { value: 'APTO_RESTRICAO', label: 'Apto com restrição' },
+  { value: 'INAPTO', label: 'Inapto' },
+];
+
 export const MOTIVOS_RECUSA = [
   { value: 'FORA_PRAZO', label: 'Entregue fora do prazo do regulamento' },
   { value: 'RASURA', label: 'Rasura ou alteração no documento' },
@@ -159,6 +175,23 @@ export const atestadosService = {
       console.error('Erro ao atualizar atestado:', error);
       throw new Error('Não foi possível salvar a alteração.');
     }
+  },
+
+  async getAnotacoes(atestadoId) {
+    const { data, error } = await supabase.from('atestado_anotacoes').select('*').eq('atestado_id', atestadoId).order('created_at', { ascending: false });
+    if (error) throw new Error('Não foi possível carregar as anotações.');
+    return data || [];
+  },
+
+  async addAnotacao(anotacao) {
+    const { data, error } = await supabase.from('atestado_anotacoes').insert([anotacao]).select().single();
+    if (error) throw new Error('Não foi possível salvar a anotação.');
+    return data;
+  },
+
+  async deleteAnotacao(id) {
+    const { error } = await supabase.from('atestado_anotacoes').delete().eq('id', id);
+    if (error) throw new Error('Não foi possível excluir a anotação.');
   },
 
   async updateSalario(beneficiarioId, salario) {
