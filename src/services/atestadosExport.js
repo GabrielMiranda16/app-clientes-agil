@@ -14,20 +14,22 @@ const nomeArquivo = (empresa, ext) => `atestados-${(empresa || 'empresa').normal
 
 const carregarLogo = async () => {
   try {
-    const blob = await (await fetch('/logo.png')).blob();
-    const dataUrl = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
+    const img = await new Promise((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = reject;
+      el.src = '/logo.png';
     });
-    const { largura, altura } = await new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => resolve({ largura: img.naturalWidth, altura: img.naturalHeight });
-      img.onerror = () => resolve({ largura: 27, altura: 10 });
-      img.src = dataUrl;
-    });
-    return { dataUrl, proporcao: altura / largura };
+    const largura = 480;
+    const altura = Math.round((img.naturalHeight / img.naturalWidth) * largura);
+    const canvas = document.createElement('canvas');
+    canvas.width = largura;
+    canvas.height = altura;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, largura, altura);
+    ctx.drawImage(img, 0, 0, largura, altura);
+    return { dataUrl: canvas.toDataURL('image/jpeg', 0.9), proporcao: altura / largura };
   } catch {
     return null;
   }
@@ -43,7 +45,7 @@ export const exportarResumoPDF = async ({ empresa, seguradora, resumo, rankings,
 
   const apelido = apelidos(resumo);
   const logo = await carregarLogo();
-  if (logo) doc.addImage(logo.dataUrl, 'PNG', margem, 12, 42, 42 * logo.proporcao);
+  if (logo) doc.addImage(logo.dataUrl, 'JPEG', margem, 12, 42, 42 * logo.proporcao);
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
@@ -100,6 +102,9 @@ export const exportarResumoPDF = async ({ empresa, seguradora, resumo, rankings,
       styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 2, textColor: [17, 24, 39], lineColor: [229, 231, 235], lineWidth: { bottom: 0.1 } },
       headStyles: { fontStyle: 'bold', textColor: CINZA, fontSize: 7.5 },
       columnStyles: colunas,
+      didParseCell: (dados) => {
+        if (dados.section === 'head' && colunas[dados.column.index]?.halign) dados.cell.styles.halign = colunas[dados.column.index].halign;
+      },
     });
     y = doc.lastAutoTable.finalY + 9;
   };
@@ -131,10 +136,11 @@ export const exportarResumoPDF = async ({ empresa, seguradora, resumo, rankings,
   const paginas = doc.getNumberOfPages();
   for (let i = 1; i <= paginas; i += 1) {
     doc.setPage(i);
-    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
     doc.setTextColor(...CINZA);
-    doc.text(AVISO, margem, altura - 10);
-    doc.text(`Ágil Seguros · ${i} de ${paginas}`, largura - margem, altura - 10, { align: 'right' });
+    doc.text(doc.splitTextToSize(AVISO, largura - margem * 2 - 40), margem, altura - 12);
+    doc.text(`Ágil Seguros · ${i} de ${paginas}`, largura - margem, altura - 12, { align: 'right' });
   }
 
   doc.save(nomeArquivo(empresa, 'pdf'));
