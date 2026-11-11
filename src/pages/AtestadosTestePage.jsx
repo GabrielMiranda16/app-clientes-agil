@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { apolicesService } from '@/services/apolicesService';
 import { beneficiariosService } from '@/services/beneficiariosService';
 import { atestadosService, custoEstimado, diasDoAtestado, CONFIG_PADRAO, ETAPAS_AFASTAMENTO, MOTIVOS_RECUSA, STATUS_ATESTADO, TIPOS_ATESTADO } from '@/services/atestadosService';
-import { analisarAtestados, acharDuplicado, avisosDoAcompanhamento, emAcompanhamento, retornoPrevisto } from '@/services/atestadosAnalise';
+import { analisarAtestados, acharDuplicado, avisosDoAcompanhamento, emAcompanhamento, geraCusto, retornoPrevisto } from '@/services/atestadosAnalise';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import AtestadoCard from '@/components/clienteTeste/AtestadoCard';
 import { ArrowLeft, Loader2, Stethoscope, Plus, Trash2, Sparkles, FileText, Upload, AlertTriangle, ChevronRight, Pencil } from 'lucide-react';
@@ -122,7 +122,42 @@ const AtestadosTestePage = () => {
 
     const analise = analisarAtestados(atestados, { prazoEntregaDias: config.prazo_entrega_dias, somaInss: config.soma_inss });
     const salarioBase = Number(config.salario_base);
-    const pessoas = analise.pessoas.map((p) => ({ ...p, salarioMensal: p.salario || salarioBase, custo: custoEstimado(p.diasCusto, p.salario || salarioBase) }));
+    const MESES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    const agora = new Date();
+    const meses = [];
+    for (let i = 11; i >= 0; i -= 1) {
+      const d = new Date(agora.getFullYear(), agora.getMonth() - i, 1);
+      meses.push({ chave: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, rotulo: `${MESES_ABREV[d.getMonth()]}/${String(d.getFullYear()).slice(2)}` });
+    }
+    const custoDoAtestado = (a, salario) => (geraCusto(a) ? custoEstimado(diasDoAtestado(a), salario) : 0);
+    const totalMes = {};
+    const pessoas = analise.pessoas.map((p) => {
+      const salarioMensal = p.salario || salarioBase;
+      const custoMes = {};
+      p.itens.forEach((a) => {
+        const c = custoDoAtestado(a, salarioMensal);
+        if (!c) return;
+        const chave = a.data_inicio.slice(0, 7);
+        custoMes[chave] = (custoMes[chave] || 0) + c;
+        totalMes[chave] = (totalMes[chave] || 0) + c;
+      });
+      return { ...p, salarioMensal, custo: custoEstimado(p.diasCusto, salarioMensal), custoMes };
+    });
+    const ranking = [...pessoas].sort((x, y) => y.qtd - x.qtd || y.dias - x.dias || x.nome.localeCompare(y.nome));
+    const salarioDe = new Map(pessoas.map((p) => [p.id, p.salarioMensal]));
+    const ordemDe = new Map();
+    const contador = new Map();
+    [...atestados].sort((x, y) => x.data_inicio.localeCompare(y.data_inicio) || x.id - y.id).forEach((a) => {
+      const n = (contador.get(a.beneficiario_id) || 0) + 1;
+      contador.set(a.beneficiario_id, n);
+      ordemDe.set(a.id, n);
+    });
+    const linhas = [...atestados].sort((x, y) => y.data_inicio.localeCompare(x.data_inicio) || y.id - x.id).map((a) => ({
+      atestado: a,
+      ordem: ordemDe.get(a.id),
+      dias: a.tipo === 'COMPARECIMENTO' ? 0 : diasDoAtestado(a),
+      custo: custoDoAtestado(a, salarioDe.get(a.beneficiario_id) || salarioBase),
+    }));
     const custoTotal = pessoas.reduce((t, p) => t + p.custo, 0);
     const algumEstimado = pessoas.some((p) => !p.salario && p.diasCusto > 0);
 
@@ -136,7 +171,7 @@ const AtestadosTestePage = () => {
     const limite = somarDias(hoje, 30);
     const retornosPrevistos = acompanhados.filter((x) => x.retorno && x.retorno >= hoje && x.retorno <= limite).length;
 
-    return { afastadosAgora, retornosMes, ...analise, pessoas, custoTotal, algumEstimado, inssPendentes, acompanhados, retornosPrevistos };
+    return { afastadosAgora, retornosMes, ...analise, pessoas, custoTotal, algumEstimado, inssPendentes, acompanhados, retornosPrevistos, ranking, linhas, meses, totalMes };
   }, [atestados, config]);
 
   const pessoaAberta = resumo.pessoas.find((p) => p.id === pessoaAbertaId) || null;
@@ -350,12 +385,11 @@ const AtestadosTestePage = () => {
   const detalheRecusa = recusa ? MOTIVOS_RECUSA.find((m) => m.value === recusa.motivo)?.detalhe : null;
 
   const INDICADORES = [
-    { label: 'Afastados hoje', valor: resumo.afastadosAgora.length },
-    { label: 'Retornos no mês', valor: resumo.retornosMes.length },
-    { label: 'Em acompanhamento', valor: resumo.acompanhados.length },
-    { label: 'Retornos previstos (30 dias)', valor: resumo.retornosPrevistos },
+    { label: 'Atestados (12 meses)', valor: resumo.totalAtestados },
+    { label: 'Pendentes de decisão', valor: resumo.pendentes.length },
     { label: 'Custo estimado total (12 meses)', valor: formatBRL(resumo.custoTotal) },
   ];
+
 
   return (
     <>
@@ -382,7 +416,7 @@ const AtestadosTestePage = () => {
             </button>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {INDICADORES.map((i) => (
               <div key={i.label} className="bg-white border border-gray-100 rounded-2xl px-5 py-4">
                 <p className="text-xs text-gray-400 mb-1">{i.label}</p>
@@ -455,33 +489,6 @@ const AtestadosTestePage = () => {
             </div>
           )}
 
-          {resumo.acompanhados.length > 0 && (
-            <div className="bg-white border border-gray-100 rounded-2xl p-5">
-              <h2 className="font-bold text-gray-900 mb-3">
-                Em acompanhamento <span className="text-gray-400 font-normal">({resumo.acompanhados.length})</span>
-              </h2>
-              <div className="divide-y divide-gray-100">
-                {resumo.acompanhados.map(({ atestado: a, avisos, retorno }) => (
-                  <button key={a.id} type="button" onClick={() => abrirAcompanhamentoDe(a)} className="w-full py-2.5 text-left">
-                    <span className="flex items-center justify-between gap-3 text-sm">
-                      <span className="font-semibold text-gray-900 truncate">{a.beneficiarios?.nome_completo || '—'}</span>
-                      <span className="text-gray-500 flex-shrink-0">
-                        {ETAPAS_AFASTAMENTO.find((e) => e.value === a.etapa)?.label}{retorno ? ` · retorno previsto ${formatDate(retorno)}` : ''}
-                      </span>
-                    </span>
-                    {avisos.length > 0 && (
-                      <span className="flex flex-wrap gap-1 mt-1">
-                        {avisos.map((av) => (
-                          <span key={av.texto} className={`text-[11px] px-2 py-0.5 rounded-full ${av.nivel === 'URGENTE' ? 'bg-red-50 text-red-700' : av.nivel === 'INFO' ? 'bg-blue-50 text-[#003580]' : 'bg-amber-50 text-amber-700'}`}>{av.texto}</span>
-                        ))}
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           {resumo.alertas.some((al) => al.tipo !== 'INSS') && (
             <div className="bg-white border border-gray-100 rounded-2xl p-5">
               <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
@@ -509,103 +516,165 @@ const AtestadosTestePage = () => {
             </div>
           )}
 
-          {resumo.afastadosAgora.length > 0 && (
-            <div className="bg-white border border-gray-100 rounded-2xl p-5">
-              <h2 className="font-bold text-gray-900 mb-3">Afastados hoje</h2>
-              <div className="divide-y divide-gray-100">
-                {resumo.afastadosAgora.map((a) => (
-                  <div key={a.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                    <span className="font-semibold text-gray-900 truncate">{a.beneficiarios?.nome_completo || '—'}</span>
-                    <span className="text-gray-500 flex-shrink-0">
-                      {a.cid ? `CID ${a.cid} · ` : ''}retorna em {formatDate(somarDias(a.data_fim || a.data_inicio, 1))}
-                    </span>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Atestados</h2>
+            <p className="text-gray-400 text-sm mb-4">Um por linha, com os dias e o custo de cada um. Clique para ver os detalhes da pessoa.</p>
+
+            <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+              <div className="max-h-[440px] overflow-y-auto">
+                <div className="hidden sm:grid grid-cols-[1.7fr_0.8fr_0.7fr_0.5fr_0.9fr_0.7fr_1.5fr] gap-4 px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wide sticky top-0 bg-white z-10 border-b border-gray-100">
+                  <span>Pessoa</span>
+                  <span>Data</span>
+                  <span>Atestado</span>
+                  <span>Dias</span>
+                  <span>Custo est.</span>
+                  <span>CID</span>
+                  <span>Situação</span>
+                </div>
+
+                {resumo.linhas.length === 0 ? (
+                  <div className="px-5 py-10 text-center text-sm text-gray-400 flex flex-col items-center gap-2">
+                    <Stethoscope className="w-8 h-8 text-gray-300" />
+                    Nenhum atestado cadastrado.
                   </div>
-                ))}
+                ) : (
+                  resumo.linhas.map(({ atestado: a, ordem, dias, custo }) => {
+                    const st = a.status || 'PENDENTE';
+                    return (
+                      <div
+                        key={a.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setPessoaAbertaId(a.beneficiario_id)}
+                        onKeyDown={(e) => e.key === 'Enter' && setPessoaAbertaId(a.beneficiario_id)}
+                        className="w-full cursor-pointer grid grid-cols-[1fr_auto] sm:grid-cols-[1.7fr_0.8fr_0.7fr_0.5fr_0.9fr_0.7fr_1.5fr] gap-4 items-center px-5 py-3.5 border-b border-gray-100 last:border-b-0 text-left hover:bg-gray-50 transition-colors"
+                      >
+                        <span className="min-w-0">
+                          <span className="block font-bold text-gray-900 text-sm truncate">{a.beneficiarios?.nome_completo || '—'}</span>
+                          {a.beneficiarios?.matricula_empresa && <span className="block text-xs text-gray-400">Matrícula {a.beneficiarios.matricula_empresa}</span>}
+                        </span>
+                        <span className="hidden sm:block text-sm text-gray-900">{formatDate(a.data_inicio)}</span>
+                        <span className="hidden sm:block text-sm text-gray-900">{ordem}º</span>
+                        <span className="hidden sm:block text-sm text-gray-900">{dias || '—'}</span>
+                        <span className="hidden sm:block text-sm text-gray-900">{custo ? formatBRL(custo) : '—'}</span>
+                        <span className="hidden sm:block text-sm text-gray-900 truncate">{a.cid || '—'}</span>
+                        <span className="flex items-center gap-1.5">
+                          {st === 'PENDENTE' ? (
+                            <>
+                              <Button
+                                size="sm"
+                                className="h-7 px-3 text-xs bg-[#003580] hover:bg-[#002060] text-white"
+                                onClick={(e) => { e.stopPropagation(); handleDecidir(a, { status: 'APROVADO', motivo_recusa: null, recusa_detalhe: null }); }}
+                              >
+                                Aprovar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-3 text-xs text-red-600 hover:text-red-700"
+                                onClick={(e) => { e.stopPropagation(); setRecusa({ atestado: a, nome: a.beneficiarios?.nome_completo || '', motivo: '', detalhe: '' }); }}
+                              >
+                                Recusar
+                              </Button>
+                            </>
+                          ) : (
+                            <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${STATUS_ATESTADO[st].classe}`}>{STATUS_ATESTADO[st].label}</span>
+                          )}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
-          )}
+          </div>
 
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Pessoas</h2>
-            <p className="text-gray-400 text-sm mb-4">Quem apresentou atestado nos últimos 12 meses. Clique para ver os detalhes de cada pessoa.</p>
+            <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Ranking de pessoas</h2>
+            <p className="text-gray-400 text-sm mb-4">Totais dos últimos 12 meses, de quem mais entregou atestado para quem menos entregou.</p>
 
-            <div className="bg-white rounded-2xl overflow-hidden">
-              <div className="hidden sm:grid grid-cols-[1.6fr_0.6fr_0.5fr_0.9fr_0.8fr_1.7fr_40px] gap-4 px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wide">
-                <span>Pessoa</span>
-                <span>Atestados</span>
-                <span>Dias</span>
-                <span>Custo est.</span>
-                <span>CID</span>
-                <span>Situação</span>
-                <span></span>
-              </div>
-
-              {resumo.pessoas.length === 0 ? (
-                <div className="px-5 py-10 text-center text-sm text-gray-400 flex flex-col items-center gap-2">
-                  <Stethoscope className="w-8 h-8 text-gray-300" />
-                  Nenhum atestado cadastrado.
+            <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+              <div className="max-h-[360px] overflow-y-auto">
+                <div className="grid grid-cols-[40px_1.8fr_0.8fr_0.8fr_1fr] gap-4 px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wide sticky top-0 bg-white z-10 border-b border-gray-100">
+                  <span>#</span>
+                  <span>Pessoa</span>
+                  <span>Atestados</span>
+                  <span>Dias totais</span>
+                  <span>Custo total</span>
                 </div>
-              ) : (
-                resumo.pessoas.map((p) => (
-                  <div
-                    key={p.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setPessoaAbertaId(p.id)}
-                    onKeyDown={(e) => e.key === 'Enter' && setPessoaAbertaId(p.id)}
-                    className="group w-full cursor-pointer grid grid-cols-[1fr_auto] sm:grid-cols-[1.6fr_0.6fr_0.5fr_0.9fr_0.8fr_1.7fr_40px] gap-4 items-center px-5 py-4 border-t border-gray-100 text-left hover:bg-gray-50 transition-colors"
-                  >
-                    <span className="min-w-0">
-                      <span className="block font-bold text-gray-900 text-sm truncate">{p.nome}</span>
-                      {p.matricula && <span className="block text-xs text-gray-400">Matrícula {p.matricula}</span>}
-                      {p.alertas.length > 0 && (
-                        <span className="flex flex-wrap gap-1 mt-1">
-
-                          {p.alertas.map((al) => (
-                            <span key={al.chave} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${ALERTA_ESTILO[al.tipo].classe}`}>{ALERTA_ESTILO[al.tipo].rotulo}</span>
-                          ))}
-                        </span>
-                      )}
-                    </span>
-                    <span className="hidden sm:block text-sm text-gray-900">{p.qtd}</span>
-                    <span className="hidden sm:block text-sm text-gray-900">{p.dias}</span>
-                    <span className="hidden sm:block text-sm text-gray-900">{formatBRL(p.custo)}</span>
-                    <span className="hidden sm:block text-sm text-gray-900 truncate">{resumoCids(p)}</span>
-                    <span className="hidden sm:flex flex-wrap items-center gap-1.5">
-                      {p.itens.filter((a) => (a.status || 'PENDENTE') === 'PENDENTE').map((a) => (
-                        <span key={a.id} className="flex items-center gap-1.5 w-full">
-                          {p.itens.length > 1 && <span className="text-xs text-gray-500 w-12 flex-shrink-0">{formatDate(a.data_inicio).slice(0, 5)}</span>}
-                          <Button
-                            size="sm"
-                            className="h-7 px-3 text-xs bg-[#003580] hover:bg-[#002060] text-white"
-                            onClick={(e) => { e.stopPropagation(); handleDecidir(a, { status: 'APROVADO', motivo_recusa: null, recusa_detalhe: null }); }}
-                          >
-                            Aprovar
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 px-3 text-xs text-red-600 hover:text-red-700"
-                            onClick={(e) => { e.stopPropagation(); setRecusa({ atestado: a, nome: p.nome, motivo: '', detalhe: '' }); }}
-                          >
-                            Recusar
-                          </Button>
-                        </span>
-                      ))}
-                      {['APROVADO', 'RECUSADO', 'SEM_ABONO'].map((st) => {
-                        const n = p.itens.filter((a) => a.status === st).length;
-                        if (!n) return null;
-                        return (
-                          <span key={st} className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${STATUS_ATESTADO[st].classe}`}>
-                            {p.itens.length > 1 ? `${n} ` : ''}{STATUS_ATESTADO[st].label}
+                {resumo.ranking.length === 0 ? (
+                  <p className="px-5 py-8 text-center text-sm text-gray-400">Nenhum atestado no período.</p>
+                ) : (
+                  resumo.ranking.map((p, i) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setPessoaAbertaId(p.id)}
+                      className="w-full grid grid-cols-[40px_1.8fr_0.8fr_0.8fr_1fr] gap-4 items-center px-5 py-3.5 border-b border-gray-100 last:border-b-0 text-left hover:bg-gray-50 transition-colors"
+                    >
+                      <span className="text-sm text-gray-400">{i + 1}</span>
+                      <span className="min-w-0">
+                        <span className="block font-bold text-gray-900 text-sm truncate">{p.nome}</span>
+                        {p.alertas.length > 0 && (
+                          <span className="flex flex-wrap gap-1 mt-1">
+                            {p.alertas.map((al) => (
+                              <span key={al.chave} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${ALERTA_ESTILO[al.tipo].classe}`}>{ALERTA_ESTILO[al.tipo].rotulo}</span>
+                            ))}
                           </span>
-                        );
-                      })}
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-gray-900 justify-self-end" />
-                  </div>
-                ))
-              )}
+                        )}
+                      </span>
+                      <span className="text-sm text-gray-900">{p.qtd}</span>
+                      <span className="text-sm text-gray-900">{p.dias}</span>
+                      <span className="text-sm font-semibold text-gray-900">{formatBRL(p.custo)}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Custo por mês</h2>
+            <p className="text-gray-400 text-sm mb-4">Quanto cada pessoa custou em cada mês, pelo mês de início do atestado.</p>
+
+            <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+              <div className="max-h-[360px] overflow-auto">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                      <th className="sticky top-0 left-0 z-20 bg-white text-left px-5 py-3 border-b border-gray-100 min-w-[200px]">Pessoa</th>
+                      {resumo.meses.map((m) => (
+                        <th key={m.chave} className="sticky top-0 z-10 bg-white text-right px-4 py-3 border-b border-gray-100 whitespace-nowrap">{m.rotulo}</th>
+                      ))}
+                      <th className="sticky top-0 z-10 bg-white text-right px-5 py-3 border-b border-gray-100">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {resumo.ranking.map((p) => (
+                      <tr key={p.id} className="border-b border-gray-100 last:border-b-0">
+                        <td className="sticky left-0 bg-white px-5 py-3 font-bold text-gray-900 truncate max-w-[220px]">{p.nome}</td>
+                        {resumo.meses.map((m) => (
+                          <td key={m.chave} className={`px-4 py-3 text-right whitespace-nowrap ${p.custoMes[m.chave] ? 'text-gray-900' : 'text-gray-300'}`}>
+                            {p.custoMes[m.chave] ? formatBRL(p.custoMes[m.chave]) : '—'}
+                          </td>
+                        ))}
+                        <td className="px-5 py-3 text-right font-semibold text-gray-900 whitespace-nowrap">{formatBRL(p.custo)}</td>
+                      </tr>
+                    ))}
+                    {resumo.ranking.length > 0 && (
+                      <tr>
+                        <td className="sticky bottom-0 left-0 z-20 bg-white px-5 py-3 font-bold text-gray-900 border-t border-gray-200">Total do mês</td>
+                        {resumo.meses.map((m) => (
+                          <td key={m.chave} className="sticky bottom-0 bg-white px-4 py-3 text-right font-semibold text-gray-900 whitespace-nowrap border-t border-gray-200">
+                            {resumo.totalMes[m.chave] ? formatBRL(resumo.totalMes[m.chave]) : '—'}
+                          </td>
+                        ))}
+                        <td className="sticky bottom-0 bg-white px-5 py-3 text-right font-bold text-gray-900 whitespace-nowrap border-t border-gray-200">{formatBRL(resumo.custoTotal)}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
