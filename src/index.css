@@ -69,3 +69,7 @@
   background: linear-gradient(to top right, #6b9fd4, #2a6db5, #003580);
   min-height: 100vh;
 }
+
+.cliente-teste [role="listbox"] {
+  max-height: 336px;
+}
