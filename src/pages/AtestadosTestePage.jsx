@@ -9,7 +9,8 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useCid10 } from '@/services/cid10';
 import AtestadoCard from '@/components/clienteTeste/AtestadoCard';
 import AceiteLgpd from '@/components/clienteTeste/AceiteLgpd';
-import { ArrowLeft, Loader2, Stethoscope, Plus, Trash2, Sparkles, FileText, Upload, AlertTriangle, ChevronLeft, ChevronRight, Pencil, ArrowUp, ArrowDown, ArrowUpDown, Bell, FolderOpen, Search, Download, FileSpreadsheet } from 'lucide-react';
+import AtestadosAnalise from '@/components/clienteTeste/AtestadosAnalise';
+import { ArrowLeft, Loader2, Stethoscope, Plus, Trash2, Sparkles, FileText, Upload, AlertTriangle, ChevronLeft, ChevronRight, Pencil, ArrowUp, ArrowDown, ArrowUpDown, Bell, FolderOpen, Search, Download, FileSpreadsheet, BarChart3 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { exportarResumoPDF, exportarExcel, AVISO_LGPD } from '@/services/atestadosExport';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
@@ -591,7 +592,14 @@ const AtestadosTesteConteudo = ({ modo = 'principal' }) => {
     <>
       <Helmet><title>Atestados - Ágil Seguros</title></Helmet>
       <ClienteSidebarLayout>
-        {todos ? conteudoTodos : (
+        {modo === 'analise' ? (
+          <AtestadosAnalise
+            atestados={atestados}
+            beneficiarios={beneficiarios}
+            config={config}
+            onVoltar={() => navigate(`/gestao-apolice/${apoliceId}/atestados/teste`)}
+          />
+        ) : todos ? conteudoTodos : (
         <div className="space-y-6">
           <button
             onClick={() => navigate(`/gestao-apolice/${apoliceId}/teste`)}
@@ -612,6 +620,13 @@ const AtestadosTesteConteudo = ({ modo = 'principal' }) => {
                 className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-full border border-gray-200 text-sm font-semibold text-gray-700 hover:border-[#003580] hover:text-[#003580] transition-colors"
               >
                 <FolderOpen className="w-4 h-4" /> Todos os atestados
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate(`/gestao-apolice/${apoliceId}/atestados/analise/teste`)}
+                className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-full border border-gray-200 text-sm font-semibold text-gray-700 hover:border-[#003580] hover:text-[#003580] transition-colors"
+              >
+                <BarChart3 className="w-4 h-4" /> Análise
               </button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
