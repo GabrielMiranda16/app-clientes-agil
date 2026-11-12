@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useFonteNova } from '@/components/clienteTeste/useFonteNova';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -53,6 +54,8 @@ const ClienteSidebarLayout = ({ children }) => {
   // script já rodou antes nessa mesma aba (ex: visitando uma página de
   // produção), ele fica "pendurado" no DOM e sobrevive à navegação. Escondo
   // enquanto estiver numa página de teste e devolvo a visibilidade ao sair.
+  useFonteNova();
+
   useEffect(() => {
     const btn = document.getElementById('gi-btn');
     const panel = document.getElementById('gi-panel');

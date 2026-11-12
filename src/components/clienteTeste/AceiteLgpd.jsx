@@ -3,12 +3,14 @@ import { Loader2, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { PainelLateral, PainelCorpo, PainelRodape } from '@/components/clienteTeste/PainelLateral';
 import { Button } from '@/components/ui/button';
+import { useFonteNova } from '@/components/clienteTeste/useFonteNova';
 
 const VERSAO = '2026-11-11-b';
 
 const AceiteLgpd = ({ modulo, email, onRecusar, children }) => {
   const [estado, setEstado] = useState('verificando');
   const [salvando, setSalvando] = useState(false);
+  useFonteNova();
 
   useEffect(() => {
     let ativo = true;
