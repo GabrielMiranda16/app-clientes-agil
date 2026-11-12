@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 
 export const SETORES_PADRAO = [
   'Administrativo', 'Almoxarifado', 'Atendimento', 'Comercial', 'Compras', 'Contabilidade', 'Cozinha', 'Diretoria',
@@ -33,17 +34,19 @@ const SetorCampo = ({ value, onChange, existentes = [], className = '' }) => {
   }
 
   return (
-    <select
+    <Select
       value={value || VAZIO}
-      onChange={(e) => {
-        if (e.target.value === OUTRO) { setDigitando(true); onChange(''); } else onChange(e.target.value === VAZIO ? '' : e.target.value);
+      onValueChange={(v) => {
+        if (v === OUTRO) { setDigitando(true); onChange(''); } else onChange(v === VAZIO ? '' : v);
       }}
-      className={estilo}
     >
-      <option value={VAZIO}>Não informado</option>
-      {opcoes.map((nome) => <option key={nome} value={nome}>{nome}</option>)}
-      <option value={OUTRO}>Outro (digitar)</option>
-    </select>
+      <SelectTrigger className={className}><SelectValue /></SelectTrigger>
+      <SelectContent className="max-h-[336px] bg-white" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <SelectItem value={VAZIO}>Não informado</SelectItem>
+        {opcoes.map((nome) => <SelectItem key={nome} value={nome}>{nome}</SelectItem>)}
+        <SelectItem value={OUTRO}>Outro (digitar)</SelectItem>
+      </SelectContent>
+    </Select>
   );
 };
 
