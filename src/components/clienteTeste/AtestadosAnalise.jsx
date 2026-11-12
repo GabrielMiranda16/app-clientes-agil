@@ -339,7 +339,7 @@ const AtestadosAnalise = ({ atestados: todosAtestados, beneficiarios: todosBenef
         {setorFiltro === 'TODOS' && porSetor.length > 0 && (
           <Cartao titulo="Afastamento por setor" descricao="Dias de afastamento em cada setor nos últimos 12 meses." className="lg:col-span-2">
             <ResponsiveContainer width="100%" height={Math.max(120, porSetor.length * 36)}>
-              <BarChart data={porSetor} layout="vertical" margin={{ top: 0, right: 210, left: 0, bottom: 0 }} barCategoryGap="28%">
+              <BarChart data={porSetor} layout="vertical" margin={{ top: 0, right: 250, left: 0, bottom: 0 }} barCategoryGap="28%">
                 <XAxis type="number" hide />
                 <YAxis type="category" dataKey="setor" tickLine={false} axisLine={false} width={170} tick={{ fontSize: 12, fill: '#111827' }} />
                 <Tooltip cursor={{ fill: '#f8fafc' }} formatter={(v) => [plural(v, 'dia', 'dias'), 'Afastamento']} />

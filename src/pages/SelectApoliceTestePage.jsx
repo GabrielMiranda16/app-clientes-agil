@@ -16,6 +16,7 @@ import ClienteSidebarLayout from '@/components/clienteTeste/ClienteSidebarLayout
 import ApoliceExpandableRow from '@/components/clienteTeste/ApoliceExpandableRow';
 import BeneficiarioExpandableRow from '@/components/clienteTeste/BeneficiarioExpandableRow';
 import { PainelLateral, PainelCorpo, PainelRodape } from '@/components/clienteTeste/PainelLateral';
+import SetorCampo from '@/components/clienteTeste/SetorCampo';
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select';
@@ -707,15 +708,11 @@ const SelectApoliceTestePage = () => {
                 </div>
                 <div className="sm:col-span-2">
                   <Label className="text-xs">Setor</Label>
-                  <Input
-                    list="setores-existentes"
+                  <SetorCampo
                     value={addBenForm.setor}
-                    onChange={(e) => setAddBenForm((f) => ({ ...f, setor: e.target.value }))}
-                    placeholder="Ex: Administrativo, Produção, Vendas"
+                    onChange={(v) => setAddBenForm((f) => ({ ...f, setor: v }))}
+                    existentes={beneficiarios.map((b) => b.setor)}
                   />
-                  <datalist id="setores-existentes">
-                    {[...new Set(beneficiarios.map((b) => b.setor).filter(Boolean))].sort().map((nome) => <option key={nome} value={nome} />)}
-                  </datalist>
                 </div>
               </div>
             </div>

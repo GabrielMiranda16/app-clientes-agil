@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { PainelLateral, PainelCorpo } from '@/components/clienteTeste/PainelLateral';
 import { ChevronRight, Pencil } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
+import SetorCampo from '@/components/clienteTeste/SetorCampo';
 import { formatCpfCnpj } from '@/lib/masks';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -100,15 +101,12 @@ const BeneficiarioExpandableRow = ({ beneficiario: b }) => {
                       <Pencil className="w-3 h-3 text-gray-300 group-hover:text-[#003580]" />
                     </button>
                   ) : (
-                    <span className="flex items-center gap-1.5 mt-0.5">
-                      <input
-                        autoFocus
-                        value={editandoSetor}
-                        onChange={(e) => setEditandoSetor(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') salvarSetor(); if (e.key === 'Escape') setEditandoSetor(null); }}
-                        className="w-full px-2 py-1 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-[#003580]"
-                      />
-                      <button type="button" onClick={salvarSetor} className="text-xs font-semibold text-[#003580]">Salvar</button>
+                    <span className="block mt-1 space-y-2">
+                      <SetorCampo value={editandoSetor} onChange={setEditandoSetor} existentes={[setor]} />
+                      <span className="flex gap-3">
+                        <button type="button" onClick={salvarSetor} className="text-xs font-semibold text-[#003580]">Salvar</button>
+                        <button type="button" onClick={() => setEditandoSetor(null)} className="text-xs font-semibold text-gray-400">Cancelar</button>
+                      </span>
                     </span>
                   )}
                 </div>
