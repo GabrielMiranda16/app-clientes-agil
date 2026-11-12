@@ -90,18 +90,18 @@ const Rosca = ({ dados }) => {
   const total = dados.reduce((t, d) => t + d.valor, 0);
   if (!total) return <p className="text-sm text-gray-400">Sem dados no período.</p>;
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex flex-col items-start gap-3">
       <PieChart width={130} height={130}>
         <Pie data={dados} dataKey="valor" nameKey="nome" innerRadius={40} outerRadius={62} paddingAngle={2} stroke="none">
           {dados.map((d, i) => <Cell key={d.nome} fill={d.cor || CORES[i % CORES.length]} />)}
         </Pie>
         <Tooltip formatter={(v, nome) => [`${v} (${formatPct((v / total) * 100, 0)})`, nome]} />
       </PieChart>
-      <div className="space-y-1.5 min-w-0">
+      <div className="space-y-1.5 w-full">
         {dados.map((d, i) => (
-          <div key={d.nome} className="flex items-center gap-2 text-sm">
-            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: d.cor || CORES[i % CORES.length] }} />
-            <span className="text-gray-900 truncate">{d.nome}</span>
+          <div key={d.nome} className="flex items-start gap-2 text-sm">
+            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5" style={{ background: d.cor || CORES[i % CORES.length] }} />
+            <span className="text-gray-900 flex-1">{d.nome}</span>
             <span className="text-gray-500 flex-shrink-0">{d.valor} · {formatPct((d.valor / total) * 100, 0)}</span>
           </div>
         ))}
@@ -269,12 +269,12 @@ const AtestadosAnalise = ({ atestados, beneficiarios, config, onVoltar, rodape }
           </ResponsiveContainer>
         </Cartao>
 
-        <Cartao titulo="Custo por mês" descricao="Custo sem encargos, pelo mês de início do atestado.">
+        <Cartao titulo="Custo por mês" descricao="Em reais, sem encargos, pelo mês de início do atestado.">
           <ResponsiveContainer width="100%" height={236}>
             <BarChart data={d.porMes} margin={{ top: 8, right: 0, left: 0, bottom: 0 }} barCategoryGap="30%">
               <CartesianGrid vertical={false} stroke="#f1f5f9" />
               <XAxis dataKey="mes" {...eixoX} />
-              <YAxis {...eixoY} width={56} tickFormatter={(v) => `R$ ${Math.round(v).toLocaleString('pt-BR')}`} />
+              <YAxis {...eixoY} width={48} tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mil` : String(v))} />
               <Tooltip cursor={{ fill: '#f8fafc' }} formatter={(v) => [formatBRL(v), 'Custo']} />
               <Bar dataKey="custo" fill={NAVY} radius={[4, 4, 0, 0]} maxBarSize={28} />
             </BarChart>
