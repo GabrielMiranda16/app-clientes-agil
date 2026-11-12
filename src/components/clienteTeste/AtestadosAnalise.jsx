@@ -1,5 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowLeft, ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
+import { ArrowLeft, ArrowDownRight, ArrowUpRight, Minus, SlidersHorizontal, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { PainelLateral, PainelCorpo, PainelRodape } from '@/components/clienteTeste/PainelLateral';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, PieChart, Pie, Cell,
 } from 'recharts';
@@ -16,6 +20,45 @@ const ENCARGOS_REFERENCIA = 80;
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const formatBRL = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const formatPct = (v, casas = 1) => `${Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas })}%`;
+const formatDataBR = (v) => v.split('-').reverse().join('/');
+const somarDias = (texto, n) => { const x = new Date(`${texto}T00:00:00`); x.setDate(x.getDate() + n); return iso(x); };
+
+const PERIODOS = [
+  { value: '12M', label: 'Últimos 12 meses', meses: 12 },
+  { value: '6M', label: 'Últimos 6 meses', meses: 6 },
+  { value: '3M', label: 'Últimos 3 meses', meses: 3 },
+  { value: '1M', label: 'Último mês', meses: 1 },
+  { value: 'ANO', label: 'Este ano' },
+  { value: 'PERSONALIZADO', label: 'Escolher datas' },
+];
+const FAIXAS_IDADE = ['Até 19', '20 a 29', '30 a 39', '40 a 49', '50 a 59', '60 ou mais'];
+const SEXOS = [{ value: 'F', label: 'Mulheres' }, { value: 'M', label: 'Homens' }];
+const FILTROS_PADRAO = { periodo: '12M', de: '', ate: '', setor: 'TODOS', tipo: 'TODOS', sexo: 'TODOS', idade: 'TODOS' };
+
+const calcularPeriodo = (f) => {
+  const hoje = new Date();
+  const hojeIso = iso(hoje);
+  let inicio;
+  let fim = hojeIso;
+  let limitado = false;
+  let rotulo = PERIODOS.find((x) => x.value === f.periodo)?.label || PERIODOS[0].label;
+  const preset = PERIODOS.find((x) => x.value === f.periodo);
+  if (f.periodo === 'PERSONALIZADO' && f.de) {
+    inicio = f.de;
+    if (f.ate) { fim = f.ate; limitado = true; }
+    if (fim < inicio) [inicio, fim] = [fim, inicio];
+    rotulo = `De ${formatDataBR(inicio)} a ${formatDataBR(fim)}`;
+  } else if (f.periodo === 'ANO') {
+    inicio = `${hoje.getFullYear()}-01-01`;
+  } else {
+    const meses = preset?.meses || 12;
+    inicio = iso(new Date(hoje.getFullYear(), hoje.getMonth() - meses, hoje.getDate()));
+    if (!preset?.meses) rotulo = PERIODOS[0].label;
+  }
+  const dias = Math.round((new Date(`${fim}T00:00:00`) - new Date(`${inicio}T00:00:00`)) / 86400000) + 1;
+  return { inicio, fim, limitado, dias, anteriorInicio: somarDias(inicio, -dias), rotulo };
+};
+
 const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
 
 const grupoDoCid = (cid) => {
@@ -81,7 +124,7 @@ const Variacao = ({ atual, anterior, bomQuandoCai = true }) => {
   const Icone = subiu ? ArrowUpRight : ArrowDownRight;
   return (
     <p className={`text-xs mt-1 flex items-center gap-1 ${bom ? 'text-emerald-700' : 'text-red-700'}`}>
-      <Icone className="w-3 h-3" /> {formatPct(Math.abs(pct), 0)} {subiu ? 'a mais' : 'a menos'} que nos 12 meses anteriores
+      <Icone className="w-3 h-3" /> {formatPct(Math.abs(pct), 0)} {subiu ? 'a mais' : 'a menos'} que no período anterior
     </p>
   );
 };
@@ -115,28 +158,55 @@ const eixoY = { allowDecimals: false, tickLine: false, axisLine: false, width: 2
 
 const MINIMO_POR_SETOR = 3;
 
+const CampoFiltro = ({ rotulo, value, onChange, opcoes, todos }) => (
+  <div>
+    <Label className="text-xs">{rotulo}</Label>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger><SelectValue /></SelectTrigger>
+      <SelectContent className="max-h-[336px] bg-white" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        {todos && <SelectItem value="TODOS">{todos}</SelectItem>}
+        {opcoes.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+      </SelectContent>
+    </Select>
+  </div>
+);
+
 const AtestadosAnalise = ({ atestados: todosAtestados, beneficiarios: todosBeneficiarios, config, onVoltar, rodape }) => {
-  const [setorFiltro, setSetorFiltro] = useState('TODOS');
+  const [filtros, setFiltros] = useState(FILTROS_PADRAO);
+  const [rascunho, setRascunho] = useState(FILTROS_PADRAO);
+  const [filtrosAbertos, setFiltrosAbertos] = useState(false);
+  const setorFiltro = filtros.setor;
   const setores = useMemo(() => [...new Set(todosBeneficiarios.map((b) => b.setor).filter(Boolean))].sort(), [todosBeneficiarios]);
+  const temSexo = useMemo(() => todosBeneficiarios.some((b) => b.sexo), [todosBeneficiarios]);
+  const periodo = useMemo(() => calcularPeriodo(filtros), [filtros]);
+  const noPeriodo = (a) => a.data_inicio >= periodo.inicio && (!periodo.limitado || a.data_inicio <= periodo.fim);
+
+  const beneficiariosBase = useMemo(() => {
+    const hoje = new Date();
+    return todosBeneficiarios.filter((b) => (filtros.sexo === 'TODOS' || b.sexo === filtros.sexo)
+      && (filtros.idade === 'TODOS' || faixaEtaria(b.data_nascimento, hoje) === filtros.idade));
+  }, [todosBeneficiarios, filtros.sexo, filtros.idade]);
+  const atestadosBase = useMemo(() => {
+    const ids = new Set(beneficiariosBase.map((b) => b.id));
+    return todosAtestados.filter((a) => ids.has(a.beneficiario_id) && (filtros.tipo === 'TODOS' || (a.tipo || 'ATESTADO') === filtros.tipo));
+  }, [todosAtestados, beneficiariosBase, filtros.tipo]);
   const beneficiarios = useMemo(
-    () => (setorFiltro === 'TODOS' ? todosBeneficiarios : todosBeneficiarios.filter((b) => b.setor === setorFiltro)),
-    [todosBeneficiarios, setorFiltro],
+    () => (setorFiltro === 'TODOS' ? beneficiariosBase : beneficiariosBase.filter((b) => b.setor === setorFiltro)),
+    [beneficiariosBase, setorFiltro],
   );
   const atestados = useMemo(() => {
-    if (setorFiltro === 'TODOS') return todosAtestados;
+    if (setorFiltro === 'TODOS') return atestadosBase;
     const ids = new Set(beneficiarios.map((b) => b.id));
-    return todosAtestados.filter((a) => ids.has(a.beneficiario_id));
-  }, [todosAtestados, beneficiarios, setorFiltro]);
+    return atestadosBase.filter((a) => ids.has(a.beneficiario_id));
+  }, [atestadosBase, beneficiarios, setorFiltro]);
 
   const porSetor = useMemo(() => {
     if (setores.length === 0) return [];
-    const hoje = new Date();
-    const inicio = iso(new Date(hoje.getFullYear() - 1, hoje.getMonth(), hoje.getDate()));
-    const setorDe = new Map(todosBeneficiarios.map((b) => [b.id, b.setor || 'Sem setor']));
+    const setorDe = new Map(beneficiariosBase.map((b) => [b.id, b.setor || 'Sem setor']));
     const pessoas = new Map();
-    todosBeneficiarios.forEach((b) => { const k = b.setor || 'Sem setor'; pessoas.set(k, (pessoas.get(k) || 0) + 1); });
+    beneficiariosBase.forEach((b) => { const k = b.setor || 'Sem setor'; pessoas.set(k, (pessoas.get(k) || 0) + 1); });
     const mapa = new Map();
-    todosAtestados.filter((a) => a.status !== 'RECUSADO' && a.data_inicio >= inicio).forEach((a) => {
+    atestadosBase.filter((a) => a.status !== 'RECUSADO' && noPeriodo(a)).forEach((a) => {
       const k = setorDe.get(a.beneficiario_id) || 'Sem setor';
       const atual = mapa.get(k) || { setor: k, atestados: 0, dias: 0 };
       atual.atestados += 1;
@@ -147,14 +217,24 @@ const AtestadosAnalise = ({ atestados: todosAtestados, beneficiarios: todosBenef
       const n = pessoas.get(x.setor) || 0;
       return { ...x, pessoas: n, rotulo: `${plural(x.dias, 'dia', 'dias')} · ${plural(x.atestados, 'atestado', 'atestados')} · ${plural(n, 'pessoa', 'pessoas')}` };
     }).sort((x, y) => y.dias - x.dias);
-  }, [todosAtestados, todosBeneficiarios, setores]);
+  }, [atestadosBase, beneficiariosBase, setores, periodo]);
+
+  const ativos = [
+    filtros.periodo !== '12M' && { chave: 'periodo', texto: periodo.rotulo, limpar: { periodo: '12M', de: '', ate: '' } },
+    filtros.setor !== 'TODOS' && { chave: 'setor', texto: filtros.setor, limpar: { setor: 'TODOS' } },
+    filtros.tipo !== 'TODOS' && { chave: 'tipo', texto: TIPOS_ATESTADO.find((t) => t.value === filtros.tipo)?.label || filtros.tipo, limpar: { tipo: 'TODOS' } },
+    filtros.sexo !== 'TODOS' && { chave: 'sexo', texto: SEXOS.find((x) => x.value === filtros.sexo)?.label, limpar: { sexo: 'TODOS' } },
+    filtros.idade !== 'TODOS' && { chave: 'idade', texto: `${filtros.idade} anos`, limpar: { idade: 'TODOS' } },
+  ].filter(Boolean);
+  const mudar = (campo) => (v) => setRascunho((r) => ({ ...r, [campo]: v }));
+  const faltaData = rascunho.periodo === 'PERSONALIZADO' && !rascunho.de;
 
   const grupoPequeno = setorFiltro !== 'TODOS' && beneficiarios.length < MINIMO_POR_SETOR;
 
   const d = useMemo(() => {
     const hoje = new Date();
-    const inicioAtual = iso(new Date(hoje.getFullYear() - 1, hoje.getMonth(), hoje.getDate()));
-    const inicioAnterior = iso(new Date(hoje.getFullYear() - 2, hoje.getMonth(), hoje.getDate()));
+    const inicioAtual = periodo.inicio;
+    const inicioAnterior = periodo.anteriorInicio;
     const salarioBase = Number(config.salario_base);
     const encargos = Number(config.encargos_percentual) || ENCARGOS_REFERENCIA;
     const pessoaDe = new Map(beneficiarios.map((b) => [b.id, b]));
@@ -168,26 +248,31 @@ const AtestadosAnalise = ({ atestados: todosAtestados, beneficiarios: todosBenef
       custo: lista.reduce((t, a) => t + custoDe(a), 0),
       pessoas: new Set(lista.map((a) => a.beneficiario_id)).size,
     });
-    const atualLista = validos.filter((a) => a.data_inicio >= inicioAtual);
+    const atualLista = validos.filter(noPeriodo);
     const anteriorLista = validos.filter((a) => a.data_inicio >= inicioAnterior && a.data_inicio < inicioAtual);
     const atual = resumir(atualLista);
     const anterior = resumir(anteriorLista);
 
     const titulares = beneficiarios.filter((b) => !b.parentesco || b.parentesco === 'TITULAR').length || beneficiarios.length;
-    const absenteismo = titulares ? (atual.dias / (titulares * 365)) * 100 : 0;
-    const absenteismoAnterior = titulares ? (anterior.dias / (titulares * 365)) * 100 : 0;
+    const absenteismo = titulares ? (atual.dias / (titulares * periodo.dias)) * 100 : 0;
+    const absenteismoAnterior = titulares ? (anterior.dias / (titulares * periodo.dias)) * 100 : 0;
     const afast = atualLista.filter(ehAfastamento);
 
     const porMes = [];
-    for (let i = 11; i >= 0; i -= 1) {
-      const m = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+    const primeiro = new Date(`${periodo.inicio.slice(0, 7)}-01T00:00:00`);
+    const ultimo = new Date(`${periodo.fim.slice(0, 7)}-01T00:00:00`);
+    let totalMeses = (ultimo.getFullYear() - primeiro.getFullYear()) * 12 + ultimo.getMonth() - primeiro.getMonth() + 1;
+    if (filtros.periodo !== 'PERSONALIZADO' && filtros.periodo !== 'ANO' && totalMeses > 2) totalMeses -= 1;
+    totalMeses = Math.min(Math.max(totalMeses, 1), 24);
+    for (let i = totalMeses - 1; i >= 0; i -= 1) {
+      const m = new Date(ultimo.getFullYear(), ultimo.getMonth() - i, 1);
       const chave = `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, '0')}`;
       const chaveAnt = `${m.getFullYear() - 1}-${String(m.getMonth() + 1).padStart(2, '0')}`;
       const doMes = atualLista.filter((a) => a.data_inicio.slice(0, 7) === chave);
       porMes.push({
-        mes: MESES[m.getMonth()],
+        mes: totalMeses > 12 ? `${MESES[m.getMonth()]}/${String(m.getFullYear()).slice(2)}` : MESES[m.getMonth()],
         atual: doMes.length,
-        anterior: anteriorLista.filter((a) => a.data_inicio.slice(0, 7) === chaveAnt).length,
+        anterior: validos.filter((a) => a.data_inicio.slice(0, 7) === chaveAnt).length,
         custo: Math.round(doMes.reduce((t, a) => t + custoDe(a), 0) * 100) / 100,
       });
     }
@@ -216,13 +301,12 @@ const AtestadosAnalise = ({ atestados: todosAtestados, beneficiarios: todosBenef
     ].filter((x) => x.valor > 0);
 
     const idade = contar(atualLista, (a) => faixaEtaria(pessoaDe.get(a.beneficiario_id)?.data_nascimento, hoje));
-    const porIdade = ['Até 19', '20 a 29', '30 a 39', '40 a 49', '50 a 59', '60 ou mais'].map((f) => ({ faixa: f, atestados: idade.get(f) || 0 }));
+    const porIdade = FAIXAS_IDADE.map((f) => ({ faixa: f, atestados: idade.get(f) || 0 }));
 
     const duracao = contar(atualLista, faixaDuracao);
     const porDuracao = ['Horas', '1 dia', '2 dias', '3 dias', '4 dias', '5 a 14 dias', '15 ou mais'].map((f) => ({ faixa: f, atestados: duracao.get(f) || 0 }));
 
-    const noPeriodo = atestados.filter((a) => a.data_inicio >= inicioAtual);
-    const status = contar(noPeriodo, (a) => a.status || 'PENDENTE');
+    const status = contar(atestados.filter(noPeriodo), (a) => a.status || 'PENDENTE');
     const CORES_STATUS = { PENDENTE: '#D9822B', APROVADO: '#2563B8', RECUSADO: '#C2410C', SEM_ABONO: '#94A3B8' };
     const porStatus = Object.keys(STATUS_ATESTADO).map((s) => ({ nome: STATUS_ATESTADO[s].label, valor: status.get(s) || 0, cor: CORES_STATUS[s] })).filter((x) => x.valor > 0);
 
@@ -238,7 +322,7 @@ const AtestadosAnalise = ({ atestados: todosAtestados, beneficiarios: todosBenef
       pctPessoas: titulares ? (atual.pessoas / titulares) * 100 : 0,
       porMes, grupos, porDiaSemana, porSexo, porIdade, porDuracao, porStatus, porCid, porTipo,
     };
-  }, [atestados, beneficiarios, config]);
+  }, [atestados, beneficiarios, config, periodo, filtros.periodo]);
 
   const comEncargos = (v) => v * (1 + d.encargos / 100);
   const NUMEROS = [
@@ -258,19 +342,69 @@ const AtestadosAnalise = ({ atestados: todosAtestados, beneficiarios: todosBenef
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Análise</h1>
-          <p className="text-gray-400 text-sm">Últimos 12 meses, comparados com os 12 meses anteriores. Atestados recusados não entram.</p>
+          <p className="text-gray-400 text-sm">{periodo.rotulo}, comparado com o período anterior do mesmo tamanho. Atestados recusados não entram.</p>
         </div>
-        {setores.length > 0 && (
-          <select
-            value={setorFiltro}
-            onChange={(e) => setSetorFiltro(e.target.value)}
-            className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-900 bg-white focus:outline-none focus:border-[#003580]"
-          >
-            <option value="TODOS">Todos os setores</option>
-            {setores.map((nome) => <option key={nome} value={nome}>{nome}</option>)}
-          </select>
-        )}
+        <button
+          onClick={() => { setRascunho(filtros); setFiltrosAbertos(true); }}
+          title="Filtros"
+          className="relative w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 hover:border-[#003580] hover:text-[#003580] transition-colors"
+        >
+          <SlidersHorizontal className="w-5 h-5" />
+          {ativos.length > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-[#003580] text-white text-[11px] font-bold flex items-center justify-center">
+              {ativos.length}
+            </span>
+          )}
+        </button>
       </div>
+
+      {ativos.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 -mt-2">
+          {ativos.map((f) => (
+            <span key={f.chave} className="flex items-center gap-1.5 pl-3 pr-2 py-1 rounded-full bg-blue-50 text-[#003580] text-xs font-semibold">
+              {f.texto}
+              <button onClick={() => setFiltros((x) => ({ ...x, ...f.limpar }))} title="Tirar filtro" className="hover:text-red-600">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          ))}
+          <button onClick={() => setFiltros(FILTROS_PADRAO)} className="text-xs font-semibold text-gray-400 hover:text-[#003580]">Limpar tudo</button>
+        </div>
+      )}
+
+      <PainelLateral open={filtrosAbertos} onOpenChange={setFiltrosAbertos} title="Filtros">
+        <PainelCorpo className="space-y-4">
+          <CampoFiltro rotulo="Período" value={rascunho.periodo} onChange={mudar('periodo')} opcoes={PERIODOS} />
+          {rascunho.periodo === 'PERSONALIZADO' && (
+            <div className="grid grid-cols-2 gap-3">
+              {[['de', 'De'], ['ate', 'Até']].map(([campo, rotulo]) => (
+                <div key={campo}>
+                  <Label className="text-xs">{rotulo}</Label>
+                  <input
+                    type="date"
+                    value={rascunho[campo]}
+                    onChange={(e) => mudar(campo)(e.target.value)}
+                    className="w-full h-10 px-3 rounded-md border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none focus:border-[#003580]"
+                  />
+                </div>
+              ))}
+              <p className="col-span-2 text-xs text-gray-400 -mt-1">Sem a data final, vale até hoje.</p>
+            </div>
+          )}
+          {setores.length > 0 && (
+            <CampoFiltro rotulo="Setor" value={rascunho.setor} onChange={mudar('setor')} todos="Todos os setores" opcoes={setores.map((x) => ({ value: x, label: x }))} />
+          )}
+          <CampoFiltro rotulo="Tipo de documento" value={rascunho.tipo} onChange={mudar('tipo')} todos="Todos os tipos" opcoes={TIPOS_ATESTADO} />
+          {temSexo && <CampoFiltro rotulo="Sexo" value={rascunho.sexo} onChange={mudar('sexo')} todos="Todos" opcoes={SEXOS} />}
+          <CampoFiltro rotulo="Faixa etária" value={rascunho.idade} onChange={mudar('idade')} todos="Todas as idades" opcoes={FAIXAS_IDADE.map((x) => ({ value: x, label: `${x} anos` }))} />
+        </PainelCorpo>
+        <PainelRodape>
+          <Button variant="outline" onClick={() => setRascunho(FILTROS_PADRAO)}>Limpar</Button>
+          <Button className="bg-[#003580] hover:bg-[#002060]" disabled={faltaData} onClick={() => { setFiltros(rascunho); setFiltrosAbertos(false); }}>
+            Aplicar
+          </Button>
+        </PainelRodape>
+      </PainelLateral>
 
       {grupoPequeno && (
         <p className="text-sm text-amber-700 bg-amber-50 rounded-2xl px-4 py-3">
@@ -289,7 +423,7 @@ const AtestadosAnalise = ({ atestados: todosAtestados, beneficiarios: todosBenef
         ))}
       </div>
       <p className="text-xs text-gray-400 -mt-3">
-        Absenteísmo = dias de afastamento ÷ (pessoas × 365). Base de {plural(d.titulares, 'pessoa cadastrada', 'pessoas cadastradas')} no plano.
+        Absenteísmo = dias de afastamento ÷ (pessoas × {periodo.dias} dias do período). Base de {plural(d.titulares, 'pessoa cadastrada', 'pessoas cadastradas')} no plano.
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -309,8 +443,8 @@ const AtestadosAnalise = ({ atestados: todosAtestados, beneficiarios: todosBenef
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Cartao titulo="Atestados por mês" descricao="Cada mês comparado com o mesmo mês do ano anterior.">
           <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: NAVY }} /> Últimos 12 meses</span>
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: ANTERIOR }} /> 12 meses anteriores</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: NAVY }} /> Período escolhido</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: ANTERIOR }} /> Mesmo mês do ano anterior</span>
           </div>
           <ResponsiveContainer width="100%" height={210}>
             <BarChart data={d.porMes} margin={{ top: 8, right: 0, left: 0, bottom: 0 }} barGap={2} barCategoryGap="25%">
@@ -318,8 +452,8 @@ const AtestadosAnalise = ({ atestados: todosAtestados, beneficiarios: todosBenef
               <XAxis dataKey="mes" {...eixoX} />
               <YAxis {...eixoY} />
               <Tooltip cursor={{ fill: '#f8fafc' }} />
-              <Bar dataKey="anterior" name="12 meses anteriores" fill={ANTERIOR} radius={[4, 4, 0, 0]} maxBarSize={14} />
-              <Bar dataKey="atual" name="Últimos 12 meses" fill={NAVY} radius={[4, 4, 0, 0]} maxBarSize={14} />
+              <Bar dataKey="anterior" name="Mesmo mês do ano anterior" fill={ANTERIOR} radius={[4, 4, 0, 0]} maxBarSize={14} />
+              <Bar dataKey="atual" name="Período escolhido" fill={NAVY} radius={[4, 4, 0, 0]} maxBarSize={14} />
             </BarChart>
           </ResponsiveContainer>
         </Cartao>
@@ -337,7 +471,7 @@ const AtestadosAnalise = ({ atestados: todosAtestados, beneficiarios: todosBenef
         </Cartao>
 
         {setorFiltro === 'TODOS' && porSetor.length > 0 && (
-          <Cartao titulo="Afastamento por setor" descricao="Dias de afastamento em cada setor nos últimos 12 meses." className="lg:col-span-2">
+          <Cartao titulo="Afastamento por setor" descricao="Dias de afastamento em cada setor no período." className="lg:col-span-2">
             <ResponsiveContainer width="100%" height={Math.max(120, porSetor.length * 36)}>
               <BarChart data={porSetor} layout="vertical" margin={{ top: 0, right: 250, left: 0, bottom: 0 }} barCategoryGap="28%">
                 <XAxis type="number" hide />
