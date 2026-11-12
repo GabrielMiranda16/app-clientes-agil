@@ -8,6 +8,7 @@ import { analisarAtestados, acharDuplicado, avisosDoAcompanhamento, emAcompanham
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useCid10 } from '@/services/cid10';
 import AtestadoCard from '@/components/clienteTeste/AtestadoCard';
+import { formatCpfCnpj } from '@/lib/masks';
 import BuscaPessoa from '@/components/clienteTeste/BuscaPessoa';
 import AceiteLgpd from '@/components/clienteTeste/AceiteLgpd';
 import AtestadosAnalise from '@/components/clienteTeste/AtestadosAnalise';
@@ -494,7 +495,7 @@ const AtestadosTesteConteudo = ({ modo = 'principal' }) => {
 
   const termoTodos = normalizar(buscaTodos);
   const pessoasTodos = [...resumo.pessoas]
-    .filter((p) => !termoTodos || normalizar(p.nome).includes(termoTodos) || normalizar(p.matricula).includes(termoTodos) || p.cids.some((c) => normalizar(c.cid).includes(termoTodos)))
+    .filter((p) => !termoTodos || normalizar(p.nome).includes(termoTodos) || normalizar(p.matricula).includes(termoTodos) || (termoTodos.replace(/\D/g, '').length >= 3 && (p.cpf || '').replace(/\D/g, '').includes(termoTodos.replace(/\D/g, ''))) || p.cids.some((c) => normalizar(c.cid).includes(termoTodos)))
     .sort((x, y) => x.nome.localeCompare(y.nome));
   const totalPaginasTodos = Math.max(1, Math.ceil(pessoasTodos.length / ITENS_POR_PAGINA));
   const paginaTodosAtual = Math.min(paginaTodos, totalPaginasTodos);
@@ -546,7 +547,7 @@ const AtestadosTesteConteudo = ({ modo = 'principal' }) => {
           >
             <span className="min-w-0">
               <span className="block font-bold text-gray-900 text-sm truncate">{p.nome}</span>
-              {p.matricula && <span className="block text-xs text-gray-400">Matrícula {p.matricula}</span>}
+              {(p.cpf || p.matricula) && <span className="block text-xs text-gray-400">{p.cpf ? `CPF ${formatCpfCnpj(p.cpf)}` : `Matrícula ${p.matricula}`}</span>}
             </span>
             <span className="hidden sm:block text-sm text-gray-900">{p.qtd}</span>
             <span className="hidden sm:block text-sm text-gray-900">{p.dias}</span>
@@ -770,7 +771,7 @@ const AtestadosTesteConteudo = ({ modo = 'principal' }) => {
                       >
                         <span className="min-w-0">
                           <span className="block font-bold text-gray-900 text-sm truncate">{a.beneficiarios?.nome_completo || '—'}</span>
-                          {a.beneficiarios?.matricula_empresa && <span className="block text-xs text-gray-400">Matrícula {a.beneficiarios.matricula_empresa}</span>}
+                          {(a.beneficiarios?.cpf || a.beneficiarios?.matricula_empresa) && <span className="block text-xs text-gray-400">{a.beneficiarios.cpf ? `CPF ${formatCpfCnpj(a.beneficiarios.cpf)}` : `Matrícula ${a.beneficiarios.matricula_empresa}`}</span>}
                         </span>
                         <span className="hidden sm:block text-sm text-gray-900">{formatDate(a.data_inicio)}</span>
                         <span className="hidden sm:block text-sm text-gray-900">{ordem}º</span>
@@ -1030,7 +1031,7 @@ const AtestadosTesteConteudo = ({ modo = 'principal' }) => {
                       {formatBRL(pessoaAberta.salarioMensal)}
                       {!pessoaAberta.salario && <span className="font-normal text-gray-400"> · estimado pelo salário base</span>}
                     </p>
-                    {pessoaAberta.matricula && <p className="text-xs text-gray-400 mt-0.5">Matrícula {pessoaAberta.matricula}</p>}
+                    {(pessoaAberta.cpf || pessoaAberta.matricula) && <p className="text-xs text-gray-400 mt-0.5">{[pessoaAberta.cpf && `CPF ${formatCpfCnpj(pessoaAberta.cpf)}`, pessoaAberta.matricula && `Matrícula ${pessoaAberta.matricula}`].filter(Boolean).join(' · ')}</p>}
                   </div>
                   <button
                     type="button"

@@ -115,6 +115,7 @@ export const analisarAtestados = (atestados, { prazoEntregaDias = 2, somaInss = 
       id: a.beneficiario_id,
       nome: a.beneficiarios?.nome_completo || '—',
       matricula: a.beneficiarios?.matricula_empresa || null,
+      cpf: a.beneficiarios?.cpf || null,
       salario: a.beneficiarios?.salario != null ? Number(a.beneficiarios.salario) : null,
       itens: [],
     };
@@ -178,7 +179,7 @@ export const analisarAtestados = (atestados, { prazoEntregaDias = 2, somaInss = 
     meus.forEach((al) => alertas.push({ ...al, pessoaId: p.id, titulo: `${p.nome}: ${al.titulo.charAt(0).toLowerCase()}${al.titulo.slice(1)}` }));
 
     return {
-      id: p.id, nome: p.nome, matricula: p.matricula, salario: p.salario, itens,
+      id: p.id, nome: p.nome, matricula: p.matricula, cpf: p.cpf, salario: p.salario, itens,
       qtd: afast.length, dias, diasCusto,
       pendentes: itens.filter((a) => (a.status || 'PENDENTE') === 'PENDENTE').length,
       cids: [...cids.values()].sort((x, y) => y.dias - x.dias),
