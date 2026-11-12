@@ -8,6 +8,7 @@ import { analisarAtestados, acharDuplicado, avisosDoAcompanhamento, emAcompanham
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useCid10 } from '@/services/cid10';
 import AtestadoCard from '@/components/clienteTeste/AtestadoCard';
+import BuscaPessoa from '@/components/clienteTeste/BuscaPessoa';
 import AceiteLgpd from '@/components/clienteTeste/AceiteLgpd';
 import AtestadosAnalise from '@/components/clienteTeste/AtestadosAnalise';
 import { ArrowLeft, Loader2, Stethoscope, Plus, Trash2, Sparkles, FileText, Upload, AlertTriangle, ChevronLeft, ChevronRight, Pencil, ArrowUp, ArrowDown, ArrowUpDown, Bell, FolderOpen, Search, Download, FileSpreadsheet, BarChart3 } from 'lucide-react';
@@ -1251,12 +1252,11 @@ const AtestadosTesteConteudo = ({ modo = 'principal' }) => {
 
             <div>
               <Label className="text-xs">Beneficiário *</Label>
-              <Select value={form.beneficiario_id} onValueChange={(v) => setForm((f) => ({ ...f, beneficiario_id: v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>
-                  {beneficiarios.map((b) => <SelectItem key={b.id} value={String(b.id)}>{b.nome_completo}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <BuscaPessoa
+                pessoas={beneficiarios}
+                value={form.beneficiario_id}
+                onChange={(v) => setForm((f) => ({ ...f, beneficiario_id: v, mesmo_motivo_de: 'NENHUM' }))}
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
