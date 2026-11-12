@@ -143,7 +143,10 @@ const AtestadosAnalise = ({ atestados: todosAtestados, beneficiarios: todosBenef
       atual.dias += ehAfastamento(a) ? diasDoAtestado(a) : 0;
       mapa.set(k, atual);
     });
-    return [...mapa.values()].map((x) => ({ ...x, pessoas: pessoas.get(x.setor) || 0 })).sort((x, y) => y.dias - x.dias);
+    return [...mapa.values()].map((x) => {
+      const n = pessoas.get(x.setor) || 0;
+      return { ...x, pessoas: n, rotulo: `${plural(x.dias, 'dia', 'dias')} · ${plural(x.atestados, 'atestado', 'atestados')} · ${plural(n, 'pessoa', 'pessoas')}` };
+    }).sort((x, y) => y.dias - x.dias);
   }, [todosAtestados, todosBeneficiarios, setores]);
 
   const grupoPequeno = setorFiltro !== 'TODOS' && beneficiarios.length < MINIMO_POR_SETOR;
@@ -336,16 +339,12 @@ const AtestadosAnalise = ({ atestados: todosAtestados, beneficiarios: todosBenef
         {setorFiltro === 'TODOS' && porSetor.length > 0 && (
           <Cartao titulo="Afastamento por setor" descricao="Dias de afastamento em cada setor nos últimos 12 meses." className="lg:col-span-2">
             <ResponsiveContainer width="100%" height={Math.max(120, porSetor.length * 36)}>
-              <BarChart data={porSetor} layout="vertical" margin={{ top: 0, right: 150, left: 0, bottom: 0 }} barCategoryGap="28%">
+              <BarChart data={porSetor} layout="vertical" margin={{ top: 0, right: 210, left: 0, bottom: 0 }} barCategoryGap="28%">
                 <XAxis type="number" hide />
                 <YAxis type="category" dataKey="setor" tickLine={false} axisLine={false} width={170} tick={{ fontSize: 12, fill: '#111827' }} />
                 <Tooltip cursor={{ fill: '#f8fafc' }} formatter={(v) => [plural(v, 'dia', 'dias'), 'Afastamento']} />
                 <Bar dataKey="dias" fill={NAVY} radius={[0, 4, 4, 0]} maxBarSize={18}>
-                  <LabelList
-                    position="right"
-                    style={{ fontSize: 12, fill: '#6b7280' }}
-                    valueAccessor={(e) => `${plural(e.dias, 'dia', 'dias')} · ${plural(e.atestados, 'atestado', 'atestados')} · ${plural(e.pessoas, 'pessoa', 'pessoas')}`}
-                  />
+                  <LabelList dataKey="rotulo" position="right" style={{ fontSize: 12, fill: '#6b7280' }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
