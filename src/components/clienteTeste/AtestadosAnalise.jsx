@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ArrowLeft, ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, PieChart, Pie, Cell,
@@ -113,7 +113,41 @@ const Rosca = ({ dados }) => {
 const eixoX = { tickLine: false, axisLine: false, tick: { fontSize: 11, fill: '#9ca3af' }, interval: 0 };
 const eixoY = { allowDecimals: false, tickLine: false, axisLine: false, width: 28, tick: { fontSize: 11, fill: '#9ca3af' } };
 
-const AtestadosAnalise = ({ atestados, beneficiarios, config, onVoltar, rodape }) => {
+const MINIMO_POR_SETOR = 3;
+
+const AtestadosAnalise = ({ atestados: todosAtestados, beneficiarios: todosBeneficiarios, config, onVoltar, rodape }) => {
+  const [setorFiltro, setSetorFiltro] = useState('TODOS');
+  const setores = useMemo(() => [...new Set(todosBeneficiarios.map((b) => b.setor).filter(Boolean))].sort(), [todosBeneficiarios]);
+  const beneficiarios = useMemo(
+    () => (setorFiltro === 'TODOS' ? todosBeneficiarios : todosBeneficiarios.filter((b) => b.setor === setorFiltro)),
+    [todosBeneficiarios, setorFiltro],
+  );
+  const atestados = useMemo(() => {
+    if (setorFiltro === 'TODOS') return todosAtestados;
+    const ids = new Set(beneficiarios.map((b) => b.id));
+    return todosAtestados.filter((a) => ids.has(a.beneficiario_id));
+  }, [todosAtestados, beneficiarios, setorFiltro]);
+
+  const porSetor = useMemo(() => {
+    if (setores.length === 0) return [];
+    const hoje = new Date();
+    const inicio = iso(new Date(hoje.getFullYear() - 1, hoje.getMonth(), hoje.getDate()));
+    const setorDe = new Map(todosBeneficiarios.map((b) => [b.id, b.setor || 'Sem setor']));
+    const pessoas = new Map();
+    todosBeneficiarios.forEach((b) => { const k = b.setor || 'Sem setor'; pessoas.set(k, (pessoas.get(k) || 0) + 1); });
+    const mapa = new Map();
+    todosAtestados.filter((a) => a.status !== 'RECUSADO' && a.data_inicio >= inicio).forEach((a) => {
+      const k = setorDe.get(a.beneficiario_id) || 'Sem setor';
+      const atual = mapa.get(k) || { setor: k, atestados: 0, dias: 0 };
+      atual.atestados += 1;
+      atual.dias += ehAfastamento(a) ? diasDoAtestado(a) : 0;
+      mapa.set(k, atual);
+    });
+    return [...mapa.values()].map((x) => ({ ...x, pessoas: pessoas.get(x.setor) || 0 })).sort((x, y) => y.dias - x.dias);
+  }, [todosAtestados, todosBeneficiarios, setores]);
+
+  const grupoPequeno = setorFiltro !== 'TODOS' && beneficiarios.length < MINIMO_POR_SETOR;
+
   const d = useMemo(() => {
     const hoje = new Date();
     const inicioAtual = iso(new Date(hoje.getFullYear() - 1, hoje.getMonth(), hoje.getDate()));
@@ -218,10 +252,28 @@ const AtestadosAnalise = ({ atestados, beneficiarios, config, onVoltar, rodape }
         <ArrowLeft className="w-4 h-4" /> Atestados
       </button>
 
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Análise</h1>
-        <p className="text-gray-400 text-sm">Últimos 12 meses, comparados com os 12 meses anteriores. Atestados recusados não entram.</p>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Análise</h1>
+          <p className="text-gray-400 text-sm">Últimos 12 meses, comparados com os 12 meses anteriores. Atestados recusados não entram.</p>
+        </div>
+        {setores.length > 0 && (
+          <select
+            value={setorFiltro}
+            onChange={(e) => setSetorFiltro(e.target.value)}
+            className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-900 bg-white focus:outline-none focus:border-[#003580]"
+          >
+            <option value="TODOS">Todos os setores</option>
+            {setores.map((nome) => <option key={nome} value={nome}>{nome}</option>)}
+          </select>
+        )}
       </div>
+
+      {grupoPequeno && (
+        <p className="text-sm text-amber-700 bg-amber-50 rounded-2xl px-4 py-3">
+          Esse setor tem menos de {MINIMO_POR_SETOR} pessoas. Os grupos de doença ficam ocultos para não identificar ninguém.
+        </p>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {NUMEROS.map((n) => (
@@ -281,8 +333,27 @@ const AtestadosAnalise = ({ atestados, beneficiarios, config, onVoltar, rodape }
           </ResponsiveContainer>
         </Cartao>
 
+        {setorFiltro === 'TODOS' && porSetor.length > 0 && (
+          <Cartao titulo="Afastamento por setor" descricao="Dias de afastamento em cada setor nos últimos 12 meses." className="lg:col-span-2">
+            <ResponsiveContainer width="100%" height={Math.max(120, porSetor.length * 36)}>
+              <BarChart data={porSetor} layout="vertical" margin={{ top: 0, right: 150, left: 0, bottom: 0 }} barCategoryGap="28%">
+                <XAxis type="number" hide />
+                <YAxis type="category" dataKey="setor" tickLine={false} axisLine={false} width={170} tick={{ fontSize: 12, fill: '#111827' }} />
+                <Tooltip cursor={{ fill: '#f8fafc' }} formatter={(v) => [plural(v, 'dia', 'dias'), 'Afastamento']} />
+                <Bar dataKey="dias" fill={NAVY} radius={[0, 4, 4, 0]} maxBarSize={18}>
+                  <LabelList
+                    position="right"
+                    style={{ fontSize: 12, fill: '#6b7280' }}
+                    valueAccessor={(e) => `${plural(e.dias, 'dia', 'dias')} · ${plural(e.atestados, 'atestado', 'atestados')} · ${plural(e.pessoas, 'pessoa', 'pessoas')}`}
+                  />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </Cartao>
+        )}
+
         <Cartao titulo="Grupos de doença" descricao="Dias de afastamento por grupo, somando a empresa toda.">
-          {d.grupos.length === 0 ? <p className="text-sm text-gray-400">Sem dados no período.</p> : (
+          {grupoPequeno ? <p className="text-sm text-gray-400">Oculto para setores com menos de {MINIMO_POR_SETOR} pessoas.</p> : d.grupos.length === 0 ? <p className="text-sm text-gray-400">Sem dados no período.</p> : (
             <ResponsiveContainer width="100%" height={Math.max(120, d.grupos.length * 34)}>
               <BarChart data={d.grupos} layout="vertical" margin={{ top: 0, right: 36, left: 0, bottom: 0 }} barCategoryGap="28%">
                 <XAxis type="number" hide />

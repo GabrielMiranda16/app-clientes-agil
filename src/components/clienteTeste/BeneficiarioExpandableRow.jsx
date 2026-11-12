@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { PainelLateral, PainelCorpo } from '@/components/clienteTeste/PainelLateral';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Pencil } from 'lucide-react';
+import { supabase } from '@/lib/customSupabaseClient';
 import { formatCpfCnpj } from '@/lib/masks';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -37,6 +38,14 @@ const Campo = ({ label, value }) => (
 
 const BeneficiarioExpandableRow = ({ beneficiario: b }) => {
   const [expanded, setExpanded] = useState(false);
+  const [setor, setSetor] = useState(b.setor || '');
+  const [editandoSetor, setEditandoSetor] = useState(null);
+
+  const salvarSetor = async () => {
+    const valor = editandoSetor.trim() || null;
+    const { error } = await supabase.from('beneficiarios').update({ setor: valor }).eq('id', b.id);
+    if (!error) { setSetor(valor || ''); b.setor = valor; setEditandoSetor(null); }
+  };
   const idade = calcularIdade(b.data_nascimento);
   // Beneficiário pode ser da matriz ou de uma filial do grupo — deixa isso visível.
   // Matriz é única, então o rótulo é só "Matriz" (negrito); filial mostra o próprio nome.
@@ -79,6 +88,30 @@ const BeneficiarioExpandableRow = ({ beneficiario: b }) => {
                 <Campo label="Celular" value={b.celular} />
                 <Campo label="E-mail" value={b.email_beneficiario} />
                 <Campo label="Matrícula" value={b.matricula_empresa} />
+                <div>
+                  <p className="text-[11px] text-gray-400 uppercase tracking-wide font-semibold">Setor</p>
+                  {editandoSetor === null ? (
+                    <button
+                      type="button"
+                      onClick={() => setEditandoSetor(setor)}
+                      className="group flex items-center gap-1.5 text-sm font-semibold text-gray-800 hover:text-[#003580]"
+                    >
+                      {setor || <span className="text-gray-400 font-normal">Não informado</span>}
+                      <Pencil className="w-3 h-3 text-gray-300 group-hover:text-[#003580]" />
+                    </button>
+                  ) : (
+                    <span className="flex items-center gap-1.5 mt-0.5">
+                      <input
+                        autoFocus
+                        value={editandoSetor}
+                        onChange={(e) => setEditandoSetor(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') salvarSetor(); if (e.key === 'Escape') setEditandoSetor(null); }}
+                        className="w-full px-2 py-1 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-[#003580]"
+                      />
+                      <button type="button" onClick={salvarSetor} className="text-xs font-semibold text-[#003580]">Salvar</button>
+                    </span>
+                  )}
+                </div>
                 <Campo label="Data de Admissão" value={formatDate(b.data_admissao)} />
                 <Campo label="Data de Nascimento" value={formatDate(b.data_nascimento)} />
                 <Campo label="Situação" value={b.situacao} />

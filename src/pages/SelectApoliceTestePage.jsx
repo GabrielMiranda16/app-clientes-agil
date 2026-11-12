@@ -39,7 +39,7 @@ const calcularIdade = (dataNascimento) => {
 
 const EMPTY_BEN_FORM = {
   nome_completo: '', cpf: '', parentesco: 'TITULAR', data_nascimento: '', nome_mae: '', nome_titular: '',
-  matricula_empresa: '', data_admissao: '',
+  matricula_empresa: '', data_admissao: '', setor: '',
   celular: '', email_beneficiario: '',
   cep: '', rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '',
 };
@@ -202,7 +202,7 @@ const SelectApoliceTestePage = () => {
     }
     setIsSavingBen(true);
     try {
-      const created = await beneficiariosService.createBeneficiario({ ...addBenForm, empresa_id: empresaId });
+      const created = await beneficiariosService.createBeneficiario({ ...addBenForm, setor: addBenForm.setor.trim() || null, empresa_id: empresaId });
       setBeneficiarios((prev) => [created, ...prev]);
       toast({ title: 'Beneficiário adicionado.' });
       setIsAddBenOpen(false);
@@ -704,6 +704,18 @@ const SelectApoliceTestePage = () => {
                 <div>
                   <Label className="text-xs">Data de Admissão</Label>
                   <Input type="date" value={addBenForm.data_admissao} onChange={(e) => setAddBenForm((f) => ({ ...f, data_admissao: e.target.value }))} />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label className="text-xs">Setor</Label>
+                  <Input
+                    list="setores-existentes"
+                    value={addBenForm.setor}
+                    onChange={(e) => setAddBenForm((f) => ({ ...f, setor: e.target.value }))}
+                    placeholder="Ex: Administrativo, Produção, Vendas"
+                  />
+                  <datalist id="setores-existentes">
+                    {[...new Set(beneficiarios.map((b) => b.setor).filter(Boolean))].sort().map((nome) => <option key={nome} value={nome} />)}
+                  </datalist>
                 </div>
               </div>
             </div>
