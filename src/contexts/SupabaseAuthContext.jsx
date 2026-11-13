@@ -26,7 +26,9 @@ export const AuthProvider = ({ children }) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user?.email) {
           const profile = await fetchProfile(session.user.email);
-          if (profile) {
+          if (profile && profile.ativo === false) {
+            await supabase.auth.signOut();
+          } else if (profile) {
             setUser(profile);
             return;
           }
@@ -50,7 +52,10 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
       } else if (session?.user?.email && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
         const profile = await fetchProfile(session.user.email);
-        if (profile) setUser(profile);
+        if (profile && profile.ativo === false) {
+          await supabase.auth.signOut();
+          setUser(null);
+        } else if (profile) setUser(profile);
       }
     });
 
@@ -64,6 +69,10 @@ export const AuthProvider = ({ children }) => {
     if (!authError) {
       const profile = await fetchProfile(email);
       if (!profile) throw new Error('Usuário não encontrado.');
+      if (profile.ativo === false) {
+        await supabase.auth.signOut();
+        throw new Error('Acesso desativado. Fale com a Ágil Seguros.');
+      }
       setUser(profile);
       return profile;
     }
@@ -79,6 +88,10 @@ export const AuthProvider = ({ children }) => {
 
     const profile = await fetchProfile(email);
     if (!profile) throw new Error('Usuário não encontrado.');
+    if (profile.ativo === false) {
+      await supabase.auth.signOut();
+      throw new Error('Acesso desativado. Fale com a Ágil Seguros.');
+    }
     setUser(profile);
     return profile;
   };

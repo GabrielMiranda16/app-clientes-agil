@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Loader2, UserPlus, KeyRound, Trash2, Users } from 'lucide-react';
+import { Loader2, UserPlus, KeyRound, Trash2, Users, Power } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,7 +30,7 @@ const AcessosCliente = ({ empresa }) => {
     setCarregando(true);
     const { data, error } = await supabaseClient
       .from('users')
-      .select('id, email, name, created_at, must_change_password')
+      .select('id, email, name, created_at, must_change_password, ativo')
       .eq('perfil', 'CLIENTE')
       .or(`empresa_matriz_id.eq.${empresa.id},empresa_id.eq.${empresa.id}`)
       .order('created_at', { ascending: true });
@@ -96,6 +96,17 @@ const AcessosCliente = ({ empresa }) => {
     }
   };
 
+  const alternarAtivo = async (acesso) => {
+    const ativo = acesso.ativo === false;
+    try {
+      await authService.updateUser(acesso.id, { ativo });
+      toast({ title: ativo ? 'Acesso reativado' : 'Acesso desativado', description: ativo ? `${acesso.email} voltou a ver os dados.` : `${acesso.email} não consegue mais entrar. Dá para reativar depois.` });
+      carregar();
+    } catch {
+      toast({ variant: 'destructive', title: 'Não foi possível alterar o acesso.' });
+    }
+  };
+
   const remover = async (acesso) => {
     try {
       await authService.deleteUser(acesso.id);
@@ -125,9 +136,12 @@ const AcessosCliente = ({ empresa }) => {
       ) : (
         <div className="space-y-2">
           {acessos.map((a) => (
-            <div key={a.id} className="flex items-center justify-between gap-3 p-2.5 bg-gray-50 rounded-lg border text-sm">
+            <div key={a.id} className={`flex items-center justify-between gap-3 p-2.5 bg-gray-50 rounded-lg border text-sm ${a.ativo === false ? 'opacity-60' : ''}`}>
               <div className="min-w-0">
-                <p className="font-medium truncate">{a.name || a.email}</p>
+                <p className="font-medium truncate">
+                  {a.name || a.email}
+                  {a.ativo === false && <span className="ml-2 text-[11px] font-semibold text-gray-500 bg-gray-200 rounded-full px-2 py-0.5">Desativado</span>}
+                </p>
                 <p className="text-xs text-gray-400 truncate">
                   {a.name ? `${a.email} · ` : ''}desde {formatarData(a.created_at)}
                   {a.must_change_password && <span className="ml-1.5 text-amber-600">· ainda não trocou a senha provisória</span>}
@@ -141,6 +155,14 @@ const AcessosCliente = ({ empresa }) => {
                   onClick={() => reenviarSenha(a)}
                 >
                   {reenviando === a.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <KeyRound className="h-3.5 w-3.5" />}
+                </Button>
+                <Button
+                  variant="ghost" size="icon"
+                  className={`h-7 w-7 ${a.ativo === false ? 'text-green-600 hover:text-green-700' : 'text-gray-400 hover:text-amber-600'}`}
+                  title={a.ativo === false ? 'Reativar acesso' : 'Desativar acesso'}
+                  onClick={() => alternarAtivo(a)}
+                >
+                  <Power className="h-3.5 w-3.5" />
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
