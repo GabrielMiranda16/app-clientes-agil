@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { PainelLateral, PainelCorpo, PainelRodape } from '@/components/clienteTeste/PainelLateral';
 import {
   Home, Users, Wallet, LogOut, Menu, X,
-  Lock, UserCog, Loader2, Bot, HelpCircle, Landmark,
+  Lock, UserCog, Loader2, Bot, HelpCircle, Landmark, Sparkles,
 } from 'lucide-react';
 import { formatCpfCnpj } from '@/lib/masks';
 import { validatePasswordStrength } from '@/lib/userValidator';
@@ -72,7 +72,7 @@ const ClienteSidebarLayout = ({ children }) => {
   const navItems = [
     { to: '/select-segmento/teste', icon: Home, label: 'Meus Seguros' },
     ...(empresaId ? [
-      { to: `/cliente/${empresaId}`, icon: Users, label: 'Beneficiários' },
+      { to: `/cliente/${empresaId}`, icon: Users, label: isPF ? 'Pessoas' : 'Colaboradores' },
       { to: `/cliente/${empresaId}/coparticipacao`, icon: Wallet, label: 'Coparticipação' },
     ] : []),
     { to: '/fale-com-a-gi/teste', icon: Bot, label: 'Fale com a Gi' },
@@ -263,6 +263,19 @@ const ClienteSidebarLayout = ({ children }) => {
         </nav>
 
         <div className="flex flex-col gap-1 pt-4 mt-2 w-full flex-shrink-0">
+          <NavLink to="/produtos/teste" className="relative flex items-center w-full px-[18px] py-1">
+            {({ isActive }) => (
+              <>
+                {isActive && <span className="absolute left-0 top-1/2 -translate-y-1/2 h-7 w-1 rounded-r-full bg-[#003580]" />}
+                <span className="flex items-center justify-center w-11 h-11 rounded-xl flex-shrink-0 bg-[#003580]/10 text-[#003580]">
+                  <Sparkles className="h-5 w-5" />
+                </span>
+                <span className="ml-3 text-sm font-semibold whitespace-nowrap text-[#003580] opacity-0 group-hover:opacity-100 transition-opacity duration-150 group-hover:delay-100">
+                  Novidades
+                </span>
+              </>
+            )}
+          </NavLink>
           <IconButton icon={UserCog} label="Dados" onClick={openDados} />
           <IconButton icon={Lock} label="Alterar Senha" onClick={() => setIsPasswordModalOpen(true)} />
           <IconButton icon={LogOut} label="Sair" onClick={handleLogout} danger />
@@ -295,6 +308,14 @@ const ClienteSidebarLayout = ({ children }) => {
                 <NavItemComTexto key={item.to} {...item} onClick={() => setMobileOpen(false)} />
               ))}
               <div className="border-t border-gray-100 pt-2 mt-1 space-y-1">
+                <NavLink
+                  to="/produtos/teste"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-[#003580] bg-[#003580]/5"
+                >
+                  <Sparkles className="h-5 w-5 flex-shrink-0" />
+                  <span>Novidades</span>
+                </NavLink>
                 <button
                   onClick={() => { openDados(); setMobileOpen(false); }}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:text-[#003580] transition-colors w-full"

@@ -7,7 +7,7 @@ import { SEGURADORAS } from '@/data/seguradoras';
 import {
   ArrowLeft, Loader2, Building2, Users,
   ClipboardList, Wallet, Stethoscope, UserCheck, TrendingUp, CreditCard,
-  Search, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight,
+  Search, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight, Lock,
 } from 'lucide-react';
 import ClienteSidebarLayout from '@/components/clienteTeste/ClienteSidebarLayout';
 import BeneficiarioExpandableRow from '@/components/clienteTeste/BeneficiarioExpandableRow';
@@ -130,6 +130,7 @@ const GestaoApoliceTestePage = () => {
                   <span className="block font-bold text-gray-900 text-sm">{label}</span>
                   {!onClick && <span className="block text-xs text-gray-400">Em breve</span>}
                 </span>
+                {!onClick && <Lock className="w-4 h-4 text-gray-400 flex-shrink-0" />}
               </button>
             ))}
           </div>

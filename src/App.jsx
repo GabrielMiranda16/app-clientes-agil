@@ -31,6 +31,8 @@ const SolicitacoesApoliceTestePage = lazy(() => import('@/pages/SolicitacoesApol
 const GiTestePage              = lazy(() => import('@/pages/GiTestePage'));
 const AjudaTestePage           = lazy(() => import('@/pages/AjudaTestePage'));
 const SeguradorasTestePage     = lazy(() => import('@/pages/SeguradorasTestePage'));
+const ProdutosAgilTestePage    = lazy(() => import('@/pages/ProdutosAgilTestePage'));
+const ProdutoDetalheTestePage  = lazy(() => import('@/pages/ProdutoDetalheTestePage'));
 const SelectApolice            = lazy(() => import('@/pages/SelectApolice'));
 const ApoliceDashboard         = lazy(() => import('@/pages/ApoliceDashboard'));
 const SolicitacoesPage         = lazy(() => import('@/pages/SolicitacoesPage'));
@@ -100,6 +102,8 @@ const AppRoutes = () => {
         <Route path="/fale-com-a-gi/teste" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><GiTestePage /></ProtectedRoute>} />
         <Route path="/ajuda/teste" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><AjudaTestePage /></ProtectedRoute>} />
         <Route path="/seguradoras/teste" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><SeguradorasTestePage /></ProtectedRoute>} />
+        <Route path="/produtos/teste" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><ProdutosAgilTestePage /></ProtectedRoute>} />
+        <Route path="/produtos/:slug/teste" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><ProdutoDetalheTestePage /></ProtectedRoute>} />
         <Route path="/select-apolice/:segmento" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><SelectApolice /></ProtectedRoute>} />
         <Route path="/apolice/:apoliceId" element={<ProtectedRoute allowedRoles={['CLIENTE', 'CEO', 'ADM']}><ApoliceDashboard /></ProtectedRoute>} />
         <Route path="/force-change-password" element={<ProtectedRoute allowedRoles={['CEO','ADM','CLIENTE','PARCEIRO']}><ForceChangePassword /></ProtectedRoute>} />
