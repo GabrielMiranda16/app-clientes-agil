@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useCompany } from '@/contexts/CompanyContext';
 import { apolicesService, SEGMENTOS } from '@/services/apolicesService';
@@ -17,6 +17,7 @@ import ApoliceExpandableRow from '@/components/clienteTeste/ApoliceExpandableRow
 import BeneficiarioExpandableRow from '@/components/clienteTeste/BeneficiarioExpandableRow';
 import { PainelLateral, PainelCorpo, PainelRodape } from '@/components/clienteTeste/PainelLateral';
 import SetorCampo from '@/components/clienteTeste/SetorCampo';
+import { TIPOS_SVD, tiposDaApolice, mesmoTipo } from '@/components/clienteTeste/segmentoConfig';
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@/components/ui/select';
@@ -65,6 +66,7 @@ const empresaIsMatrizDe = (apolice) => apolice.empresa?.tipo === 'MATRIZ';
 
 const SelectApoliceTestePage = () => {
   const { segmento } = useParams();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { selectedCompanyId, isViewingAsClient } = useCompany();
   const navigate = useNavigate();
@@ -90,6 +92,7 @@ const SelectApoliceTestePage = () => {
 
   const segConfig = SEGMENTOS[segmento] || SEGMENTOS[segmento?.toUpperCase()] || Object.values(SEGMENTOS).find(s => s.slug === segmento);
   const isSVD = segmento?.toLowerCase().replace(/_/g, '-') === 'saude-vida-odonto';
+  const tipoSvd = isSVD && TIPOS_SVD[searchParams.get('tipo')] ? searchParams.get('tipo') : null;
   const storageKey = `atalhos_${segmento}_${empresaId}`;
 
   useEffect(() => {
@@ -140,8 +143,11 @@ const SelectApoliceTestePage = () => {
     if (!isSVD) return apolices.map(ap => ({ key: String(ap.id), apolice: ap }));
     return apolices.flatMap((ap) => {
       const subs = (ap.dados_adicionais?.sub_apolices || []).filter(s => s.tipo || s.numero);
-      if (subs.length === 0) return [{ key: String(ap.id), apolice: ap }];
-      return subs.map((sub, i) => ({
+      if (subs.length === 0) {
+        if (tipoSvd && !tiposDaApolice(ap).includes(tipoSvd)) return [];
+        return [{ key: String(ap.id), apolice: ap }];
+      }
+      return subs.flatMap((sub, i) => (tipoSvd && !mesmoTipo(sub.tipo || 'saude', tipoSvd)) ? [] : [{
         key: `${ap.id}-${i}`,
         apolice: ap,
         displayOverride: {
@@ -151,9 +157,9 @@ const SelectApoliceTestePage = () => {
           valorPremio: sub.valor_premio,
           contratoUrl: sub.contrato_url,
         },
-      }));
+      }]);
     });
-  }, [apolices, isSVD]);
+  }, [apolices, isSVD, tipoSvd]);
 
   const linhasPorKey = useMemo(
     () => Object.fromEntries(linhasTabela.map((linha) => [linha.key, linha])),
@@ -267,7 +273,7 @@ const SelectApoliceTestePage = () => {
     return { total, homens, mulheres, mediaIdade, segmentos };
   }, [beneficiarios]);
 
-  const segLabel = segConfig?.label || segmento?.toLowerCase().replace(/_/g, ' ');
+  const segLabel = tipoSvd ? TIPOS_SVD[tipoSvd].label : (segConfig?.label || segmento?.toLowerCase().replace(/_/g, ' '));
   const apolicesSubtitle = isSVD
     ? 'Todas suas apólices de saúde, odonto e vida abaixo.'
     : `Todas suas apólices de ${segLabel.toLowerCase()} abaixo.`;

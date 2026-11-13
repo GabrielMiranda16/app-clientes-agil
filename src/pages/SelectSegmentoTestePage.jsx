@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import ClienteSidebarLayout from '@/components/clienteTeste/ClienteSidebarLayout';
 import ApoliceExpandableRow from '@/components/clienteTeste/ApoliceExpandableRow';
-import { SEGMENTO_CONFIG, SEGMENTOS_IMPORTANTES } from '@/components/clienteTeste/segmentoConfig';
+import { SEGMENTO_CONFIG, SEGMENTOS_IMPORTANTES, TIPOS_SVD, tiposDaApolice } from '@/components/clienteTeste/segmentoConfig';
 
 const ITENS_POR_PAGINA_OPCOES = [5, 10, 15, 25];
 
@@ -77,9 +77,28 @@ const SelectSegmentoTestePage = () => {
     seg => !SEGMENTOS_IMPORTANTES.includes(seg)
   );
 
-  const segmentosNaoContratados = Object.keys(SEGMENTO_CONFIG).filter(
-    seg => !segmentosDisponiveis.includes(seg)
-  );
+  const tiposSvdContratados = useMemo(() => {
+    const presentes = new Set((apolicesPorSegmento.SAUDE_VIDA_ODONTO || []).flatMap(tiposDaApolice));
+    return Object.keys(TIPOS_SVD).filter((t) => presentes.has(t));
+  }, [apolicesPorSegmento]);
+
+  const cardsImportantes = segmentosImportantesContratados.flatMap((seg) => {
+    if (seg === 'SAUDE_VIDA_ODONTO') {
+      return tiposSvdContratados.map((t) => ({
+        key: `svd-${t}`, ...TIPOS_SVD[t],
+        onClick: () => navigate(`/select-apolice/saude-vida-odonto/teste?tipo=${t}`),
+      }));
+    }
+    const config = SEGMENTO_CONFIG[seg];
+    return config ? [{ key: seg, ...config, onClick: () => handleSelectSegmento(seg) }] : [];
+  });
+
+  const segmentosNaoContratados = [
+    ...Object.keys(TIPOS_SVD).filter((t) => !tiposSvdContratados.includes(t)).map((t) => ({ key: `svd-${t}`, ...TIPOS_SVD[t] })),
+    ...Object.keys(SEGMENTO_CONFIG)
+      .filter((seg) => seg !== 'SAUDE_VIDA_ODONTO' && !segmentosDisponiveis.includes(seg))
+      .map((seg) => ({ key: seg, ...SEGMENTO_CONFIG[seg] })),
+  ];
 
   const linkWhatsapp = (label) => {
     const msg = `Olá! Sou cliente da Ágil Seguros e gostaria de saber mais sobre ${label}.`;
@@ -166,15 +185,12 @@ const SelectSegmentoTestePage = () => {
               variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
             >
-              {segmentosImportantesContratados.map((seg) => {
-                const config = SEGMENTO_CONFIG[seg];
-                if (!config) return null;
-                const { Icon, label } = config;
+              {cardsImportantes.map(({ key, Icon, label, onClick }) => {
                 return (
                   <motion.button
-                    key={seg}
+                    key={key}
                     variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0 } }}
-                    onClick={() => handleSelectSegmento(seg)}
+                    onClick={onClick}
                     className="group flex items-center gap-3 bg-white border border-gray-100 hover:border-[#003580] rounded-2xl px-4 py-2.5 text-left transition-colors"
                   >
                     <span className="w-11 h-11 flex items-center justify-center flex-shrink-0">
@@ -216,13 +232,10 @@ const SelectSegmentoTestePage = () => {
                 variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
                 className="grid grid-cols-2 md:grid-cols-4 gap-4"
               >
-                {segmentosNaoContratados.map((seg) => {
-                  const config = SEGMENTO_CONFIG[seg];
-                  if (!config) return null;
-                  const { Icon, label, descricao } = config;
+                {segmentosNaoContratados.map(({ key, Icon, label, descricao }) => {
                   return (
                     <motion.a
-                      key={seg}
+                      key={key}
                       href={linkWhatsapp(label)}
                       target="_blank"
                       rel="noopener noreferrer"
