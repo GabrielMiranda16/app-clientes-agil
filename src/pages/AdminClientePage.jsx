@@ -22,6 +22,7 @@ import { solicitacoesService } from '@/services/solicitacoesService';
 import { apolicesService } from '@/services/apolicesService';
 import { authService } from '@/services/authService';
 import { supabaseClient } from '@/lib/supabase';
+import AcessosCliente from '@/components/admin/AcessosCliente';
 
 const SEGMENTOS_CONFIG = [
   { key: 'SAUDE_VIDA_ODONTO', label: 'Saúde, Vida e Odonto', slug: 'saude-vida-odonto', Icon: Heart    },
@@ -351,6 +352,7 @@ const AdminClientePage = () => {
                   </div>
                 )}
               </div>}
+              {canManage && <AcessosCliente empresa={matriz} />}
             </CardContent>
           </Card>
 
